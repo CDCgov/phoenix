@@ -1,0 +1,13 @@
+# Normal text let sit to auto
+*.htm text
+*.html text
+*.css text
+*.js text
+
+## Declare files that will always have LF (aka \n aka 10 aka 0x0a) line endings on checkout.
+*.sh text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.csv text eol=lf
+
