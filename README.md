@@ -1,6 +1,6 @@
 # PHoeNIx
 
-**This software is currently under active development and states not part of the beta testing are advised to not use the code until an offical release is made.**
+🚨🚧 **This software is currently under active development and states not part of the beta testing are advised to not use the code until an offical release is made.** 🚧🚨
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
