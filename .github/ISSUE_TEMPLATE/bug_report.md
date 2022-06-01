@@ -10,7 +10,7 @@ assignees: ''
 <!--- TO DO:
 1.  Fill out the information below 
 2. Delete the template and information not used 
-3. Chang the issue name  --->
+3. Change the issue name  --->
 
 **Describe the bug**
 A clear and concise description of what feature is not working.
