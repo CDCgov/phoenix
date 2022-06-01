@@ -21,8 +21,9 @@ Steps to reproduce the behavior:
 - What version of the pipeline you are using
 - The command that was run to cause the error
 - If you used a custom config file please provide it
-- The text of the error itself - screenshots are great for this!
-Include the files that caused the error (if the files contain sensitive information (PII) email HAISeq@cdc.gov with the title QH ISSUE #).
+- The text of the error itself - screenshots are great for this!  
+- Include the files that caused the error  
+  - (if the file(s) contains something you don't want public open an issue with a brief description AND then email HAISeq@cdc.gov with the title QH ISSUE # so we can track the problem. DO NOT send PII!
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
