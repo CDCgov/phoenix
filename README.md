@@ -6,14 +6,39 @@ For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/
 
 ## Quick Start
 
-1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`)
-
-2. Install [`Singularity`](https://www.sylabs.io/guides/3.0/user-guide/) for full pipeline reproducibility.
-
-3. [Download the pipeline](https://github.com/cdcent/Quaisar-H/wiki/Dependencies-and-Install#install-quaisar-h) and test it on a minimal dataset with a single command:
+1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`).
+**This will require a version of Anaconda to be installed on your system.**
 
     ```console
-    nextflow run CDCgov/phoenix -profile test,YOURPROFILE
+   mamba create -n nextflow -c bioconda -c conda-forge nf-core=2.2 nextflow=21.10.6 git=2.35.0 openjdk=8.0.312 graphviz
+   ```
+   
+2. Install [`Singularity`](https://www.sylabs.io/guides/3.0/user-guide/) for full pipeline reproducibility.
+
+3. [Download the pipeline](https://github.com/cdcent/Quaisar-H/wiki/Dependencies-and-Install#install-quaisar-h).
+Clone the PHoeNIx Repository from GitHub.
+
+    ```console
+    git clone https://github.com/CDCgov/phoenix
+    ```
+4. Download the `hash.k2d` file needed for kraken2 from the CDC sharefile link. At this time this is not downloadable
+via command line . You will need to downloaded the file and place it into into the databases directory, <cd ~./assets/databases>. 
+
+5. Activate the nextflow environment with:  
+
+   ```console
+   conda activate nextflow
+   ```
+
+6. Unzip mash sketch in assets folder:
+
+    ```console
+    gunzip phoenix/assets/databases/REFSEQ_20210820_Bacteria_complete.msh.gz
+    ```
+7. Run PHoeNIx on a minimal dataset with a single command:
+
+    ```console
+    nextflow run CDCgov/phoenix -profile singularity,test 
     ```
 
     Note that some form of configuration will be needed so that Nextflow knows how to fetch the required software. This is usually done in the form of a config profile (`YOURPROFILE` in the example command above). You can chain multiple config profiles in a comma-separated string.
