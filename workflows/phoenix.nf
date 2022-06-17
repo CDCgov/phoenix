@@ -287,12 +287,12 @@ workflow PHOENIX {
 
     // Converting kraken report to krona file to have hierarchical output in krona plot
     KREPORT2KRONA_WTASMBLD (
-        KRAKEN2_ASMBLD_WEIGHTED.out.report, "wtasmbld"
+        KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report, "wtasmbld"
     )
     ch_versions = ch_versions.mix(KREPORT2KRONA_WTASMBLD.out.versions)
 
     // Combining kraken report with quast report based on meta.id
-    kraken_bh_wtasmbld_ch = KREPORT2KRONA_WTASMBLD.kraken_weighted_report.join(QUAST.out.report_tsv, by: [0,0])
+    kraken_bh_wtasmbld_ch = KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.join(QUAST.out.report_tsv, by: [0,0])
 
     // Getting Kraken best hit for assembled data
     KRAKEN2_BH_ASMBLD_WEIGHTED(
@@ -348,8 +348,17 @@ workflow PHOENIX {
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
 
+    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
+    line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc -> [[id:meta.id], fastp_total_qc]}\
+    .join(MLST.out.tsv.map{                                          meta, tsv            -> [[id:meta.id], tsv]},        by: [0])\
+    .join(GAMMA_HV.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},      by: [0])\
+    .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},      by: [0])\
+    .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]}, by: [0])\
+    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},      by: [0])
+
+    // Generate summary per sample
     CREATE_SUMMARY_LINE(
-        GATHERING_READ_QC_STATS.out.fastp_total_qc, MLST.out.tsv, GAMMA_HV.out.gamma, GAMMA_AR.out.gamma, QUAST.out.report_tsv, CALCULATE_ASSEMBLY_RATIO.out.ratio
+        line_summary_ch
     )
     ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 

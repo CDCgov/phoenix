@@ -8,12 +8,12 @@ process CREATE_SUMMARY_LINE {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(trimmed_qc_data_file)
-    tuple val(meta), path(mlst_file)
-    tuple val(meta), path(hypervirulence_gamma_file)
-    tuple val(meta), path(ar_gamma_file)
-    tuple val(meta), path(quast_report)
-    tuple val(meta), path(ratio_file)
+    tuple val(meta), path(trimmed_qc_data_file), \
+    path(mlst_file), \
+    path(hypervirulence_gamma_file), \
+    path(ar_gamma_file), \
+    path(quast_report), \
+    path(ratio_file)
 
     output:
     path '*_summaryline.tsv'           , emit: line_summary
