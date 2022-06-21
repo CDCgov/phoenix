@@ -647,23 +647,16 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
  	while IFS= read -r line; do
  		arrLine=(${line})
  		# First element in array is the percent of reads identified as the current taxa
-    		if [[ "${arrLine[3]}" = "U" ]]; then
-      			unclass=${arrLine[3]}
-    		elif [[ "${arrLine[3]}" = "R" ]]; then
-     			root=${arrLine[3]}
-      			total=$(echo "${unclass} + ${root}" | bc)
-    		else
-      			percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-   			percent=${arrLine[0]}
-   			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
-   			# 3rd element is the taxon level classification
-   			classification=${arrLine[3]}
-   			echo "${percent_integer} - ${contamination}"
-   			if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
-   				number_of_species=$(( number_of_species + 1 ))
-        			echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
-   			fi
-    		fi
+    		percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
+   		percent=${arrLine[0]}
+   		percent_integer=$(echo "${percent}" | cut -d'.' -f1)
+   		# 3rd element is the taxon level classification
+   		classification=${arrLine[3]}
+   		echo "${percent_integer} - ${contamination}"
+   		if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
+   			number_of_species=$(( number_of_species + 1 ))
+        		echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+   		fi
  	done < "${kraken2_asmbld_report}"
 
  	if [[ $number_of_species -gt 1 ]]; then
