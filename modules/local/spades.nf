@@ -1,5 +1,6 @@
 process SPADES_LOCAL {
     tag "$meta.id"
+    label 'process_high'
     container 'quay.io/biocontainers/spades:3.14.0--h2d02072_0'
 
     input:

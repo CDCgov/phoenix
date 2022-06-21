@@ -1,32 +1,32 @@
 process GENERATE_PIPELINE_STATS {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_low'
 
     input:
-    tuple val(meta), path(fastp_raw_qc)
-    tuple val(meta), path(fastp_total_qc)
-    tuple val(meta), path(trimmed_reads)
-    tuple val(meta), path(kraken2_trimd_report)
-    tuple val(meta), path(kraken2_trimd_summary)
-    tuple val(meta), path(krona_trimd)
-    tuple val(meta), path(assembly_scaffolds)
-    tuple val(meta), path(filtered_assembly)
-    tuple val(meta), path(kraken2_asmbld_report)
-    tuple val(meta), path(kraken2_asmbled_summary)
-    tuple val(meta), path(krona_asmbld)
-    tuple val(meta), path(kraken2_weighted_report)
-    tuple val(meta), path(kraken2_weighted_summary)
-    tuple val(meta), path(krona_weighted)
-    tuple val(meta), path(quast_report)
-    tuple val(meta), path(taxID)
-    tuple val(meta), path(assembly_ratio_file)
-    tuple val(meta), path(busco_specific_short_summary)
-    tuple val(meta), path(fastANI_formatted_file)
-    tuple val(meta), path(gamma_AR)
-    tuple val(meta), path(gamma_replicon)
-    tuple val(meta), path(gamma_HV)
-    tuple val(meta), path(srst_fullgenes_file)
-    tuple val(meta), path(mlst_file)
+    tuple val(meta), path(trimmed_reads), \
+    path(fastp_raw_qc), \
+    path(fastp_total_qc), \
+    path(srst_fullgenes_file), \
+    path(kraken2_trimd_report), \
+    path(krona_trimd), \
+    path(kraken2_trimd_summary), \
+    path(assembly_scaffolds), \
+    path(filtered_assembly), \
+    path(mlst_file), \
+    path(gamma_HV), \
+    path(gamma_AR), \
+    path(gamma_replicon), \
+    path(quast_report), \
+    path(busco_specific_short_summary), \
+    path(krona_asmbld), \
+    path(kraken2_asmbld_report), \
+    path(kraken2_asmbled_summary), \
+    path(krona_weighted), \
+    path(kraken2_weighted_report), \
+    path(kraken2_weighted_summary), \
+    path(taxID), \
+    path(fastANI_formatted_file), \
+    path(assembly_ratio_file)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
@@ -53,7 +53,7 @@ process GENERATE_PIPELINE_STATS {
         -p $quast_report \\
         -q $taxID \\
         -r $assembly_ratio_file \\
-        -s ${busco_specific_short_summary[1]} \\
+        -s $busco_specific_short_summary \\
         -t $fastANI_formatted_file \\
         -u $gamma_AR \\
         -v $gamma_replicon \\

@@ -133,7 +133,7 @@ workflow PHOENIX {
     ch_versions = ch_versions.mix(FASTP_SINGLES.out.versions)
 
     // Combining fastp json outputs based on meta.id
-    fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0,0])
+    fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0])
 
     // Script gathers data from jsons for pipeline stats file
     GATHERING_READ_QC_STATS(
@@ -177,7 +177,8 @@ workflow PHOENIX {
     ch_versions = ch_versions.mix(KRONA_KTIMPORTTEXT_TRIMD.out.versions)
 
     // Combining kraken report with quast report based on meta.id
-    kraken_bh_trimd_ch = KRAKEN2_TRIMD.out.report.join(GATHERING_READ_QC_STATS.out.fastp_total_qc, by: [0,0])
+    kraken_bh_trimd_ch = KRAKEN2_TRIMD.out.report.map{   meta, report         -> [[id:meta.id], report]}\
+    .join(GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc -> [[id:meta.id], fastp_total_qc]}, by: [0])
 
     // Getting Kraken best hit for assembled data
     KRAKEN2_BH_TRIMD (
@@ -185,7 +186,7 @@ workflow PHOENIX {
     )
 
     // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
-    passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0,0])
+    passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
 
     // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
     SPADES_LOCAL (
@@ -266,7 +267,8 @@ workflow PHOENIX {
     ch_versions = ch_versions.mix(KRONA_KTIMPORTTEXT_ASMBLD.out.versions)
 
     // Combining kraken report with quast report based on meta.id
-    kraken_bh_asmbld_ch = KRAKEN2_ASMBLD.out.report.join(QUAST.out.report_tsv, by: [0,0])
+    kraken_bh_asmbld_ch = KRAKEN2_ASMBLD.out.report.map{meta, report     -> [[id:meta.id], report]}\
+    .join(QUAST.out.report_tsv.map{                     meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
     // Getting Kraken best hit for assembled data
     KRAKEN2_BH_ASMBLD (
@@ -277,7 +279,7 @@ workflow PHOENIX {
     KRAKEN2_ASMBLD_WEIGHTED (
         BBMAP_REFORMAT.out.reads, params.path2db, "wtasmbld", true, true
     )
-    ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
+    ch_versions = ch_versions.mix(KRAKEN2_ASMBLD_WEIGHTED.out.versions)
 
     // Create weighted kraken report based on scaffold length
     KRAKENTOOLS_MAKEKREPORT (
@@ -292,7 +294,8 @@ workflow PHOENIX {
     ch_versions = ch_versions.mix(KREPORT2KRONA_WTASMBLD.out.versions)
 
     // Combining kraken report with quast report based on meta.id
-    kraken_bh_wtasmbld_ch = KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.join(QUAST.out.report_tsv, by: [0,0])
+    kraken_bh_wtasmbld_ch = KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
+    .join(QUAST.out.report_tsv.map{                                                meta, report_tsv             -> [[id:meta.id], report_tsv]}, by: [0])
 
     // Getting Kraken best hit for assembled data
     KRAKEN2_BH_ASMBLD_WEIGHTED(
@@ -311,7 +314,8 @@ workflow PHOENIX {
     ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
     // Combining mash dist with filtered scaffolds based on meta.id
-    top_taxa_ch = MASH_DIST.out.dist.join(BBMAP_REFORMAT.out.reads, by: [0,0])
+    top_taxa_ch = MASH_DIST.out.dist.map{ meta, dist  -> [[id:meta.id], dist]}\
+    .join(BBMAP_REFORMAT.out.reads.map{   meta, reads -> [[id:meta.id], reads ]}, by: [0])
 
     // Generate file with list of paths of top taxa for fastANI
     DETERMINE_TOP_TAXA (
@@ -319,7 +323,8 @@ workflow PHOENIX {
     )
 
     // Combining filtered scaffolds with the top taxa list based on meta.id
-    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.join(DETERMINE_TOP_TAXA.out.top_taxa_list, by: [0,0])
+    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{meta, reads         -> [[id:meta.id], reads]}\
+    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{ meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])
 
     // Getting species ID
     FASTANI (
@@ -333,7 +338,8 @@ workflow PHOENIX {
     )
 
     // Combining weighted kraken report with the FastANI hit based on meta.id
-    best_hit_ch = KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.join(FORMAT_ANI.out.ani_best_hit, by: [0,0])
+    best_hit_ch = KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
+    .join(FORMAT_ANI.out.ani_best_hit.map{                               meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]}, by: [0])
 
     // Getting ID from either FastANI or if fails, from Kraken2
     DETERMINE_TAXA_ID (
@@ -341,7 +347,8 @@ workflow PHOENIX {
     )
 
     // Combining determined taxa with the assembly stats based on meta.id
-    assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.join(QUAST.out.report_tsv, by: [0,0])
+    assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
+    .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
     // Calculating the assembly ratio
     CALCULATE_ASSEMBLY_RATIO (
@@ -371,31 +378,34 @@ workflow PHOENIX {
     )
     ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
+    // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
+    pipeline_stats_ch = FASTP_TRIMD.out.reads.map{                    meta, reads                        -> [[id:meta.id],reads]}\
+    .join(GATHERING_READ_QC_STATS.out.fastp_raw_qc.map{               meta, fastp_raw_qc                 -> [[id:meta.id],fastp_raw_qc]},                 by: [0])\
+    .join(GATHERING_READ_QC_STATS.out.fastp_total_qc.map{             meta, fastp_total_qc               -> [[id:meta.id],fastp_total_qc]},               by: [0])\
+    .join(SRST2_TRIMD_AR.out.fullgene_results.map{                    meta, fullgene_results             -> [[id:meta.id],fullgene_results]},             by: [0])\
+    .join(KRAKEN2_TRIMD.out.report.map{                               meta, report                       -> [[id:meta.id],report]},                       by: [0])\
+    .join(KRONA_KTIMPORTTEXT_TRIMD.out.html.map{                      meta, html                         -> [[id:meta.id],html]},                         by: [0])\
+    .join(KRAKEN2_BH_TRIMD.out.ksummary.map{                          meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
+    .join(RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{             meta, renamed_scaffolds            -> [[id:meta.id],renamed_scaffolds]},            by: [0])\
+    .join(BBMAP_REFORMAT.out.reads.map{                               meta, reads                        -> [[id:meta.id],reads]},                        by: [0])\
+    .join(MLST.out.tsv.map{                                           meta, tsv                          -> [[id:meta.id],tsv]},                          by: [0])\
+    .join(GAMMA_HV.out.gamma.map{                                     meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
+    .join(GAMMA_AR.out.gamma.map{                                     meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
+    .join(GAMMA_PF.out.gamma.map{                                     meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
+    .join(QUAST.out.report_tsv.map{                                   meta, report_tsv                   -> [[id:meta.id],report_tsv]},                   by: [0])\
+    .join(BUSCO.out.short_summaries_specific_txt.map{                 meta, short_summaries_specific_txt -> [[id:meta.id],short_summaries_specific_txt]}, by: [0])\
+    .join(KRAKEN2_ASMBLD.out.report.map{                              meta, report                       -> [[id:meta.id],report]},                       by: [0])\
+    .join(KRONA_KTIMPORTTEXT_ASMBLD.out.html.map{                     meta, html                         -> [[id:meta.id],html]},                         by: [0])\
+    .join(KRAKEN2_BH_ASMBLD.out.ksummary.map{                         meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
+    .join(KRONA_KTIMPORTTEXT_WTASMBLD.out.html.map{                   meta, html                         -> [[id:meta.id],html]},                         by: [0])\
+    .join(KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.map{     meta, kraken_weighted_report       -> [[id:meta.id],kraken_weighted_report]},       by: [0])\
+    .join(KRAKEN2_BH_ASMBLD_WEIGHTED.out.ksummary.map{                meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
+    .join(DETERMINE_TAXA_ID.out.taxonomy.map{                         meta, taxonomy                     -> [[id:meta.id],taxonomy]},                     by: [0])\
+    .join(FORMAT_ANI.out.ani_best_hit.map{                            meta, ani_best_hit                 -> [[id:meta.id],ani_best_hit]},                 by: [0])\
+    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                     meta, ratio                        -> [[id:meta.id],ratio]},                        by: [0])
+
     GENERATE_PIPELINE_STATS (
-        GATHERING_READ_QC_STATS.out.fastp_raw_qc,
-        GATHERING_READ_QC_STATS.out.fastp_total_qc,
-        FASTP_TRIMD.out.reads,
-        KRAKEN2_TRIMD.out.report,
-        KRAKEN2_BH_TRIMD.out.ksummary,
-        KRONA_KTIMPORTTEXT_TRIMD.out.html,
-        spades_ch,
-        BBMAP_REFORMAT.out.reads,
-        KRAKEN2_ASMBLD.out.report,
-        KRAKEN2_BH_ASMBLD.out.ksummary,
-        KRONA_KTIMPORTTEXT_ASMBLD.out.html,
-        KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report,
-        KRAKEN2_BH_ASMBLD_WEIGHTED.out.ksummary,
-        KRONA_KTIMPORTTEXT_WTASMBLD.out.html,
-        QUAST.out.report_tsv,
-        DETERMINE_TAXA_ID.out.taxonomy,
-        CALCULATE_ASSEMBLY_RATIO.out.ratio,
-        BUSCO.out.short_summaries_txt,
-        FORMAT_ANI.out.ani_best_hit,
-        GAMMA_AR.out.gamma,
-        GAMMA_PF.out.gamma,
-        GAMMA_HV.out.gamma,
-        SRST2_TRIMD_AR.out.fullgene_results,
-        MLST.out.tsv
+        pipeline_stats_ch
     )
 
     // Collecting the software versions

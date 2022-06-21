@@ -1,6 +1,6 @@
 process BUSCO {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_high'
 
     conda (params.enable_conda ? "bioconda::busco=5.3.2" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -14,11 +14,12 @@ process BUSCO {
     path config_file                      // Optional:    busco configuration file
 
     output:
-    tuple val(meta), path("*-busco.batch_summary.txt"), emit: batch_summary
-    tuple val(meta), path("short_summary.*.txt")      , emit: short_summaries_txt, optional: true
-    tuple val(meta), path("short_summary.*.json")     , emit: short_summaries_json, optional: true
-    tuple val(meta), path("*-busco")                  , emit: busco_dir
-    path "versions.yml"                               , emit: versions
+    tuple val(meta), path("*-busco.batch_summary.txt")    , emit: batch_summary
+    tuple val(meta), path("short_summary.*.txt")          , optional: true, emit: short_summaries_txt
+    tuple val(meta), path("short_summary.specific.*.txt") , optional: true, emit: short_summaries_specific_txt
+    tuple val(meta), path("short_summary.*.json")         , optional: true, emit: short_summaries_json
+    tuple val(meta), path("*-busco")                      , emit: busco_dir
+    path "versions.yml"                                   , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
