@@ -12,7 +12,7 @@ For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/
 1. Install  [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`).
 **This will require a version of Anaconda to be installed on your system.**
 
-    ```console
+   ```console
    mamba create -n nextflow -c bioconda -c conda-forge nf-core=2.2 nextflow=21.10.6 git=2.35.0 openjdk=8.0.312 graphviz
    ```
 
@@ -26,7 +26,7 @@ Clone the PHoeNIx Repository from GitHub.
     ```
 
 4. Download the `hash.k2d` file needed for kraken2 from the CDC sharefile link. At this time this is not downloadable
-via command line . You will need to downloaded the file and place it into into the databases directory, `cd ~./assets/databases`. 
+via command line . You will need to downloaded the file and place it into into the databases directory, `cd phoenix/assets/databases`. 
 
 5. Activate the nextflow environment with:  
 
@@ -43,7 +43,7 @@ via command line . You will need to downloaded the file and place it into into t
 7. Run PHoeNIx on a minimal dataset with a single command:
 
     ```console
-    nextflow run CDCgov/phoenix -profile singularity,test 
+    nextflow run phoenix/main.nf -profile singularity,test 
     ```
 
     Note that some form of configuration will be needed so that Nextflow knows how to fetch the required software. This is usually done in the form of a config profile (`YOURPROFILE` in the example command above). You can chain multiple config profiles in a comma-separated string.
