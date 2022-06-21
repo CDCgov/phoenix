@@ -885,21 +885,21 @@ if [[ "${run_type}" == "all" ]]; then
  	else
  		avg_coverage=0
  	fi
- 	#echo "trimmed-${avg_coverage}"
+#echo "trimmed-${avg_coverage}"
  	if (( $(echo "${avg_coverage} > ${reads_low}" | bc -l) )) && (( $(echo "${avg_coverage} < ${reads_high}" | bc -l) )); then
- 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
  	elif (( $(echo "${avg_coverage} > ${reads_high}" | bc -l) )); then
- 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:<150x)"  >> "${sample_name}.synopsis"
  		if [[ "${status}" == "SUCCESS" ]]; then
  			status="ALERT"
  		fi
   elif (( $(echo "${avg_coverage} > ${reads_min}" | bc -l) )); then
- 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
  		if [[ "${status}" == "SUCCESS" ]]; then
  			status="ALERT"
  		fi
  	elif (( $(echo "${avg_coverage} < ${reads_min}" | bc -l) )); then
- 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "FAILED" "${avg_coverage}x coverage based on trimmed reads"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "FAILED" "${avg_coverage}x coverage based on trimmed reads (Min:30x)"  >> "${sample_name}.synopsis"
  		status="FAILED"
     QC_FAIL=$QC_FAIL"coverage_below_30($avg_coverage)-"
  	fi
