@@ -843,10 +843,9 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
    assembly_ratio=$(tail -n1 "${assembly_ratio_file}" | cut -d' ' -f2)
    stdev_line=$(head -n4 "${assembly_ratio_file}" | tail -n1)
    species_stdev_line=$(head -n3 "${assembly_ratio_file}" | tail -n1)
-    if [[ "${stdev_line}" = "Isolate_St.Devs:"* ]]; then
-      st_dev=$(head -n4 "${assembly_ratio_file}" | tail -n1 | cut -d' ' -f2)
+    if [[ "${stdev_line}" = "Isolate_St.Devs: N/A" ]]; then
+      st_dev="N/A"
     else
-      "${shareScript}/calculate_assembly_ratio.sh" -e ${OUTDATADIR}
       st_dev=$(head -n4 "${assembly_ratio_file}" | tail -n1 | cut -d' ' -f2)
     fi
 
@@ -856,8 +855,8 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
         status="WARNING"
       fi
     #QC_FAIL=$QC_FAIL"STDev_NOREF-"
-    elif [[ "${species_st_dev_line}" = *"Single_Reference"* ]]; then
-      printf "%-30s: %-8s : %s\\n" "ASSEMBLY_RATIO(SD)" "ALERT" "One Reference for STDev - ${assembly_ratio}x(${st_dev}-SD) against ${assembly_ID}"  >> "${sample_name}.synopsis"
+  elif [[ "${species_stdev_line}" = *"Not calculated on species with n<10 references"* ]] || [[ "${st_dv}" = "N/A" ]]; then
+      printf "%-30s: %-8s : %s\\n" "ASSEMBLY_RATIO(SD)" "ALERT" "Low References for STDev - ${assembly_ratio}x(${st_dev}-SD) against ${assembly_ID}"  >> "${sample_name}.synopsis"
       if [[ "${status}" = "SUCCESS" ]]; then
         status="ALERT"
       fi
