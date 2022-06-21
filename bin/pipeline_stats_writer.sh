@@ -629,7 +629,7 @@ if [[ "${run_type}" == "all" ]]; then
  			fi
  		else
  			#printf "%-30s: %-8s : %s\\n" "kraken2 on assembly" "SUCCESS" "${speciespercent}%${true_speciespercent%} ${genuspost} ${speciespost} with ${unclass}%${true_unclass%} unclassified contigs"
- 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "SUCCESS" " ${genuspost}(${genuspostpercent}%) ${speciespost}(${speciespostpercent}%) with ${unclass_string}% unclassified contigs"  >> "${sample_name}.synopsis"
+ 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "SUCCESS" "${genuspost}(${genuspostpercent}%) ${speciespost}(${speciespostpercent}%) with ${unclass_string}% unclassified contigs"  >> "${sample_name}.synopsis"
  		fi
  	fi
  # If no summary file was found
@@ -652,10 +652,10 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
    		percent_integer=$(echo "${percent}" | cut -d'.' -f1)
    		# 3rd element is the taxon level classification
    		classification=${arrLine[3]}
-   		echo "${percent_integer} - ${contamination}"
+   		#echo "${percent_integer} - ${contamination}"
    		if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
    			number_of_species=$(( number_of_species + 1 ))
-        		echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+        		#echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
    		fi
  	done < "${kraken2_asmbld_report}"
 
@@ -765,10 +765,10 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
    			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
    			# 3rd element is the taxon level classification
    			classification=${arrLine[3]}
-   			#echo "${percent_integer} - ${contamination}"
+   			echo "${percent_integer} - ${contamination}"
    			if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
    				number_of_species=$(( number_of_species + 1 ))
-        			#echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+        			echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
    			fi
     		fi
  	done < "${kraken2_weighted_report}"
@@ -1246,7 +1246,7 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
 
  if [[ -n "${QC_FAIL}" ]]; then
    QC_FAIL=${QC_FAIL%?}
-   printf "%-20s: %-8s : %s\\n" "Auto Pass/FAIL" "FAIL" "$QC_FAIL"  >> "${sample_name}_pipeline_stats.txt"
+   printf "%-20s: %-8s : %s\\n" "Auto Pass/FAIL" "FAIL" "$QC_FAIL"  >> "${sample_name}.synopsis"
    status="FAILED"
  else
    printf "%-20s: %-8s : %s\\n" "Auto Pass/FAIL" "PASS" "Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)/min_length(>1000000) to pass auto QC filtering"  >> "${OUTDATADIR}/${sample_name}_pipeline_stats.txt"
