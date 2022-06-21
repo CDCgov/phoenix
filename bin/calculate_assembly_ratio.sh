@@ -140,10 +140,11 @@ while IFS='' read -r line; do
 		fi
 		expected_length=$(echo "scale=0; 1000000 * ${arr_line[4]} / 1 " | bc | cut -d'.' -f1)
 		echo "${arr_line[5]}"
+		reference_count="${arr_Line[6]}"
 		stdev=$(echo "scale=4; 1000000 * ${arr_line[5]} /1 " | bc | cut -d"." -f1)
-		if [[ "${stdev}" = "0" ]]; then
-			stdev="Single_Reference"
-			stdevs=0
+		if [[ "${reference_count}" -lt 10 ]]; then
+			stdev="Not calculated on species with n<10 references"
+			stdevs="N/A"
 		else
 			if [[ "${assembly_length}" -gt "${expected_length}" ]]; then
 				bigger="${assembly_length}"
