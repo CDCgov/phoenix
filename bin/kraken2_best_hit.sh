@@ -192,29 +192,30 @@ done < "${list_file}"
 # Grabs total possible reads from preQC counts if kraken was used on reads (pre assembly)
 if [[ "${list_file}" = *"/kraken2_trimd/"* ]]; then
 	echo "doing trimd"
-	r1s=$(tail -n 1 "${read_file}" | cut -d'	' -f2)
-	r2s=$(tail -n 1 "${read_file}" | cut -d'	' -f4)
-	file_reads=$(( r1s + r2s ))
+#	r1s=$(tail -n 1 "${read_file}" | cut -d'	' -f2)
+#	r2s=$(tail -n 1 "${read_file}" | cut -d'	' -f4)
+#	file_reads=$(( r1s + r2s ))
 	# Calculates the true count of unclassified reads/contigs rather than the reported value from kraken
-	unclass_reads=$(( file_reads - classified_reads ))
+#	unclass_reads=$(( file_reads - classified_reads ))
 	# Calculates the percent of unclassified reads/contigs using the total possible reads
-	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
+#	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 # Grabs total possible bases from contigs in trimmed assembly (post assembly, using weighted kraken output)
 elif [[ "${list_file}" = *"/kraken2_asmbld/"* ]]; then
 	echo "doing asmbld"
 	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
-	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
+#	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
 	# Calculates percent of classified reads as 100*classified reads/contigs
-	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
+#	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 elif [[ "${list_file}" = *"/kraken2_asmbld_weighted/"* ]]; then
 	echo "doing weighted"
 	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
-	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
+#	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
 	# Calculates percent of classified reads as 100*classified reads/contigs
-	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
+#	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	#echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
 	total_percent=$(echo "${unclass_percent} + ${root_percent}" | bc)
 	unclass_percent=$(echo "${unclass_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
+	root_percent=$(echo "${root_percent} ${total_percent}" | awk '{ printf "%2.2f" , ($1*100)/$2 }' )
 	domain_percent=$(echo "${domain_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	phylum_percent=$(echo "${phylum_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	order_percent=$(echo "${order_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
@@ -222,7 +223,7 @@ elif [[ "${list_file}" = *"/kraken2_asmbld_weighted/"* ]]; then
 	family_percent=$(echo "${family_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	genus_percent=$(echo "${genus_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	species_percent=$(echo "${species_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-	#echo "${unclass_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
+	#echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
 fi
 
 
