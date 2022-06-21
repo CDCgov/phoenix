@@ -755,17 +755,18 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
  		arrLine=(${line})
  		# First element in array is the percent of reads identified as the current taxa
     		if [[ "${arrLine[3]}" = "U" ]]; then
-      			unclass=${arrLine[3]}
-    		elif [[ "${arrLine[3]}" = "R" ]]; then
-     			root=${arrLine[3]}
-      			total=$(echo "${unclass} + ${root}" | bc)
+      			unclass=${arrLine[0]}
+    		elif [[ "${arrLine[3]}" = "R1" ]]; then
+     			root=${arrLine[0]}
+      			total_percent=$(echo "${unclass} + ${root}" | bc)
+			#echo "total percent:${unclass} + ${root} = ${total}"
     		else
       			percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
    			#percent=${arrLine[0]}
    			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
    			# 3rd element is the taxon level classification
    			classification=${arrLine[3]}
-   			echo "${percent_integer} - ${contamination}"
+   			#echo "${arrLine[0]} - ${total_percent} - ${percent} - ${percent_integer} - ${kraken2_contamination_threshold} - ${classification}"
    			if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
    				number_of_species=$(( number_of_species + 1 ))
         			echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
@@ -1246,10 +1247,10 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
 
  if [[ -n "${QC_FAIL}" ]]; then
    QC_FAIL=${QC_FAIL%?}
-   printf "%-20s: %-8s : %s\\n" "Auto Pass/FAIL" "FAIL" "$QC_FAIL"  >> "${sample_name}.synopsis"
+   printf "%-30s: %-8s : %s\\n" "Auto Pass/FAIL" "FAIL" "$QC_FAIL"  >> "${sample_name}.synopsis"
    status="FAILED"
  else
-   printf "%-20s: %-8s : %s\\n" "Auto Pass/FAIL" "PASS" "Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)/min_length(>1000000) to pass auto QC filtering"  >> "${OUTDATADIR}/${sample_name}_pipeline_stats.txt"
+   printf "%-30s: %-8s : %s\\n" "Auto Pass/FAIL" "PASS" "Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)/min_length(>1000000) to pass auto QC filtering"  >> "${OUTDATADIR}/${sample_name}_pipeline_stats.txt"
  fi
 
  echo "---------- ${sample_name} completed as ${status} ----------"  >> "${sample_name}.synopsis"
