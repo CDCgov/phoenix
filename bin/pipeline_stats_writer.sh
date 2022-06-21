@@ -756,7 +756,7 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
  		# First element in array is the percent of reads identified as the current taxa
     		if [[ "${arrLine[3]}" = "U" ]]; then
       			unclass=${arrLine[0]}
-    		elif [[ "${arrLine[3]}" = "R1" ]]; then
+    		elif [[ "${arrLine[3]}" = "R" ]]; then
      			root=${arrLine[0]}
       			total_percent=$(echo "${unclass} + ${root}" | bc)
 			#echo "total percent:${unclass} + ${root} = ${total}"
