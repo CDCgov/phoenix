@@ -654,27 +654,27 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
       			total=$(echo "${unclass} + ${root}" | bc)
     		else
       			percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-   			#percent=${arrLine[0]}
+   			percent=${arrLine[0]}
    			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
    			# 3rd element is the taxon level classification
    			classification=${arrLine[3]}
-   			#echo "${percent_integer} - ${contamination}"
-   			if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
+   			echo "${percent_integer} - ${contamination}"
+   			if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
    				number_of_species=$(( number_of_species + 1 ))
-        			#echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+        			echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
    			fi
     		fi
  	done < "${kraken2_asmbld_report}"
 
  	if [[ $number_of_species -gt 1 ]]; then
- 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_species} species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
  		if [[ "${status}" == "SUCCESS" ]]; then
  			status="ALERT"
  		fi
  	elif [[ "${number_of_species}" -eq 1 ]]; then
  		:
  	else
- 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No species have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No Genera have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
  		if [[ "${status}" = "ALERT" ]] || [[ "${status}" = "SUCCESS" ]]; then
  			status="WARNING"
  		fi
@@ -754,38 +754,41 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
 
  # Quick separate check for contamination by finding # of species above ${contamination_threshold} in list file from kraken2
  if [[ -s "${kraken2_weighted_report}" ]]; then
- 	number_of_species=0
- 	total_read_length=0
+	number_of_species=0
+	root=0
+ 	unclass=0
+ 	total=0
  	while IFS= read -r line; do
  		arrLine=(${line})
  		# First element in array is the percent of reads identified as the current taxa
- 		percent=${arrLine[0]}
- 		reads=${arrLine[1]}
- 		# 3rd element is the taxon level classification
- 		classification=${arrLine[3]}
- 		if [ "${classification}" = "R" ] || ([ "${classification}" = "-" ] && [ "${first_desc}" = "root" ]); then
-      classified_reads="${reads}"
- 			classified_percent="${percent}"
- 		fi
- 		if [[ "${classification}" == "S" ]]; then
- 			#echo "Adding ${line} because its S and greater than ${contamination_threshold}... ${percent_integer}"
- 			species_percent=$(echo "${percent} ${classified_percent}" | awk '{ printf "%2f", ($1*100)/$2 }' )
- 			percent_integer=$(echo "${species_percent}" | cut -d'.' -f1)
-      echo "${line} - ${species_percent} - ${percent_integer}"
- 			if (( percent_integer > kraken2_contamination_threshold )); then
- 				number_of_species=$(( number_of_species + 1 ))
- 			fi
- 		fi
+    		if [[ "${arrLine[3]}" = "U" ]]; then
+      			unclass=${arrLine[3]}
+    		elif [[ "${arrLine[3]}" = "R" ]]; then
+     			root=${arrLine[3]}
+      			total=$(echo "${unclass} + ${root}" | bc)
+    		else
+      			percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
+   			#percent=${arrLine[0]}
+   			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
+   			# 3rd element is the taxon level classification
+   			classification=${arrLine[3]}
+   			#echo "${percent_integer} - ${contamination}"
+   			if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
+   				number_of_species=$(( number_of_species + 1 ))
+        			#echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+   			fi
+    		fi
  	done < "${kraken2_weighted_report}"
+	
  	if [[ $number_of_species -gt 1 ]]; then
- 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "${number_of_species} species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
  		if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
       status="WARNING"
     fi
  	elif [[ "${number_of_species}" -eq 1 ]]; then
  		:
  	else
- 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "No species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+ 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "No Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
     if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
       status="WARNING"
     fi
