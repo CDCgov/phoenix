@@ -1249,7 +1249,7 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
    printf "%-30s: %-8s : %s\\n" "Auto Pass/FAIL" "FAIL" "$QC_FAIL"  >> "${sample_name}.synopsis"
    status="FAILED"
  else
-   printf "%-30s: %-8s : %s\\n" "Auto Pass/FAIL" "PASS" "Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)/min_length(>1000000) to pass auto QC filtering"  >> "${OUTDATADIR}/${sample_name}_pipeline_stats.txt"
+   printf "%-30s: %-8s : %s\\n" "Auto Pass/FAIL" "PASS" "Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)/min_length(>1000000) to pass auto QC filtering"  >> "${sample_name}.synopsis"
  fi
 
  echo "---------- ${sample_name} completed as ${status} ----------"  >> "${sample_name}.synopsis"
