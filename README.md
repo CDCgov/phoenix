@@ -1,5 +1,8 @@
 # :fire::bird::fire: PHoeNIx
 
+[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download)](https://github.com/CDCgov/phoenix/releases)
+
+
 🚨🚧 **This software is currently under active development and states not part of the beta testing are advised to use with caution as it is likely to change often until there is an offical stable release (estimated early Sep 2022).** 🚧🚨
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
