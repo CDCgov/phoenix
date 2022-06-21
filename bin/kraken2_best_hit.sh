@@ -209,7 +209,7 @@ elif [[ "${list_file}" = *"/kraken2_asmbld/"* ]]; then
 elif [[ "${list_file}" = *"/kraken2_asmbld_weighted/"* ]]; then
 	echo "doing weighted"
 	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
-	file_reads=$(head -n 14 "${file_reads}" | tail -n1 | cut -d$'\t' -f2)
+	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
 	# Calculates percent of classified reads as 100*classified reads/contigs
 	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	#echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
