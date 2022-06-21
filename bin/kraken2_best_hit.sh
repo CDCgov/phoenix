@@ -190,7 +190,7 @@ done < "${list_file}"
 
 # Calculate % of unclassified reads/contigs using sum of highest taxon level reads against total reads found in QC counts
 # Grabs total possible reads from preQC counts if kraken was used on reads (pre assembly)
-if [[ "${list_file}" = *"/kraken2_trimd/"* ]]; then
+if [[ "${list_file}" = *"kraken2_trimd.report.txt" ]]; then
 	echo "doing trimd"
 #	r1s=$(tail -n 1 "${read_file}" | cut -d'	' -f2)
 #	r2s=$(tail -n 1 "${read_file}" | cut -d'	' -f4)
@@ -200,13 +200,13 @@ if [[ "${list_file}" = *"/kraken2_trimd/"* ]]; then
 	# Calculates the percent of unclassified reads/contigs using the total possible reads
 #	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 # Grabs total possible bases from contigs in trimmed assembly (post assembly, using weighted kraken output)
-elif [[ "${list_file}" = *"/kraken2_asmbld/"* ]]; then
+elif [[ "${list_file}" = *"kraken2_asmbld.report.txt" ]]; then
 	echo "doing asmbld"
 	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
 #	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
 	# Calculates percent of classified reads as 100*classified reads/contigs
 #	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-elif [[ "${list_file}" = *"/kraken2_asmbld_weighted/"* ]]; then
+elif [[ "${list_file}" = *".kraken2_wtasmbld.report.txt" ]]; then
 	echo "doing weighted"
 	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
 #	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
