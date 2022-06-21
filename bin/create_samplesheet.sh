@@ -2,7 +2,7 @@
 
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 script=$SCRIPT_DIR/create_samplesheet.pl
-echo "sample,r1,r2"
+echo "sample,fastq_1,fastq_2"
 
 for VAR in "$@"
 do
