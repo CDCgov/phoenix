@@ -9,6 +9,11 @@ For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/
 
 ## Quick Start
 
+Make sure you are in the 1.0.0-dev branch:
+
+![Changing_Branch](https://github.com/CDCgov/phoenix/blob/master/images/Changing_Branch.PNG)
+
+
 1. Install  [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`).
 **This will require a version of Anaconda to be installed on your system.**
 
