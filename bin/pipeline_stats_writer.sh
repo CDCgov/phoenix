@@ -641,30 +641,27 @@ if [[ "${run_type}" == "all" ]]; then
  # Quick separate check for contamination by finding # of species above ${contamination_threshold} in list file from kraken2
 if [[ -s "${kraken2_asmbld_report}" ]]; then
 	number_of_species=0
-	root=0
- 	unclass=0
- 	total=0
+	#echo "${kraken2_asmbld_report}" >> "${sample_name}.synopsis"
  	while IFS= read -r line; do
  		arrLine=(${line})
  		# First element in array is the percent of reads identified as the current taxa
-    		percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-   		percent=${arrLine[0]}
+    		percent=${arrLine[0]}
    		percent_integer=$(echo "${percent}" | cut -d'.' -f1)
    		# 3rd element is the taxon level classification
    		classification=${arrLine[3]}
-   		#echo "${percent_integer} - ${contamination}"
+   		#printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
    		if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
    			number_of_species=$(( number_of_species + 1 ))
-        		#echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+        		#printf "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})" >> "${sample_name}.synopsis"
    		fi
  	done < "${kraken2_asmbld_report}"
-
+	echo "${number_of_species}"
  	if [[ $number_of_species -gt 1 ]]; then
  		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
  		if [[ "${status}" == "SUCCESS" ]]; then
  			status="ALERT"
  		fi
- 	elif [[ "${number_of_species}" -eq 1 ]]; then
+ 	elif [[ ${number_of_species} -eq 1 ]]; then
  		:
  	else
  		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No Genera have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
