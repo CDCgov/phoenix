@@ -18,8 +18,8 @@ process GENERATE_PIPELINE_STATS {
     path(gamma_replicon), \
     path(quast_report), \
     path(busco_specific_short_summary), \
-    path(krona_asmbld), \
     path(kraken2_asmbld_report), \
+    path(krona_asmbld), \
     path(kraken2_asmbled_summary), \
     path(krona_weighted), \
     path(kraken2_weighted_report), \
