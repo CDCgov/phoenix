@@ -3,6 +3,7 @@
 <!-- [![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download)](https://github.com/CDCgov/phoenix/releases) -->
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
+[![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
 
 🚨🚧 **This software is currently under active development and states not part of the beta testing are advised to use with caution as it is likely to change often until there is an offical stable release (estimated early Sep 2022).** 🚧🚨
@@ -13,8 +14,7 @@ For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/
 
 Make sure you are in the 1.0.0-dev branch:
 
-![Changing_Branch](https://github.com/CDCgov/phoenix/blob/master/images/Changing_Branch.PNG)
-
+![Changing_Branch](https://github.com/CDCgov/phoenix/blob/main/images/Changing_Branch.PNG)
 
 1. Install  [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`).
 **This will require a version of Anaconda to be installed on your system.**
