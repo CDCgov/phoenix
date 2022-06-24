@@ -39,6 +39,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
 include { SPADES_LOCAL                   } from '../modules/local/spades'
+include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { BUSCO                          } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
@@ -102,6 +103,11 @@ workflow PHOENIX {
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
+    //unzip any zipped databases
+    ASSET_CHECK (
+        params.path2db
+    )
+    
     // Remove PhiX reads
     BBMAP_BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
