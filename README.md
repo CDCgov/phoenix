@@ -16,58 +16,54 @@ Make sure you are in the 1.0.0-dev branch:
 
 ![Changing_Branch](https://github.com/CDCgov/phoenix/blob/main/images/Changing_Branch.PNG)
 
-1. Install  [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`).
-**This will require a version of Anaconda to be installed on your system.**
+1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`). **This will require a version of Anaconda to be installed on your system.**
 
-   ```console
-   mamba create -n nextflow -c bioconda -c conda-forge nf-core=2.2 nextflow=21.10.6 git=2.35.0 openjdk=8.0.312 graphviz
-   ```
+    ```console
+    mamba create -n nextflow -c bioconda -c conda-forge nf-core=2.2 nextflow=21.10.6 git=2.35.0 openjdk=8.0.312 graphviz
+    ```
 
 2. Install [`Docker`](https://docs.docker.com/engine/installation/) or [`Singularity`](https://www.sylabs.io/guides/3.0/user-guide/) for full pipeline reproducibility.
 
-3. [Download the pipeline](https://github.com/cdcent/Quaisar-H/wiki/Dependencies-and-Install#install-quaisar-h).
-Clone the PHoeNIx Repository from GitHub.
+3. Clone the PHoeNIx Repository from GitHub.
 
     ```console
     git clone https://github.com/CDCgov/phoenix
     ```
 
-4. Download the `hash.k2d` file needed for kraken2 from the CDC sharefile link. At this time this is not downloadable
-via command line . You will need to downloaded the file and place it into into the databases directory, `cd phoenix/assets/databases`. 
+4. Unzip mash sketch in assets folder:
 
-5. Activate the nextflow environment with:  
+   ```console
+   gunzip phoenix/assets/databases/REFSEQ_20210820_Bacteria_complete.msh.gz
+   ```
+
+5. Email HAISeq@cdc.gov, with the subject line "krakenDB invite request" to request access to the sharefile link and provide the email address to send invite to.
+
+6. Download the `hash.k2d` file needed for kraken2 from the CDC sharefile link. At this time this is not downloadable via command line . You will need to downloaded the file and place it into into the databases directory, `$PATH_TO_CLONED_REPO/assets/databases`.
+
+Here the `$PATH_TO_CLONED_REPO` needs to be changed to your correct path. 
+
+7. Activate the nextflow environment with:  
 
    ```console
    conda activate nextflow
    ```
 
-6. Unzip mash sketch in assets folder:
+8. Run PHoeNIx on a test sample loaded with the package with a single command:
 
     ```console
-    gunzip phoenix/assets/databases/REFSEQ_20210820_Bacteria_complete.msh.gz
+    nextflow run $PATH_TO_CLONED_REPO/phoenix/main.nf -profile <singularity/docker/custom>,test 
     ```
 
-7. Run PHoeNIx on a minimal dataset with a single command:
+Note that we aren't cloning (downloading) the repo with this command just pulling directly. See [below](https://github.com/cdcent/phoenix/wiki/Dependencies-and-Install#install-phoenix) for how to clone and have the software locally. 
 
-    ```console
-    nextflow run phoenix/main.nf -profile singularity,test 
-    ```
-
-    Note that some form of configuration will be needed so that Nextflow knows how to fetch the required software. This is usually done in the form of a config profile (`YOURPROFILE` in the example command above). You can chain multiple config profiles in a comma-separated string.
-
-    > * The pipeline comes with config profiles called `docker`, `singularity` and `conda` which instruct the pipeline to use the named tool for software management. For example, `-profile test,docker`.
+    > * The pipeline comes with config profiles called `docker` and `singularity` which instruct the pipeline to use the named tool for software management. For example, `-profile test,docker`.
     > * Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
-    > * If you are using `singularity` and are persistently observing issues downloading Singularity images directly due to timeout or network issues, then you can use the `--singularity_pull_docker_container` parameter to pull and convert the Docker image instead. Alternatively, you can use the [`nf-core download`](https://nf-co.re/tools/#downloading-pipelines-for-offline-use) command to download images first, before running the pipeline. Setting the [`NXF_SINGULARITY_CACHEDIR` or `singularity.cacheDir`](https://www.nextflow.io/docs/latest/singularity.html?#singularity-docker-hub) Nextflow options enables you to store and re-use the images from a central location for future pipeline runs.
-    > * If you are using `conda`, it is highly recommended to use the [`NXF_CONDA_CACHEDIR` or `conda.cacheDir`](https://www.nextflow.io/docs/latest/conda.html) settings to store the environments in a central location for future pipeline runs.
+ 
 
-4. Download [mini Kraken2 V2 database](ftp://ftp.ccb.jhu.edu/pub/data/kraken2_dbs/old/minikraken2_v2_8GB_201904.tgz) and add the path to `k2db` parameter in the [nextflow.config](https://github.com/DHQP/QuAISAR_Nextflow/blob/ffbaa13eac72a586568010a7e8bec2a3e9cb2c01/nextflow.config#L30) file. This is an 8GB folder so depending on your internet speed this could take awhile. Remember to unzip this folder to allow the program access to the files inside you can unzip it with `tar -xvzf minikraken2_v2_8GB_201904.tgz`. 
-
-5. Download `REFSEQ_20210820_Bacteria_complete.msh` from DHQPs FTP site. 
-
-6. Start running your own analysis with a [samplesheet](https://github.com/cdcent/phoenix/wiki/Running-PHoeNIx#samplesheet-input)!
+9. Start running your own analysis with a [samplesheet](https://github.com/cdcent/phoenix/wiki/Running-PHoeNIx#samplesheet-input)!
 
     ```console
-    nextflow run CDCgov/phoenix -profile <docker/singularity/conda/institute> --input samplesheet.csv
+    nextflow run phoenix/main.nf -profile <singularity/docker/custom> --input <path_to_samplesheet.csv>
     ```
     
 # CDCgov GitHub Organization Open Source Project
