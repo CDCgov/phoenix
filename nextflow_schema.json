@@ -217,5 +217,87 @@
         {
             "$ref": "#/definitions/generic_options"
         }
-    ]
+    ],
+    "properties": {
+        "phred": {
+            "type": "integer",
+            "default": 33
+        },
+        "minlength": {
+            "type": "integer",
+            "default": 500
+        },
+        "path2db": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases"
+        },
+        "bbdukdb": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/phiX.fasta"
+        },
+        "mash_sketch": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/REFSEQ_20210820_Bacteria_complete.msh"
+        },
+        "refseq_fasta_database": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/Ref_Seq"
+        },
+        "ncbi_assembly_stats": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/NCBI_Assembly_stats_20210819.txt"
+        },
+        "taxa": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/taxes.csv"
+        },
+        "ktaxmap": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/ktax_map.k2"
+        },
+        "ardb": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/ResGANNCBI_20210507_srst2.fasta"
+        },
+        "k2db": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/hash.k2d"
+        },
+        "gamdbpf": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/PF-Replicons_20220414.fasta"
+        },
+        "hvgamdb": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/HyperVirulence_20220414.fasta"
+        },
+        "busco_config": {
+            "type": "string",
+            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/conf/modules.config"
+        },
+        "publish_dir_mode": {
+            "type": "string",
+            "default": "copy"
+        },
+        "singularity_pull_docker_container": {
+            "type": "string",
+            "default": "false"
+        },
+        "prokka_files": {
+            "type": "string",
+            "default": "./results/prokka"
+        },
+        "genome": {
+            "type": "string",
+            "default": "R64-1-1"
+        },
+        "fanireads": {
+            "type": "string",
+            "default": "./results/assemblies500plus"
+        },
+        "fasta": {
+            "type": "string",
+            "default": null
+        }
+    }
 }
