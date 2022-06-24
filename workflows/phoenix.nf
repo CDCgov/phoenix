@@ -263,29 +263,6 @@ workflow PHOENIX {
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
 
-    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
-    line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc -> [[id:meta.id], fastp_total_qc]}\
-    .join(MLST.out.tsv.map{                                          meta, tsv            -> [[id:meta.id], tsv]},        by: [0])\
-    .join(GAMMA_HV.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},      by: [0])\
-    .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},      by: [0])\
-    .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]}, by: [0])\
-    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},      by: [0])
-
-    // Generate summary per sample
-    CREATE_SUMMARY_LINE(
-        line_summary_ch
-    )
-    ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
-
-    // combine all line summaries into one channel
-    all_summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()
-
-    // Combining sample summaries into final report
-    GATHER_SUMMARY_LINES (
-        all_summaries_ch
-    )
-    ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
-
     // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
     pipeline_stats_ch = FASTP_TRIMD.out.reads.map{        meta, reads                        -> [[id:meta.id],reads]}\
     .join(GATHERING_READ_QC_STATS.out.fastp_raw_qc.map{   meta, fastp_raw_qc                 -> [[id:meta.id],fastp_raw_qc]},                 by: [0])\
@@ -315,6 +292,30 @@ workflow PHOENIX {
     GENERATE_PIPELINE_STATS (
         pipeline_stats_ch
     )
+
+    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
+    line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc -> [[id:meta.id], fastp_total_qc]}\
+    .join(MLST.out.tsv.map{                                          meta, tsv            -> [[id:meta.id], tsv]},            by: [0])\
+    .join(GAMMA_HV.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
+    .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
+    .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]},     by: [0])\
+    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},          by: [0])\
+    .join(GENERATE_PIPELINE_STATS.out.pipeline_stats.map{            meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])
+
+    // Generate summary per sample
+    CREATE_SUMMARY_LINE(
+        line_summary_ch
+    )
+    ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
+
+    // combine all line summaries into one channel
+    all_summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()
+
+    // Combining sample summaries into final report
+    GATHER_SUMMARY_LINES (
+        all_summaries_ch
+    )
+    ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
     // Collecting the software versions
     CUSTOM_DUMPSOFTWAREVERSIONS (

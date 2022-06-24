@@ -9,7 +9,7 @@ getcontext().prec = 4
 import argparse
 
 ##Makes a summary Excel file when given a run folder from PhoeNiX
-##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -r Ratio_File -m MLST_File -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File -o Out_File
+##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -r Ratio_File -m MLST_File -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File  -s synopsis_file -o Out_File
 ## Written by Rich Stanton (njr5@cdc.gov)
 
 def parseArgs(args=None):
@@ -21,6 +21,7 @@ def parseArgs(args=None):
     parser.add_argument('-q', '--quast', required=True, help='QUAST file')
     parser.add_argument('-a', '--ar', required=True, help='AR GAMMA file')
     parser.add_argument('-v', '--vir', required=True, help='hypervirulence GAMMA file')
+    parser.add_argument('-s', '--stats', dest="stats", required=True, help='Pipeline Stats file synopsis file')
     parser.add_argument('-o', '--out', required=True, help='output file name')
     return parser.parse_args()
 
@@ -185,7 +186,24 @@ def HV_Genes(input_gamma):
     HV.sort()
     return HV
 
-def Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv):
+def QC_Pass(stats):
+    f = open(stats, 'r')
+    status = []
+    reason = []
+    String1 = f.readline()
+    for line in f:
+        print(line)
+        if line.startswith("Auto Pass/FAIL"):
+            line_status = line.split(":")[1]
+            line_reason = line.split(":")[2]
+            status.append(line_status.strip())
+            reason.append(line_reason.strip())
+    f.close()
+    status= str(status[0])
+    reason = str(reason[0])
+    return status, reason
+
+def Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats):
     try:
         Coverage = Trim_Coverage(trimmed_counts, ratio_file)
     except:
@@ -233,14 +251,23 @@ def Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar
         HV = ','.join(HV)
     except:
         HV = 'Unknown'
-    Line = ID + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + Scheme + '\t' + ST + '\t'  + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV
+    try:
+        QC_Outcome, Reason = QC_Pass(stats)
+    except:
+        QC_Outcome = 'Unknown'
+        Reason = ""
+    Line = ID + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + QC_Outcome + '\t' + Reason
     return Line
 
-def Isolate_Line_File(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file):
-    Line = Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv)
+def Isolate_Line_File(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats):
+    Line = Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats)
     Out = open(out_file, 'w')
     Out.write(Line)
     Out.close()
 
-args = parseArgs()
-Isolate_Line_File(args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out)
+def main():
+    args = parseArgs()
+    Isolate_Line_File(args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats)
+
+if __name__ == '__main__':
+    main()

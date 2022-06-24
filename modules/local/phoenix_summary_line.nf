@@ -13,8 +13,9 @@ process CREATE_SUMMARY_LINE {
     path(hypervirulence_gamma_file), \
     path(ar_gamma_file), \
     path(quast_report), \
-    path(ratio_file)
-
+    path(ratio_file), \
+    path(synopsis)
+    
     output:
     path '*_summaryline.tsv'           , emit: line_summary
     path "versions.yml"                , emit: versions
@@ -30,6 +31,7 @@ process CREATE_SUMMARY_LINE {
         -r $ratio_file \\
         -m $mlst_file \\
         -n ${prefix} \\
+        -s $synopsis \\
         -o ${prefix}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml
