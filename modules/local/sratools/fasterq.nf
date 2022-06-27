@@ -30,16 +30,9 @@ process SRATOOLS_FASTERQDUMP {
         --threads $task.cpus \\
         ${sra.name}
 
-    pigz \\
-        $args2 \\
-        --no-name \\
-        --processes $task.cpus \\
-        *.fastq
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         sratools: \$(fasterq-dump --version 2>&1 | grep -Eo '[0-9.]+')
-        pigz: \$( pigz --version 2>&1 | sed 's/pigz //g' )
     END_VERSIONS
     """
 }
