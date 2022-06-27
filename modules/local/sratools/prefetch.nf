@@ -21,5 +21,10 @@ process SRATOOLS_PREFETCH {
     script:
     """
     prefetch --option-file $id
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        sratools: \$(prefetch --version 2>&1 | grep -Eo '[0-9.]+')
+    END_VERSIONS
     """
 }
