@@ -75,6 +75,7 @@ include { CREATE_SUMMARY_LINE                               } from '../modules/l
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
 include { SRATOOLS_PREFETCH                                 } from '../modules/local/sratools/prefetch'
+include { SRATOOLS_FASTERQDUMP                              } from '../modules/local/sratools/fasterq'
 /*
 ========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
@@ -129,6 +130,10 @@ workflow SRA_PHOENIX {
         params.new_samplesheet
     )
 
+    SRATOOLS_FASTERQDUMP (
+        SRATOOLS_PREFETCH.out.sra
+    )
+    
     /*INPUT_CHECK (
         ch_input
     )
