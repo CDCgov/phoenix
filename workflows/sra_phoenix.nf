@@ -74,7 +74,7 @@ include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/l
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
-
+include { SRATOOLS_PREFETCH                                 } from '../modules/local/sratools/prefetch'
 /*
 ========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
@@ -92,7 +92,6 @@ include { MLST                                                    } from '../mod
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
-include { SRATOOLS_PREFETCH                                       } from '../modules/nf-core/modules/sratools/prefetch/main'
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -126,16 +125,17 @@ workflow SRA_PHOENIX {
     */
     // Call in reads
 
-    INPUT_CHECK (
+    SRATOOLS_PREFETCH (
+        params.new_samplesheet
+    )
+
+    /*INPUT_CHECK (
         ch_input
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
-    SRATOOLS_PREFETCH (
-        INPUT_CHECK.out.reads
-    )
 
-    /*// Remove PhiX reads
+    // Remove PhiX reads
     BBMAP_BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
     )
