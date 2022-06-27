@@ -14,12 +14,11 @@ WorkflowPhoenix.initialise(params, log)
 def checkPathParamList = [ params.input, params.multiqc_config ] 
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
-// Check mandatory parameters
+//input on command line
+if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
 
 //input on command line
-if (params.input) { ch_input = file(params.input) } else { exit 1, 'SRA samplesheet/list not specified!' }
-    
-
+//if (!params.input) { exit 1, 'Input samplesheet/list not specified!' }
 /*
 ========================================================================================
     CONFIG FILES
@@ -38,7 +37,9 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
+
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
+include { INPUT_FORMAT                                      } from '../modules/local/input_process'
 include { GET_FASTQ                                         } from '../modules/local/get_fastq'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_TRIMD                  } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD                 } from '../modules/local/kraken2'
@@ -91,7 +92,7 @@ include { MLST                                                    } from '../mod
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
-
+include { SRATOOLS_PREFETCH                                       } from '../modules/nf-core/modules/sratools/prefetch/main'
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -105,18 +106,36 @@ workflow SRA_PHOENIX {
 
     ch_versions     = Channel.empty() // Used to collect the software versions
     spades_ch       = Channel.empty() // Used later to make new channel with single_end: true when scaffolds are created
+    //ch_sras        = Channel
+                       // .fromSRA(params.input)
+    //ch_input        = Channel
+                        //.fromPath(params.input)
+                        //.splitCsv(header: true)
+                        // row is a list object
+                       // .view { row -> "${row.sample},${row.fastq_1},${row.fastq_2}" }
+
 
     //
     // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
     //
 
+    //create samplesheet from SRA ids
+    /*INPUT_FORMAT (
+        ch_sras
+    )
+    */
     // Call in reads
+
     INPUT_CHECK (
         ch_input
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
-    // Remove PhiX reads
+    SRATOOLS_PREFETCH (
+        INPUT_CHECK.out.reads
+    )
+
+    /*// Remove PhiX reads
     BBMAP_BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
     )
@@ -432,7 +451,7 @@ workflow SRA_PHOENIX {
         ch_multiqc_files.collect()
     )
     multiqc_report = MULTIQC.out.report.toList()
-    ch_versions    = ch_versions.mix(MULTIQC.out.versions)
+    ch_versions    = ch_versions.mix(MULTIQC.out.versions)*/
 }
 
 /*
