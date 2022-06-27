@@ -20,7 +20,7 @@ process SRATOOLS_PREFETCH {
 
     script:
     """
-    prefetch --option-file --type fastq $id 
+    prefetch --option-file $id --output-directory ${baseDir}/results
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
