@@ -33,7 +33,7 @@ WorkflowMain.initialise(workflow, params, log)
 */
 
 include { PHOENIX } from './workflows/phoenix'
-
+include { SRA_PHOENIX } from './workflows/sra_phoenix'
 //
 // WORKFLOW: Run main nf-core/quaisar analysis pipeline
 //
@@ -51,8 +51,8 @@ workflow CDC_PHOENIX {
 // WORKFLOW: Execute a single named workflow for the pipeline
 // See: https://github.com/nf-core/rnaseq/issues/619
 //
-workflow {
-    CDC_PHOENIX ()
+workflow SRA_LIST {
+    SRA_PHOENIX ()
 }
 
 /*
