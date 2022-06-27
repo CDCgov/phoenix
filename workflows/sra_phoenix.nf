@@ -134,7 +134,8 @@ workflow SRA_PHOENIX {
     SRATOOLS_FASTERQDUMP (
         SRATOOLS_PREFETCH.out.sra
     )
-
+    ch_versions = ch_versions.mix(SRATOOLS_FASTERQDUMP.out.versions)
+    
     /*INPUT_CHECK (
         ch_input
     )
