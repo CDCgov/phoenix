@@ -1,5 +1,5 @@
 process SRATOOLS_FASTERQDUMP {
-    tag "$id"
+    tag "$sra"
     label 'process_medium'
 
     conda (params.enable_conda ? 'bioconda::sra-tools=2.11.0 conda-forge::pigz=2.6' : null)
@@ -20,12 +20,12 @@ process SRATOOLS_FASTERQDUMP {
     script:
     def args = task.ext.args ?: ''
     def args2 = task.ext.args2 ?: ''
-
+    
     """
     fasterq-dump \\
         $args \\
         --threads $task.cpus \\
-        ${sra.name}
+        ${sra.name} 
 
     pigz \\
         $args2 \\
