@@ -130,13 +130,14 @@ workflow SRA_PHOENIX {
         params.new_samplesheet
     )
     ch_versions = ch_versions.mix(SRATOOLS_PREFETCH.out.versions)
+    SRATOOLS_PREFETCH.out.sra.view()
 
     SRATOOLS_FASTERQDUMP (
-        SRATOOLS_PREFETCH.out.sra
+        params.results
     )
     ch_versions = ch_versions.mix(SRATOOLS_FASTERQDUMP.out.versions)
-    
-    /*INPUT_CHECK (
+/*
+    INPUT_CHECK (
         ch_input
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
