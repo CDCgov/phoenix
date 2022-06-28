@@ -12,7 +12,8 @@ process SRATOOLS_PREFETCH {
     
 
     output:
-    path(id)                 , emit: sra
+    path 'tmp_inputs/*'             , emit: sra
+    path 'sra_samples.csv'          , emit: samplesheet
     path 'versions.yml'      , emit: versions
 
     when:
@@ -20,7 +21,11 @@ process SRATOOLS_PREFETCH {
 
     script:
     """
-    prefetch --option-file $id --output-directory ${baseDir}/results
+    TMP_INPUTS=tmp_inputs
+    mkdir "\$TMP_INPUTS"
+
+    # fetch sras
+    prefetch --option-file $id --output-directory "\$TMP_INPUTS"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
