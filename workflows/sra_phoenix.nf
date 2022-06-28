@@ -106,8 +106,7 @@ workflow SRA_PHOENIX {
 
     ch_versions     = Channel.empty() // Used to collect the software versions
     spades_ch       = Channel.empty() // Used later to make new channel with single_end: true when scaffolds are created
-    //ch_sras        = Channel
-                       // .fromSRA(params.input)
+    
     //ch_input        = Channel
                         //.fromPath(params.input)
                         //.splitCsv(header: true)
@@ -131,10 +130,17 @@ workflow SRA_PHOENIX {
     )
     ch_versions = ch_versions.mix(SRATOOLS_PREFETCH.out.versions)
 
+    
+    ch_sras        = Channel
+                    .fromPath( params.results )
+                    .view()
     SRATOOLS_FASTERQDUMP (
-        params.results
+        SRATOOLS_PREFETCH.out.sra
     )
     ch_versions = ch_versions.mix(SRATOOLS_FASTERQDUMP.out.versions)
+    
+    
+    
 /*
     INPUT_CHECK (
         ch_input
