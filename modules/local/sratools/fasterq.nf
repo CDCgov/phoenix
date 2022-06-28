@@ -11,7 +11,7 @@ process SRATOOLS_FASTERQDUMP {
     path(sra)
 
     output:
-    path(output)                 , emit: reads
+    path "*.fastq"                 , emit: reads
     path "versions.yml"          , emit: versions
 
     when:
@@ -20,23 +20,20 @@ process SRATOOLS_FASTERQDUMP {
     script:
     def args = task.ext.args ?: ''
     def args2 = task.ext.args2 ?: ''
-    
+    def sra_frmtd = "${sra} | rev | cut -c5- | rev"
     """
-    fasterq-dump \\
-        $args \\
-        --threads $task.cpus \\
-        ${sra.name} 
-
-    pigz \\
-        $args2 \\
-        --no-name \\
-        --processes $task.cpus \\
-        *.fastq
-
+    for SRAFILE in $sra
+    do
+        INPUT=\$(echo "\$SRAFILE")
+        fasterq-dump \\
+            $args \\
+            --threads $task.cpus \\
+            --split-files \$INPUT 
+    done
+    
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         sratools: \$(fasterq-dump --version 2>&1 | grep -Eo '[0-9.]+')
-        pigz: \$( pigz --version 2>&1 | sed 's/pigz //g' )
     END_VERSIONS
     """
 }
