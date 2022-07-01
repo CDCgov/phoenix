@@ -17,8 +17,6 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 //input on command line
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
 
-//input on command line
-//if (!params.input) { exit 1, 'Input samplesheet/list not specified!' }
 /*
 ========================================================================================
     CONFIG FILES
@@ -39,7 +37,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
-include { INPUT_FORMAT                                      } from '../modules/local/input_process'
 include { GET_FASTQ                                         } from '../modules/local/get_fastq'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_TRIMD                  } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD                 } from '../modules/local/kraken2'
@@ -74,8 +71,7 @@ include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/l
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
-include { SRATOOLS_PREFETCH                                 } from '../modules/local/sratools/prefetch'
-include { SRATOOLS_FASTERQDUMP                              } from '../modules/local/sratools/fasterq'
+include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
 /*
 ========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
@@ -107,53 +103,23 @@ workflow SRA_PHOENIX {
     ch_versions     = Channel.empty() // Used to collect the software versions
     spades_ch       = Channel.empty() // Used later to make new channel with single_end: true when scaffolds are created
     
-    //ch_input        = Channel
-                        //.fromPath(params.input)
-                        //.splitCsv(header: true)
-                        // row is a list object
-                       // .view { row -> "${row.sample},${row.fastq_1},${row.fastq_2}" }
-
-
-    //
-    // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
-    //
-
-    //create samplesheet from SRA ids
-    /*INPUT_FORMAT (
-        ch_sras
-    )
-    */
-    // Call in reads
-
-    SRATOOLS_PREFETCH (
+    GET_SRA (
         params.new_samplesheet
     )
-    ch_versions = ch_versions.mix(SRATOOLS_PREFETCH.out.versions)
+    ch_versions = ch_versions.mix(GET_SRA.out.versions)
 
-    
-    ch_sras        = Channel
-                    .fromPath( params.results )
-                    .view()
-    SRATOOLS_FASTERQDUMP (
-        SRATOOLS_PREFETCH.out.sra
-    )
-    ch_versions = ch_versions.mix(SRATOOLS_FASTERQDUMP.out.versions)
-    
-    
-    
-/*
     INPUT_CHECK (
-        ch_input
+        GET_SRA.out.samplesheet
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
-
+    
 
     // Remove PhiX reads
     BBMAP_BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
     )
     ch_versions = ch_versions.mix(BBMAP_BBDUK.out.versions)
-
+/*
     // Trim and remove low quality reads
     FASTP_TRIMD (
         BBMAP_BBDUK.out.reads, true, false
