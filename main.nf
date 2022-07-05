@@ -33,7 +33,7 @@ WorkflowMain.initialise(workflow, params, log)
 */
 
 include { PHOENIX } from './workflows/phoenix'
-include { SRA_PHOENIX } from './workflows/sra_phoenix'
+
 //
 // WORKFLOW: Run main nf-core/quaisar analysis pipeline
 //
