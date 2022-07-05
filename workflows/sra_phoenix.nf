@@ -37,7 +37,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
-include { GET_FASTQ                                         } from '../modules/local/get_fastq'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_TRIMD                  } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD                 } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD_WEIGHTED        } from '../modules/local/kraken2'
@@ -72,6 +71,7 @@ include { CREATE_SUMMARY_LINE                               } from '../modules/l
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
 include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
+
 /*
 ========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
@@ -103,11 +103,13 @@ workflow SRA_PHOENIX {
     ch_versions     = Channel.empty() // Used to collect the software versions
     spades_ch       = Channel.empty() // Used later to make new channel with single_end: true when scaffolds are created
     
+    //fetch sra files, their associated fastq files, format fastq names, and create samplesheet for sra samples
     GET_SRA (
         params.new_samplesheet
     )
     ch_versions = ch_versions.mix(GET_SRA.out.versions)
 
+    //pass new 
     INPUT_CHECK (
         GET_SRA.out.samplesheet
     )
@@ -119,7 +121,7 @@ workflow SRA_PHOENIX {
         INPUT_CHECK.out.reads, params.bbdukdb
     )
     ch_versions = ch_versions.mix(BBMAP_BBDUK.out.versions)
-/*
+
     // Trim and remove low quality reads
     FASTP_TRIMD (
         BBMAP_BBDUK.out.reads, true, false
@@ -145,6 +147,7 @@ workflow SRA_PHOENIX {
         FASTP_TRIMD.out.reads
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
+
 
     // Idenitifying AR genes in trimmed reads
     SRST2_TRIMD_AR (
@@ -430,7 +433,7 @@ workflow SRA_PHOENIX {
         ch_multiqc_files.collect()
     )
     multiqc_report = MULTIQC.out.report.toList()
-    ch_versions    = ch_versions.mix(MULTIQC.out.versions)*/
+    ch_versions    = ch_versions.mix(MULTIQC.out.versions)
 }
 
 /*
