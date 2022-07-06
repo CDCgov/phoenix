@@ -26,16 +26,19 @@ workflow GET_SRA {
     )
     ch_versions = ch_versions.mix(SRATOOLS_FASTERQDUMP.out.versions)
 
+    //Rename SRAs with input declared to stop immediate parallel processing
+    RENAME_SRA_FASTA ( 
+        params.results, SRATOOLS_FASTERQDUMP.out.versions
+    )
+    ch_versions = ch_versions.mix(RENAME_SRA_FASTA.out.versions)
+    
     //force delay parallelization to allow fastqs to be sent to results folder
     SRA_SAMPLESHEET_CHECK (
-        SRATOOLS_PREFETCH.out.samplesheet, SRATOOLS_FASTERQDUMP.out.versions
+        SRATOOLS_PREFETCH.out.samplesheet, RENAME_SRA_FASTA.out.versions
     )
     ch_versions = ch_versions.mix(SRA_SAMPLESHEET_CHECK.out.versions)
 
-    //Rename SRAs with input declared to stop immediate parallel processing
-    RENAME_SRA_FASTA ( 
-        SRATOOLS_FASTERQDUMP.out.versions
-    )
+    
 
     // Collecting the software versions
     CUSTOM_DUMPSOFTWAREVERSIONS (
