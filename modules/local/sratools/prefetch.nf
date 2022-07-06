@@ -14,7 +14,7 @@ process SRATOOLS_PREFETCH {
     output:
     path 'tmp_inputs/*'             , emit: sra
     path 'sra_samples.csv'          , emit: samplesheet
-    path 'versions.yml'      , emit: versions
+    path 'versions.yml'             , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
