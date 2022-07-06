@@ -1,1 +1,0 @@
-2022-07-06 16:00:54	-	confident_kirch	-	0fa5607d53760f50dbd57532367de4d6	46c19996-7bfa-438d-9dcd-a00f9c69efb9	nextflow run main.nf -profile singularity --input assets/sra_samples.csv -entry SRA_LIST
