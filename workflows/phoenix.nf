@@ -41,7 +41,6 @@ include { INPUT_CHECK                    } from '../subworkflows/local/input_che
 include { SPADES_LOCAL                   } from '../modules/local/spades'
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
-include { BUSCO                          } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
@@ -209,12 +208,6 @@ workflow PHOENIX {
     )
     ch_versions = ch_versions.mix(QUAST.out.versions)
 
-    // Checking single copy genes for assembly completeness
-    BUSCO (
-        BBMAP_REFORMAT.out.reads, 'auto', [], []
-    )
-    ch_versions = ch_versions.mix(BUSCO.out.versions)
-
     // Checking for Contamination in assembly creating krona plots and best hit files
     KRAKEN2_ASMBLD (
         BBMAP_REFORMAT.out.reads,"asmbld", [], QUAST.out.report_tsv
@@ -290,7 +283,6 @@ workflow PHOENIX {
     .join(GAMMA_AR.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
     .join(GAMMA_PF.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
     .join(QUAST.out.report_tsv.map{                       meta, report_tsv                   -> [[id:meta.id],report_tsv]},                   by: [0])\
-    .join(BUSCO.out.short_summaries_specific_txt.map{     meta, short_summaries_specific_txt -> [[id:meta.id],short_summaries_specific_txt]}, by: [0])\
     .join(KRAKEN2_ASMBLD.out.report.map{                  meta, report                       -> [[id:meta.id],report]},                       by: [0])\
     .join(KRAKEN2_ASMBLD.out.krona_html.map{              meta, html                         -> [[id:meta.id],html]},                         by: [0])\
     .join(KRAKEN2_ASMBLD.out.k2_bh_summary.map{           meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
