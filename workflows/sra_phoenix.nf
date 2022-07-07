@@ -217,6 +217,12 @@ workflow SRA_PHOENIX {
     AMRFINDERPLUS_UPDATE ( )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
     
+    // Run AMRFinder
+    AMRFINDERPLUS_RUN (
+        BBMAP_REFORMAT.out.reads , AMRFINDERPLUS_UPDATE.out.db
+    )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
+
     // Getting MLST scheme for taxa
     MLST (
         BBMAP_REFORMAT.out.reads
