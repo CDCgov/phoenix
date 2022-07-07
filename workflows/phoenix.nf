@@ -56,7 +56,6 @@ include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
-include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
 
@@ -139,12 +138,6 @@ workflow PHOENIX {
         FASTP_TRIMD.out.reads
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
-
-    // Checking for Contamination in trimmed reads, creating krona plots and best hit files
-    KRAKEN2_TRIMD (
-        FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
-    )
-    ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
     // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
     passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
@@ -265,9 +258,6 @@ workflow PHOENIX {
     pipeline_stats_ch = FASTP_TRIMD.out.reads.map{        meta, reads                        -> [[id:meta.id],reads]}\
     .join(GATHERING_READ_QC_STATS.out.fastp_raw_qc.map{   meta, fastp_raw_qc                 -> [[id:meta.id],fastp_raw_qc]},                 by: [0])\
     .join(GATHERING_READ_QC_STATS.out.fastp_total_qc.map{ meta, fastp_total_qc               -> [[id:meta.id],fastp_total_qc]},               by: [0])\
-    .join(KRAKEN2_TRIMD.out.report.map{                   meta, report                       -> [[id:meta.id],report]},                       by: [0])\
-    .join(KRAKEN2_TRIMD.out.krona_html.map{               meta, html                         -> [[id:meta.id],html]},                         by: [0])\
-    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{            meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
     .join(RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ meta, renamed_scaffolds            -> [[id:meta.id],renamed_scaffolds]},            by: [0])\
     .join(BBMAP_REFORMAT.out.reads.map{                   meta, reads                        -> [[id:meta.id],reads]},                        by: [0])\
     .join(MLST.out.tsv.map{                               meta, tsv                          -> [[id:meta.id],tsv]},                          by: [0])\
