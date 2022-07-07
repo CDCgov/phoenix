@@ -72,7 +72,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 include { BBMAP_BBDUK                                             } from '../modules/nf-core/modules/bbmap/bbduk/main'
 include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
-include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
 include { MLST                                                    } from '../modules/nf-core/modules/mlst/main'
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
@@ -140,12 +139,6 @@ workflow PHOENIX {
         FASTP_TRIMD.out.reads
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
-
-    // Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_AR (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
-    )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
 
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
@@ -272,7 +265,6 @@ workflow PHOENIX {
     pipeline_stats_ch = FASTP_TRIMD.out.reads.map{        meta, reads                        -> [[id:meta.id],reads]}\
     .join(GATHERING_READ_QC_STATS.out.fastp_raw_qc.map{   meta, fastp_raw_qc                 -> [[id:meta.id],fastp_raw_qc]},                 by: [0])\
     .join(GATHERING_READ_QC_STATS.out.fastp_total_qc.map{ meta, fastp_total_qc               -> [[id:meta.id],fastp_total_qc]},               by: [0])\
-    .join(SRST2_TRIMD_AR.out.fullgene_results.map{        meta, fullgene_results             -> [[id:meta.id],fullgene_results]},             by: [0])\
     .join(KRAKEN2_TRIMD.out.report.map{                   meta, report                       -> [[id:meta.id],report]},                       by: [0])\
     .join(KRAKEN2_TRIMD.out.krona_html.map{               meta, html                         -> [[id:meta.id],html]},                         by: [0])\
     .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{            meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
