@@ -41,7 +41,6 @@ include { INPUT_CHECK                    } from '../subworkflows/local/input_che
 include { SPADES_LOCAL                   } from '../modules/local/spades'
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
-include { BUSCO                          } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
@@ -57,7 +56,6 @@ include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
-include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
 
@@ -73,7 +71,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 include { BBMAP_BBDUK                                             } from '../modules/nf-core/modules/bbmap/bbduk/main'
 include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
-include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
 include { MLST                                                    } from '../modules/nf-core/modules/mlst/main'
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
@@ -142,18 +139,6 @@ workflow PHOENIX {
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
-    // Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_AR (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
-    )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
-
-    // Checking for Contamination in trimmed reads, creating krona plots and best hit files
-    KRAKEN2_TRIMD (
-        FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
-    )
-    ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
-
     // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
     passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
 
@@ -208,12 +193,6 @@ workflow PHOENIX {
         BBMAP_REFORMAT.out.reads
     )
     ch_versions = ch_versions.mix(QUAST.out.versions)
-
-    // Checking single copy genes for assembly completeness
-    BUSCO (
-        BBMAP_REFORMAT.out.reads, 'auto', [], []
-    )
-    ch_versions = ch_versions.mix(BUSCO.out.versions)
 
     // Checking for Contamination in assembly creating krona plots and best hit files
     KRAKEN2_ASMBLD (
@@ -279,10 +258,6 @@ workflow PHOENIX {
     pipeline_stats_ch = FASTP_TRIMD.out.reads.map{        meta, reads                        -> [[id:meta.id],reads]}\
     .join(GATHERING_READ_QC_STATS.out.fastp_raw_qc.map{   meta, fastp_raw_qc                 -> [[id:meta.id],fastp_raw_qc]},                 by: [0])\
     .join(GATHERING_READ_QC_STATS.out.fastp_total_qc.map{ meta, fastp_total_qc               -> [[id:meta.id],fastp_total_qc]},               by: [0])\
-    .join(SRST2_TRIMD_AR.out.fullgene_results.map{        meta, fullgene_results             -> [[id:meta.id],fullgene_results]},             by: [0])\
-    .join(KRAKEN2_TRIMD.out.report.map{                   meta, report                       -> [[id:meta.id],report]},                       by: [0])\
-    .join(KRAKEN2_TRIMD.out.krona_html.map{               meta, html                         -> [[id:meta.id],html]},                         by: [0])\
-    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{            meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
     .join(RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ meta, renamed_scaffolds            -> [[id:meta.id],renamed_scaffolds]},            by: [0])\
     .join(BBMAP_REFORMAT.out.reads.map{                   meta, reads                        -> [[id:meta.id],reads]},                        by: [0])\
     .join(MLST.out.tsv.map{                               meta, tsv                          -> [[id:meta.id],tsv]},                          by: [0])\
@@ -290,7 +265,6 @@ workflow PHOENIX {
     .join(GAMMA_AR.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
     .join(GAMMA_PF.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
     .join(QUAST.out.report_tsv.map{                       meta, report_tsv                   -> [[id:meta.id],report_tsv]},                   by: [0])\
-    .join(BUSCO.out.short_summaries_specific_txt.map{     meta, short_summaries_specific_txt -> [[id:meta.id],short_summaries_specific_txt]}, by: [0])\
     .join(KRAKEN2_ASMBLD.out.report.map{                  meta, report                       -> [[id:meta.id],report]},                       by: [0])\
     .join(KRAKEN2_ASMBLD.out.krona_html.map{              meta, html                         -> [[id:meta.id],html]},                         by: [0])\
     .join(KRAKEN2_ASMBLD.out.k2_bh_summary.map{           meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
