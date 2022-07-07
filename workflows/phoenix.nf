@@ -78,6 +78,8 @@ include { MLST                                                    } from '../mod
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'
+include { AMRFINDERPLUS_RUN                                       } from '../modules/nf-core/modules/amrfinderplus/run/main'
 
 /*
 ========================================================================================
