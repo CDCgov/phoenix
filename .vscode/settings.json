@@ -4,5 +4,8 @@
         "CFPB",
         "ISSO",
         "cybersecurity"
+    ],
+    "githubPullRequests.ignoredPullRequestBranches": [
+        "main"
     ]
 }
