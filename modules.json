@@ -3,6 +3,9 @@
     "homePage": "https://github.com/nf-core/quaisar",
     "repos": {
         "nf-core/modules": {
+            "amrfinderplus/run": {
+                "git_sha": "f0800157544a82ae222931764483331a81812012"
+            },
             "amrfinderplus/update": {
                 "git_sha": "f0800157544a82ae222931764483331a81812012"
             },
