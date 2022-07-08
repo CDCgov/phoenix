@@ -4,24 +4,27 @@ import sys
 import glob
 import os
 import os.path
+import re
 from decimal import *
 getcontext().prec = 4
 import argparse
 
 ##Makes a summary Excel file when given a run folder from PhoeNiX
-##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -r Ratio_File -m MLST_File -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File  -s synopsis_file -o Out_File
+##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -x Taxa_file -r Ratio_File -m MLST_File -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File -k trimd_kraken -s synopsis_file -o Out_File
 ## Written by Rich Stanton (njr5@cdc.gov)
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
     parser.add_argument('-n', '--name', required=True, help='sequence name')
-    parser.add_argument('-t', '--trimmed', required=True, help='QC data file for trimmed reads')
-    parser.add_argument('-r', '--ratio', required=True, help='assembly ratio file')
-    parser.add_argument('-m', '--mlst', required=True, help='MLST file')
-    parser.add_argument('-q', '--quast', required=True, help='QUAST file')
-    parser.add_argument('-a', '--ar', required=True, help='AR GAMMA file')
-    parser.add_argument('-v', '--vir', required=True, help='hypervirulence GAMMA file')
-    parser.add_argument('-s', '--stats', dest="stats", required=True, help='Pipeline Stats file synopsis file')
+    parser.add_argument('-t', '--trimmed', required=False, help='QC data file for trimmed reads')
+    parser.add_argument('-x', '--taxa', dest="taxa", required=False, help='Taxa file')
+    parser.add_argument('-r', '--ratio', required=False, help='assembly ratio file')
+    parser.add_argument('-m', '--mlst', required=False, help='MLST file')
+    parser.add_argument('-q', '--quast', required=False, help='QUAST file')
+    parser.add_argument('-a', '--ar', required=False, help='AR GAMMA file')
+    parser.add_argument('-v', '--vir', required=False, help='hypervirulence GAMMA file')
+    parser.add_argument('-k', '--kraken_trim', dest="trimd_kraken", required=False, help='trimd_summary.txt from kraken2')
+    parser.add_argument('-s', '--stats', dest="stats", required=False, help='Pipeline Stats file synopsis file')
     parser.add_argument('-o', '--out', required=True, help='output file name')
     return parser.parse_args()
 
@@ -187,23 +190,61 @@ def HV_Genes(input_gamma):
     return HV
 
 def QC_Pass(stats):
-    f = open(stats, 'r')
-    status = []
-    reason = []
-    String1 = f.readline()
-    for line in f:
-        print(line)
-        if line.startswith("Auto Pass/FAIL"):
-            line_status = line.split(":")[1]
-            line_reason = line.split(":")[2]
-            status.append(line_status.strip())
-            reason.append(line_reason.strip())
-    f.close()
-    status= str(status[0])
-    reason = str(reason[0])
-    return status, reason
+    with open(stats, 'r') as f:
+        status = []
+        reason = []
+        for line in f:
+            if line.startswith("Auto Pass/FAIL"):
+                line_status = line.split(":")[1]
+                line_reason = line.split(":")[2]
+                status.append(line_status.strip())
+                reason.append(line_reason.strip())
+            if line.startswith("KRAKEN2_CLASSIFY_READS"):
+                read_match = re.findall(r': .*? with', line)[0]
+                read_match = re.sub( ": SUCCESS  : | with", '', read_match)
+                print(read_match)
+            if line.startswith("KRAKEN2_CLASSIFY_WEIGHTED"):
+                scaffold_match = re.findall(r': .*? with', line)[0]
+                scaffold_match = re.sub( ": SUCCESS  : | with", '', scaffold_match)
+        status= str(status[0])
+        reason = str(reason[0])
+    return status, reason, scaffold_match
 
-def Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats):
+def Get_Kraken_reads(stats, trimd_kraken):
+    print("got here")
+    if os.path.exists(stats):
+        print("got here2")
+        with open(stats, 'r') as f:
+            for line in f:
+                if line.startswith("KRAKEN2_CLASSIFY_READS"):
+                    read_match = re.findall(r': .*? with', line)[0]
+                    read_match = re.sub( ": SUCCESS  : | with", '', read_match)
+    else:
+        with open(trimd_kraken, "r"):
+            for line in f:
+                if line.startswith("G:"):
+                    print(line.split(":"))
+                if line.startswith("s:"):
+                    line.split(":")
+
+    return read_match
+
+def Get_Taxa_Source(taxa_file):
+    f = open(taxa_file, 'r')
+    first_line = f.readline()
+    taxa_source = re.findall(r'\(.*?\)', first_line)[0]
+    taxa_source = re.sub( "\(|\)", '', taxa_source)
+    percent_match = re.findall(r'-.*?%ID', first_line)[0]
+    percent_match = re.sub( "-|ID", '', percent_match)
+    f.close()
+    return taxa_source, percent_match
+
+def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken):
+    try:
+        taxa_source, percent_match = Get_Taxa_Source(Taxa)
+    except:
+        taxa_source = 'Unknown'
+        percent_match = 'Unknown'
     try:
         Coverage = Trim_Coverage(trimmed_counts, ratio_file)
     except:
@@ -252,22 +293,29 @@ def Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar
     except:
         HV = 'Unknown'
     try:
-        QC_Outcome, Reason = QC_Pass(stats)
+        QC_Outcome, Reason, scaffold_match = QC_Pass(stats)
     except:
         QC_Outcome = 'Unknown'
         Reason = ""
-    Line = ID + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + QC_Outcome + '\t' + Reason
+        read_match = "Unknown"
+        scaffold_match = "Unknown"
+    try:
+        read_match = Get_Kraken_reads(stats, trimd_kraken)
+    except:
+        read_match = "Unknown"
+    Line = ID + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + '' + '\t' + QC_Outcome + '\t' + Reason
     return Line
 
-def Isolate_Line_File(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats):
-    Line = Isolate_Line(ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats)
+def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken):
+    Line = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken)
     Out = open(out_file, 'w')
     Out.write(Line)
     Out.close()
 
 def main():
     args = parseArgs()
-    Isolate_Line_File(args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats)
+    # if the output file already exists remove it
+    Isolate_Line_File(args.taxa, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken)
 
 if __name__ == '__main__':
     main()

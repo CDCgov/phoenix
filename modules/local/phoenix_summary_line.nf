@@ -14,6 +14,7 @@ process CREATE_SUMMARY_LINE {
     path(ar_gamma_file), \
     path(quast_report), \
     path(ratio_file), \
+    path(taxonomy_file), \
     path(synopsis)
     
     output:
@@ -32,6 +33,7 @@ process CREATE_SUMMARY_LINE {
         -m $mlst_file \\
         -n ${prefix} \\
         -s $synopsis \\
+        -x $taxonomy_file \\
         -o ${prefix}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml

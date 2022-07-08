@@ -52,6 +52,7 @@ include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
+include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
 
 /*
 ========================================================================================
@@ -78,6 +79,7 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 include { BBMAP_BBDUK                                             } from '../modules/nf-core/modules/bbmap/bbduk/main'
 include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
+include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
 include { MLST                                                    } from '../modules/nf-core/modules/mlst/main'
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
@@ -92,11 +94,15 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 // Info required for completion email and summary
 def multiqc_report = []
 
-workflow PHOENIX_EXTERNAL {
+workflow PHOENIX_EXQC {
 
     ch_versions     = Channel.empty() // Used to collect the software versions
 
+    //
     // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
+    //
+
+    // Call in reads
     INPUT_CHECK (
         ch_input
     )
@@ -139,6 +145,12 @@ workflow PHOENIX_EXTERNAL {
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
+    // Idenitifying AR genes in trimmed reads
+    SRST2_TRIMD_AR (
+        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
+    )
+    ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
+
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
         FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
@@ -149,10 +161,10 @@ workflow PHOENIX_EXTERNAL {
         FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
-        [], \
+        SRST2_TRIMD_AR.out.fullgene_results, \
         KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
-        false
+        true
     )
     ch_versions = ch_versions.mix(SPADES_WF.out.versions)
 
@@ -196,6 +208,18 @@ workflow PHOENIX_EXTERNAL {
         BBMAP_REFORMAT.out.reads
     )
     ch_versions = ch_versions.mix(QUAST.out.versions)
+
+    // Checking single copy genes for assembly completeness
+    BUSCO (
+        BBMAP_REFORMAT.out.reads, 'auto', [], []
+    )
+    ch_versions = ch_versions.mix(BUSCO.out.versions)
+
+    // Checking for Contamination in assembly creating krona plots and best hit files
+    KRAKEN2_ASMBLD (
+        BBMAP_REFORMAT.out.reads,"asmbld", [], QUAST.out.report_tsv
+    )
+    ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
     // Creating krona plots and best hit files for weighted assembly
     KRAKEN2_WTASMBLD (
@@ -255,7 +279,7 @@ workflow PHOENIX_EXTERNAL {
         FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
-        [], \
+        SRST2_TRIMD_AR.out.fullgene_results, \
         KRAKEN2_TRIMD.out.report, \
         KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
@@ -266,14 +290,17 @@ workflow PHOENIX_EXTERNAL {
         GAMMA_AR.out.gamma, \
         GAMMA_PF.out.gamma, \
         QUAST.out.report_tsv, \
-        [], [], [], [], \
+        BUSCO.out.short_summaries_specific_txt, \
+        KRAKEN2_ASMBLD.out.report, \
+        KRAKEN2_ASMBLD.out.krona_html, \
+        KRAKEN2_ASMBLD.out.k2_bh_summary, \
         KRAKEN2_WTASMBLD.out.krona_html, \
         KRAKEN2_WTASMBLD.out.report, \
         KRAKEN2_WTASMBLD.out.k2_bh_summary, \
         DETERMINE_TAXA_ID.out.taxonomy, \
         FORMAT_ANI.out.ani_best_hit, \
-        CALCULATE_ASSEMBLY_RATIO.out.ratio, \
-        false
+        CALCULATE_ASSEMBLY_RATIO.out.ratio,\
+        true
     )
 
     // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
@@ -303,7 +330,6 @@ workflow PHOENIX_EXTERNAL {
 
     spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
     all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
-    all_summaries_ch.view()
 
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
@@ -342,12 +368,12 @@ workflow PHOENIX_EXTERNAL {
 ========================================================================================
 */
 
-workflow.onComplete {
-    if (params.email || params.email_on_fail) {
-        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+    workflow.onComplete {
+        if (params.email || params.email_on_fail) {
+            NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+        }
+        NfcoreTemplate.summary(workflow, params, log)
     }
-    NfcoreTemplate.summary(workflow, params, log)
-}
 
 /*
 ========================================================================================

@@ -46,7 +46,7 @@ include { KRAKEN2_KRONA as KREPORT2KRONA_WTASMBLD           } from '../modules/l
 include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_TRIMD    } from '../modules/local/ktimporttext'
 include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_ASMBLD   } from '../modules/local/ktimporttext'
 include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_WTASMBLD } from '../modules/local/ktimporttext'
-include { SPADES_LOCAL                                      } from '../modules/local/spades'
+include { SPADES                                            } from '../modules/local/spades'
 include { RENAME_FASTA_HEADERS                              } from '../modules/local/rename_fasta_headers'
 include { BUSCO                                             } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF                               } from '../modules/local/gammas'
@@ -192,11 +192,11 @@ workflow SRA_PHOENIX {
     passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
 
     // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
-    SPADES_LOCAL (
+    SPADES (
         passing_reads_ch
     )
-    ch_versions = ch_versions.mix(SPADES_LOCAL.out.versions)
-    spades_ch = SPADES_LOCAL.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
+    ch_versions = ch_versions.mix(SPADES.out.versions)
+    spades_ch = SPADES.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
 
     // Rename scaffold headers
     RENAME_FASTA_HEADERS (

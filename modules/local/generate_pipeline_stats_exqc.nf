@@ -1,4 +1,4 @@
-process GENERATE_PIPELINE_STATS {
+process GENERATE_PIPELINE_STATS_EXQC {
     tag "${meta.id}"
     label 'process_low'
 
@@ -6,6 +6,7 @@ process GENERATE_PIPELINE_STATS {
     tuple val(meta), path(trimmed_reads), \
     path(fastp_raw_qc), \
     path(fastp_total_qc), \
+    path(srst_fullgenes_file), \
     path(kraken2_trimd_report), \
     path(krona_trimd), \
     path(kraken2_trimd_summary), \
@@ -16,6 +17,10 @@ process GENERATE_PIPELINE_STATS {
     path(gamma_AR), \
     path(gamma_replicon), \
     path(quast_report), \
+    path(busco_specific_short_summary), \
+    path(kraken2_asmbld_report), \
+    path(krona_asmbld), \
+    path(kraken2_asmbled_summary), \
     path(krona_weighted), \
     path(kraken2_weighted_report), \
     path(kraken2_weighted_summary), \
@@ -36,19 +41,24 @@ process GENERATE_PIPELINE_STATS {
         -d ${trimmed_reads[1]} \\
         -e $kraken2_trimd_report \\
         -f $kraken2_trimd_summary \\
-        -g $krona_trimd\\
+        -g $krona_trimd \\
         -h $assembly_scaffolds \\
         -i $filtered_assembly \\
+        -j $kraken2_asmbld_report \\
+        -k $kraken2_asmbled_summary \\
+        -l $krona_asmbld \\
         -m $kraken2_weighted_report \\
         -n $kraken2_weighted_summary \\
         -o $krona_weighted \\
         -p $quast_report \\
         -q $taxID \\
         -r $assembly_ratio_file \\
+        -s $busco_specific_short_summary \\
         -t $fastANI_formatted_file \\
         -u $gamma_AR \\
         -v $gamma_replicon \\
         -w $gamma_HV \\
+        -x $srst_fullgenes_file \\
         -y $mlst_file
     """
 }

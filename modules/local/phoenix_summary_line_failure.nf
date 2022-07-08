@@ -1,6 +1,6 @@
-process GATHER_SUMMARY_LINES {
+process CREATE_SUMMARY_LINE_FAILURE {
+    tag "${meta.id}"
     label 'process_low'
-    afterScript "rm ${params.outdir}/*_summaryline.tsv"
 
     conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -8,18 +8,22 @@ process GATHER_SUMMARY_LINES {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    path(summary_line_files)
-    //path(directory)
-
+    tuple val(meta), path(synopsis), val(spades_outcome)
+    
     output:
-    path 'Phoenix_Output_Report.tsv'  , emit: summary_report
-    path "versions.yml"                , emit: versions
+    path('*_summaryline.tsv') , emit: line_summary
+    path "versions.yml"       , emit: versions
+
+    when:
+    "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
+    def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    Create_phoenix_summary_tsv.py \\
-        --out Phoenix_Output_Report.tsv \\
-        $summary_line_files
+    Phoenix_summary_line.py \\
+        -n ${prefix} \\
+        -s $synopsis \\
+        -o ${prefix}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
