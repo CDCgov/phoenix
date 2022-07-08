@@ -30,22 +30,10 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 /*
 ========================================================================================
-<<<<<<< HEAD
     IMPORT LOCAL MODULES
 ========================================================================================
 */
 
-=======
-    IMPORT LOCAL MODULES/SUBWORKFLOWS
-========================================================================================
-*/
-
-//
-// SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
-//
-include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-include { SPADES_LOCAL                   } from '../modules/local/spades'
->>>>>>> refs/remotes/origin/v1.0.0
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { BUSCO                          } from '../modules/local/busco'

@@ -211,22 +211,24 @@ def QC_Pass(stats):
     return status, reason, scaffold_match
 
 def Get_Kraken_reads(stats, trimd_kraken):
-    print("got here")
-    if os.path.exists(stats):
-        print("got here2")
+    if stats is not None:
         with open(stats, 'r') as f:
             for line in f:
                 if line.startswith("KRAKEN2_CLASSIFY_READS"):
                     read_match = re.findall(r': .*? with', line)[0]
                     read_match = re.sub( ": SUCCESS  : | with", '', read_match)
     else:
-        with open(trimd_kraken, "r"):
+        with open(trimd_kraken, "r") as f:
             for line in f:
                 if line.startswith("G:"):
-                    print(line.split(":"))
+                    genus_match = line.split(": ")[1]
+                    genus_match = re.sub( "\d+|\n|\s|\.", '', genus_match)
                 if line.startswith("s:"):
-                    line.split(":")
-
+                    species_match = line.split(": ")[1]
+                    percent = line.split(": ")[1]
+                    species_match = re.sub( "\d+|\n|\.", '', species_match)
+                    percent = re.sub( "[a-zA-Z]*|\n|\s", '', percent)
+        read_match = percent + "% " + genus_match + species_match
     return read_match
 
 def Get_Taxa_Source(taxa_file):
@@ -297,13 +299,12 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
     except:
         QC_Outcome = 'Unknown'
         Reason = ""
-        read_match = "Unknown"
         scaffold_match = "Unknown"
     try:
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
-    Line = ID + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + '' + '\t' + QC_Outcome + '\t' + Reason
+    Line = ID + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + read_match + '\t' + scaffold_match + '\t' + QC_Outcome + '\t' + Reason
     return Line
 
 def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken):
