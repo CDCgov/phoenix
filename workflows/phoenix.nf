@@ -36,7 +36,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
-include { BUSCO                          } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
@@ -82,6 +81,8 @@ include { MLST                                                    } from '../mod
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'
+include { AMRFINDERPLUS_RUN                                       } from '../modules/nf-core/modules/amrfinderplus/run/main'
 
 /*
 ========================================================================================
@@ -168,6 +169,10 @@ workflow PHOENIX_EXTERNAL {
     )
     ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
+    // Fetch AMRFinder Database
+    AMRFINDERPLUS_UPDATE ( )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
+    
     // Getting MLST scheme for taxa
     MLST (
         BBMAP_REFORMAT.out.reads

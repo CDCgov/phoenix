@@ -30,10 +30,22 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 /*
 ========================================================================================
+<<<<<<< HEAD
     IMPORT LOCAL MODULES
 ========================================================================================
 */
 
+=======
+    IMPORT LOCAL MODULES/SUBWORKFLOWS
+========================================================================================
+*/
+
+//
+// SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
+//
+include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
+include { SPADES_LOCAL                   } from '../modules/local/spades'
+>>>>>>> refs/remotes/origin/v1.0.0
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { BUSCO                          } from '../modules/local/busco'
@@ -84,6 +96,8 @@ include { MLST                                                    } from '../mod
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'
+include { AMRFINDERPLUS_RUN                                       } from '../modules/nf-core/modules/amrfinderplus/run/main'
 
 /*
 ========================================================================================
@@ -180,6 +194,10 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
+    // Fetch AMRFinder Database
+    AMRFINDERPLUS_UPDATE ( )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
+    
     // Getting MLST scheme for taxa
     MLST (
         BBMAP_REFORMAT.out.reads
@@ -368,12 +386,12 @@ workflow PHOENIX_EXQC {
 ========================================================================================
 */
 
-    workflow.onComplete {
-        if (params.email || params.email_on_fail) {
-            NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
-        }
-        NfcoreTemplate.summary(workflow, params, log)
+workflow.onComplete {
+    if (params.email || params.email_on_fail) {
+        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
     }
+    NfcoreTemplate.summary(workflow, params, log)
+}
 
 /*
 ========================================================================================
