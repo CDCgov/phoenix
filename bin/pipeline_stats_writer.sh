@@ -460,7 +460,9 @@ if [[ "${run_type}" == "all" ]]; then
     fi
 		#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 		# If there are no reads at the domain level, then report no classified reads
-		if (( $(echo "${domain} <= 0" | bc -l) )); then
+    
+    if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
+		#if (( $(echo "${domain} <= 0" | bc -l) )); then
       if [[ "${kraken2_pre_success}" = true ]]; then
         printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_READS" "FAILED" "There are no classified reads"  >> "${sample_name}.synopsis"
         status="FAILED"
@@ -470,7 +472,8 @@ if [[ "${run_type}" == "all" ]]; then
       fi
 		# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
 		else
-			if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
+      if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
+			#if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
 				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_READS" "WARNING" "unclassified reads comprise ${unclass_string}% of total"  >> "${sample_name}.synopsis"
 				if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 					status="WARNING"
@@ -607,7 +610,8 @@ if [[ -s "${kraken2_asmbled_summary}" ]]; then
 	#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 	# If there are no reads at the domain level, then report no classified reads
 
-	if (( $(echo "${domain} <= 0" | bc -l) )); then
+  if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
+	#if (( $(echo "${domain} <= 0" | bc -l) )); then
     if [[ "${kraken2_unweighted_success}" = true ]]; then
       printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "There are no classified reads (Did post assembly kraken2 fail too?)"  >> "${sample_name}.synopsis"
       status="FAILED"
@@ -617,12 +621,14 @@ if [[ -s "${kraken2_asmbled_summary}" ]]; then
     fi
 	# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
 	else
-		if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
+    if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
+		#if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "unclassified reads comprise ${unclass_string}% of total"  >> "${sample_name}.synopsis"
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 				status="WARNING"
 			fi
-		elif (( $(echo "${genuspostpercent} < 50" | bc -l) )); then
+    elif (( $(echo ${genuspostpercent} 50 | awk '{if ($1 < $2) print 1;}') )); then
+		#elif (( $(echo "${genuspostpercent} < 50" | bc -l) )); then
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "Genus-${genuspost}(${genuspostpercent}%) is under 50% (species ${speciespost} (${speciespostpercent}%)), possibly contaminated or contigs are weighted unevenly"  >> "${sample_name}.synopsis"
 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 				status="WARNING"
@@ -713,7 +719,8 @@ if [[ -s "${kraken2_weighted_summary}" ]]; then
   fi
 	#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled_BP.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 	# If there are no reads at the domain level, then report no classified reads
-	if (( $(echo "${domain} <= 0" | bc -l) )); then
+  if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
+	#if (( $(echo "${domain} <= 0" | bc -l) )); then
     if [[ "${kraken2_unweighted_success}" = true ]]; then
       printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "There are no classified reads"  >> "${sample_name}.synopsis"
       status="FAILED"
@@ -723,12 +730,14 @@ if [[ -s "${kraken2_weighted_summary}" ]]; then
     fi
 	# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
 	else
-		if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
+    if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
+		#if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "WARNING" "unclassified reads comprise ${unclass_string}% of total"  >> "${sample_name}.synopsis"
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 				status="WARNING"
 			fi
-		elif (( $(echo "${genusweightedpercent} < 50" | bc -l) )); then
+    elif (( $(echo ${genusweightedpercent} 50 | awk '{if ($1 < $2) print 1;}') )); then
+		#elif (( $(echo "${genusweightedpercent} < 50" | bc -l) )); then
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "Genus-${genusweighted} is under 50% (species-${speciesweighted} ${speciesweightedpercent}%), likely contaminated"  >> "${sample_name}.synopsis"
 			status="FAILED"
 		else
@@ -851,7 +860,8 @@ if [[ -f "${assembly_ratio_file}" ]]; then
       st_dev=$(head -n4 "${assembly_ratio_file}" | tail -n1 | cut -d' ' -f2)
     fi
 
-    if (( $(echo "$assembly_ratio < 0" | bc -l) )); then
+    if (( $(echo $assembly_ratio 0 | awk '{if ($1 < $2) print 1;}') )); then
+    #if (( $(echo "$assembly_ratio < 0" | bc -l) )); then
       printf "%-30s: %-8s : %s\\n" "ASSEMBLY_RATIO(SD)" "WARNING" "No Reference - ${assembly_ratio}x(${st_dev}-SD) against ${assembly_ID}"  >> "${sample_name}.synopsis"
       if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
         status="WARNING"
@@ -862,7 +872,8 @@ if [[ -f "${assembly_ratio_file}" ]]; then
       if [[ "${status}" = "SUCCESS" ]]; then
         status="ALERT"
       fi
-    elif (( $(echo "$st_dev > 2.58" | bc -l) )); then
+    elif (( $(echo $st_dev 2.58 | awk '{if ($1 > $2) print 1;}') )); then
+    #elif (( $(echo "$st_dev > 2.58" | bc -l) )); then
       printf "%-30s: %-8s : %s\\n" "ASSEMBLY_RATIO(SD)" "FAILED" "St. dev. too large - ${assembly_ratio}x(${st_dev}-SD) against ${assembly_ID}"  >> "${sample_name}.synopsis"
       status="FAILED"
       QC_FAIL=$QC_FAIL"STDev_above_2.58($st_dev)-"
@@ -895,19 +906,23 @@ if [[ -f "${assembly_ratio_file}" ]]; then
 		avg_coverage=0
 	fi
   #echo "trimmed-${avg_coverage}"
-	if (( $(echo "${avg_coverage} > ${reads_low}" | bc -l) )) && (( $(echo "${avg_coverage} < ${reads_high}" | bc -l) )); then
+  if (( $(echo $domain 0 | awk '{if ($1 > $2) print 1;}') )) && (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 < $2) print 1;}') )); then
+	#if (( $(echo "${avg_coverage} > ${reads_low}" | bc -l) )) && (( $(echo "${avg_coverage} < ${reads_high}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
-	elif (( $(echo "${avg_coverage} > ${reads_high}" | bc -l) )); then
+	elif (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 > $2) print 1;}') )); then
+  #elif (( $(echo "${avg_coverage} > ${reads_high}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:<150x)"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi
-  elif (( $(echo "${avg_coverage} > ${reads_min}" | bc -l) )); then
+  elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 > $2) print 1;}') )); then
+  #elif (( $(echo "${avg_coverage} > ${reads_min}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi
-	elif (( $(echo "${avg_coverage} < ${reads_min}" | bc -l) )); then
+  elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 < $2) print 1;}') )); then
+	#elif (( $(echo "${avg_coverage} < ${reads_min}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "FAILED" "${avg_coverage}x coverage based on trimmed reads (Min:30x)"  >> "${sample_name}.synopsis"
 		status="FAILED"
     QC_FAIL=$QC_FAIL"coverage_below_30($avg_coverage)-"
