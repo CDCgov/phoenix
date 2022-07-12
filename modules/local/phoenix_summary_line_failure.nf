@@ -8,7 +8,10 @@ process CREATE_SUMMARY_LINE_FAILURE {
         'quay.io/biocontainers/python:3.8.3' }"
 
     input:
-    tuple val(meta), path(synopsis), val(spades_outcome)
+    tuple val(meta), path(synopsis), \
+    path(fastp_total_qc), \
+    path(trimd_ksummary), \
+    val(spades_outcome)
     
     output:
     path('*_summaryline.tsv') , emit: line_summary
@@ -22,6 +25,8 @@ process CREATE_SUMMARY_LINE_FAILURE {
     """
     Phoenix_summary_line.py \\
         -n ${prefix} \\
+        -k $trimd_ksummary \\
+        -t $fastp_total_qc \\
         -s $synopsis \\
         -o ${prefix}_summaryline.tsv
 

@@ -4,10 +4,9 @@ process SPADES {
     container 'staphb/spades:3.15.4'
     afterScript "sh ${baseDir}/bin/afterSpades.sh" // Handles file zipping, renaming with prefix and checks that files were created
     // Create a summaryline file that will be deleted later if spades is successful if not this line shows up in the final Phoenix_output_summary file
-    beforeScript "echo -e '${meta.id}\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tFAIL\tSPAdes_Failure' | tr -d '\n' > ${meta.id}_summaryline_failure.tsv ; cp ${meta.id}_summaryline_failure.tsv ${params.outdir}/${meta.id}"
 
     input:
-    tuple val(meta), path(reads), path(unpaired_reads)
+    tuple val(meta), path(reads), path(unpaired_reads), path(k2_bh_summary)
 
     output:
     tuple val(meta), path('*.scaffolds.fa.gz')    , optional:true, emit: scaffolds
@@ -26,6 +25,8 @@ process SPADES {
     def single_reads = "-s $unpaired_reads"
     def phred_offset = params.phred
     """
+    sh ${baseDir}/bin/beforeSpades.sh -k ${k2_bh_summary} -n ${meta.id} -d ${params.outdir}
+    
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')

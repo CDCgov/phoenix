@@ -11,7 +11,7 @@
 #
 # V1.0 (07/03/2022)
 #
-# Created by  (@cdc.gov)
+# Created by Jill Hagey (qpk9@cdc.gov)
 #
 
 fasta=$(find *.spades.log)

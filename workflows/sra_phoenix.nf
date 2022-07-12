@@ -303,7 +303,10 @@ workflow SRA_PHOENIX {
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
     .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]},     by: [0])\
     .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},          by: [0])\
-    .join(GENERATE_PIPELINE_STATS.out.pipeline_stats.map{            meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])
+    .join(GENERATE_PIPELINE_STATS.out.pipeline_stats.map{            meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])\
+    .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy       -> [[id:meta.id], taxonomy]},       by: [0])\
+    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary  -> [[id:meta.id], k2_bh_summary]},  by: [0])
+
 
     // Generate summary per sample
     CREATE_SUMMARY_LINE(

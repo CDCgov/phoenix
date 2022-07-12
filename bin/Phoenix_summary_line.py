@@ -187,48 +187,54 @@ def HV_Genes(input_gamma):
         HV.append(Gene)
     f.close()
     HV.sort()
+    num_lines = sum(1 for line in open(input_gamma))
+    if num_lines==1:
+        HV="No hypervirulence genes found"
     return HV
 
-def QC_Pass(stats):
+def WT_kraken_stats(stats):
     with open(stats, 'r') as f:
-        status = []
-        reason = []
+        for line in f:
+            if line.startswith("KRAKEN2_CLASSIFY_WEIGHTED"):
+                scaffold_match = re.findall(r': .*? with', line)[0]
+                scaffold_match = re.sub( ": SUCCESS  : | with", '', scaffold_match)
+    return scaffold_match
+
+def QC_Pass(stats):
+    status = []
+    reason = []
+    with open(stats, 'r') as f:
         for line in f:
             if line.startswith("Auto Pass/FAIL"):
                 line_status = line.split(":")[1]
                 line_reason = line.split(":")[2]
                 status.append(line_status.strip())
                 reason.append(line_reason.strip())
-            if line.startswith("KRAKEN2_CLASSIFY_READS"):
-                read_match = re.findall(r': .*? with', line)[0]
-                read_match = re.sub( ": SUCCESS  : | with", '', read_match)
-                print(read_match)
-            if line.startswith("KRAKEN2_CLASSIFY_WEIGHTED"):
-                scaffold_match = re.findall(r': .*? with', line)[0]
-                scaffold_match = re.sub( ": SUCCESS  : | with", '', scaffold_match)
-        status= str(status[0])
-        reason = str(reason[0])
-    return status, reason, scaffold_match
+                status_end = str(status[0])
+                reason_end = str(reason[0])
+    return status_end, reason_end
 
 def Get_Kraken_reads(stats, trimd_kraken):
-    if stats is not None:
-        with open(stats, 'r') as f:
-            for line in f:
-                if line.startswith("KRAKEN2_CLASSIFY_READS"):
-                    read_match = re.findall(r': .*? with', line)[0]
-                    read_match = re.sub( ": SUCCESS  : | with", '', read_match)
-    else:
-        with open(trimd_kraken, "r") as f:
-            for line in f:
-                if line.startswith("G:"):
-                    genus_match = line.split(": ")[1]
-                    genus_match = re.sub( "\d+|\n|\s|\.", '', genus_match)
-                if line.startswith("s:"):
-                    species_match = line.split(": ")[1]
-                    percent = line.split(": ")[1]
-                    species_match = re.sub( "\d+|\n|\.", '', species_match)
-                    percent = re.sub( "[a-zA-Z]*|\n|\s", '', percent)
-        read_match = percent + "% " + genus_match + species_match
+#    if stats is not None:
+#        with open(stats, 'r') as f:
+#            for line in f:
+#                if line.startswith("KRAKEN2_CLASSIFY_READS"):
+#                    read_match = re.findall(r': .*? with', line)[0]
+#                    read_match = re.sub( ": SUCCESS  : | with", '', read_match)
+#    else:
+    with open(trimd_kraken, "r") as f:
+        for line in f:
+            if line.startswith("G:"):
+                genus_match = line.split(": ")[1]
+                genus_percent = line.split(": ")[1]
+                genus_match = re.sub( "\d+|\n|\s|\.", '', genus_match)
+                genus_percent = re.sub( "[a-zA-Z]*|\n|\s", '', genus_percent)
+            if line.startswith("s:"):
+                species_match = line.split(": ")[1]
+                species_percent = line.split(": ")[1]
+                species_match = re.sub( "\d+|\n|\.", '', species_match)
+                species_percent = re.sub( "[a-zA-Z]*|\n|\s", '', species_percent)
+        read_match = genus_match + "(" + genus_percent + "%)" + species_match + "(" + species_percent + "%)"
     return read_match
 
 def Get_Taxa_Source(taxa_file):
@@ -291,15 +297,21 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Non_Bla = 'Unknown'
     try:
         HV = HV_Genes(gamma_hv)
-        HV = ','.join(HV)
+        if HV=="No hypervirulence genes found":
+            pass
+        else:
+            HV = ','.join(HV)
     except:
         HV = 'Unknown'
     try:
-        QC_Outcome, Reason, scaffold_match = QC_Pass(stats)
+        scaffold_match = WT_kraken_stats(stats)
+    except:
+        scaffold_match = "Unknown"
+    try:
+        QC_Outcome, Reason = QC_Pass(stats)
     except:
         QC_Outcome = 'Unknown'
         Reason = ""
-        scaffold_match = "Unknown"
     try:
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:

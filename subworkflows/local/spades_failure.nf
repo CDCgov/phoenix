@@ -21,9 +21,11 @@ workflow SPADES_WF {
 
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
-        
+
         // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
-        passing_reads_ch = paired_reads.join(single_reads, by: [0])
+        passing_reads_ch = paired_reads.map{ meta, reads    -> [[id:meta.id],reads]}\
+        .join(single_reads.map{              meta, reads    -> [[id:meta.id],reads]},    by: [0])\
+        .join(k2_bh_summary.map{             meta, ksummary -> [[id:meta.id],ksummary]}, by: [0])
 
         // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
         SPADES (
@@ -48,8 +50,13 @@ workflow SPADES_WF {
                 pipeline_stats_ch
             )
 
+            // Adding in trimmed reads info into channel
+            line_summary_ch = GENERATE_PIPELINE_STATS_FAILURE_EXQC.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id],pipeline_stats]}\
+            .join(fastp_total_qc.map{                                                      meta, fastp_total_qc  -> [[id:meta.id],fastp_total_qc]}, by: [0])\
+            .join(k2_bh_summary.map{                                                       meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])
+
             // Adding the outcome of spades (scaffolds created or not) to the channel 
-            line_summary_ch = GENERATE_PIPELINE_STATS_FAILURE_EXQC.out.pipeline_stats.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
+            line_summary_ch = line_summary_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
 
         } else {
             pipeline_stats_ch = paired_reads.map{ meta, reads           -> [[id:meta.id],reads]}\
@@ -67,8 +74,13 @@ workflow SPADES_WF {
                 pipeline_stats_ch
             )
 
-            // Adding the outcome of spades (scaffolds created or not) to the channel 
-            line_summary_ch = GENERATE_PIPELINE_STATS_FAILURE.out.pipeline_stats.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
+            // Adding in trimmed reads info into channel
+            line_summary_ch = GENERATE_PIPELINE_STATS_FAILURE.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id],pipeline_stats]}\
+            .join(fastp_total_qc.map{                                                 meta, fastp_total_qc  -> [[id:meta.id],fastp_total_qc]}, by: [0])\
+            .join(k2_bh_summary.map{                                                  meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])
+
+            // Adding the outcome of spades (scaffolds created or not) to the channel
+            line_summary_ch = line_summary_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
         }
 
         // Create one line summary for case when spades fails to create scaffolds
