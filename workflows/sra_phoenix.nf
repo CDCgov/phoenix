@@ -155,12 +155,6 @@ workflow SRA_PHOENIX {
     passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
 
     // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
-    SPADES (
-        passing_reads_ch
-    )
-    ch_versions = ch_versions.mix(SPADES.out.versions)
-    spades_ch = SPADES.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
-
     SPADES_WF (
         FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
@@ -171,7 +165,7 @@ workflow SRA_PHOENIX {
         false
     )
     ch_versions = ch_versions.mix(SPADES_WF.out.versions)
-    
+
     // Rename scaffold headers
     RENAME_FASTA_HEADERS (
         SPADES_WF.out.spades_ch
