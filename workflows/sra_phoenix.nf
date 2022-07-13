@@ -37,6 +37,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
+include { SPADES_WF                      } from '../subworkflows/local/spades_failure'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_TRIMD                  } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD                 } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD_WEIGHTED        } from '../modules/local/kraken2'
@@ -181,7 +182,7 @@ workflow SRA_PHOENIX {
         BBMAP_REFORMAT.out.reads, AMRFINDERPLUS_UPDATE.out.db
     )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
-/*
+
     // Getting MLST scheme for taxa
     MLST (
         BBMAP_REFORMAT.out.reads
@@ -317,6 +318,18 @@ workflow SRA_PHOENIX {
     // combine all line summaries into one channel
     all_summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()
 
+    // Collect all the summary files prior to fetch step to force the fetch process to wait to wait
+    failed_summaries_ch         = SPADES_WF.out.line_summary.collect()
+    summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
+
+    // combine all line summaries into one channel
+    FETCH_FAILED_SUMMARIES (
+        params.outdir, failed_summaries_ch, summaries_ch
+    )
+
+    spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
+    all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
+    all_summaries_ch.view()
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
         all_summaries_ch
@@ -327,7 +340,7 @@ workflow SRA_PHOENIX {
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
     )
-*/
+
     //
     // MODULE: MultiQC
     //
