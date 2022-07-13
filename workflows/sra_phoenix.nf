@@ -163,7 +163,7 @@ workflow SRA_PHOENIX {
 
     // Rename scaffold headers
     RENAME_FASTA_HEADERS (
-        spades_ch
+        SPADES_WF.out.spades_ch
     )
     ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
