@@ -181,7 +181,7 @@ workflow SRA_PHOENIX {
         BBMAP_REFORMAT.out.reads, AMRFINDERPLUS_UPDATE.out.db
     )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
-
+/*
     // Getting MLST scheme for taxa
     MLST (
         BBMAP_REFORMAT.out.reads
@@ -327,7 +327,7 @@ workflow SRA_PHOENIX {
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
     )
-
+*/
     //
     // MODULE: MultiQC
     //
