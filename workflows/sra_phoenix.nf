@@ -28,7 +28,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 /*
 ========================================================================================
-    IMPORT LOCAL MODULES/SUBWORKFLOWS
+    IMPORT SUBWORKFLOWS
 ========================================================================================
 */
 
@@ -37,7 +37,16 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
-include { SPADES_WF                      } from '../subworkflows/local/spades_failure'
+include { SPADES_WF                                         } from '../subworkflows/local/spades_failure'
+include { GENERATE_PIPELINE_STATS_WF                        } from '../subworkflows/local/generate_pipeline_stats'
+include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
+
+/*
+========================================================================================
+    IMPORT LOCAL MODULES
+========================================================================================
+*/
+
 include { KRAKEN2_KRAKEN2 as KRAKEN2_TRIMD                  } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD                 } from '../modules/local/kraken2'
 include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD_WEIGHTED        } from '../modules/local/kraken2'
@@ -71,7 +80,6 @@ include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/l
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
-include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
 
 /*
 ========================================================================================
@@ -150,6 +158,12 @@ workflow SRA_PHOENIX {
         FASTP_TRIMD.out.reads
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
+
+    // Checking for Contamination in trimmed reads, creating krona plots and best hit files
+    KRAKEN2_TRIMD (
+        FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
+    )
+    ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
     // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
     passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
@@ -277,29 +291,29 @@ workflow SRA_PHOENIX {
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
 
-    // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
-    pipeline_stats_ch = FASTP_TRIMD.out.reads.map{        meta, reads                        -> [[id:meta.id],reads]}\
-    .join(GATHERING_READ_QC_STATS.out.fastp_raw_qc.map{   meta, fastp_raw_qc                 -> [[id:meta.id],fastp_raw_qc]},                 by: [0])\
-    .join(GATHERING_READ_QC_STATS.out.fastp_total_qc.map{ meta, fastp_total_qc               -> [[id:meta.id],fastp_total_qc]},               by: [0])\
-    .join(RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ meta, renamed_scaffolds            -> [[id:meta.id],renamed_scaffolds]},            by: [0])\
-    .join(BBMAP_REFORMAT.out.reads.map{                   meta, reads                        -> [[id:meta.id],reads]},                        by: [0])\
-    .join(MLST.out.tsv.map{                               meta, tsv                          -> [[id:meta.id],tsv]},                          by: [0])\
-    .join(GAMMA_HV.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
-    .join(GAMMA_AR.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
-    .join(GAMMA_PF.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
-    .join(QUAST.out.report_tsv.map{                       meta, report_tsv                   -> [[id:meta.id],report_tsv]},                   by: [0])\
-    .join(KRAKEN2_ASMBLD.out.report.map{                  meta, report                       -> [[id:meta.id],report]},                       by: [0])\
-    .join(KRAKEN2_ASMBLD.out.krona_html.map{              meta, html                         -> [[id:meta.id],html]},                         by: [0])\
-    .join(KRAKEN2_ASMBLD.out.k2_bh_summary.map{           meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
-    .join(KRAKEN2_WTASMBLD.out.krona_html.map{            meta, html                         -> [[id:meta.id],html]},                         by: [0])\
-    .join(KRAKEN2_WTASMBLD.out.report.map{                meta, kraken_weighted_report       -> [[id:meta.id],kraken_weighted_report]},       by: [0])\
-    .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{         meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
-    .join(DETERMINE_TAXA_ID.out.taxonomy.map{             meta, taxonomy                     -> [[id:meta.id],taxonomy]},                     by: [0])\
-    .join(FORMAT_ANI.out.ani_best_hit.map{                meta, ani_best_hit                 -> [[id:meta.id],ani_best_hit]},                 by: [0])\
-    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{         meta, ratio                        -> [[id:meta.id],ratio]},                        by: [0])
-
-    GENERATE_PIPELINE_STATS (
-        pipeline_stats_ch
+    GENERATE_PIPELINE_STATS_WF (
+        FASTP_TRIMD.out.reads, \
+        GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
+        GATHERING_READ_QC_STATS.out.fastp_total_qc, \
+        [], \
+        KRAKEN2_TRIMD.out.report, \
+        KRAKEN2_TRIMD.out.krona_html, \
+        KRAKEN2_TRIMD.out.k2_bh_summary, \
+        RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
+        BBMAP_REFORMAT.out.reads, \
+        MLST.out.tsv, \
+        GAMMA_HV.out.gamma, \
+        GAMMA_AR.out.gamma, \
+        GAMMA_PF.out.gamma, \
+        QUAST.out.report_tsv, \
+        [], [], [], [], \
+        KRAKEN2_WTASMBLD.out.krona_html, \
+        KRAKEN2_WTASMBLD.out.report, \
+        KRAKEN2_WTASMBLD.out.k2_bh_summary, \
+        DETERMINE_TAXA_ID.out.taxonomy, \
+        FORMAT_ANI.out.ani_best_hit, \
+        CALCULATE_ASSEMBLY_RATIO.out.ratio, \
+        false
     )
 
     // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
@@ -309,7 +323,7 @@ workflow SRA_PHOENIX {
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
     .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]},     by: [0])\
     .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},          by: [0])\
-    .join(GENERATE_PIPELINE_STATS.out.pipeline_stats.map{            meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])\
+    .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{            meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])\
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy       -> [[id:meta.id], taxonomy]},       by: [0])\
     .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary  -> [[id:meta.id], k2_bh_summary]},  by: [0])
 
