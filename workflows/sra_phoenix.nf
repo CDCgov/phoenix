@@ -40,6 +40,9 @@ include { INPUT_CHECK                                       } from '../subworkfl
 include { SPADES_WF                                         } from '../subworkflows/local/spades_failure'
 include { GENERATE_PIPELINE_STATS_WF                        } from '../subworkflows/local/generate_pipeline_stats'
 include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
+include { KRAKEN2_WF as KRAKEN2_TRIMD                       } from '../subworkflows/local/kraken2krona'
+include { KRAKEN2_WF as KRAKEN2_ASMBLD                      } from '../subworkflows/local/kraken2krona'
+include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkflows/local/kraken2krona'
 
 /*
 ========================================================================================
@@ -47,18 +50,8 @@ include { GET_SRA                                           } from '../subworkfl
 ========================================================================================
 */
 
-include { KRAKEN2_KRAKEN2 as KRAKEN2_TRIMD                  } from '../modules/local/kraken2'
-include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD                 } from '../modules/local/kraken2'
-include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD_WEIGHTED        } from '../modules/local/kraken2'
-include { KRAKEN2_KRONA as KREPORT2KRONA_TRIMD              } from '../modules/local/krakentools_kreport2krona'
-include { KRAKEN2_KRONA as KREPORT2KRONA_ASMBLD             } from '../modules/local/krakentools_kreport2krona'
-include { KRAKEN2_KRONA as KREPORT2KRONA_WTASMBLD           } from '../modules/local/krakentools_kreport2krona'
-include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_TRIMD    } from '../modules/local/ktimporttext'
-include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_ASMBLD   } from '../modules/local/ktimporttext'
-include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_WTASMBLD } from '../modules/local/ktimporttext'
-include { SPADES                                            } from '../modules/local/spades'
+include { ASSET_CHECK                                       } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS                              } from '../modules/local/rename_fasta_headers'
-include { BUSCO                                             } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF                               } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR                                 } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV                                 } from '../modules/local/gamma'
@@ -67,19 +60,13 @@ include { BBMAP_REFORMAT                                    } from '../modules/l
 include { QUAST                                             } from '../modules/local/quast'
 include { FASTANI                                           } from '../modules/local/fastani'
 include { DETERMINE_TOP_TAXA                                } from '../modules/local/determine_top_taxa'
-include { KRAKENTOOLS_KREPORT2MPA as KREPORT2MPA_TRIMD      } from '../modules/local/krakentools_kreport2mpa'
-include { KRAKENTOOLS_KREPORT2MPA as KREPORT2MPA_ASMBLD     } from '../modules/local/krakentools_kreport2mpa'
-include { KRAKENTOOLS_MAKEKREPORT                           } from '../modules/local/krakentools_makekreport'
 include { FORMAT_ANI                                        } from '../modules/local/format_ANI_best_hit'
-include { KRAKEN_BEST_HIT as KRAKEN2_BH_TRIMD               } from '../modules/local/kraken_bh'
-include { KRAKEN_BEST_HIT as KRAKEN2_BH_ASMBLD              } from '../modules/local/kraken_bh'
-include { KRAKEN_BEST_HIT as KRAKEN2_BH_ASMBLD_WEIGHTED     } from '../modules/local/kraken_bh'
 include { GATHERING_READ_QC_STATS                           } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID                                 } from '../modules/local/tax_classifier'
 include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
+include { FETCH_FAILED_SUMMARIES                            } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
-include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
 
 /*
 ========================================================================================
