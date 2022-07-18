@@ -1,2 +1,0 @@
-2022-07-13 15:04:40	-	gigantic_avogadro	-	5ac518b87af31214538e2daed75826c6	01299bc7-2c1d-430c-8b8c-86449003bc8b	nextflow run main.nf -profile singularity --input assets/sra_samples.csv -entry SRA_LIST
-2022-07-13 15:13:01	-	silly_albattani	-	5ac518b87af31214538e2daed75826c6	f6b3a814-12b8-4727-8132-5abfabadbb00	nextflow run main.nf -profile singularity --input samplesheet.csv
