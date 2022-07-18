@@ -28,7 +28,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 /*
 ========================================================================================
-    IMPORT LOCAL MODULES/SUBWORKFLOWS
+    IMPORT SUBWORKFLOWS
 ========================================================================================
 */
 
@@ -37,18 +37,21 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 //
 
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
-include { KRAKEN2_KRAKEN2 as KRAKEN2_TRIMD                  } from '../modules/local/kraken2'
-include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD                 } from '../modules/local/kraken2'
-include { KRAKEN2_KRAKEN2 as KRAKEN2_ASMBLD_WEIGHTED        } from '../modules/local/kraken2'
-include { KRAKEN2_KRONA as KREPORT2KRONA_TRIMD              } from '../modules/local/krakentools_kreport2krona'
-include { KRAKEN2_KRONA as KREPORT2KRONA_ASMBLD             } from '../modules/local/krakentools_kreport2krona'
-include { KRAKEN2_KRONA as KREPORT2KRONA_WTASMBLD           } from '../modules/local/krakentools_kreport2krona'
-include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_TRIMD    } from '../modules/local/ktimporttext'
-include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_ASMBLD   } from '../modules/local/ktimporttext'
-include { KRONA_KTIMPORTTEXT as KRONA_KTIMPORTTEXT_WTASMBLD } from '../modules/local/ktimporttext'
-include { SPADES                                            } from '../modules/local/spades'
+include { SPADES_WF                                         } from '../subworkflows/local/spades_failure'
+include { GENERATE_PIPELINE_STATS_WF                        } from '../subworkflows/local/generate_pipeline_stats'
+include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
+include { KRAKEN2_WF as KRAKEN2_TRIMD                       } from '../subworkflows/local/kraken2krona'
+include { KRAKEN2_WF as KRAKEN2_ASMBLD                      } from '../subworkflows/local/kraken2krona'
+include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkflows/local/kraken2krona'
+
+/*
+========================================================================================
+    IMPORT LOCAL MODULES
+========================================================================================
+*/
+
+include { ASSET_CHECK                                       } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS                              } from '../modules/local/rename_fasta_headers'
-include { BUSCO                                             } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF                               } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR                                 } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV                                 } from '../modules/local/gamma'
@@ -57,20 +60,13 @@ include { BBMAP_REFORMAT                                    } from '../modules/l
 include { QUAST                                             } from '../modules/local/quast'
 include { FASTANI                                           } from '../modules/local/fastani'
 include { DETERMINE_TOP_TAXA                                } from '../modules/local/determine_top_taxa'
-include { KRAKENTOOLS_KREPORT2MPA as KREPORT2MPA_TRIMD      } from '../modules/local/krakentools_kreport2mpa'
-include { KRAKENTOOLS_KREPORT2MPA as KREPORT2MPA_ASMBLD     } from '../modules/local/krakentools_kreport2mpa'
-include { KRAKENTOOLS_MAKEKREPORT                           } from '../modules/local/krakentools_makekreport'
 include { FORMAT_ANI                                        } from '../modules/local/format_ANI_best_hit'
-include { KRAKEN_BEST_HIT as KRAKEN2_BH_TRIMD               } from '../modules/local/kraken_bh'
-include { KRAKEN_BEST_HIT as KRAKEN2_BH_ASMBLD              } from '../modules/local/kraken_bh'
-include { KRAKEN_BEST_HIT as KRAKEN2_BH_ASMBLD_WEIGHTED     } from '../modules/local/kraken_bh'
 include { GATHERING_READ_QC_STATS                           } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID                                 } from '../modules/local/tax_classifier'
 include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
+include { FETCH_FAILED_SUMMARIES                            } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
-include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
-include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
 
 /*
 ========================================================================================
@@ -150,19 +146,30 @@ workflow SRA_PHOENIX {
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
+    // Checking for Contamination in trimmed reads, creating krona plots and best hit files
+    KRAKEN2_TRIMD (
+        FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
+    )
+    ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
+
     // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
     passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
 
     // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
-    SPADES (
-        passing_reads_ch
+    SPADES_WF (
+        FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
+        GATHERING_READ_QC_STATS.out.fastp_total_qc, \
+        GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
+        [], \
+        KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
+        KRAKEN2_TRIMD.out.k2_bh_summary, \
+        false
     )
-    ch_versions = ch_versions.mix(SPADES.out.versions)
-    spades_ch = SPADES.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
+    ch_versions = ch_versions.mix(SPADES_WF.out.versions)
 
     // Rename scaffold headers
     RENAME_FASTA_HEADERS (
-        spades_ch
+        SPADES_WF.out.spades_ch
     )
     ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -271,29 +278,29 @@ workflow SRA_PHOENIX {
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
 
-    // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
-    pipeline_stats_ch = FASTP_TRIMD.out.reads.map{        meta, reads                        -> [[id:meta.id],reads]}\
-    .join(GATHERING_READ_QC_STATS.out.fastp_raw_qc.map{   meta, fastp_raw_qc                 -> [[id:meta.id],fastp_raw_qc]},                 by: [0])\
-    .join(GATHERING_READ_QC_STATS.out.fastp_total_qc.map{ meta, fastp_total_qc               -> [[id:meta.id],fastp_total_qc]},               by: [0])\
-    .join(RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ meta, renamed_scaffolds            -> [[id:meta.id],renamed_scaffolds]},            by: [0])\
-    .join(BBMAP_REFORMAT.out.reads.map{                   meta, reads                        -> [[id:meta.id],reads]},                        by: [0])\
-    .join(MLST.out.tsv.map{                               meta, tsv                          -> [[id:meta.id],tsv]},                          by: [0])\
-    .join(GAMMA_HV.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
-    .join(GAMMA_AR.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
-    .join(GAMMA_PF.out.gamma.map{                         meta, gamma                        -> [[id:meta.id],gamma]},                        by: [0])\
-    .join(QUAST.out.report_tsv.map{                       meta, report_tsv                   -> [[id:meta.id],report_tsv]},                   by: [0])\
-    .join(KRAKEN2_ASMBLD.out.report.map{                  meta, report                       -> [[id:meta.id],report]},                       by: [0])\
-    .join(KRAKEN2_ASMBLD.out.krona_html.map{              meta, html                         -> [[id:meta.id],html]},                         by: [0])\
-    .join(KRAKEN2_ASMBLD.out.k2_bh_summary.map{           meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
-    .join(KRAKEN2_WTASMBLD.out.krona_html.map{            meta, html                         -> [[id:meta.id],html]},                         by: [0])\
-    .join(KRAKEN2_WTASMBLD.out.report.map{                meta, kraken_weighted_report       -> [[id:meta.id],kraken_weighted_report]},       by: [0])\
-    .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{         meta, ksummary                     -> [[id:meta.id],ksummary]},                     by: [0])\
-    .join(DETERMINE_TAXA_ID.out.taxonomy.map{             meta, taxonomy                     -> [[id:meta.id],taxonomy]},                     by: [0])\
-    .join(FORMAT_ANI.out.ani_best_hit.map{                meta, ani_best_hit                 -> [[id:meta.id],ani_best_hit]},                 by: [0])\
-    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{         meta, ratio                        -> [[id:meta.id],ratio]},                        by: [0])
-
-    GENERATE_PIPELINE_STATS (
-        pipeline_stats_ch
+    GENERATE_PIPELINE_STATS_WF (
+        FASTP_TRIMD.out.reads, \
+        GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
+        GATHERING_READ_QC_STATS.out.fastp_total_qc, \
+        [], \
+        KRAKEN2_TRIMD.out.report, \
+        KRAKEN2_TRIMD.out.krona_html, \
+        KRAKEN2_TRIMD.out.k2_bh_summary, \
+        RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
+        BBMAP_REFORMAT.out.reads, \
+        MLST.out.tsv, \
+        GAMMA_HV.out.gamma, \
+        GAMMA_AR.out.gamma, \
+        GAMMA_PF.out.gamma, \
+        QUAST.out.report_tsv, \
+        [], [], [], [], \
+        KRAKEN2_WTASMBLD.out.krona_html, \
+        KRAKEN2_WTASMBLD.out.report, \
+        KRAKEN2_WTASMBLD.out.k2_bh_summary, \
+        DETERMINE_TAXA_ID.out.taxonomy, \
+        FORMAT_ANI.out.ani_best_hit, \
+        CALCULATE_ASSEMBLY_RATIO.out.ratio, \
+        false
     )
 
     // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
@@ -303,7 +310,7 @@ workflow SRA_PHOENIX {
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
     .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]},     by: [0])\
     .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},          by: [0])\
-    .join(GENERATE_PIPELINE_STATS.out.pipeline_stats.map{            meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])\
+    .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{            meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])\
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy       -> [[id:meta.id], taxonomy]},       by: [0])\
     .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary  -> [[id:meta.id], k2_bh_summary]},  by: [0])
 
@@ -317,6 +324,18 @@ workflow SRA_PHOENIX {
     // combine all line summaries into one channel
     all_summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()
 
+    // Collect all the summary files prior to fetch step to force the fetch process to wait to wait
+    failed_summaries_ch         = SPADES_WF.out.line_summary.collect()
+    summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
+
+    // combine all line summaries into one channel
+    FETCH_FAILED_SUMMARIES (
+        params.outdir, failed_summaries_ch, summaries_ch
+    )
+
+    spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
+    all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
+    all_summaries_ch.view()
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
         all_summaries_ch
