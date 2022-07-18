@@ -11,14 +11,14 @@ process SAMPLESHEET_CHECK {
     path samplesheet
 
     output:
-    path '*.csv'       , emit: csv
+    path '*.valid.csv' , emit: csv
     path "versions.yml", emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     """
     check_samplesheet.py \\
-        $samplesheet \\
-        samplesheet.valid.csv
+    $samplesheet \\
+    samplesheet.valid.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -35,12 +35,13 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
+include { BBDUK                          } from '../modules/local/bbduk'
+include { FASTP as FASTP_SINGLES         } from '../modules/local/fastp_singles'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
 include { MLST                           } from '../modules/local/mlst'
-include { FASTP as FASTP_SINGLES         } from '../modules/local/fastp_singles'
 include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
 include { QUAST                          } from '../modules/local/quast'
 include { FASTANI                        } from '../modules/local/fastani'
@@ -75,7 +76,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { BBMAP_BBDUK                  } from '../modules/nf-core/modules/bbmap/bbduk/main'
 include { FASTP as FASTP_TRIMD         } from '../modules/nf-core/modules/fastp/main'
 include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/modules/fastqc/main'
 include { MASH_DIST                    } from '../modules/nf-core/modules/mash/dist/main'
@@ -110,14 +110,14 @@ workflow PHOENIX_EXTERNAL {
     )
     
     // Remove PhiX reads
-    BBMAP_BBDUK (
+    BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
     )
-    ch_versions = ch_versions.mix(BBMAP_BBDUK.out.versions)
+    ch_versions = ch_versions.mix(BBDUK.out.versions)
 
     // Trim and remove low quality reads
     FASTP_TRIMD (
-        BBMAP_BBDUK.out.reads, true, false
+        BBDUK.out.reads, true, false
     )
     ch_versions = ch_versions.mix(FASTP_TRIMD.out.versions)
 

@@ -226,6 +226,16 @@
             "default": 500,
             "hidden": true
         },
+        "kraken2db": {
+            "type": "string",
+            "description": "Path for where kraken2_db is. Needs to include hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
+            "default": "${baseDir}/assets/databases/"
+        },        
+        "busco_db_path": {
+            "type": "string",
+            "description": "Path for where BUSCO files are if you want to run in offline mode.",
+            "default": "Not to run in offline mode so no path is passed."
+        },
         "busco_config": {
             "type": "string",
             "default": "${baseDir}/conf/modules.config"
