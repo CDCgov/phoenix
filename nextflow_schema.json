@@ -104,7 +104,6 @@
                     "description": "Maximum number of CPUs that can be requested for any single job.",
                     "default": 16,
                     "fa_icon": "fas fa-microchip",
-                    "hidden": true,
                     "help_text": "Use to set an upper-limit for the CPU requirement for each process. Should be an integer e.g. `--max_cpus 1`"
                 },
                 "max_memory": {
@@ -113,7 +112,6 @@
                     "default": "128.GB",
                     "fa_icon": "fas fa-memory",
                     "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
-                    "hidden": true,
                     "help_text": "Use to set an upper-limit for the memory requirement for each process. Should be a string in the format integer-unit e.g. `--max_memory '8.GB'`"
                 },
                 "max_time": {
@@ -122,7 +120,6 @@
                     "default": "240.h",
                     "fa_icon": "far fa-clock",
                     "pattern": "^(\\d+\\.?\\s*(s|m|h|day)\\s*)+$",
-                    "hidden": true,
                     "help_text": "Use to set an upper-limit for the time requirement for each process. Should be a string in the format integer-unit e.g. `--max_time '2.h'`"
                 }
             }
@@ -221,59 +218,17 @@
     "properties": {
         "phred": {
             "type": "integer",
-            "default": 33
+            "default": 33,
+            "hidden": true
         },
         "minlength": {
             "type": "integer",
-            "default": 500
-        },
-        "path2db": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases"
-        },
-        "bbdukdb": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/phiX.fasta"
-        },
-        "mash_sketch": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/REFSEQ_20210820_Bacteria_complete.msh"
-        },
-        "refseq_fasta_database": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/Ref_Seq"
-        },
-        "ncbi_assembly_stats": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/NCBI_Assembly_stats_20210819.txt"
-        },
-        "taxa": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/taxes.csv"
-        },
-        "ktaxmap": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/ktax_map.k2"
-        },
-        "ardb": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/ResGANNCBI_20210507_srst2.fasta"
-        },
-        "k2db": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/hash.k2d"
-        },
-        "gamdbpf": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/PF-Replicons_20220414.fasta"
-        },
-        "hvgamdb": {
-            "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/assets/databases/HyperVirulence_20220414.fasta"
+            "default": 500,
+            "hidden": true
         },
         "busco_config": {
             "type": "string",
-            "default": "/scicomp/home-pure/lex0/Documents/publicPheonix/phoenix/conf/modules.config"
+            "default": "${baseDir}/conf/modules.config"
         },
         "publish_dir_mode": {
             "type": "string",
@@ -282,22 +237,6 @@
         "singularity_pull_docker_container": {
             "type": "string",
             "default": "false"
-        },
-        "prokka_files": {
-            "type": "string",
-            "default": "./results/prokka"
-        },
-        "genome": {
-            "type": "string",
-            "default": "R64-1-1"
-        },
-        "fanireads": {
-            "type": "string",
-            "default": "./results/assemblies500plus"
-        },
-        "fasta": {
-            "type": "string",
-            "default": null
         }
     }
 }
