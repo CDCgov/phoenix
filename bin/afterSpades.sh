@@ -14,8 +14,8 @@
 # Created by Jill Hagey (qpk9@cdc.gov)
 #
 
-fasta=$(find *.spades.log)
-prefix=$(basename $fasta .spades.log)
+log=$(find *.spades.log)
+prefix=$(basename $log .spades.log)
 if [ -f scaffolds.fasta ]; then
     mv scaffolds.fasta ${prefix}.scaffolds.fa
     gzip -n ${prefix}.scaffolds.fa

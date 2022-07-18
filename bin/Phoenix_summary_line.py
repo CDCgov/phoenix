@@ -39,19 +39,23 @@ def MLST_Info_Only(MLST_file):
 
 def MLST_ST(MLST_file):
     """Pulls MLST info from *_Scheme.mlst file"""
-    ST = 'Unknown'
-    f = open(MLST_file, 'r')
-    String1 = f.readline()
-    ST = String1.split()[2]
-    return ST
+    ST_list = []
+    with open(MLST_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            ST = line.split()[2]
+            ST_list.append(ST)
+    return ST_list
 
 def MLST_Scheme(MLST_file):
     """Pulls MLST info from *_Scheme.mlst file"""
-    Scheme = 'Unknown'
-    f = open(MLST_file, 'r')
-    String1 = f.readline()
-    Scheme = String1.split()[1]
-    return Scheme
+    Scheme_list = []
+    with open(MLST_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            Scheme = line.split()[1]
+            Scheme_list.append(Scheme)
+    return Scheme_list
 
 def Contig_Count(input_quast):
     Contigs = '0'
@@ -238,13 +242,22 @@ def Get_Kraken_reads(stats, trimd_kraken):
     return read_match
 
 def Get_Taxa_Source(taxa_file):
-    f = open(taxa_file, 'r')
-    first_line = f.readline()
-    taxa_source = re.findall(r'\(.*?\)', first_line)[0]
-    taxa_source = re.sub( "\(|\)", '', taxa_source)
-    percent_match = re.findall(r'-.*?%ID', first_line)[0]
-    percent_match = re.sub( "-|ID", '', percent_match)
-    f.close()
+    with open(taxa_file, 'r') as f:
+        first_line = f.readline()
+        taxa_source = re.findall(r'\(.*?\)', first_line)[0]
+        taxa_source = re.sub( "\(|\)", '', taxa_source)
+        if (taxa_source == "ANI_REFSEQ"):
+            percent_match = re.findall(r'-.*?%ID', first_line)[0]
+            percent_match = re.sub( "-|ID", '', percent_match)
+            percent_match = percent_match + " ANI_match"
+        if (taxa_source == "kraken2_trimmed"):
+            percent_match = re.findall(r'-.*?-', first_line)[0]
+            percent_match = re.sub( "-", '', percent_match)
+            percent_match = percent_match + "% Reads_assigned"
+        if (taxa_source == "kraken2_wtasmbld"):
+            percent_match = re.findall(r'-.*?-', first_line)[0]
+            percent_match = re.sub( "-", '', percent_match)
+            percent_match = percent_match + "% Scaffolds_assigned"
     return taxa_source, percent_match
 
 def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken):
@@ -279,10 +292,12 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Species = 'Unknown'
     try:
         ST = MLST_ST(MLST_file)
+        ST = ','.join(ST)
     except:
         ST = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
+        Scheme = ','.join(Scheme)
     except:
         Scheme = 'Unknown'
     try:

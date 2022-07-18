@@ -40,6 +40,7 @@ include { BUSCO                          } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
+include { MLST                           } from '../modules/local/mlst'
 include { FASTP as FASTP_SINGLES         } from '../modules/local/fastp_singles'
 include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
 include { QUAST                          } from '../modules/local/quast'
@@ -80,7 +81,6 @@ include { BBMAP_BBDUK                                             } from '../mod
 include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
-include { MLST                                                    } from '../modules/nf-core/modules/mlst/main'
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
@@ -215,11 +215,19 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(QUAST.out.versions)
 
-    // Checking single copy genes for assembly completeness
-    BUSCO (
-        BBMAP_REFORMAT.out.reads, 'auto', [], []
-    )
-    ch_versions = ch_versions.mix(BUSCO.out.versions)
+    if (params.busco_db_path != null) {
+        // Checking single copy genes for assembly completeness
+        BUSCO (
+            BBMAP_REFORMAT.out.reads, 'auto', params.busco_db_path, []
+        )
+        ch_versions = ch_versions.mix(BUSCO.out.versions)
+    } else {
+        // Checking single copy genes for assembly completeness
+        BUSCO (
+            BBMAP_REFORMAT.out.reads, 'auto', [], []
+        )
+        ch_versions = ch_versions.mix(BUSCO.out.versions)
+    }
 
     // Checking for Contamination in assembly creating krona plots and best hit files
     KRAKEN2_ASMBLD (
@@ -265,7 +273,8 @@ workflow PHOENIX_EXQC {
 
     // Combining weighted kraken report with the FastANI hit based on meta.id
     best_hit_ch = KRAKEN2_WTASMBLD.out.report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
-    .join(FORMAT_ANI.out.ani_best_hit.map{                               meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]}, by: [0])
+    .join(FORMAT_ANI.out.ani_best_hit.map{        meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]},  by: [0])\
+    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{    meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary ]}, by: [0])
 
     // Getting ID from either FastANI or if fails, from Kraken2
     DETERMINE_TAXA_ID (
@@ -326,15 +335,16 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
-    // Collect all the summary files prior to fetch step to force the fetch process to wait to wait
-    failed_summaries_ch         = SPADES_WF.out.line_summary.collect()
+    // Collect all the summary files prior to fetch step to force the fetch process to wait
+    failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder)
     summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
 
-    // combine all line summaries into one channel
+    // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
     FETCH_FAILED_SUMMARIES (
         params.outdir, failed_summaries_ch, summaries_ch
     )
 
+    // combine all line summaries into one channel
     spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
     all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
 
@@ -376,10 +386,13 @@ workflow PHOENIX_EXQC {
 */
 
 workflow.onComplete {
-    if (params.email || params.email_on_fail) {
-        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+    if (count == 0){
+        if (params.email || params.email_on_fail) {
+            NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+        }
+        NfcoreTemplate.summary(workflow, params, log)
+        count++
     }
-    NfcoreTemplate.summary(workflow, params, log)
 }
 
 /*

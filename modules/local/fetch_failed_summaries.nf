@@ -11,12 +11,16 @@ process FETCH_FAILED_SUMMARIES {
 
     script:
     """
-    for file in ${directory}/*/*_summaryline_failure.tsv; do 
-        if grep -q SPAdes_Failure "\$file"; then
-            fname=\$(basename \$file _summaryline_failure.tsv)
-            cp \$file \${fname}_summaryline.tsv
-            mv \$file ${directory}/\${fname}/\${fname}_summaryline.tsv
-        fi
-    done 
+    if [ -f "${directory}/*/*_summaryline_failure.tsv" ]; then
+        for file in ${directory}/*/*_summaryline_failure.tsv; do 
+            if grep -q SPAdes_Failure "\$file"; then
+                fname=\$(basename \$file _summaryline_failure.tsv)
+                cp \$file \${fname}_summaryline.tsv
+                mv \$file ${directory}/\${fname}/\${fname}_summaryline.tsv
+            fi
+        done
+    else
+        touch empty_summaryline.tsv
+    fi
     """
 }

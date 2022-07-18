@@ -52,13 +52,12 @@ workflow CDC_PHOENIX {
 
 /*
 ========================================================================================
-    RUN ALL WORKFLOWS
+    RUN SRA WORKFLOWS
 ========================================================================================
 */
 
 //
 // WORKFLOW: Execute a single named workflow for the pipeline
-// See: https://github.com/nf-core/rnaseq/issues/619
 //
 workflow SRA_LIST {
     SRA_PHOENIX ()

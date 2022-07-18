@@ -125,20 +125,21 @@ do_ANI() {
 
 # Function to pull info from kraken2 output based on assembly
 do_kraken2_assembly() {
-	source="kraken2_assembly"
+	source="kraken2_wtasmbld"
 #	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt"
-	source_file="${trimmed_kraken}"
+	source_file="${weighted_kraken}"
 	#echo "${source}"
 	while IFS= read -r line  || [ -n "$line" ]; do
 		# Grab first letter of line (indicating taxonomic level)
 		first=${line::1}
+		echo $line
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken2, 3rd-true % of total reads, 4th-identifier)
 		if [ "${first}" = "s" ]
 		then
-			species=$(echo "${line}" | awk -F ' ' '{print $4}')
+			species=$(echo "${line}" | awk -F ' ' '{print $3}')
 		elif [ "${first}" = "G" ]
 		then
-			Genus=$(echo "${line}" | awk -F ' ' '{print $4}')
+			Genus=$(echo "${line}" | awk -F ' ' '{print $3}')
 		fi
 	done < "${source_file}"
 	confidence_index=$(tail -n1 "${source_file}" | cut -d' ' -f2)
@@ -157,10 +158,10 @@ do_kraken2_reads() {
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken2, 3rd-true % of total reads, 4th-identifier)
 		if [ "${first}" = "s" ]
 		then
-			species=$(echo "${line}" | awk -F ' ' '{print $4}')
+			species=$(echo "${line}" | awk -F ' ' '{ print $3 }')
 		elif [ "${first}" = "G" ]
 		then
-			Genus=$(echo "${line}" | awk -F ' ' '{print $4}')
+			Genus=$(echo "${line}" | awk -F ' ' '{print $3}')
 		fi
 	done < "${source_file}"
 	confidence_index=$(tail -n1 "${source_file}" | cut -d' ' -f2)

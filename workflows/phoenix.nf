@@ -39,6 +39,7 @@ include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_h
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
+include { MLST                           } from '../modules/local/mlst'
 include { FASTP as FASTP_SINGLES         } from '../modules/local/fastp_singles'
 include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
 include { QUAST                          } from '../modules/local/quast'
@@ -74,15 +75,14 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { BBMAP_BBDUK                                             } from '../modules/nf-core/modules/bbmap/bbduk/main'
-include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
-include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
-include { MLST                                                    } from '../modules/nf-core/modules/mlst/main'
-include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
-include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
-include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
-include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'
-include { AMRFINDERPLUS_RUN                                       } from '../modules/nf-core/modules/amrfinderplus/run/main'
+include { BBMAP_BBDUK                  } from '../modules/nf-core/modules/bbmap/bbduk/main'
+include { FASTP as FASTP_TRIMD         } from '../modules/nf-core/modules/fastp/main'
+include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/modules/fastqc/main'
+include { MASH_DIST                    } from '../modules/nf-core/modules/mash/dist/main'
+include { MULTIQC                      } from '../modules/nf-core/modules/multiqc/main'
+include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { AMRFINDERPLUS_UPDATE         } from '../modules/nf-core/modules/amrfinderplus/update/main'
+include { AMRFINDERPLUS_RUN            } from '../modules/nf-core/modules/amrfinderplus/run/main'
 
 /*
 ========================================================================================
@@ -92,6 +92,7 @@ include { AMRFINDERPLUS_RUN                                       } from '../mod
 
 // Info required for completion email and summary
 def multiqc_report = []
+def count = 0
 
 workflow PHOENIX_EXTERNAL {
 
@@ -172,6 +173,12 @@ workflow PHOENIX_EXTERNAL {
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE ( )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
+
+    // Run AMRFinder
+    AMRFINDERPLUS_RUN (
+        BBMAP_REFORMAT.out.reads, AMRFINDERPLUS_UPDATE.out.db
+    )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
     
     // Getting MLST scheme for taxa
     MLST (
@@ -240,7 +247,8 @@ workflow PHOENIX_EXTERNAL {
 
     // Combining weighted kraken report with the FastANI hit based on meta.id
     best_hit_ch = KRAKEN2_WTASMBLD.out.report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
-    .join(FORMAT_ANI.out.ani_best_hit.map{                               meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]}, by: [0])
+    .join(FORMAT_ANI.out.ani_best_hit.map{        meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]},  by: [0])\
+    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{    meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary ]}, by: [0])
 
     // Getting ID from either FastANI or if fails, from Kraken2
     DETERMINE_TAXA_ID (
@@ -292,24 +300,24 @@ workflow PHOENIX_EXTERNAL {
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy       -> [[id:meta.id], taxonomy]},       by: [0])\
     .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary  -> [[id:meta.id], k2_bh_summary]},  by: [0])
 
-    // Generate summary per sample
+    // Generate summary per sample that passed SPAdes
     CREATE_SUMMARY_LINE(
         line_summary_ch
     )
     ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
-    // Collect all the summary files prior to fetch step to force the fetch process to wait to wait
-    failed_summaries_ch         = SPADES_WF.out.line_summary.collect()
+    // Collect all the summary files prior to fetch step to force the fetch process to wait
+    failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving.. 
     summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
 
-    // combine all line summaries into one channel
+    // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
     FETCH_FAILED_SUMMARIES (
         params.outdir, failed_summaries_ch, summaries_ch
     )
 
+    // combine all line summaries into one channel
     spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
     all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
-    all_summaries_ch.view()
 
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
@@ -349,12 +357,14 @@ workflow PHOENIX_EXTERNAL {
 */
 
 workflow.onComplete {
-    if (params.email || params.email_on_fail) {
-        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+    if (count == 0){
+        if (params.email || params.email_on_fail) {
+            NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+        }
+        NfcoreTemplate.summary(workflow, params, log)
+        count++
     }
-    NfcoreTemplate.summary(workflow, params, log)
 }
-
 
 /*
 ========================================================================================

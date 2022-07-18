@@ -10,6 +10,7 @@ process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
     path(kraken2_trimd_report), \
     path(krona_trimd), \
     path(kraken2_trimd_summary), \
+    path(taxID), \
     val(spades_outcome)
 
     output:
@@ -29,6 +30,7 @@ process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
         -e $kraken2_trimd_report \\
         -f $kraken2_trimd_summary \\
         -g $krona_trimd \\
+        -q $taxID \\
         -x $srst_fullgenes_file
     """
 }

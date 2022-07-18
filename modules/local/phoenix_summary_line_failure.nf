@@ -11,6 +11,7 @@ process CREATE_SUMMARY_LINE_FAILURE {
     tuple val(meta), path(synopsis), \
     path(fastp_total_qc), \
     path(trimd_ksummary), \
+    path(taxonomy_file), \
     val(spades_outcome)
     
     output:
@@ -28,6 +29,7 @@ process CREATE_SUMMARY_LINE_FAILURE {
         -k $trimd_ksummary \\
         -t $fastp_total_qc \\
         -s $synopsis \\
+        -x $taxonomy_file \\
         -o ${prefix}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml

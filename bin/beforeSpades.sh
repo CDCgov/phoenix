@@ -56,3 +56,5 @@ spercent=$(grep -R 's:' $k2_bh_summary | cut -d ' ' -f2 | tr -d '\n')
 name=$(echo "${genus}(${gpercent}%) ${species}(${spercent}%)")
 
 echo "${sample_name}\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\t${name}\tUnknown\tFAIL\tSPAdes_Failure" | tr -d '\n' > ${sample_name}_summaryline_failure.tsv ; cp ${sample_name}_summaryline_failure.tsv ${output_path}/${sample_name}
+# copy the synopsis file
+cp ${sample_name}.synopsis ${output_path}/${sample_name}

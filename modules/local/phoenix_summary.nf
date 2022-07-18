@@ -17,9 +17,27 @@ process GATHER_SUMMARY_LINES {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     """
-    Create_phoenix_summary_tsv.py \\
-        --out Phoenix_Output_Report.tsv \\
-        $summary_line_files
+    if [ -f "empty_summaryline.tsv" ]; then
+        rm empty_summaryline.tsv
+        new_summary_line_files=\$(echo $summary_line_files | sed 's/empty_summaryline.tsv //')
+        if [ -f "placeholder.txt" ]; then
+            rm placeholder.txt
+            new_summary_line_files=\$(echo \$new_summary_line_files | sed 's/placeholder.txt //')
+        fi
+        Create_phoenix_summary_tsv.py --out Phoenix_Output_Report.tsv \$new_summary_line_files
+    elif [ -f "placeholder.txt" ]; then
+        rm placeholder.txt
+        new_summary_line_files=\$(echo $summary_line_files | sed 's/placeholder.txt //')
+        if [ -f "empty_summaryline.tsv" ]; then
+            rm empty_summaryline.tsv
+            new_summary_line_files=\$(echo \$new_summary_line_files | sed 's/empty_summaryline.tsv //')
+        fi
+        Create_phoenix_summary_tsv.py --out Phoenix_Output_Report.tsv \$new_summary_line_files
+    else
+        Create_phoenix_summary_tsv.py \\
+            --out Phoenix_Output_Report.tsv \\
+            $summary_line_files
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

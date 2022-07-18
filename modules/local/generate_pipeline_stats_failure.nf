@@ -9,6 +9,7 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     path(kraken2_trimd_report), \
     path(krona_trimd), \
     path(kraken2_trimd_summary), \
+    path(taxID), \
     val(spades_outcome)
 
     output:
