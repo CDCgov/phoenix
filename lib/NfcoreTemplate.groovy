@@ -153,10 +153,10 @@ class NfcoreTemplate {
         if (workflow.success) {
             if (workflow.stats.ignoredCount == 0) {
                 log.info "-${colors.purple}[$workflow.manifest.name]${colors.green} Pipeline completed successfully${colors.reset}-"
-                log.info "${colors.biyellow} \n***Reminder: you have 7-10 days to upload sequence data to CDC's HAI-Seq Umbrella Project on NCBI.***\n ${colors.reset}"
+                log.info "${colors.biyellow} \n***Reminder: you have 7-10 days to upload sequence data to CDC's HAI-Seq Umbrella Project (ID 531911) on NCBI.***\n ${colors.reset}"
             } else {
                 log.info "-${colors.purple}[$workflow.manifest.name]${colors.red} Pipeline completed successfully, but with errored process(es) ${colors.reset}-"
-                log.info "${colors.biyellow} \n***Reminder: you have 7-10 days to upload sequence data to CDC's HAI-Seq Umbrella Project on NCBI.***\n ${colors.reset}"
+                log.info "${colors.biyellow} \n***Reminder: you have 7-10 days to upload sequence data to CDC's HAI-Seq Umbrella Project (ID 531911) on NCBI.***\n ${colors.reset}"
             }
         } else {
             log.info "-${colors.purple}[$workflow.manifest.name]${colors.red} Pipeline completed with errors${colors.reset}-"

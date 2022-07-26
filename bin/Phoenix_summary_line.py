@@ -10,7 +10,7 @@ getcontext().prec = 4
 import argparse
 
 ##Makes a summary Excel file when given a run folder from PhoeNiX
-##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -x Taxa_file -r Ratio_File -m MLST_File -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File -k trimd_kraken -s synopsis_file -o Out_File
+##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -x Taxa_file -r Ratio_File -m MLST_File -u mutation_file -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File -k trimd_kraken -s synopsis_file -o Out_File
 ## Written by Rich Stanton (njr5@cdc.gov)
 
 def parseArgs(args=None):
@@ -20,6 +20,7 @@ def parseArgs(args=None):
     parser.add_argument('-x', '--taxa', dest="taxa", required=False, help='Taxa file')
     parser.add_argument('-r', '--ratio', required=False, help='assembly ratio file')
     parser.add_argument('-m', '--mlst', required=False, help='MLST file')
+    parser.add_argument('-u', '--mutation', dest="mutations", required=False, help='Mutation file from AMRFinder')
     parser.add_argument('-q', '--quast', required=False, help='QUAST file')
     parser.add_argument('-a', '--ar', required=False, help='AR GAMMA file')
     parser.add_argument('-v', '--vir', required=False, help='hypervirulence GAMMA file')
@@ -260,7 +261,21 @@ def Get_Taxa_Source(taxa_file):
             percent_match = percent_match + "% Scaffolds_assigned"
     return taxa_source, percent_match
 
-def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken):
+def Get_Mutations(mutation_file):
+    point_mutations_list = []
+    with open(mutation_file, 'r') as f:
+        lines = f.readlines()[1:]
+        for line in lines:
+            point_mutations = line.split("	")[5]
+            point_mutations_list.append(point_mutations)
+    return point_mutations_list
+
+def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutation_file):
+    try:
+        point_mutations_list = Get_Mutations(mutation_file)
+        point_mutations_list = ','.join(point_mutations_list)
+    except:
+        point_mutations_list = 'Unknown'
     try:
         taxa_source, percent_match = Get_Taxa_Source(Taxa)
     except:
@@ -331,11 +346,11 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
-    Line = ID + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + read_match + '\t' + scaffold_match + '\t' + QC_Outcome + '\t' + Reason
+    Line = ID + '\t' + QC_Outcome + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + read_match + '\t' + scaffold_match + '\t' + Reason
     return Line
 
-def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken):
-    Line = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken)
+def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations):
+    Line = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations)
     Out = open(out_file, 'w')
     Out.write(Line)
     Out.close()
@@ -343,7 +358,7 @@ def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_fil
 def main():
     args = parseArgs()
     # if the output file already exists remove it
-    Isolate_Line_File(args.taxa, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken)
+    Isolate_Line_File(args.taxa, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.mutations)
 
 if __name__ == '__main__':
     main()

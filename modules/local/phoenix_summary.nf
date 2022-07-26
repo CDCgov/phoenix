@@ -1,6 +1,6 @@
 process GATHER_SUMMARY_LINES {
     label 'process_low'
-    afterScript "rm ${params.outdir}/*_summaryline.tsv"
+    afterScript "rm ${params.outdir}/*_summaryline.tsv && rm ${params.outdir}/amrfinderdb.tar.gz"
 
     conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -9,7 +9,6 @@ process GATHER_SUMMARY_LINES {
 
     input:
     path(summary_line_files)
-    //path(directory)
 
     output:
     path 'Phoenix_Output_Report.tsv'  , emit: summary_report

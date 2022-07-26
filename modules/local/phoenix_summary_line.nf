@@ -1,6 +1,7 @@
 process CREATE_SUMMARY_LINE {
     tag "${meta.id}"
     label 'process_low'
+    afterScript "if [ -s '${params.outdir}/${meta.id}/AMRFinder/${mutation_file}' ]; then rm ${params.outdir}/${meta.id}/AMRFinder/${mutation_file}; fi"
 
     conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -16,7 +17,8 @@ process CREATE_SUMMARY_LINE {
     path(ratio_file), \
     path(synopsis), \
     path(taxonomy_file), \
-    path(trimd_ksummary)
+    path(trimd_ksummary), \
+    path(mutation_file)
 
     output:
     path '*_summaryline.tsv'           , emit: line_summary
@@ -32,6 +34,7 @@ process CREATE_SUMMARY_LINE {
         -v $hypervirulence_gamma_file \\
         -r $ratio_file \\
         -m $mlst_file \\
+        -u $mutation_file \\
         -n ${prefix} \\
         -s $synopsis \\
         -x $taxonomy_file \\

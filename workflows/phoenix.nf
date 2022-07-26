@@ -49,6 +49,8 @@ include { DETERMINE_TOP_TAXA             } from '../modules/local/determine_top_
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
+include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
+include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
@@ -82,7 +84,6 @@ include { MASH_DIST                    } from '../modules/nf-core/modules/mash/d
 include { MULTIQC                      } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 include { AMRFINDERPLUS_UPDATE         } from '../modules/nf-core/modules/amrfinderplus/update/main'
-include { AMRFINDERPLUS_RUN            } from '../modules/nf-core/modules/amrfinderplus/run/main'
 
 /*
 ========================================================================================
@@ -170,16 +171,6 @@ workflow PHOENIX_EXTERNAL {
     )
     ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
-    // Fetch AMRFinder Database
-    AMRFINDERPLUS_UPDATE ( )
-    ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
-
-    // Run AMRFinder
-    AMRFINDERPLUS_RUN (
-        BBMAP_REFORMAT.out.reads, AMRFINDERPLUS_UPDATE.out.db
-    )
-    ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
-    
     // Getting MLST scheme for taxa
     MLST (
         BBMAP_REFORMAT.out.reads
@@ -255,6 +246,25 @@ workflow PHOENIX_EXTERNAL {
         best_hit_ch, params.taxa
     )
 
+    // Fetch AMRFinder Database
+    AMRFINDERPLUS_UPDATE( )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
+
+    // Create file that has the organism name to pass to AMRFinder
+    GET_TAXA_FOR_AMRFINDER (
+        DETERMINE_TAXA_ID.out.taxonomy
+    )
+
+    // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
+    amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
+    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])
+
+    // Run AMRFinder
+    AMRFINDERPLUS_RUN (
+        amr_channel, AMRFINDERPLUS_UPDATE.out.db
+    )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
+
     // Combining determined taxa with the assembly stats based on meta.id
     assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
     .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
@@ -290,15 +300,16 @@ workflow PHOENIX_EXTERNAL {
     )
 
     // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
-    line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc -> [[id:meta.id], fastp_total_qc]}\
-    .join(MLST.out.tsv.map{                                          meta, tsv            -> [[id:meta.id], tsv]},            by: [0])\
-    .join(GAMMA_HV.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
-    .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
-    .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]},     by: [0])\
-    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},          by: [0])\
-    .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])\
-    .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy       -> [[id:meta.id], taxonomy]},       by: [0])\
-    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary  -> [[id:meta.id], k2_bh_summary]},  by: [0])
+    line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
+    .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+    .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
+    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
+    .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
+    .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
+    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
+    .join(AMRFINDERPLUS_RUN.out.mutation_report.map{                 meta, mutation_report -> [[id:meta.id], mutation_report]}, by: [0])
 
     // Generate summary per sample that passed SPAdes
     CREATE_SUMMARY_LINE(
