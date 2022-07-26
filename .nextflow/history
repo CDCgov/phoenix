@@ -1,1 +1,0 @@
-2022-07-19 10:46:11	-	furious_einstein	-	ef1e7f30a2267e5fe184f0c15c62ccf3	7a06a42e-e0d0-4783-bec2-4535385729f5	nextflow run main.nf -profile singularity --input assets/sra_samples.csv -entry SRA_LIST
