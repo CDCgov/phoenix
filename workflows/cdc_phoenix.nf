@@ -36,6 +36,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { BBDUK                          } from '../modules/local/bbduk'
+include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP as FASTP_SINGLES         } from '../modules/local/fastp_singles'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { BUSCO                          } from '../modules/local/busco'
@@ -80,7 +81,7 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
+//include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
 include { SRST2_SRST2 as SRST2_TRIMD_MLST                         } from '../modules/nf-core/modules/srst2/srst2/main'
@@ -337,7 +338,8 @@ workflow PHOENIX_EXQC {
         KRAKEN2_WTASMBLD.out.k2_bh_summary, \
         DETERMINE_TAXA_ID.out.taxonomy, \
         FORMAT_ANI.out.ani_best_hit, \
-        CALCULATE_ASSEMBLY_RATIO.out.ratio,\
+        CALCULATE_ASSEMBLY_RATIO.out.ratio, \
+        AMRFINDERPLUS_RUN.out.report, \
         true
     )
 
@@ -351,7 +353,7 @@ workflow PHOENIX_EXQC {
     .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
     .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
-    .join(AMRFINDERPLUS_RUN.out.mutation_report.map{                 meta, mutation_report -> [[id:meta.id], mutation_report]}, by: [0])
+    .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])
 
     // Generate summary per sample
     CREATE_SUMMARY_LINE(

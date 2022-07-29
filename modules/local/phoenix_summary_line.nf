@@ -18,7 +18,7 @@ process CREATE_SUMMARY_LINE {
     path(synopsis), \
     path(taxonomy_file), \
     path(trimd_ksummary), \
-    path(mutation_file)
+    path(amr_file)
 
     output:
     path '*_summaryline.tsv'           , emit: line_summary
@@ -34,7 +34,7 @@ process CREATE_SUMMARY_LINE {
         -v $hypervirulence_gamma_file \\
         -r $ratio_file \\
         -m $mlst_file \\
-        -u $mutation_file \\
+        -u $amr_file \\
         -n ${prefix} \\
         -s $synopsis \\
         -x $taxonomy_file \\

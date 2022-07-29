@@ -11,7 +11,7 @@ import argparse
 
 ##Makes a summary Excel file when given a run folder from PhoeNiX
 ##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -x Taxa_file -r Ratio_File -m MLST_File -u mutation_file -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File -k trimd_kraken -s synopsis_file -o Out_File
-## Written by Rich Stanton (njr5@cdc.gov)
+## Written by Rich Stanton (njr5@cdc.gov) and Jill Hagey (qpk9@cdc.gov)
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
@@ -261,18 +261,20 @@ def Get_Taxa_Source(taxa_file):
             percent_match = percent_match + "% Scaffolds_assigned"
     return taxa_source, percent_match
 
-def Get_Mutations(mutation_file):
+def Get_Mutations(amr_file):
     point_mutations_list = []
-    with open(mutation_file, 'r') as f:
+    with open(amr_file, 'r') as f:
+        #tsv_file = csv.reader(amr_file, delimiter="\t")
         lines = f.readlines()[1:]
         for line in lines:
-            point_mutations = line.split("	")[5]
-            point_mutations_list.append(point_mutations)
+            if "POINT" in line:
+                point_mutations = line.split("	")[5]
+                point_mutations_list.append(point_mutations)
     return point_mutations_list
 
-def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutation_file):
+def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file):
     try:
-        point_mutations_list = Get_Mutations(mutation_file)
+        point_mutations_list = Get_Mutations(amr_file)
         point_mutations_list = ','.join(point_mutations_list)
     except:
         point_mutations_list = 'Unknown'
@@ -346,7 +348,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
-    Line = ID + '\t' + QC_Outcome + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + read_match + '\t' + scaffold_match + '\t' + Reason
+    Line = ID + '\t' + QC_Outcome + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + read_match + '\t' + scaffold_match + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + Reason
     return Line
 
 def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations):

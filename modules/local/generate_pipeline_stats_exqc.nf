@@ -1,6 +1,7 @@
 process GENERATE_PIPELINE_STATS_EXQC {
     tag "${meta.id}"
     label 'process_low'
+    //container 'staphb/gamma:2.1'
 
     input:
     tuple val(meta), path(trimmed_reads), \
@@ -26,7 +27,8 @@ process GENERATE_PIPELINE_STATS_EXQC {
     path(kraken2_weighted_summary), \
     path(taxID), \
     path(fastANI_formatted_file), \
-    path(assembly_ratio_file)
+    path(assembly_ratio_file), \
+    path(amr_file)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
@@ -59,6 +61,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -v $gamma_replicon \\
         -w $gamma_HV \\
         -x $srst_fullgenes_file \\
-        -y $mlst_file
+        -y $mlst_file \\
+        -2 $amr_file
     """
 }

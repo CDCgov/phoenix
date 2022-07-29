@@ -19,7 +19,7 @@ def parseArgs(args=None):
 
 def List_TSV(output_file, input_list):
     Out = open(output_file, 'w')
-    Out.write('ID\tQC_Outcome\tCoverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Contigs_>500bp\tSpecies\tTaxa_Confidence\tTaxa_Source\tMLST_Scheme\tMLST\tGC_%\tBeta_Lactam_Resistance_Genes\tOther_AR_Genes\tHypervirulence_Genes\tAMRFinder_Point_Mutations\tKraken2_Trimd\tKraken2_Weighted\tQC_Reason\n')
+    Out.write('ID\tQC_Outcome\tCoverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Contigs_>500bp\tSpecies\tTaxa_Confidence\tTaxa_Source\tMLST_Scheme\tMLST\tGC_%\tKraken2_Trimd\tKraken2_Weighted\tBeta_Lactam_Resistance_Genes\tOther_AR_Genes\tHypervirulence_Genes\tAMRFinder_Point_Mutations\tQC_Reason\n')
     for entry in input_list:
         f = open(entry, 'r')
         String1 = f.readline()

@@ -42,6 +42,7 @@ show_help () {
     -x srst_fullgenes_file
     -y* MLST_file (or more)
     -z* assembly_only_sample (true or false)
+    -2* amr_tsv_file
     "
 }
 
@@ -51,7 +52,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -137,7 +138,9 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z" option; d
     z)
       #echo "Option -z triggered, argument = ${OPTARG}"
       assembly_only="true";;
-
+    2)
+      #echo "Option -z triggered, argument = ${OPTARG}"
+      amr_file=${OPTARG};;
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -616,7 +619,7 @@ if [[ -s "${kraken2_asmbled_summary}" ]]; then
       printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "There are no classified reads (Did post assembly kraken2 fail too?)"  >> "${sample_name}.synopsis"
       status="FAILED"
     else
-      printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "kraken2 assembly did not comlete successfully"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "kraken2 assembly did not complete successfully"  >> "${sample_name}.synopsis"
       status="FAILED"
     fi
 	# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
@@ -1004,7 +1007,7 @@ else
   status="FAILED"
 fi
 
-#Check GAMA
+#Check GAMMA
 gamma_genes="NA"
 if [[ -s "${gamma_AR}" ]]; then
   gamma_genes=0
@@ -1025,6 +1028,29 @@ if [[ -s "${gamma_AR}" ]]; then
   fi
 else
   printf "%-30s: %-8s : %s\\n" "GAMMA_AR" "FAILED" "${sample_name}_ResGANNCBI_*.gamma does not exist"  >> "${sample_name}.synopsis"
+  status="FAILED"
+fi
+
+#Check NCBI AMRFinder Genes
+AMR_genes="NA"
+if [[ -s "${amr_file}" ]]; then
+  amr_genes=0
+  while read line_in; do
+    if [[ "${line_in}" = *"POINT"* ]]; then
+      amr_genes=$(( amr_genes + 1 ))
+    else
+      :
+    fi
+  done < "${amr_file}"
+  if [[ ${amr_genes} -eq 0 ]]; then
+    printf "%-30s: %-8s : %s\\n" "AMRFINDER" "SUCCESS" "No point mutations were found"  >> "${sample_name}.synopsis"
+  elif [[ ${amr_genes} -ge 1 ]]; then
+    printf "%-30s: %-8s : %s\\n" "AMRFINDER" "SUCCESS" "${amr_genes} point mutation(s) found"  >> "${sample_name}.synopsis"
+  else
+    echo "Should never get here (amr_genes less than 0)"
+  fi
+else
+  printf "%-30s: %-8s : %s\\n" "AMRFINDER" "FAILED" "${sample_name}_amr_hits.tsv does not exist"  >> "${sample_name}.synopsis"
   status="FAILED"
 fi
 
