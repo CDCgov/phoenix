@@ -1,6 +1,6 @@
 process SPADES {
     tag "$meta.id"
-    label 'process_high'
+    label 'process_high_memory'
     container 'staphb/spades:3.15.4'
     afterScript "sh ${baseDir}/bin/afterSpades.sh" // Handles file zipping, renaming with prefix and checks that files were created
     // Create a summaryline file that will be deleted later if spades is successful if not this line shows up in the final Phoenix_output_summary file
@@ -54,6 +54,7 @@ process SPADES {
     mv spades.log ${prefix}.spades.log
     spades_complete=run_completed
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
+
     rm ${params.outdir}/${meta.id}/${meta.id}_summaryline_failure.tsv
     rm ${params.outdir}/${meta.id}/${meta.id}.synopsis
     """

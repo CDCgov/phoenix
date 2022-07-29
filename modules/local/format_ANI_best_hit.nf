@@ -1,6 +1,7 @@
 process FORMAT_ANI {
     tag "$meta.id"
     label 'process_low'
+    //container 'staphb/gamma:2.1'
 
     input:
     tuple val(meta), path(ani_file)

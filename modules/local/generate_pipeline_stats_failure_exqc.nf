@@ -1,6 +1,7 @@
 process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
     tag "${meta.id}"
     label 'process_low'
+    //container 'staphb/gamma:2.1'
 
     input:
     tuple val(meta), path(trimmed_reads), \

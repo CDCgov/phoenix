@@ -1,6 +1,7 @@
 process CALCULATE_ASSEMBLY_RATIO {
     tag "$meta.id"
     label 'process_low'
+    //container 'staphb/gamma:2.1'
 
     input:
     tuple val(meta), path(taxa_file), path(quast_report)

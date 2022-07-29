@@ -1,6 +1,7 @@
 process DETERMINE_TOP_TAXA {
     tag "$meta.id"
     label 'process_low'
+    //container 'staphb/gamma:2.1'
 
     input:
     tuple val(meta), path(mash_dists), path(assembly_scaffolds)

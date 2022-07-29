@@ -3,7 +3,6 @@ process BUSCO {
     label 'process_high'
     //container "ezlabgva/busco:v5.4.0_dev_cv1"
 
-    conda (params.enable_conda ? "bioconda::busco=5.3.2" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/busco:5.3.2--pyhdfd78af_0':
         'quay.io/biocontainers/busco:5.3.2--pyhdfd78af_0' }"

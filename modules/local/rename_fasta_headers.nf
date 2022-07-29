@@ -1,8 +1,8 @@
 process RENAME_FASTA_HEADERS {
     tag "$meta.id"
     label 'process_low'
+    //container 'staphb/gamma:2.1'
 
-    conda (params.enable_conda ? "bioconda::gamma=2.1" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/gamma%3A2.1--hdfd78af_0':
         'quay.io/biocontainers/gamma:2.1--hdfd78af_0' }" // calling this container because it has biopython
@@ -17,11 +17,11 @@ process RENAME_FASTA_HEADERS {
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    gunzip $assembled_scaffolds
+    gunzip --force $assembled_scaffolds
 
     rename_fasta_headers.py --input ${prefix}.scaffolds.fa --output ${prefix}.renamed.scaffolds.fa --name ${prefix}
 
-    gzip ${prefix}.renamed.scaffolds.fa
+    gzip --force ${prefix}.renamed.scaffolds.fa
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
