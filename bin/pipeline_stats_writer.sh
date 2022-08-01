@@ -494,7 +494,7 @@ if [[ "${run_type}" == "all" ]]; then
 
 	# Quick separate check for contamination by finding # of species above ${contamination_threshold} in list file from kraken2
 	if [[ -s "${kraken2_trimd_report}" ]]; then
-		number_of_species=0
+		number_of_genera=0
 		while IFS= read -r line; do
 			arrLine=(${line})
 			# First element in array is the percent of reads identified as the current taxa
@@ -503,18 +503,18 @@ if [[ "${run_type}" == "all" ]]; then
 			# 3rd element is the taxon level classification
 			# echo "${percent_integer} vs ${contamination_threshold}"
 			classification=${arrLine[3]}
-			if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
+			if [[ "${classification}" == "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
 				#echo "Adding ${arrLine[5]}-${percent_integer}-${contamination_threshold} to list"
-				number_of_species=$(( number_of_species + 1 ))
+				number_of_genera=$(( number_of_genera + 1 ))
 			fi
 		done < "${kraken2_trimd_report}"
 
-		if [[ "${number_of_species}" -gt 1 ]]; then
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "WARNING" "${number_of_species} species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+		if [[ "${number_of_genera}" -gt 1 ]]; then
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "WARNING" "${number_of_genera} species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 					status="WARNING"
 			fi
-		elif [[ "${number_of_species}" -eq 1 ]]; then
+		elif [[ "${number_of_genera}" -eq 1 ]]; then
 			:
 		else
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "WARNING" "No species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
@@ -649,7 +649,7 @@ fi
 
 # Quick separate check for contamination by finding # of species above ${contamination_threshold} in list file from kraken2
 if [[ -s "${kraken2_asmbld_report}" ]]; then
-	number_of_species=0
+	number_of_genera=0
 	#echo "${kraken2_asmbld_report}" >> "${sample_name}.synopsis"
 	while IFS= read -r line; do
 		arrLine=(${line})
@@ -660,17 +660,17 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
       classification=${arrLine[3]}
       #printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
       if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
-        number_of_species=$(( number_of_species + 1 ))
+        number_of_genera=$(( number_of_genera + 1 ))
         #printf "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})" >> "${sample_name}.synopsis"
       fi
   done < "${kraken2_asmbld_report}"
-	echo "${number_of_species}"
-	if [[ $number_of_species -gt 1 ]]; then
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+	echo "${number_of_genera}"
+	if [[ $number_of_genera -gt 1 ]]; then
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_genera} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi
-	elif [[ ${number_of_species} -eq 1 ]]; then
+	elif [[ ${number_of_genera} -eq 1 ]]; then
 		:
 	else
 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No Genera have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
@@ -678,7 +678,7 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
 			status="WARNING"
 		fi
 	fi
-	#echo "Number of species: ${number_of_species}"
+	#echo "Number of species: ${number_of_genera}"
 fi
 
 kraken2_weighted_success=false
@@ -756,7 +756,7 @@ fi
 
 # Quick separate check for contamination by finding # of species above ${contamination_threshold} in list file from kraken2
 if [[ -s "${kraken2_weighted_report}" ]]; then
-	number_of_species=0
+	number_of_genera=0
 	root=0
 	unclass=0
 	total=0
@@ -776,19 +776,19 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
       # 3rd element is the taxon level classification
       classification=${arrLine[3]}
       #echo "${arrLine[0]} - ${total_percent} - ${percent} - ${percent_integer} - ${kraken2_contamination_threshold} - ${classification}"
-      if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
-        number_of_species=$(( number_of_species + 1 ))
+      if [[ "${classification}" == "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
+        number_of_genera=$(( number_of_genera + 1 ))
         echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
       fi
     fi
 	done < "${kraken2_weighted_report}"
 	
-	if [[ $number_of_species -gt 1 ]]; then
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+	if [[ $number_of_genera -gt 1 ]]; then
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "${number_of_genera} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 		if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
       status="WARNING"
     fi
-	elif [[ "${number_of_species}" -eq 1 ]]; then
+	elif [[ "${number_of_genera}" -eq 1 ]]; then
 		:
 	else
 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "No Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
@@ -796,7 +796,7 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
       status="WARNING"
     fi
 	fi
-	#echo "Number of species: ${number_of_species}"
+	#echo "Number of species: ${number_of_genera}"
 fi
 
 #Check QUAST
