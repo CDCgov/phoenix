@@ -510,14 +510,14 @@ if [[ "${run_type}" == "all" ]]; then
 		done < "${kraken2_trimd_report}"
 
 		if [[ "${number_of_genera}" -gt 1 ]]; then
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "WARNING" "${number_of_genera} species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "WARNING" "${number_of_genera} genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 					status="WARNING"
 			fi
 		elif [[ "${number_of_genera}" -eq 1 ]]; then
-			:
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "SUCCESS" "Only one genus has been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 		else
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "WARNING" "No species have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS_CONTAM" "WARNING" "No genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
       if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
         status="WARNING"
       fi
@@ -666,14 +666,14 @@ if [[ -s "${kraken2_asmbld_report}" ]]; then
   done < "${kraken2_asmbld_report}"
 	echo "${number_of_genera}"
 	if [[ $number_of_genera -gt 1 ]]; then
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_genera} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_genera} genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi
 	elif [[ ${number_of_genera} -eq 1 ]]; then
-		:
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "SUCCESS" "Only one genus has been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 	else
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No Genera have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No genera have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
 		if [[ "${status}" = "ALERT" ]] || [[ "${status}" = "SUCCESS" ]]; then
 			status="WARNING"
 		fi
@@ -784,14 +784,14 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
 	done < "${kraken2_weighted_report}"
 	
 	if [[ $number_of_genera -gt 1 ]]; then
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "${number_of_genera} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "${number_of_genera} genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 		if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
       status="WARNING"
     fi
 	elif [[ "${number_of_genera}" -eq 1 ]]; then
-		:
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "SUCCESS" "Only one genus has been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 	else
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "No Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "No genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
     if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
       status="WARNING"
     fi
