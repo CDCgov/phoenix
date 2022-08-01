@@ -62,6 +62,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -w $gamma_HV \\
         -x $srst_fullgenes_file \\
         -y $mlst_file \\
-        -2 $amr_file
+        -2 $amr_file \\
+        -3
     """
 }

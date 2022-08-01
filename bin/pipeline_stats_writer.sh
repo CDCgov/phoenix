@@ -52,7 +52,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -139,8 +139,11 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:" option
       #echo "Option -z triggered, argument = ${OPTARG}"
       assembly_only="true";;
     2)
-      #echo "Option -z triggered, argument = ${OPTARG}"
+      #echo "Option -2 triggered, argument = ${OPTARG}"
       amr_file=${OPTARG};;
+    3)
+      #echo "Option -3 triggered, argument = ${OPTARG}"
+      internal_phoenix=="true";;
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -464,8 +467,8 @@ if [[ "${run_type}" == "all" ]]; then
 		#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 		# If there are no reads at the domain level, then report no classified reads
     
-    if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
-		#if (( $(echo "${domain} <= 0" | bc -l) )); then
+    #if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
+		if (( $(echo "${domain} <= 0" | bc -l) )); then
       if [[ "${kraken2_pre_success}" = true ]]; then
         printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_READS" "FAILED" "There are no classified reads"  >> "${sample_name}.synopsis"
         status="FAILED"
@@ -475,8 +478,8 @@ if [[ "${run_type}" == "all" ]]; then
       fi
 		# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
 		else
-      if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
-			#if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
+      #if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
+			if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
 				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_READS" "WARNING" "unclassified reads comprise ${unclass_string}% of total"  >> "${sample_name}.synopsis"
 				if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 					status="WARNING"
@@ -570,115 +573,117 @@ else
 	status="FAILED"
 fi
 
-#Check kraken2 on assembly
-kraken2_unweighted_success="false"
-if [[ -s "${kraken2_asmbld_report}" ]]; then
-	#printf "%-30s: %-8s : %s\\n" "kraken2 postassembly" "SUCCESS" "Found"
-	kraken2_unweighted_success="true"
-else
-	printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD" "FAILED" "${sample_name}.kraken2_asmbld.report.txt not found"  >> "${sample_name}.synopsis"
-	status="FAILED"
-fi
-
-#Check Krona output of assembly
-if [[ "${kraken2_unweighted_success}" = "true" ]]; then
-	if [[ -s "${krona_asmbld}" ]]; then
-		#printf "%-30s: %-8s : %s\\n" "krona-kraken2-pstasm" "SUCCESS" "Found"
-		:
+if [[ "${internal_phoenix}" == "true" ]]; then
+	#Check kraken2 on assembly
+	kraken2_unweighted_success="false"
+	if [[ -s "${kraken2_asmbld_report}" ]]; then
+		#printf "%-30s: %-8s : %s\\n" "kraken2 postassembly" "SUCCESS" "Found"
+		kraken2_unweighted_success="true"
 	else
-		printf "%-30s: %-8s : %s\\n" "KRONA_ASMBLD" "FAILED" "${sample_name}_asmbld.html not found"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD" "FAILED" "${sample_name}.kraken2_asmbld.report.txt not found"  >> "${sample_name}.synopsis"
 		status="FAILED"
 	fi
-else
-	printf "%-30s: %-8s : %s\\n" "KRONA_ASMBLD" "FAILED" "kraken2 unweighted did not complete successfully"  >> "${sample_name}.synopsis"
-	status="FAILED"
-fi
 
-#Check extraction and unclassified values for kraken2 post assembly
-if [[ -s "${kraken2_asmbled_summary}" ]]; then
-	# Extracts many elements of the summary file to report unclassified and species classified reads and percentages
-	unclass=$(head -n 1 "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
-	#true_unclass=$(head -n 1 "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
-	domain=$(sed -n '2p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
-	genuspost=$(sed -n '7p' "${kraken2_asmbled_summary}" | cut -d' ' -f3 | xargs echo)
-	speciespost=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f3- | xargs echo)
-	speciespostpercent=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
-  genuspostpercent=$(sed -n '7p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
-  if [[ "${unclass}" = "UNK" ]]; then
-    unclass=0
-    unclass_string="UNKNOWN"
-  else
-    unclass_string="${unclass}"
-  fi
-	#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
-	# If there are no reads at the domain level, then report no classified reads
-
-  if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
-	#if (( $(echo "${domain} <= 0" | bc -l) )); then
-    if [[ "${kraken2_unweighted_success}" = true ]]; then
-      printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "There are no classified reads (Did post assembly kraken2 fail too?)"  >> "${sample_name}.synopsis"
-      status="FAILED"
-    else
-      printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "kraken2 assembly did not complete successfully"  >> "${sample_name}.synopsis"
-      status="FAILED"
-    fi
-	# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
-	else
-    if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
-		#if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "unclassified reads comprise ${unclass_string}% of total"  >> "${sample_name}.synopsis"
-			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
-				status="WARNING"
-			fi
-    elif (( $(echo ${genuspostpercent} 50 | awk '{if ($1 < $2) print 1;}') )); then
-		#elif (( $(echo "${genuspostpercent} < 50" | bc -l) )); then
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "Genus-${genuspost}(${genuspostpercent}%) is under 50% (species ${speciespost} (${speciespostpercent}%)), possibly contaminated or contigs are weighted unevenly"  >> "${sample_name}.synopsis"
-			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
-				status="WARNING"
-			fi
+	#Check Krona output of assembly
+	if [[ "${kraken2_unweighted_success}" = "true" ]]; then
+		if [[ -s "${krona_asmbld}" ]]; then
+			#printf "%-30s: %-8s : %s\\n" "krona-kraken2-pstasm" "SUCCESS" "Found"
+			:
 		else
-			#printf "%-30s: %-8s : %s\\n" "kraken2 on assembly" "SUCCESS" "${speciespercent}%${true_speciespercent%} ${genuspost} ${speciespost} with ${unclass}%${true_unclass%} unclassified contigs"
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "SUCCESS" "${genuspost}(${genuspostpercent}%) ${speciespost}(${speciespostpercent}%) with ${unclass_string}% unclassified contigs"  >> "${sample_name}.synopsis"
+			printf "%-30s: %-8s : %s\\n" "KRONA_ASMBLD" "FAILED" "${sample_name}_asmbld.html not found"  >> "${sample_name}.synopsis"
+			status="FAILED"
 		fi
+	else
+		printf "%-30s: %-8s : %s\\n" "KRONA_ASMBLD" "FAILED" "kraken2 unweighted did not complete successfully"  >> "${sample_name}.synopsis"
+		status="FAILED"
 	fi
-# If no summary file was found
-else
-	printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "${sample_name}.kraken2_asmbld.classifiedreads.txt not found"  >> "${sample_name}.synopsis"
-	status="FAILED"
-fi
+
+	#Check extraction and unclassified values for kraken2 post assembly
+	if [[ -s "${kraken2_asmbled_summary}" ]]; then
+		# Extracts many elements of the summary file to report unclassified and species classified reads and percentages
+		unclass=$(head -n 1 "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		#true_unclass=$(head -n 1 "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
+		domain=$(sed -n '2p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		genuspost=$(sed -n '7p' "${kraken2_asmbled_summary}" | cut -d' ' -f3 | xargs echo)
+		speciespost=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f3- | xargs echo)
+		speciespostpercent=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		genuspostpercent=$(sed -n '7p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		if [[ "${unclass}" = "UNK" ]]; then
+			unclass=0
+			unclass_string="UNKNOWN"
+		else
+			unclass_string="${unclass}"
+		fi
+		#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
+		# If there are no reads at the domain level, then report no classified reads
+
+		#if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
+		if (( $(echo "${domain} <= 0" | bc -l) )); then
+			if [[ "${kraken2_unweighted_success}" = true ]]; then
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "There are no classified reads (Did post assembly kraken2 fail too?)"	>> "${sample_name}.synopsis"
+				status="FAILED"
+			else
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "kraken2 assembly did not complete successfully"	>> "${sample_name}.synopsis"
+				status="FAILED"
+			fi
+		# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
+		else
+			#if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
+			if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "unclassified reads comprise ${unclass_string}% of total"	>> "${sample_name}.synopsis"
+				if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
+					status="WARNING"
+				fi
+			#elif (( $(echo ${genuspostpercent} 50 | awk '{if ($1 < $2) print 1;}') )); then
+			elif (( $(echo "${genuspostpercent} < 50" | bc -l) )); then
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "Genus-${genuspost}(${genuspostpercent}%) is under 50% (species ${speciespost} (${speciespostpercent}%)), possibly contaminated or contigs are weighted unevenly"  >> "${sample_name}.synopsis"
+				if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
+					status="WARNING"
+				fi
+			else
+				#printf "%-30s: %-8s : %s\\n" "kraken2 on assembly" "SUCCESS" "${speciespercent}%${true_speciespercent%} ${genuspost} ${speciespost} with ${unclass}%${true_unclass%} unclassified contigs"
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "SUCCESS" "${genuspost}(${genuspostpercent}%) ${speciespost}(${speciespostpercent}%) with ${unclass_string}% unclassified contigs"  >> "${sample_name}.synopsis"
+			fi
+		fi
+	# If no summary file was found
+	else
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "FAILED" "${sample_name}.kraken2_asmbld.classifiedreads.txt not found"  >> "${sample_name}.synopsis"
+		status="FAILED"
+	fi
 
 # Quick separate check for contamination by finding # of species above ${contamination_threshold} in list file from kraken2
-if [[ -s "${kraken2_asmbld_report}" ]]; then
-	number_of_species=0
-	#echo "${kraken2_asmbld_report}" >> "${sample_name}.synopsis"
-	while IFS= read -r line; do
-		arrLine=(${line})
-		# First element in array is the percent of reads identified as the current taxa
-		percent=${arrLine[0]}
-    percent_integer=$(echo "${percent}" | cut -d'.' -f1)
-      # 3rd element is the taxon level classification
-      classification=${arrLine[3]}
-      #printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
-      if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
-        number_of_species=$(( number_of_species + 1 ))
-        #printf "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})" >> "${sample_name}.synopsis"
-      fi
-  done < "${kraken2_asmbld_report}"
-	echo "${number_of_species}"
-	if [[ $number_of_species -gt 1 ]]; then
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
-		if [[ "${status}" == "SUCCESS" ]]; then
-			status="ALERT"
+	if [[ -s "${kraken2_asmbld_report}" ]]; then
+		number_of_species=0
+		#echo "${kraken2_asmbld_report}" >> "${sample_name}.synopsis"
+		while IFS= read -r line; do
+			arrLine=(${line})
+			# First element in array is the percent of reads identified as the current taxa
+			percent=${arrLine[0]}
+			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
+				# 3rd element is the taxon level classification
+				classification=${arrLine[3]}
+				#printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
+				if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
+					number_of_species=$(( number_of_species + 1 ))
+					#printf "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})" >> "${sample_name}.synopsis"
+				fi
+		done < "${kraken2_asmbld_report}"
+		echo "${number_of_species}"
+		if [[ $number_of_species -gt 1 ]]; then
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
+			if [[ "${status}" == "SUCCESS" ]]; then
+				status="ALERT"
+			fi
+		elif [[ ${number_of_species} -eq 1 ]]; then
+			:
+		else
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No Genera have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
+			if [[ "${status}" = "ALERT" ]] || [[ "${status}" = "SUCCESS" ]]; then
+				status="WARNING"
+			fi
 		fi
-	elif [[ ${number_of_species} -eq 1 ]]; then
-		:
-	else
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "No Genera have been found above ${kraken2_contamination_threshold}% abundance"  >> "${sample_name}.synopsis"
-		if [[ "${status}" = "ALERT" ]] || [[ "${status}" = "SUCCESS" ]]; then
-			status="WARNING"
-		fi
+		#echo "Number of species: ${number_of_species}"
 	fi
-	#echo "Number of species: ${number_of_species}"
 fi
 
 kraken2_weighted_success=false
@@ -713,34 +718,34 @@ if [[ -s "${kraken2_weighted_summary}" ]]; then
 	genusweighted=$(sed -n '7p' "${kraken2_weighted_summary}" | cut -d' ' -f3 | xargs echo)
 	speciesweighted=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f3- | xargs echo)
 	speciesweightedpercent=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
-  genusweightedpercent=$(sed -n '7p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
-  if [[ "${unclass}" = "UNK" ]]; then
-    unclass=0
-    unclass_string="UNKNOWN"
-  else
-    unclass_string="${unclass}"
-  fi
+	genusweightedpercent=$(sed -n '7p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	if [[ "${unclass}" = "UNK" ]]; then
+		unclass=0
+		unclass_string="UNKNOWN"
+	else
+		unclass_string="${unclass}"
+	fi
 	#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled_BP.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 	# If there are no reads at the domain level, then report no classified reads
-  if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
-	#if (( $(echo "${domain} <= 0" | bc -l) )); then
-    if [[ "${kraken2_unweighted_success}" = true ]]; then
-      printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "There are no classified reads"  >> "${sample_name}.synopsis"
-      status="FAILED"
-    else
-      printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "Kraken2 weighted did not complete successfully"  >> "${sample_name}.synopsis"
-      status="FAILED"
-    fi
+	#if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
+	if (( $(echo "${domain} <= 0" | bc -l) )); then
+		if [[ "${kraken2_unweighted_success}" = true ]]; then
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "There are no classified reads"	>> "${sample_name}.synopsis"
+			status="FAILED"
+		else
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "Kraken2 weighted did not complete successfully"	>> "${sample_name}.synopsis"
+			status="FAILED"
+		fi
 	# If there are classified reads then check to see if percent unclassifed falls above the threshold limit. Report warning if too high or success and stats if below
 	else
-    if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
-		#if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "WARNING" "unclassified reads comprise ${unclass_string}% of total"  >> "${sample_name}.synopsis"
+		#if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
+		if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "WARNING" "unclassified reads comprise ${unclass_string}% of total"	>> "${sample_name}.synopsis"
 			if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 				status="WARNING"
 			fi
-    elif (( $(echo ${genusweightedpercent} 50 | awk '{if ($1 < $2) print 1;}') )); then
-		#elif (( $(echo "${genusweightedpercent} < 50" | bc -l) )); then
+		#elif (( $(echo ${genusweightedpercent} 50 | awk '{if ($1 < $2) print 1;}') )); then
+		elif (( $(echo "${genusweightedpercent} < 50" | bc -l) )); then
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "Genus-${genusweighted} is under 50% (species-${speciesweighted} ${speciesweightedpercent}%), likely contaminated"  >> "${sample_name}.synopsis"
 			status="FAILED"
 		else
@@ -762,39 +767,42 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
 	total=0
 	while IFS= read -r line; do
 		arrLine=(${line})
+    echo $arrLine
 		# First element in array is the percent of reads identified as the current taxa
-    if [[ "${arrLine[3]}" = "U" ]]; then
-      unclass=${arrLine[0]}
-    elif [[ "${arrLine[3]}" = "R" ]]; then
-      root=${arrLine[0]}
-      total_percent=$(echo "${unclass} + ${root}" | bc)
+		if [[ "${arrLine[3]}" = "U" ]]; then
+			unclass=${arrLine[0]}
+		elif [[ "${arrLine[3]}" = "R" ]]; then
+			root=${arrLine[0]}
+			total_percent=$(echo "${unclass} + ${root}" | bc)
 			#echo "total percent:${unclass} + ${root} = ${total}"
-    else
-      percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-      #percent=${arrLine[0]}
-      percent_integer=$(echo "${percent}" | cut -d'.' -f1)
-      # 3rd element is the taxon level classification
-      classification=${arrLine[3]}
-      #echo "${arrLine[0]} - ${total_percent} - ${percent} - ${percent_integer} - ${kraken2_contamination_threshold} - ${classification}"
-      if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
-        number_of_species=$(( number_of_species + 1 ))
-        echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
-      fi
-    fi
+		else
+      echo "${arrLine[0]} ${total_percent}"
+			percent=$(echo "${arrLine[0]} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
+      echo $percent
+			#percent=${arrLine[0]}
+			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
+			# 3rd element is the taxon level classification
+			classification=${arrLine[3]}
+			#echo "${arrLine[0]} - ${total_percent} - ${percent} - ${percent_integer} - ${kraken2_contamination_threshold} - ${classification}"
+			if [[ "${classification}" == "S" ]] && (( percent_integer > kraken2_contamination_threshold )); then
+				number_of_species=$(( number_of_species + 1 ))
+				echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+			fi
+		fi
 	done < "${kraken2_weighted_report}"
 	
 	if [[ $number_of_species -gt 1 ]]; then
 		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "${number_of_species} Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 		if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
-      status="WARNING"
-    fi
+			status="WARNING"
+		fi
 	elif [[ "${number_of_species}" -eq 1 ]]; then
 		:
 	else
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "No Genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
-    if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
-      status="WARNING"
-    fi
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED_CONTAM" "WARNING" "No Genera have been found above the ${kraken2_contamination_threshold}% threshold"	>> "${sample_name}.synopsis"
+		if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
+			status="WARNING"
+		fi
 	fi
 	#echo "Number of species: ${number_of_species}"
 fi
@@ -806,48 +814,48 @@ if [[ -s "${quast_report}" ]]; then
 	assembly_length=$(sed -n '16p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 	N50=$(sed -n '18p' "${quast_report}" | sed -r 's/[\t]+/ /g'| cut -d' ' -f2 )
 	GC_con=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-  #contig_num=$(sed -n '14p' "${quast_report}" | rev | cut -d$'\t ' -f1 | rev)
+	#contig_num=$(sed -n '14p' "${quast_report}" | rev | cut -d$'\t ' -f1 | rev)
 	#assembly_length=$(sed -n '16p' "${quast_report}" | rev | cut -d$'\t ' -f1 | rev)
 	#N50=$(sed -n '18p' "${quast_report}" | rev | cut -d$'\t ' -f1 | rev)
 	#GC_con=$(sed -n '17p' "${quast_report}" | rev | cut -d$'\t ' -f1 | rev)
 	printf "%-30s: %-8s : %s\\n" "QUAST" "SUCCESS" "#-${contig_num} length-${assembly_length} n50-${N50} %GC-${GC_con}"  >> "${sample_name}.synopsis"
-  if [[ "${assembly_length}" -lt 1000000 ]]; then
-    QC_FAIL=$QC_FAIL"smaller_than_1000000_bps(${assembly_length})-"
-  fi
+	if [[ "${assembly_length}" -lt 1000000 ]]; then
+		QC_FAIL=$QC_FAIL"smaller_than_1000000_bps(${assembly_length})-"
+	fi
 else
 	printf "%-30s: %-8s : %s\\n" "QUAST" "FAILED" "${sample_name}_report.tsv does not exist"  >> "${sample_name}.synopsis"
 	status="FAILED"
 fi
 
 if [[ -s "${taxID_file}" ]]; then
-  source_call=$(head -n1 "${taxID_file}")
-  tax_source="UNK"
-  while IFS= read -r line; do
-    # Grab first letter of line (indicating taxonomic level)
-    first=${line:0:1}
-    # Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
-    if [ "${first}" = "s" ]; then
-      dec_species=$(echo "${line}" | awk -F ' ' '{print $2}')
-    elif [ "${first}" = "G" ]; then
-      dec_genus=$(echo "${line}" | awk -F ' ' '{print $2}')
-    elif [ "${first}" = "F" ]; then
-      dec_family=$(echo "${line}" | awk -F ' ' '{print $2}')
-    elif [ "${first}" = "(" ]; then
-      tax_source=$(echo "${line}" | cut -d')' -f1 | cut -d'(' -f2)
-    fi
-  done < "${taxID_file}"
+	source_call=$(head -n1 "${taxID_file}")
+	tax_source="UNK"
+	while IFS= read -r line; do
+		# Grab first letter of line (indicating taxonomic level)
+		first=${line:0:1}
+		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
+		if [ "${first}" = "s" ]; then
+			dec_species=$(echo "${line}" | awk -F ' ' '{print $2}')
+		elif [ "${first}" = "G" ]; then
+			dec_genus=$(echo "${line}" | awk -F ' ' '{print $2}')
+		elif [ "${first}" = "F" ]; then
+			dec_family=$(echo "${line}" | awk -F ' ' '{print $2}')
+		elif [ "${first}" = "(" ]; then
+			tax_source=$(echo "${line}" | cut -d')' -f1 | cut -d'(' -f2)
+		fi
+	done < "${taxID_file}"
 
-  if [[ "$dec_genus" != "Not_assigned" ]] && [[ "$dec_species" != "Not_assigned" ]]; then
-    printf "%-30s: %-8s : %s\\n" "TAXA-${tax_source}" "SUCCESS" "${dec_genus} ${dec_species}"  >> "${sample_name}.synopsis"
-  elif [[ "$dec_genus" != "Not_assigned" ]]; then
-    printf "%-30s: %-8s : %s\\n" "TAXA" "FAILED" "None of the classifiers completed successfully"  >> "${sample_name}.synopsis"
-  elif [[ "$dec_genus" != "Not_assigned" ]]; then
-    printf "%-30s: %-8s : %s\\n" "TAXA" "FAILED" "None of the classifiers completed successfully"  >> "${sample_name}.synopsis"
-  elif [[ "$dec_species" != "Not_assigned" ]]; then
-    printf "%-30s: %-8s : %s\\n" "TAXA" "WARNING" "No Species was able to be determined"  >> "${sample_name}.synopsis"
-  fi
+	if [[ "$dec_genus" != "Not_assigned" ]] && [[ "$dec_species" != "Not_assigned" ]]; then
+		printf "%-30s: %-8s : %s\\n" "TAXA-${tax_source}" "SUCCESS" "${dec_genus} ${dec_species}"  >> "${sample_name}.synopsis"
+	elif [[ "$dec_genus" != "Not_assigned" ]]; then
+		printf "%-30s: %-8s : %s\\n" "TAXA" "FAILED" "None of the classifiers completed successfully"  >> "${sample_name}.synopsis"
+	elif [[ "$dec_genus" != "Not_assigned" ]]; then
+		printf "%-30s: %-8s : %s\\n" "TAXA" "FAILED" "None of the classifiers completed successfully"  >> "${sample_name}.synopsis"
+	elif [[ "$dec_species" != "Not_assigned" ]]; then
+		printf "%-30s: %-8s : %s\\n" "TAXA" "WARNING" "No Species was able to be determined"  >> "${sample_name}.synopsis"
+	fi
 else
-  printf "%-30s: %-8s : %s\\n" "TAXA-${tax_source}" "FAILED" "No Taxa File found"  >> "${sample_name}.synopsis"
+	printf "%-30s: %-8s : %s\\n" "TAXA-${tax_source}" "FAILED" "No Taxa File found"  >> "${sample_name}.synopsis"
 fi
 
 genus_initial="${dec_genus:0:1}"
@@ -863,8 +871,8 @@ if [[ -f "${assembly_ratio_file}" ]]; then
       st_dev=$(head -n4 "${assembly_ratio_file}" | tail -n1 | cut -d' ' -f2)
     fi
 
-    if (( $(echo $assembly_ratio 0 | awk '{if ($1 < $2) print 1;}') )); then
-    #if (( $(echo "$assembly_ratio < 0" | bc -l) )); then
+    #if (( $(echo $assembly_ratio 0 | awk '{if ($1 < $2) print 1;}') )); then
+    if (( $(echo "$assembly_ratio < 0" | bc -l) )); then
       printf "%-30s: %-8s : %s\\n" "ASSEMBLY_RATIO(SD)" "WARNING" "No Reference - ${assembly_ratio}x(${st_dev}-SD) against ${assembly_ID}"  >> "${sample_name}.synopsis"
       if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
         status="WARNING"
@@ -875,8 +883,8 @@ if [[ -f "${assembly_ratio_file}" ]]; then
       if [[ "${status}" = "SUCCESS" ]]; then
         status="ALERT"
       fi
-    elif (( $(echo $st_dev 2.58 | awk '{if ($1 > $2) print 1;}') )); then
-    #elif (( $(echo "$st_dev > 2.58" | bc -l) )); then
+    #elif (( $(echo $st_dev 2.58 | awk '{if ($1 > $2) print 1;}') )); then
+    elif (( $(echo "$st_dev > 2.58" | bc -l) )); then
       printf "%-30s: %-8s : %s\\n" "ASSEMBLY_RATIO(SD)" "FAILED" "St. dev. too large - ${assembly_ratio}x(${st_dev}-SD) against ${assembly_ID}"  >> "${sample_name}.synopsis"
       status="FAILED"
       QC_FAIL=$QC_FAIL"STDev_above_2.58($st_dev)-"
@@ -909,57 +917,58 @@ if [[ -f "${assembly_ratio_file}" ]]; then
 		avg_coverage=0
 	fi
   #echo "trimmed-${avg_coverage}"
-  if (( $(echo $domain 0 | awk '{if ($1 > $2) print 1;}') )) && (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 < $2) print 1;}') )); then
-	#if (( $(echo "${avg_coverage} > ${reads_low}" | bc -l) )) && (( $(echo "${avg_coverage} < ${reads_high}" | bc -l) )); then
+  #if (( $(echo $domain 0 | awk '{if ($1 > $2) print 1;}') )) && (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 < $2) print 1;}') )); then
+	if (( $(echo "${avg_coverage} > ${reads_low}" | bc -l) )) && (( $(echo "${avg_coverage} < ${reads_high}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
-	elif (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 > $2) print 1;}') )); then
-  #elif (( $(echo "${avg_coverage} > ${reads_high}" | bc -l) )); then
+	#elif (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 > $2) print 1;}') )); then
+  elif (( $(echo "${avg_coverage} > ${reads_high}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:<150x)"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi
-  elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 > $2) print 1;}') )); then
-  #elif (( $(echo "${avg_coverage} > ${reads_min}" | bc -l) )); then
+  #elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 > $2) print 1;}') )); then
+  elif (( $(echo "${avg_coverage} > ${reads_min}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi
-  elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 < $2) print 1;}') )); then
-	#elif (( $(echo "${avg_coverage} < ${reads_min}" | bc -l) )); then
+  #elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 < $2) print 1;}') )); then
+	elif (( $(echo "${avg_coverage} < ${reads_min}" | bc -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "FAILED" "${avg_coverage}x coverage based on trimmed reads (Min:30x)"  >> "${sample_name}.synopsis"
 		status="FAILED"
     QC_FAIL=$QC_FAIL"coverage_below_30($avg_coverage)-"
 	fi
 fi
 
-
-#Check BUSCO
-if [[ -s "${busco_summary}" ]]; then
-	# Reads each line of the busco output file to extract the 3 that contain summary data to report
-	while IFS= read -r line; do
-    # If the line contains info for found buscos, total buscos, or database info grab it
-     if [[ "${line}" == *"Complete BUSCOs (C)"* ]]; then
-      #echo "C-"${line}
-			found_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-   	elif [[ "${line}" == *"Total BUSCO groups searched"* ]]; then
-      #echo "T-"${line}
-      total_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-   	elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
-      #echo "L-"${line}
-      db=$(echo "${line}" | awk -F ' ' '{print $6}')
-    fi
-    done < "${busco_summary}"
-    percent_BUSCO_present=$(bc<<<"${found_buscos}*100/${total_buscos}")
-    if [[ "${percent_BUSCO_present}" -gt 90 ]]; then
-      printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "SUCCESS" "${percent_BUSCO_present}% (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
-    else
-      printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "FAILED" "${percent_BUSCO_present}% (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
-      status="FAILED"
-    fi
-  # If the busco summary file does not exist
-else
-  printf "%-30s: %-8s : %s\\n" "BUSCO" "FAILED" "short_summary.*.${sample_name}.scaffolds.fa.txt not found"  >> "${sample_name}.synopsis"
-  status="FAILED"
+if [[ "${internal_phoenix}" == "true" ]]; then
+  #Check BUSCO
+  if [[ -s "${busco_summary}" ]]; then
+	  # Reads each line of the busco output file to extract the 3 that contain summary data to report
+	  while IFS= read -r line; do
+      # If the line contains info for found buscos, total buscos, or database info grab it
+      if [[ "${line}" == *"Complete BUSCOs (C)"* ]]; then
+        #echo "C-"${line}
+			  found_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
+   	  elif [[ "${line}" == *"Total BUSCO groups searched"* ]]; then
+        #echo "T-"${line}
+        total_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
+   	  elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
+        #echo "L-"${line}
+        db=$(echo "${line}" | awk -F ' ' '{print $6}')
+      fi
+      done < "${busco_summary}"
+      percent_BUSCO_present=$(bc<<<"${found_buscos}*100/${total_buscos}")
+      if [[ "${percent_BUSCO_present}" -gt 90 ]]; then
+        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "SUCCESS" "${percent_BUSCO_present}% (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
+      else
+        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "FAILED" "${percent_BUSCO_present}% (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
+        status="FAILED"
+      fi
+    # If the busco summary file does not exist
+  else
+    printf "%-30s: %-8s : %s\\n" "BUSCO" "FAILED" "short_summary.*.${sample_name}.scaffolds.fa.txt not found"  >> "${sample_name}.synopsis"
+    status="FAILED"
+  fi
 fi
 
 #Check fastANI REFSEQ
@@ -1054,28 +1063,30 @@ else
   status="FAILED"
 fi
 
-if [[ "${run_type}" == "all" ]]; then
-  # check SRST2 output
-  if [[ -s "${srst2_file}" ]]; then
-    srst2_DB=$(echo "${srst2_file}" | rev | cut -d'_' -f4,5 | rev)
-    info_NARC_List=$(head -n 1 "${srst2_file}")
-    IFS='	' read -r -a NARC_array <<< "${info_NARC_List}"
-    NARC_Num="${#NARC_array[@]}"
-    NARC_Num=$(( NARC_Num - 1 ))
-    #echo "${info_ResGANNCBI_List} - ${ResGANNCBI_Num}"
-    if [[ "${NARC_Num}" -eq 0 ]]; then
-      printf "%-30s: %-8s : %s\\n" "SRST2" "ALERT" "Completed, but NO KNOWN AMR genes present from ${srst2_DB}"  >> "${sample_name}.synopsis"
-      if [[ "${status}" == "SUCCESS" ]]; then
-        status="ALERT"
+if [[ "${internal_phoenix}" == "true" ]]; then
+  if [[ "${run_type}" == "all" ]]; then
+    # check SRST2 output
+    if [[ -s "${srst2_file}" ]]; then
+      srst2_DB=$(echo "${srst2_file}" | rev | cut -d'_' -f4,5 | rev)
+      info_NARC_List=$(head -n 1 "${srst2_file}")
+      IFS='	' read -r -a NARC_array <<< "${info_NARC_List}"
+      NARC_Num="${#NARC_array[@]}"
+      NARC_Num=$(( NARC_Num - 1 ))
+      #echo "${info_ResGANNCBI_List} - ${ResGANNCBI_Num}"
+      if [[ "${NARC_Num}" -eq 0 ]]; then
+        printf "%-30s: %-8s : %s\\n" "SRST2" "ALERT" "Completed, but NO KNOWN AMR genes present from ${srst2_DB}"  >> "${sample_name}.synopsis"
+        if [[ "${status}" == "SUCCESS" ]]; then
+          status="ALERT"
+        fi
+      else
+        printf "%-30s: %-8s : %s\\n" "SRST2" "SUCCESS" "${NARC_Num} gene(s) found from ${srst2_DB}"  >> "${sample_name}.synopsis"
       fi
     else
-      printf "%-30s: %-8s : %s\\n" "SRST2" "SUCCESS" "${NARC_Num} gene(s) found from ${srst2_DB}"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "SRST2" "FAILED" "${sample_name}__fullgenes__*.txt file does not exist"  >> "${sample_name}.synopsis"
     fi
   else
-    printf "%-30s: %-8s : %s\\n" "SRST2" "FAILED" "${sample_name}__fullgenes__*.txt file does not exist"  >> "${sample_name}.synopsis"
+    printf "%-30s: %-8s : %s\\n" "SRST2" "NA" "Assembly only isolate"  >> "${sample_name}.synopsis"
   fi
-else
-  printf "%-30s: %-8s : %s\\n" "SRST2" "NA" "Assembly only isolate"  >> "${sample_name}.synopsis"
 fi
 
 # check Replicons
