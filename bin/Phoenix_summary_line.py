@@ -270,12 +270,16 @@ def Get_Mutations(amr_file):
             if "POINT" in line:
                 point_mutations = line.split("	")[5]
                 point_mutations_list.append(point_mutations)
+        if len(point_mutations_list) == 0:
+            point_mutations_list = "No point mutations found"
+        else:
+            point_mutations_list = ','.join(point_mutations_list)
     return point_mutations_list
 
 def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file):
     try:
         point_mutations_list = Get_Mutations(amr_file)
-        point_mutations_list = ','.join(point_mutations_list)
+        print(point_mutations_list)
     except:
         point_mutations_list = 'Unknown'
     try:

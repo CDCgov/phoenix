@@ -12,7 +12,7 @@ process FETCH_FAILED_SUMMARIES {
 
     script:
     """
-    if [ -f "${directory}/*/*_summaryline_failure.tsv" ]; then
+    if [ -f ${directory}/*/*_summaryline_failure.tsv ]; then
         for file in ${directory}/*/*_summaryline_failure.tsv; do 
             if grep -q SPAdes_Failure "\$file"; then
                 fname=\$(basename \$file _summaryline_failure.tsv)
