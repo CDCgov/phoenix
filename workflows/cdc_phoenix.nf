@@ -333,8 +333,8 @@ workflow PHOENIX_EXQC {
         KRAKEN2_ASMBLD.out.report, \
         KRAKEN2_ASMBLD.out.krona_html, \
         KRAKEN2_ASMBLD.out.k2_bh_summary, \
-        KRAKEN2_WTASMBLD.out.krona_html, \
         KRAKEN2_WTASMBLD.out.report, \
+        KRAKEN2_WTASMBLD.out.krona_html, \
         KRAKEN2_WTASMBLD.out.k2_bh_summary, \
         DETERMINE_TAXA_ID.out.taxonomy, \
         FORMAT_ANI.out.ani_best_hit, \

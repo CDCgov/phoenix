@@ -291,8 +291,8 @@ workflow PHOENIX_EXTERNAL {
         GAMMA_PF.out.gamma, \
         QUAST.out.report_tsv, \
         [], [], [], [], \
-        KRAKEN2_WTASMBLD.out.krona_html, \
         KRAKEN2_WTASMBLD.out.report, \
+        KRAKEN2_WTASMBLD.out.krona_html, \
         KRAKEN2_WTASMBLD.out.k2_bh_summary, \
         DETERMINE_TAXA_ID.out.taxonomy, \
         FORMAT_ANI.out.ani_best_hit, \
