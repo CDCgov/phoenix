@@ -45,7 +45,7 @@ For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/
     nextflow run cdcgov/phoenix -r v1.0.0 -profile <singularity/docker/custom>,test -entry PHOENIX --kraken2db $PATH_TO_DB
     ```
 
-Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcgov/phoenix`. See [below](https://github.com/cdcent/phoenix/wiki/Dependencies-and-Install#install-phoenix) for how to clone and have the software downloaded to a different location. 
+Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcgov/phoenix`. See [wiki](https://github.com/CDCgov/phoenix/wiki/Dependencies-and-Install#run-phoenix) for how to clone and have the software downloaded to a different location. 
 
     > * The pipeline comes with config profiles called `docker` and `singularity` which instruct the pipeline to use the named tool for software management. For example, `-profile test,docker`.
     > * Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
