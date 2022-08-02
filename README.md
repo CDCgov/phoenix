@@ -1,4 +1,4 @@
-# :fire::bird::fire: PHoeNIx
+# :fire::bird::fire: PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens
 
 <!-- [![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download)](https://github.com/CDCgov/phoenix/releases) -->
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
