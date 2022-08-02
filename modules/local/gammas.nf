@@ -3,11 +3,7 @@ def VERSION = '2.1' // Version information not provided by tool on CLI
 process GAMMA_S {
     tag "$meta.id"
     label 'process_low'
-    //container 'staphb/gamma:2.1'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/gamma%3A2.1--hdfd78af_0':
-        'quay.io/biocontainers/gamma:2.1--hdfd78af_0' }" 
+    container 'staphb/gamma:2.1'
 
     input:
     tuple val(meta), path(fasta)

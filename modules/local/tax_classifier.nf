@@ -1,7 +1,7 @@
 process DETERMINE_TAXA_ID {
     tag "$meta.id"
     label 'process_low'
-    //container 'staphb/gamma:2.1'
+    container 'staphb/gamma:2.1'
 
     input:
     tuple val(meta), path(kraken_weighted), path(formatted_ani_file), path(k2_bh_summary)

@@ -80,9 +80,8 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 //
 // MODULE: Installed directly from nf-core/modules
 //
-//include { FASTP as FASTP_TRIMD         } from '../modules/nf-core/modules/fastp/main'
+
 include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/modules/fastqc/main'
-//include { MASH_DIST                    } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                      } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 include { AMRFINDERPLUS_UPDATE         } from '../modules/nf-core/modules/amrfinderplus/update/main'
@@ -265,7 +264,9 @@ workflow PHOENIX_EXTERNAL {
     AMRFINDERPLUS_RUN (
         amr_channel, AMRFINDERPLUS_UPDATE.out.db
     )
+    ch_versions.view()
     ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
+    ch_versions.view()
 
     // Combining determined taxa with the assembly stats based on meta.id
     assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\

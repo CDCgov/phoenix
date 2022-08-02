@@ -11,9 +11,9 @@ process AMRFINDERPLUS_RUN {
     path(db)
 
     output:
-    tuple val(meta), path("${meta.id}_amr_hits.tsv")          ,                 emit: report
+    tuple val(meta), path("${meta.id}_amr_hits.tsv")                     , emit: report
     tuple val(meta), path("${meta.id}_all_mutations.tsv"), optional: true, emit: mutation_report 
-    path "versions.yml"                              ,                 emit: versions
+    path("versions.yml")                                                 , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

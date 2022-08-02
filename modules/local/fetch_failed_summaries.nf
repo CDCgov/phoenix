@@ -1,6 +1,6 @@
 process FETCH_FAILED_SUMMARIES {
     label 'process_low'
-    //container 'staphb/gamma:2.1'
+    container 'staphb/gamma:2.1'
 
     input:
     path(directory)
