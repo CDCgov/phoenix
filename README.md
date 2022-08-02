@@ -54,7 +54,7 @@ Here the `$PATH_TO_CLONED_REPO` needs to be changed to your correct path.
     nextflow run $PATH_TO_CLONED_REPO/phoenix/main.nf -profile <singularity/docker/custom>,test 
     ```
 
-Note that we aren't cloning (downloading) the repo with this command just pulling directly. See [below](https://github.com/cdcent/phoenix/wiki/Dependencies-and-Install#install-phoenix) for how to clone and have the software locally. 
+Note that we aren't cloning (downloading) the repo with this command just pulling directly. See [wiki](https://github.com/CDCgov/phoenix/wiki/Dependencies-and-Install#run-phoenix) for how to clone and have the software locally. 
 
     > * The pipeline comes with config profiles called `docker` and `singularity` which instruct the pipeline to use the named tool for software management. For example, `-profile test,docker`.
     > * Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
