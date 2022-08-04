@@ -169,7 +169,7 @@ sample_name=$(basename "${raw_read_counts}" _raw_read_counts.txt)
 
 # Creates and prints header info for the sample being processed
 today=$(date)
-echo "----------Checking ${sample_name} for successful completion on ----------"  > "${sample_name}.synopsis"
+echo "----------Checking ${sample_name} for successful completion on ${today}----------"  > "${sample_name}.synopsis"
 #echo "Sample output folder starts at: " "${OUTDATADIR}"
 status="SUCCESS"
 
