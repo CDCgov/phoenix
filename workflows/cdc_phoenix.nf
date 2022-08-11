@@ -46,6 +46,7 @@ include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
 include { MLST                           } from '../modules/local/mlst'
 include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
 include { QUAST                          } from '../modules/local/quast'
+include { MASH_DIST                      } from '../modules/local/mash_distance'
 include { FASTANI                        } from '../modules/local/fastani'
 include { DETERMINE_TOP_TAXA             } from '../modules/local/determine_top_taxa'
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
@@ -81,11 +82,10 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 //
 // MODULE: Installed directly from nf-core/modules
 //
-//include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
+
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
 include { SRST2_SRST2 as SRST2_TRIMD_MLST                         } from '../modules/nf-core/modules/srst2/srst2/main'
-include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'

@@ -1,6 +1,0 @@
-version: 1.0.0
-workflows:
-   - name: PhoeNIx
-     subclass: NFL
-     publish: True
-     primaryDescriptorPath: ./nextflow.config
