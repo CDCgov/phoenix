@@ -156,12 +156,6 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
 
-    /*// Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_MLST (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads, params.mlstdb]}
-    )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions) */
-
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
         FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
@@ -285,6 +279,12 @@ workflow PHOENIX_EXQC {
     DETERMINE_TAXA_ID (
         best_hit_ch, params.taxa
     )
+
+    /*// Idenitifying AR genes in trimmed reads
+    SRST2_TRIMD_MLST (
+        FASTP_TRIMD.out.reads, DETERMINE_TAXA_ID.out.taxonomy
+    )
+    ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions) */
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
