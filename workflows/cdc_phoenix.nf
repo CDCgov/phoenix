@@ -59,7 +59,8 @@ include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summar
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
-include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
+//include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
+//include { GET_SRST2_MLST                 } from '../modules/local/get_MLST_scheme'
 
 /*
 ========================================================================================
@@ -156,12 +157,6 @@ workflow PHOENIX_EXQC {
         FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
     )
     ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
-
-    // Idenitifying mlst genes in trimmed reads
-    SRST2_MLST (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads]}, params.taxfile
-    )
-    ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
@@ -287,11 +282,19 @@ workflow PHOENIX_EXQC {
         best_hit_ch, params.taxa
     )
 
-    /*// Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_MLST (
-        FASTP_TRIMD.out.reads, DETERMINE_TAXA_ID.out.taxonomy
+/*    // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
+    GET_SRST2_MLST (
+        meta, DETERMINE_TAXA_ID.out.taxonomy
     )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions) */
+    ch_versions = ch_versions.mix(GET_SRST2_MLST.out.versions)
+
+    // Idenitifying mlst genes in trimmed reads
+    SRST2_MLST (
+        GET_SRST2_MLST.out
+        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads]}, GET_SRST2_MLST.out.getMLST_out
+    )
+    ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
+    */
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
