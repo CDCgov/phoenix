@@ -26,7 +26,14 @@ process SRST2_MLST {
     def read_s = meta.single_end ? "--input_se ${fastq_s}" : "--input_pe ${fastq_s[0]} ${fastq_s[1]}"
     """
 
-    python2 get_mlst2.py --species 'Escherichia coli#1' > getmlst.out
+    species=\$(tail -n2 ${taxonomy} | head -n1 | cut -d\$'\t' -f2)
+    genus=\$(tail -n3 ${taxonomy} | head -n1 | cut -d\$'\t' -f2)
+    echo "\${genus} ___ \${species}"
+    python -V
+
+    db_entry="\${genus} \${species}"
+
+    getMLST2.py --species '\$db_entry' > getmlst.out
 
     # Pulls suggested command info from the getmlst script
     suggested_command=\$(tail -n2 "getmlst.out" | head -n1)
