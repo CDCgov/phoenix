@@ -26,8 +26,8 @@ process SRST2_MLST {
     def read_s = meta.single_end ? "--input_se ${fastq_s}" : "--input_pe ${fastq_s[0]} ${fastq_s[1]}"
     """
 
-    species=\$(tail -n2 ${taxonomy} | head -n1 | cut -d\$'\t' -f2)
-    genus=\$(tail -n3 ${taxonomy} | head -n1 | cut -d\$'\t' -f2)
+    species=\$(tail -n1 ${taxonomy} cut -d\$'\t' -f2)
+    genus=\$(tail -n2 ${taxonomy} | head -n1 | cut -d\$'\t' -f2)
     echo "\${genus} ___ \${species}"
     python -V
 
