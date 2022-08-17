@@ -190,13 +190,13 @@ def main():
 		print
 		print("  Looks like --mlst_delimiter '" + m[1] + "'")
 		print
-		print("  " + head + "  --> -->  ",)
+		print("  " + head + "  --> -->  ")
 		print(m)
 	print 
 	print("  Suggested srst2 command for use with this MLST database:")
 	print
-	print("    srst2 --output test --input_pe *.fastq.gz --mlst_db " + species_name_underscores + '.fasta',)
-	print("--mlst_definitions " + format(profile_filename),)
+	print("    srst2 --output test --input_pe *.fastq.gz --mlst_db " + species_name_underscores + '.fasta')
+	print("--mlst_definitions " + format(profile_filename))
 	print("--mlst_delimiter '" + m[1] + "'")
 	print
 
