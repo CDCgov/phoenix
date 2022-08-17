@@ -53,3 +53,5 @@ process SRST2_MLST {
     "${task.process}":
         srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' ))
     END_VERSIONS
+    """
+}

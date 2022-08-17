@@ -117,6 +117,7 @@ workflow PHOENIX_EXTERNAL {
     )
     ch_versions = ch_versions.mix(BBDUK.out.versions)
 
+
     // Trim and remove low quality reads
     FASTP_TRIMD (
         BBDUK.out.reads, true, false
@@ -264,9 +265,7 @@ workflow PHOENIX_EXTERNAL {
     AMRFINDERPLUS_RUN (
         amr_channel, AMRFINDERPLUS_UPDATE.out.db
     )
-    ch_versions.view()
     ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
-    ch_versions.view()
 
     // Combining determined taxa with the assembly stats based on meta.id
     assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\

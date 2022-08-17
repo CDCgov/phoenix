@@ -1,6 +1,6 @@
 process GATHER_SUMMARY_LINES {
     label 'process_low'
-    afterScript "rm ${params.outdir}/*_summaryline.tsv && rm ${params.outdir}/amrfinderdb.tar.gz"
+    afterScript "rm ${params.outdir}/*_summaryline.tsv"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/python:3.8.3' :
@@ -11,7 +11,7 @@ process GATHER_SUMMARY_LINES {
 
     output:
     path 'Phoenix_Output_Report.tsv'  , emit: summary_report
-    path "versions.yml"                , emit: versions
+    path "versions.yml"               , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     """

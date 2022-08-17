@@ -52,20 +52,23 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkfl
 
 include { ASSET_CHECK                                       } from '../modules/local/asset_check'
 include { BBDUK                                             } from '../modules/local/bbduk'
+include { FASTP as FASTP_TRIMD                              } from '../modules/local/fastp'
 include { FASTP as FASTP_SINGLES                            } from '../modules/local/fastp_singles'
 include { RENAME_FASTA_HEADERS                              } from '../modules/local/rename_fasta_headers'
-include { BUSCO                                             } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF                               } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR                                 } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV                                 } from '../modules/local/gamma'
 include { MLST                                              } from '../modules/local/mlst'
 include { BBMAP_REFORMAT                                    } from '../modules/local/contig_less500'
 include { QUAST                                             } from '../modules/local/quast'
+include { MASH_DIST                                         } from '../modules/local/mash_distance'
 include { FASTANI                                           } from '../modules/local/fastani'
 include { DETERMINE_TOP_TAXA                                } from '../modules/local/determine_top_taxa'
 include { FORMAT_ANI                                        } from '../modules/local/format_ANI_best_hit'
 include { GATHERING_READ_QC_STATS                           } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID                                 } from '../modules/local/tax_classifier'
+include { GET_TAXA_FOR_AMRFINDER                            } from '../modules/local/get_taxa_for_amrfinder'
+include { AMRFINDERPLUS_RUN                                 } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES                            } from '../modules/local/fetch_failed_summaries'
@@ -81,14 +84,8 @@ include { GENERATE_PIPELINE_STATS                           } from '../modules/l
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
-include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
-include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
-include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
-include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'
-include { AMRFINDERPLUS_RUN                                       } from '../modules/nf-core/modules/amrfinderplus/run/main'
 
 /*
 ========================================================================================
@@ -120,12 +117,13 @@ workflow SRA_PHOENIX {
     ASSET_CHECK (
         params.path2db
     )
-
+    
     // Remove PhiX reads
     BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
     )
     ch_versions = ch_versions.mix(BBDUK.out.versions)
+
 
     // Trim and remove low quality reads
     FASTP_TRIMD (
@@ -153,30 +151,20 @@ workflow SRA_PHOENIX {
     )
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
-    // Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_AR (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
-    )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
-
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
         FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
     )
     ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
-    // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
-    passing_reads_ch = FASTP_TRIMD.out.reads.join(FASTP_SINGLES.out.reads, by: [0])
-
-    // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
     SPADES_WF (
         FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
-        SRST2_TRIMD_AR.out.fullgene_results, \
+        [], \
         KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
-        true
+        false
     )
     ch_versions = ch_versions.mix(SPADES_WF.out.versions)
 
@@ -191,16 +179,6 @@ workflow SRA_PHOENIX {
         RENAME_FASTA_HEADERS.out.renamed_scaffolds
     )
     ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
-
-    // Fetch AMRFinder Database
-    AMRFINDERPLUS_UPDATE ( )
-    ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
-    
-    // Run AMRFinder
-    AMRFINDERPLUS_RUN (
-        BBMAP_REFORMAT.out.reads, AMRFINDERPLUS_UPDATE.out.db
-    )
-    ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
     // Getting MLST scheme for taxa
     MLST (
@@ -230,26 +208,6 @@ workflow SRA_PHOENIX {
         BBMAP_REFORMAT.out.reads
     )
     ch_versions = ch_versions.mix(QUAST.out.versions)
-
-    if (params.busco_db_path != null) {
-        // Checking single copy genes for assembly completeness
-        BUSCO (
-            BBMAP_REFORMAT.out.reads, 'auto', params.busco_db_path, []
-        )
-        ch_versions = ch_versions.mix(BUSCO.out.versions)
-    } else {
-        // Checking single copy genes for assembly completeness
-        BUSCO (
-            BBMAP_REFORMAT.out.reads, 'auto', [], []
-        )
-        ch_versions = ch_versions.mix(BUSCO.out.versions)
-    }
-
-    // Checking for Contamination in assembly creating krona plots and best hit files
-    KRAKEN2_ASMBLD (
-        BBMAP_REFORMAT.out.reads,"asmbld", [], QUAST.out.report_tsv
-    )
-    ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
     // Creating krona plots and best hit files for weighted assembly
     KRAKEN2_WTASMBLD (
@@ -297,6 +255,25 @@ workflow SRA_PHOENIX {
         best_hit_ch, params.taxa
     )
 
+    // Fetch AMRFinder Database
+    AMRFINDERPLUS_UPDATE( )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
+
+    // Create file that has the organism name to pass to AMRFinder
+    GET_TAXA_FOR_AMRFINDER (
+        DETERMINE_TAXA_ID.out.taxonomy
+    )
+
+    // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
+    amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
+    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])
+
+    // Run AMRFinder
+    AMRFINDERPLUS_RUN (
+        amr_channel, AMRFINDERPLUS_UPDATE.out.db
+    )
+    ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
+
     // Combining determined taxa with the assembly stats based on meta.id
     assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
     .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
@@ -310,7 +287,7 @@ workflow SRA_PHOENIX {
         FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
-        SRST2_TRIMD_AR.out.fullgene_results, \
+        [], \
         KRAKEN2_TRIMD.out.report, \
         KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
@@ -321,38 +298,37 @@ workflow SRA_PHOENIX {
         GAMMA_AR.out.gamma, \
         GAMMA_PF.out.gamma, \
         QUAST.out.report_tsv, \
-        BUSCO.out.short_summaries_specific_txt, \
-        KRAKEN2_ASMBLD.out.report, \
-        KRAKEN2_ASMBLD.out.krona_html, \
-        KRAKEN2_ASMBLD.out.k2_bh_summary, \
-        KRAKEN2_WTASMBLD.out.krona_html, \
+        [], [], [], [], \
         KRAKEN2_WTASMBLD.out.report, \
+        KRAKEN2_WTASMBLD.out.krona_html, \
         KRAKEN2_WTASMBLD.out.k2_bh_summary, \
         DETERMINE_TAXA_ID.out.taxonomy, \
         FORMAT_ANI.out.ani_best_hit, \
-        CALCULATE_ASSEMBLY_RATIO.out.ratio,\
-        true
+        CALCULATE_ASSEMBLY_RATIO.out.ratio, \
+        AMRFINDERPLUS_RUN.out.report, \
+        false
     )
 
     // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
-    line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc -> [[id:meta.id], fastp_total_qc]}\
-    .join(MLST.out.tsv.map{                                          meta, tsv            -> [[id:meta.id], tsv]},            by: [0])\
-    .join(GAMMA_HV.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
-    .join(GAMMA_AR.out.gamma.map{                                    meta, gamma          -> [[id:meta.id], gamma]},          by: [0])\
-    .join(QUAST.out.report_tsv.map{                                  meta, report_tsv     -> [[id:meta.id], report_tsv]},     by: [0])\
-    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio          -> [[id:meta.id], ratio]},          by: [0])\
-    .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}, by: [0])\
-    .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy       -> [[id:meta.id], taxonomy]},       by: [0])\
-    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary  -> [[id:meta.id], k2_bh_summary]},  by: [0])
+    line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
+    .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+    .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
+    .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
+    .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
+    .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
+    .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
+    .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]}, by: [0])
 
-    // Generate summary per sample
+    // Generate summary per sample that passed SPAdes
     CREATE_SUMMARY_LINE(
         line_summary_ch
     )
     ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
     // Collect all the summary files prior to fetch step to force the fetch process to wait
-    failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder)
+    failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving.. 
     summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
 
     // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
