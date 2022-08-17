@@ -17,10 +17,10 @@ try again.
 
 from argparse import ArgumentParser
 import xml.dom.minidom as xml
-import urllib2 
+import urllib2
 import re, os, glob
 from urlparse import urlparse
-import ssl
+#import ssl
 
 def parse_args():
 	parser = ArgumentParser(description='Download MLST datasets by species'
@@ -112,7 +112,7 @@ def getSpeciesInfo(species_node, species, exact):
 
 
 def main():
-	ssl._create_default_https_context = ssl._create_unverified_context
+	#ssl._create_default_https_context = ssl._create_unverified_context
 	args = parse_args()
 	print(args.repository_url)
 	#response = requests.get(args.repository_url)
@@ -191,7 +191,7 @@ def main():
 		print("  Looks like --mlst_delimiter '" + m[1] + "'")
 		print
 		print("  " + head + "  --> -->  ")
-		print m
+		print(m)
 	print 
 	print("  Suggested srst2 command for use with this MLST database:")
 	print
