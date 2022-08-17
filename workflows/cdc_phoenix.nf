@@ -58,6 +58,7 @@ include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summar
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
+include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
 
 /*
 ========================================================================================
@@ -84,7 +85,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 //include { FASTP as FASTP_TRIMD                                    } from '../modules/nf-core/modules/fastp/main'
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
-include { SRST2_SRST2 as SRST2_TRIMD_MLST                         } from '../modules/nf-core/modules/srst2/srst2/main'
 include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
@@ -156,11 +156,11 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
 
-    /*// Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_MLST (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads, params.mlstdb]}
+    // Idenitifying AR genes in trimmed reads
+    SRST2_MLST (
+        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads, params.taxfile]}
     )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions) */
+    ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions)
 
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
