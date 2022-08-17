@@ -157,9 +157,9 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
 
-    // Idenitifying AR genes in trimmed reads
+    // Idenitifying mlst genes in trimmed reads
     SRST2_MLST (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads], params.taxfile}
+        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads]}, params.taxfile
     )
     ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions)
 
