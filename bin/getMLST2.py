@@ -191,7 +191,7 @@ def main():
 		print("  Looks like --mlst_delimiter '" + m[1] + "'")
 		print
 		print("  " + head + "  --> -->  ")
-		print(m)
+		print m
 	print 
 	print("  Suggested srst2 command for use with this MLST database:")
 	print
