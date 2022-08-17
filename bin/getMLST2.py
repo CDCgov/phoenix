@@ -17,7 +17,7 @@ try again.
 
 from argparse import ArgumentParser
 import xml.dom.minidom as xml
-import urllib2
+import urllib2 
 import re, os, glob
 from urlparse import urlparse
 import ssl
@@ -161,7 +161,7 @@ def main():
 	log_file.write("definitions: {}\n".format(profile_filename))
 	log_file.write("{} profiles\n".format(species_info.profiles_count))
 	log_file.write("sourced from: {}\n\n".format(species_info.profiles_url))
-	profile_doc = url.urlopen(species_info.profiles_url)
+	profile_doc = urllib2.urlopen(species_info.profiles_url)
 	profile_file = open(profile_filename, 'w')
 	profile_file.write(profile_doc.read())
 	profile_file.close()
@@ -172,7 +172,7 @@ def main():
 		log_file.write("locus {}\n".format(locus.name))
 		log_file.write(locus_filename + '\n')
 		log_file.write("Sourced from {}\n\n".format(locus.url))
-		locus_doc = url.urlopen(locus.url)
+		locus_doc = urllib2.urlopen(locus.url)
 		locus_file = open(locus_filename, 'w')
 		locus_fasta_content = locus_doc.read()
 		locus_file.write(locus_fasta_content)
