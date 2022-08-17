@@ -161,7 +161,7 @@ workflow PHOENIX_EXQC {
     SRST2_MLST (
         FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads]}, params.taxfile
     )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions)
+    ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
