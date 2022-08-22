@@ -4,7 +4,9 @@ process GAMMA {
     tag "$meta.id"
     label 'process_low'
     //container 'staphb/gamma:2.1'
-    container 'quay.io/jvhagey/gamma:2.1.5'
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/gamma%3A2.1--hdfd78af_0':
+        'quay.io/biocontainers/gamma:2.1--hdfd78af_0' }"
 
     input:
     tuple val(meta), path(fasta)
