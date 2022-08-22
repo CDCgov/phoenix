@@ -1,7 +1,6 @@
 process MASH_DIST {
     tag "$meta.id"
     label 'process_low'
-    afterScript "gzip ${params.mash_sketch}"
     container "staphb/mash:2.3"
 
     input:

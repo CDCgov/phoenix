@@ -1,6 +1,6 @@
 process GATHER_SUMMARY_LINES {
     label 'process_low'
-    afterScript "rm ${params.outdir}/*_summaryline.tsv"
+    afterScript "rm ${params.outdir}/*_summaryline.tsv && gzip ${params.mash_sketch}"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/python:3.8.3' :
