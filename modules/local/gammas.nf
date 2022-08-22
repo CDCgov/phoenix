@@ -3,7 +3,8 @@ def VERSION = '2.1' // Version information not provided by tool on CLI
 process GAMMA_S {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/gamma:2.1'
+    //container 'staphb/gamma:2.1'
+    container 'quay.io/jvhagey/gamma:2.1.5'
 
     input:
     tuple val(meta), path(fasta)
