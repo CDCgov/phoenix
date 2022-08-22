@@ -30,7 +30,13 @@ workflow KRAKEN2_WF {
 
     if(type =="trimd") {
 
-        if (params.kraken2db != null){ // If you pass a database path use that instead of default ./phoenix/assests/databases
+        // Checking for Contamination in trimmed reads
+        KRAKEN2_TRIMD (
+            fasta, params.kraken2db, "trimd", true, true
+        )
+        ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
+
+/*        if (params.kraken2db != null){ // If you pass a database path use that instead of default ./phoenix/assests/databases
             // Checking for Contamination in trimmed reads
             KRAKEN2_TRIMD (
                 fasta, params.kraken2db, "trimd", true, true
@@ -42,7 +48,7 @@ workflow KRAKEN2_WF {
                 fasta, params.path2db, "trimd", true, true
             )
             ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
-        }
+        }*/
 
         // Create mpa file
         KREPORT2MPA_TRIMD (
@@ -75,8 +81,13 @@ workflow KRAKEN2_WF {
         krona_html    = KRONA_KTIMPORTTEXT_TRIMD.out.html
 
     } else if(type =="asmbld") {
+        // Checking for Contamination in scaffolds
+        KRAKEN2_ASMBLD (
+            fasta, params.kraken2db, "asmbld", true, true
+        )
+        ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
-        if (params.kraken2db != null) { // If you pass a database path use that instead of default ./phoenix/assests/databases
+/*        if (params.kraken2db != null) { // If you pass a database path use that instead of default ./phoenix/assests/databases
             // Checking for Contamination in scaffolds
             KRAKEN2_ASMBLD (
                 fasta, params.kraken2db, "asmbld", true, true
@@ -87,7 +98,7 @@ workflow KRAKEN2_WF {
                 fasta, params.path2db, "asmbld", true, true
             )
             ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
-        }
+        }*/
 
         // Create mpa file
         KREPORT2MPA_ASMBLD (
@@ -120,7 +131,12 @@ workflow KRAKEN2_WF {
 
     } else if(type=="wtasmbld") {
 
-        if (params.kraken2db != null) { // If you pass a database path use that instead of default ./phoenix/assests/databases
+        // Getting species ID as back up for FastANI and checking contamination isn't in assembly
+        KRAKEN2_WTASMBLD (
+            fasta, params.kraken2db, "wtasmbld", true, true
+        )
+        ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
+/*        if (params.kraken2db != null) { // If you pass a database path use that instead of default ./phoenix/assests/databases
             // Getting species ID as back up for FastANI and checking contamination isn't in assembly
             KRAKEN2_WTASMBLD (
                 fasta, params.kraken2db, "wtasmbld", true, true
@@ -132,7 +148,7 @@ workflow KRAKEN2_WF {
                 fasta, params.path2db, "wtasmbld", true, true
             )
             ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
-        }
+        }*/
     
         // Create weighted kraken report based on scaffold length
         KRAKENTOOLS_MAKEKREPORT (

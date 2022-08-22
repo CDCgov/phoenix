@@ -26,8 +26,8 @@
                 },
                 "kraken2db": {
                     "type": "string",
-                    "description": "FULL PATH for where kraken2_db files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
-                    "default": "${baseDir}/assets/databases/"
+                    "description": "FULL PATH for where kraken2_db files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files. No trailing / in path name.",
+                    "default": "null"
                 }
             }
         },
