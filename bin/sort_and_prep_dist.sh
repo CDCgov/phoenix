@@ -47,7 +47,7 @@ while getopts ":h?x:d:a:t:" option; do
 			;;
 		t)
 			echo "Option -a triggered, argument = ${OPTARG}"
-			terra_bc_path="true"
+			terra="true"
 			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
