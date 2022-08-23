@@ -13,8 +13,16 @@ process DETERMINE_TOP_TAXA {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+
+    if (params.terra==false) {
+        terra = ""
+    } else if (params.terra==true) {
+        terra = "-t"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
-    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -d $refseq_fasta_database
+    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -d $refseq_fasta_database $terra
 
     rsync -r Ref_Seq "${baseDir}/assets/databases/"
     """

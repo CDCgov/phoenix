@@ -22,7 +22,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?x:d:a:" option; do
+while getopts ":h?x:d:a:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -44,6 +44,10 @@ while getopts ":h?x:d:a:" option; do
 			database_basename=$(basename -- "${database}")
 			database_and_version=$(echo ${database_basename##*/} | cut -d'_' -f1,2)
 			REFSEQ_date=$(echo ${database_basename##*/} | cut -d'_' -f2)
+			;;
+		t)
+			echo "Option -a triggered, argument = ${OPTARG}"
+			terra_bc_path="true"
 			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
@@ -85,7 +89,12 @@ while IFS= read -r var; do
 	dist=$(echo ${var} | cut -d' ' -f3)
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
-	if ((( $(echo "$dist <= $cutoff" | bc -l) )) && [ ${kmers} -gt 0 ]); then
+	if [[ "${terra}" = "true" ]]; then
+		bc_path=/opt/conda/envs/phoenix/bin/bc
+	else
+		bc_path=bc
+	fi
+		if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 0 ]); then
 		if [[ -f "${database}/${source}.gz" ]]; then
 			echo "${database}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 #		if [[ -f "${GCF_name}.gz" ]]; then
