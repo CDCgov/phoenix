@@ -1,10 +1,11 @@
 process GATHER_SUMMARY_LINES {
     label 'process_low'
-    afterScript "rm ${params.outdir}/*_summaryline.tsv && gzip ${params.mash_sketch}"
+    afterScript "rm ${params.outdir}/*_summaryline.tsv && gzip ${params.mash_sketch} && rm -f ${params.refseq_fasta_database}/*.fna.gz"
+    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"
+        'quay.io/biocontainers/python:3.8.3' }"*/
 
     input:
     path(summary_line_files)

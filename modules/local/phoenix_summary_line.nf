@@ -2,11 +2,12 @@ process CREATE_SUMMARY_LINE {
     tag "${meta.id}"
     label 'process_low'
     afterScript "if [ -s '${params.outdir}/${meta.id}/AMRFinder/${mutation_file}' ]; then rm ${params.outdir}/${meta.id}/AMRFinder/${mutation_file}; fi"
+    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
 
-    conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
+    /*conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"
+        'quay.io/biocontainers/python:3.8.3' }"*/
 
     input:
     tuple val(meta), path(trimmed_qc_data_file), \

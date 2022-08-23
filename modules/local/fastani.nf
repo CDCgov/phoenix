@@ -2,7 +2,6 @@ process FASTANI {
     tag "$meta.id"
     label 'process_medium'
     container 'staphb/fastani:1.33'
-    afterScript "rm -f ${params.refseq_fasta_database}/*.fna.gz"
 
     input:
     tuple val(meta), path(query), path(reference)

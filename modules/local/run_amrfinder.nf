@@ -1,10 +1,11 @@
 process AMRFINDERPLUS_RUN {
     tag "$meta.id"
     label 'process_medium'
+    container 'staphb/ncbi-amrfinderplus:3.10.36'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/ncbi-amrfinderplus%3A3.10.23--h17dc2d4_0':
-        'quay.io/biocontainers/ncbi-amrfinderplus:3.10.23--h17dc2d4_0' }"
+        'quay.io/biocontainers/ncbi-amrfinderplus:3.10.23--h17dc2d4_0' }"*/
 
     input:
     tuple val(meta), path(fasta), val(organism_param)

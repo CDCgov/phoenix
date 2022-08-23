@@ -1,7 +1,7 @@
 process RENAME_FASTA_HEADERS {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/gamma:2.1'
+    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
 
     input:
     tuple val(meta), path(assembled_scaffolds)

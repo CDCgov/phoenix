@@ -1,7 +1,7 @@
 process KRAKEN_BEST_HIT {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/gamma:2.1'
+    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
 
     input:
     tuple val(meta), path(kraken_report), path(count_file) //[-q count_file (reads or congtigs)] so quast report for assembled or output of GATHERING_READ_QC_STATS for trimmed

@@ -3,10 +3,11 @@ def VERSION = 'https://github.com/jenniferlu717/KrakenTools/commit/fb1fcc4b74747
 process KRAKENTOOLS_MAKEKREPORT {
     tag "$meta.id"
     label 'process_low'
+    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"
+        'quay.io/biocontainers/python:3.8.3' }"*/
 
     input:
     tuple val(meta), path(kraken_output)
