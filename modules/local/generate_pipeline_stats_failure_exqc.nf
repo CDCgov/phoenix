@@ -22,6 +22,14 @@ process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // terra=true sets paths for bc/wget for terra container paths
+    if (params.terra==false) {
+        terra = ""
+    } else if (params.terra==true) {
+        terra = "-4 terra"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
     pipeline_stats_writer.sh \\
         -a $fastp_raw_qc \\
@@ -32,6 +40,7 @@ process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
         -f $kraken2_trimd_summary \\
         -g $krona_trimd \\
         -q $taxID \\
-        -x $srst_fullgenes_file
+        -x $srst_fullgenes_file \\
+        $terra
     """
 }

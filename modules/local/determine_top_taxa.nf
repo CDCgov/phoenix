@@ -13,7 +13,7 @@ process DETERMINE_TOP_TAXA {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
-
+    // terra=true sets paths for bc/wget for terra container paths
     if (params.terra==false) {
         terra = ""
     } else if (params.terra==true) {

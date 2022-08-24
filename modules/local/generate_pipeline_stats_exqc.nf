@@ -35,6 +35,14 @@ process GENERATE_PIPELINE_STATS_EXQC {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // terra=true sets paths for bc/wget for terra container paths
+    if (params.terra==false) {
+        terra = ""
+    } else if (params.terra==true) {
+        terra = "-4 terra"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
     pipeline_stats_writer.sh \\
         -a $fastp_raw_qc \\
@@ -63,6 +71,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -x $srst_fullgenes_file \\
         -y $mlst_file \\
         -2 $amr_file \\
-        -3
+        -3 \\
+        $terra
     """
 }
