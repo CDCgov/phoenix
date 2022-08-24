@@ -12,15 +12,7 @@ process CALCULATE_ASSEMBLY_RATIO {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) {
-        terra = ""
-    } else if (params.terra==true) {
-        terra = "-t terra"
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     """
-    calculate_assembly_ratio.sh -d $ncbi_database -q $quast_report -t $taxa_file -s ${prefix} $terra
+    calculate_assembly_ratio.sh -d $ncbi_database -q $quast_report -t $taxa_file -s ${prefix}
     """
 }
