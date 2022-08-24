@@ -12,16 +12,8 @@ process KRAKEN_BEST_HIT {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) {
-        terra = ""
-    } else if (params.terra==true) {
-        terra = "-t terra"
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     """
-    kraken2_best_hit.sh -i $kraken_report -q $count_file -n ${prefix} $terra
+    kraken2_best_hit.sh -i $kraken_report -q $count_file -n ${prefix}
 
     mv ${prefix}.summary.txt ${prefix}.${kraken_type}_summary.txt
     """
