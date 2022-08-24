@@ -17,7 +17,7 @@ process DETERMINE_TOP_TAXA {
     if (params.terra==false) {
         terra = ""
     } else if (params.terra==true) {
-        terra = "-t"
+        terra = "-t terra"
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }

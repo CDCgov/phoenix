@@ -46,8 +46,8 @@ while getopts ":h?x:d:a:t:" option; do
 			REFSEQ_date=$(echo ${database_basename##*/} | cut -d'_' -f2)
 			;;
 		t)
-			echo "Option -a triggered, argument = ${OPTARG}"
-			terra="true"
+			echo "Option -t triggered"
+			terra=${OPTARG}
 			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
@@ -89,7 +89,7 @@ while IFS= read -r var; do
 	dist=$(echo ${var} | cut -d' ' -f3)
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
-	if [[ "${terra}" = "true" ]]; then
+	if [[ $terra = "terra" ]]; then
 		bc_path=/opt/conda/envs/phoenix/bin/bc
 	else
 		bc_path=bc
