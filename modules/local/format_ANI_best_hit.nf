@@ -11,15 +11,7 @@ process FORMAT_ANI {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) {
-        terra = ""
-    } else if (params.terra==true) {
-        terra = "-t terra"
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     """
-    ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} $terra
+    ANI_best_hit_formatter.sh -a $ani_file -n ${prefix}
     """
 }
