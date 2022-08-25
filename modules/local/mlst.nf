@@ -1,7 +1,7 @@
 process MLST {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/mlst:2.22.1'
+    container 'staphb/mlst:2.22.1' // version 2.22.1 produces add 
 
     input:
     tuple val(meta), path(fasta)
@@ -24,24 +24,34 @@ process MLST {
 
     scheme=\$(cut -d \$'\t' -f2 ${prefix}.tsv)
     if [ \$scheme == "abaumannii_2" ]; then
-        sed -i 's/abaumannii_2/abaumannii_2(Pasteur)/' ${prefix}.tsv > ${prefix}.tsv
-        mlst --scheme abaumannii --threads $task.cpus $fasta >> ${prefix}.tsv
-        sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}.tsv >> ${prefix}.tsv
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        sed -i 's/abaumannii_2/abaumannii_2(Pasteur)/' ${prefix}_1.tsv
+        mlst --scheme abaumannii --threads $task.cpus $fasta > ${prefix}_2.tsv
+        sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
     elif [ \$scheme == "abaumannii" ]; then
-        sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}.tsv > ${prefix}.tsv
-        mlst --scheme abaumannii_2 --threads $task.cpus $fasta >> ${prefix}.tsv
-        sed -i 's/abaumannii_2/abaumannii_2(Pasteur)/' ${prefix}.tsv >> ${prefix}.tsv
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}.tsv
+        mlst --scheme abaumannii_2 --threads $task.cpus $fasta > ${prefix}_2.tsv
+        sed -i 's/abaumannii_2/abaumannii_2(Pasteur)/' ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+    elif [ \$scheme == "ecoli_achtman_4" ]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        sed -i 's/ecoli_achtman_4/ecoli(Achtman)/' ${prefix}.tsv
+        mlst --scheme ecoli --threads $task.cpus $fasta > ${prefix}_2.tsv
+        sed -i 's/ecoli/ecoli(Pasteur)/' ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
     elif [ \$scheme == "ecoli" ]; then
-        sed -i 's/ecoli/ecoli(Achtman)/' ${prefix}.tsv > ${prefix}.tsv
-        mlst --scheme ecoli_2 --threads $task.cpus $fasta >> ${prefix}.tsv
-        sed -i 's/ecoli_2/ecoli_2(Pasteur)/' ${prefix}.tsv >> ${prefix}.tsv
-    elif [ \$scheme == "ecoli_2" ]; then
-        sed -i 's/ecoli_2/ecoli_2(Pasteur)/' ${prefix}.tsv > ${prefix}.tsv
-        mlst --scheme ecoli --threads $task.cpus $fasta >> ${prefix}.tsv
-        sed -i 's/ecoli/ecoli(Achtman)/' ${prefix}.tsv >> ${prefix}.tsv
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        sed -i 's/ecoli/ecoli(Pasteur)/' ${prefix}.tsv
+        mlst --scheme ecoli_achtman_4 --threads $task.cpus $fasta > ${prefix}_2.tsv
+        sed -i 's/ecoli_achtman_4/ecoli(Achtman)/' ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
     else
         :
     fi
+
+    rm ${prefix}_*.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

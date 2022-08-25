@@ -44,8 +44,10 @@ def MLST_ST(MLST_file):
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
         for line in lines:
-            ST = line.split()[2]
+            ST = "ST" + line.split()[2]
             ST_list.append(ST)
+        if "ST-" in ST_list:
+            ST_list = [re.sub("ST-", "-", i) for i in ST_list]
     return ST_list
 
 def MLST_Scheme(MLST_file):
@@ -313,12 +315,22 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Species = 'Unknown'
     try:
         ST = MLST_ST(MLST_file)
-        ST = ','.join(ST)
+        if len(ST) > 1:
+            ST_1 = ST[0]
+            ST_2 = ST[1]
+        else:
+            ST_1 = ST[0]
+            ST_2 = "NA"
     except:
         ST = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
-        Scheme = ','.join(Scheme)
+        if len(Scheme) > 1:
+            Scheme_1 = Scheme[0]
+            Scheme_2 = Scheme[1]
+        else:
+            Scheme_1 = Scheme[0]
+            Scheme_2 = "NA"
     except:
         Scheme = 'Unknown'
     try:
@@ -352,7 +364,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
-    Line = ID + '\t' + QC_Outcome + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme + '\t' + ST + '\t' + GC + '\t' + read_match + '\t' + scaffold_match + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + Reason
+    Line = ID + '\t' + QC_Outcome + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + GC + '\t' + read_match + '\t' + scaffold_match + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + Reason
     return Line
 
 def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations):
