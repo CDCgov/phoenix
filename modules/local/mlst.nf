@@ -29,29 +29,31 @@ process MLST {
         mlst --scheme abaumannii --threads $task.cpus $fasta > ${prefix}_2.tsv
         sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
     elif [ \$scheme == "abaumannii" ]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}_1.tsv
         mlst --scheme abaumannii_2 --threads $task.cpus $fasta > ${prefix}_2.tsv
         sed -i 's/abaumannii_2/abaumannii_2(Pasteur)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
     elif [ \$scheme == "ecoli_achtman_4" ]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         sed -i 's/ecoli_achtman_4/ecoli(Achtman)/' ${prefix}_1.tsv
         mlst --scheme ecoli --threads $task.cpus $fasta > ${prefix}_2.tsv
         sed -i 's/ecoli/ecoli(Pasteur)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
     elif [ \$scheme == "ecoli" ]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         sed -i 's/ecoli/ecoli(Pasteur)/' ${prefix}_1.tsv
         mlst --scheme ecoli_achtman_4 --threads $task.cpus $fasta > ${prefix}_2.tsv
         sed -i 's/ecoli_achtman_4/ecoli(Achtman)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
     else
         :
     fi
-
-    rm ${prefix}_*.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
