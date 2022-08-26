@@ -43,6 +43,7 @@ show_help () {
     -y* MLST_file (or more)
     -z* assembly_only_sample (true or false)
     -2* amr_tsv_file
+    -3
     "
 }
 
@@ -52,7 +53,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3:" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -143,7 +144,7 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3:" opti
       amr_file=${OPTARG};;
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
-      internal_phoenix=="true";;
+      internal_phoenix="true";;
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -169,7 +170,7 @@ sample_name=$(basename "${raw_read_counts}" _raw_read_counts.txt)
 
 # Creates and prints header info for the sample being processed
 today=$(date)
-echo "----------Checking ${sample_name} for successful completion on ${today}----------"  > "${sample_name}.synopsis"
+echo "---------- Checking ${sample_name} for successful completion on ${today} ----------"  > "${sample_name}.synopsis"
 #echo "Sample output folder starts at: " "${OUTDATADIR}"
 status="SUCCESS"
 
@@ -668,7 +669,7 @@ if [[ "${internal_phoenix}" == "true" ]]; then
 					#printf "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})" >> "${sample_name}.synopsis"
 				fi
 		done < "${kraken2_asmbld_report}"
-		echo "${number_of_genera}"
+		###echo "${number_of_genera}"
 		if [[ $number_of_genera -gt 1 ]]; then
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD_CONTAM" "ALERT" "${number_of_genera} genera have been found above the ${kraken2_contamination_threshold}% threshold"  >> "${sample_name}.synopsis"
 			if [[ "${status}" == "SUCCESS" ]]; then
@@ -767,7 +768,6 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
 	total=0
 	while IFS= read -r line; do
 		arrLine=(${line})
-    echo $arrLine
 		# First element in array is the percent of reads identified as the current taxa
 		if [[ "${arrLine[3]}" = "U" ]]; then
 			unclass=${arrLine[0]}
@@ -955,11 +955,12 @@ if [[ "${internal_phoenix}" == "true" ]]; then
         db=$(echo "${line}" | awk -F ' ' '{print $6}')
       fi
       done < "${busco_summary}"
+      BUSCO_organism=$(sed 's/_odb[0-9]\+//' <<< $db)
       percent_BUSCO_present=$(bc<<<"${found_buscos}*100/${total_buscos}")
       if [[ "${percent_BUSCO_present}" -gt 90 ]]; then
-        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "SUCCESS" "${percent_BUSCO_present}% (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
+        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "SUCCESS" "${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
       else
-        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "FAILED" "${percent_BUSCO_present}% (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
+        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "FAILED" "only ${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
         status="FAILED"
       fi
     # If the busco summary file does not exist
@@ -999,15 +1000,38 @@ fi
 
 # check MLST minimus
 if [[ -s "${mlst_file}" ]]; then
-  info=$(tail -n1 ${mlst_file})
-  mlst_db=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
-  mlst_type=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
-  if [[ "${mlst_db}" = '-' ]]; then
-    printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-  elif [[ "${mlst_type}" = '-' ]]; then
-    printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
-  else
-    printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
+  if [[ $(wc -l <${mlst_file}) -ge 1 ]]; then #if there are two mlst schemes
+    mlst_db=$(head -n1 ${mlst_file} | cut -d$'\t' -f2)
+    mlst_type=$(head -n1 ${mlst_file} | cut -d$'\t' -f3)
+    mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
+    mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
+    #printing output
+    if [[ "${mlst_db}" = '-' ]]; then
+      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
+    elif [[ "${mlst_type}" = '-' ]]; then
+      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
+    else
+      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
+    fi
+    if [[ "${mlst_db_2}" = '-' ]]; then
+      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
+    elif [[ "${mlst_type_2}" = '-' ]]; then
+      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db_2^^}" "FAILED" "No type identified, but scheme is ${mlst_db_2}"  >> "${sample_name}.synopsis"
+    else
+      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db_2^^}" "SUCCESS" "ST${mlst_type_2}"  >> "${sample_name}.synopsis"
+    fi
+  elif [[ $(wc -l <${mlst_file}) == 1 ]]; then #if there is only one mlst scheme
+    info=$(tail -n1 ${mlst_file})
+    mlst_db=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
+    mlst_type=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
+    #printing output
+    if [[ "${mlst_db}" = '-' ]]; then
+      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
+    elif [[ "${mlst_type}" = '-' ]]; then
+      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
+    else
+      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
+    fi
   fi
 else
   printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
@@ -1144,6 +1168,12 @@ else
 fi
 
 echo "---------- ${sample_name} completed as ${status} ----------"  >> "${sample_name}.synopsis"
+
+if [[ "${internal_phoenix}" == "true" ]]; then
+  printf "\n*BUSCO defines core genes as single-copy orthologs that should be highly conserved among the closely related species."  >> "${sample_name}.synopsis"
+fi
+
+
 
 #Script exited gracefully (unless something else inside failed)
 exit 0
