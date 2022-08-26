@@ -43,6 +43,7 @@ show_help () {
     -y* MLST_file (or more)
     -z* assembly_only_sample (true or false)
     -2* amr_tsv_file
+    -3
     "
 }
 
@@ -52,7 +53,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3:" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -143,7 +144,7 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3:" opti
       amr_file=${OPTARG};;
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
-      internal_phoenix=="true";;
+      internal_phoenix="true";;
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -169,7 +170,7 @@ sample_name=$(basename "${raw_read_counts}" _raw_read_counts.txt)
 
 # Creates and prints header info for the sample being processed
 today=$(date)
-echo "----------Checking ${sample_name} for successful completion on ${today}----------"  > "${sample_name}.synopsis"
+echo "---------- Checking ${sample_name} for successful completion on ${today} ----------"  > "${sample_name}.synopsis"
 #echo "Sample output folder starts at: " "${OUTDATADIR}"
 status="SUCCESS"
 
@@ -767,7 +768,6 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
 	total=0
 	while IFS= read -r line; do
 		arrLine=(${line})
-    echo $arrLine
 		# First element in array is the percent of reads identified as the current taxa
 		if [[ "${arrLine[3]}" = "U" ]]; then
 			unclass=${arrLine[0]}
