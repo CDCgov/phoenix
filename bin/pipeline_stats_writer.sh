@@ -244,15 +244,15 @@ if [[ "${run_type}" == "all" ]]; then
         status="WARNING"
       fi
     else
-      printf "%-30s: %-8s : %s\\n" "RAW_Q30_R1%" "SUCCESS" "Q30_R1% at ${raw_Q30_R1_rounded}% (Threshold is 90)"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "RAW_Q30_R1%" "SUCCESS" "Q30_R1% at ${raw_Q30_R1_rounded}% (Threshold is 90%)"  >> "${sample_name}.synopsis"
     fi
     if [[ "${raw_Q30_R2_rounded}" -lt 70 ]]; then
-      printf "%-30s: %-8s : %s\\n" "RAW_Q30_R2%" "WARNING" "Q30_R2% at ${raw_Q30_R2_rounded}% (Threshold is 70)"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "RAW_Q30_R2%" "WARNING" "Q30_R2% at ${raw_Q30_R2_rounded}% (Threshold is 70%)"  >> "${sample_name}.synopsis"
       if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
         status="WARNING"
       fi
     else
-      printf "%-30s: %-8s : %s\\n" "RAW_Q30_R2%" "SUCCESS" "Q30_R2% at ${raw_Q30_R2_rounded}% (Threshold is 70)"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "RAW_Q30_R2%" "SUCCESS" "Q30_R2% at ${raw_Q30_R2_rounded}% (Threshold is 70%)"  >> "${sample_name}.synopsis"
     fi
     trimmed_exists="true"
   else
@@ -343,15 +343,15 @@ if [[ "${run_type}" == "all" ]]; then
         status="WARNING"
       fi
     else
-      printf "%-30s: %-8s : %s\\n" "TRIMMED_Q30_R1%" "SUCCESS" "Q30_R1% at ${trimmed_Q30_R1_rounded}% (Threshold is 90)"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "TRIMMED_Q30_R1%" "SUCCESS" "Q30_R1% at ${trimmed_Q30_R1_rounded}% (Threshold is 90%)"  >> "${sample_name}.synopsis"
     fi
     if [[ "${trimmed_Q30_R2_rounded}" -lt 70 ]]; then
-      printf "%-30s: %-8s : %s\\n" "TRIMMED_Q30_R2%" "WARNING" "Q30_R2% at ${trimmed_Q30_R2_rounded}% (Threshold is 70)"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "TRIMMED_Q30_R2%" "WARNING" "Q30_R2% at ${trimmed_Q30_R2_rounded}% (Threshold is 70%)"  >> "${sample_name}.synopsis"
       if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
         status="WARNING"
       fi
     else
-      printf "%-30s: %-8s : %s\\n" "TRIMMED_Q30_R2%" "SUCCESS" "Q30_R2% at ${trimmed_Q30_R2_rounded}% (Threshold is 70)"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "TRIMMED_Q30_R2%" "SUCCESS" "Q30_R2% at ${trimmed_Q30_R2_rounded}% (Threshold is 70%)"  >> "${sample_name}.synopsis"
     fi
   else
     printf "%-30s: %-8s : %s\\n" "TRIMMED_READ_COUNTS" "FAILED" "${sample_name}_trimmed_read_counts.txt not found"  >> "${sample_name}.synopsis"
@@ -631,19 +631,19 @@ if [[ "${internal_phoenix}" == "true" ]]; then
 		else
 			#if (( $(echo ${unclass} ${kraken2_unclass_flag} | awk '{if ($1 > $2) print 1;}') )); then
 			if (( $(echo "${unclass} > ${kraken2_unclass_flag}" | bc -l) )); then
-				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "unclassified reads comprise ${unclass_string}% of total"	>> "${sample_name}.synopsis"
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "unclassified scaffolds comprise ${unclass_string}% of total"	>> "${sample_name}.synopsis"
 				if [ "${status}" = "SUCCESS" ] || [ "${status}" = "ALERT" ]; then
 					status="WARNING"
 				fi
 			#elif (( $(echo ${genuspostpercent} 50 | awk '{if ($1 < $2) print 1;}') )); then
 			elif (( $(echo "${genuspostpercent} < 50" | bc -l) )); then
-				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "Genus-${genuspost}(${genuspostpercent}%) is under 50% (species ${speciespost} (${speciespostpercent}%)), possibly contaminated or contigs are weighted unevenly"  >> "${sample_name}.synopsis"
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "WARNING" "Genus-${genuspost}(${genuspostpercent}%) is under 50% (species ${speciespost} (${speciespostpercent}%)), possibly contaminated or scaffolds are weighted unevenly"  >> "${sample_name}.synopsis"
 				if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 					status="WARNING"
 				fi
 			else
 				#printf "%-30s: %-8s : %s\\n" "kraken2 on assembly" "SUCCESS" "${speciespercent}%${true_speciespercent%} ${genuspost} ${speciespost} with ${unclass}%${true_unclass%} unclassified contigs"
-				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "SUCCESS" "${genuspost}(${genuspostpercent}%) ${speciespost}(${speciespostpercent}%) with ${unclass_string}% unclassified contigs"  >> "${sample_name}.synopsis"
+				printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_ASMBLD" "SUCCESS" "${genuspost}(${genuspostpercent}%) ${speciespost}(${speciespostpercent}%) with ${unclass_string}% unclassified scaffolds"  >> "${sample_name}.synopsis"
 			fi
 		fi
 	# If no summary file was found
@@ -751,7 +751,7 @@ if [[ -s "${kraken2_weighted_summary}" ]]; then
 			status="FAILED"
 		else
 			#printf "%-30s: %-8s : %s\\n" "weighted Classify" "SUCCESS" "${speciespercent}%${true_speciespercent%} ${genusweighted} ${speciesweighted} with ${unclass}%${true_unclass%} unclassified weighted"
-			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "SUCCESS" "${genusweighted}(${genusweightedpercent}%) ${speciesweighted}(${speciesweightedpercent}%) with ${unclass_string}% unclassified contigs"  >> "${sample_name}.synopsis"
+			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "SUCCESS" "${genusweighted}(${genusweightedpercent}%) ${speciesweighted}(${speciesweightedpercent}%) with ${unclass_string}% unclassified scaffolds"  >> "${sample_name}.synopsis"
 		fi
 	fi
 # If no summary file was found

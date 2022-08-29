@@ -210,8 +210,11 @@ def WT_kraken_stats(stats):
 def QC_Pass(stats):
     status = []
     reason = []
+    warning_count = 0
     with open(stats, 'r') as f:
         for line in f:
+            if ": WARNING  :" in line:
+                warning_count = warning_count + 1
             if line.startswith("Auto Pass/FAIL"):
                 line_status = line.split(":")[1]
                 line_reason = line.split(":")[2]
@@ -219,7 +222,7 @@ def QC_Pass(stats):
                 reason.append(line_reason.strip())
                 status_end = str(status[0])
                 reason_end = str(reason[0])
-    return status_end, reason_end
+    return status_end, reason_end, warning_count
 
 def Get_Kraken_reads(stats, trimd_kraken):
 #    if stats is not None:
@@ -281,7 +284,6 @@ def Get_Mutations(amr_file):
 def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file):
     try:
         point_mutations_list = Get_Mutations(amr_file)
-        print(point_mutations_list)
     except:
         point_mutations_list = 'Unknown'
     try:
@@ -356,7 +358,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
     except:
         scaffold_match = "Unknown"
     try:
-        QC_Outcome, Reason = QC_Pass(stats)
+        QC_Outcome, Reason, warning_count = QC_Pass(stats)
     except:
         QC_Outcome = 'Unknown'
         Reason = ""
@@ -364,7 +366,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
-    Line = ID + '\t' + QC_Outcome + '\t' + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + GC + '\t' + read_match + '\t' + scaffold_match + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + Reason
+    Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + GC + '\t' + read_match + '\t' + scaffold_match + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + Reason
     return Line
 
 def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations):
