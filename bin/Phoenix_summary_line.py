@@ -222,6 +222,7 @@ def QC_Pass(stats):
                 reason.append(line_reason.strip())
                 status_end = str(status[0])
                 reason_end = str(reason[0])
+    warning_count = str(warning_count)
     return status_end, reason_end, warning_count
 
 def Get_Kraken_reads(stats, trimd_kraken):
