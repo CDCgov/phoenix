@@ -22,8 +22,7 @@ process DETERMINE_TOP_TAXA {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
-    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -d $refseq_fasta_database $terra
-
-    rsync -r Ref_Seq "${baseDir}/assets/databases/"
+    mkdir Ref_Seq
+    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -d ./Ref_Seq $terra
     """
 }

@@ -4,8 +4,8 @@ process FASTANI {
     container 'staphb/fastani:1.33'
 
     input:
-    tuple val(meta), path(query), path(reference)
-    path(reference_files)
+    tuple val(meta), path(query), path(reference), path(reference_files)
+    
 
     output:
     tuple val(meta), path("*.ani.txt"), emit: ani
