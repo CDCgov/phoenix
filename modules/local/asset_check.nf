@@ -11,11 +11,11 @@ process ASSET_CHECK {
     when:
     task.ext.when == null || task.ext.when
 
-    shell:
+    script:
     """
-    if [[ $zipped_sketch == *.gz ]]
+    if [[ ${zipped_sketch} == *.gz ]]
     then
-        gunzip --force $zipped_sketch
+        gunzip --force ${zipped_sketch}
     else
         :
     fi
