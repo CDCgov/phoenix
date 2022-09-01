@@ -5,7 +5,6 @@ process DETERMINE_TOP_TAXA {
 
     input:
     tuple val(meta), path(mash_dists), path(assembly_scaffolds)
-    path(refseq_fasta_database)
 
     output:
     tuple val(meta), path('*_best_MASH_hits.txt')     , emit: top_taxa_list
