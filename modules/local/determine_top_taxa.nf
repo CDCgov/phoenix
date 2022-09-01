@@ -7,8 +7,8 @@ process DETERMINE_TOP_TAXA {
     tuple val(meta), path(mash_dists), path(assembly_scaffolds)
 
     output:
-    tuple val(meta), path('*_best_MASH_hits.txt')     , emit: top_taxa_list
-    tuple val(meta), path('Ref_Seq/*_genomic.fna.gz') , emit: reference_files
+    tuple val(meta), path('*_best_MASH_hits.txt'), emit: top_taxa_list
+    tuple val(meta), path('*_genomic.fna.gz'),     emit: reference_files
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -21,7 +21,6 @@ process DETERMINE_TOP_TAXA {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
-    mkdir Ref_Seq
-    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -d ./Ref_Seq $terra
+    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -d ./ $terra
     """
 }
