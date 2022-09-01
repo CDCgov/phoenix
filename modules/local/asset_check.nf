@@ -3,17 +3,19 @@ process ASSET_CHECK {
     container 'quay.io/jvhagey/phoenix:base_v1.0.0'
 
     input:
-    path(directory)
+    path(zipped_sketch)
+
+    output:
+    path('REFSEQ_20210820_Bacteria_complete.msh'), emit: mash_sketch
 
     when:
     task.ext.when == null || task.ext.when
 
     shell:
     """
-    mash_sketch=\$(find ${directory}/ -type f -name "REFSEQ*")
-    if [[ \$mash_sketch == *.gz ]]
+    if [[ $zipped_sketch == *.gz ]]
     then
-        gunzip --force \$mash_sketch
+        gunzip --force $zipped_sketch
     else
         :
     fi
