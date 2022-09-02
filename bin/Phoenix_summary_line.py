@@ -221,7 +221,10 @@ def QC_Pass(stats):
                 status.append(line_status.strip())
                 reason.append(line_reason.strip())
                 status_end = str(status[0])
-                reason_end = str(reason[0])
+                if status_end == "PASS":
+                    reason_end = ""
+                else:
+                    reason_end = str(reason[0])
     warning_count = str(warning_count)
     return status_end, reason_end, warning_count
 
