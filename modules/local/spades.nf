@@ -26,12 +26,13 @@ process SPADES {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def maxmem = task.memory.toGiga()
+    def maxmem = task.memory.toGiga()-20
     def input_reads = "-1 ${reads[0]} -2 ${reads[1]}"
     def single_reads = "-s $unpaired_reads"
     def phred_offset = params.phred
     
     """
+    echo ${maxmem}
     bash ${baseDir}/bin/pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
     sh ${baseDir}/bin/beforeSpades.sh -k ${k2_bh_summary} -n ${meta.id} -d ${params.outdir}
 
