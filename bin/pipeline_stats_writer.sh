@@ -1000,7 +1000,7 @@ fi
 
 # check MLST minimus
 if [[ -s "${mlst_file}" ]]; then
-  if [[ $(wc -l <${mlst_file}) -ge 1 ]]; then #if there are two mlst schemes
+  if [[ $(wc -l <${mlst_file}) > 1 ]]; then #if there are two mlst schemes
     mlst_db=$(head -n1 ${mlst_file} | cut -d$'\t' -f2)
     mlst_type=$(head -n1 ${mlst_file} | cut -d$'\t' -f3)
     mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
