@@ -26,7 +26,7 @@ process SPADES {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def maxmem = task.memory.toGiga()-20
+    def maxmem = task.memory.toGiga()
     def input_reads = "-1 ${reads[0]} -2 ${reads[1]}"
     def single_reads = "-s $unpaired_reads"
     def phred_offset = params.phred
