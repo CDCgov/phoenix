@@ -13,7 +13,7 @@ process ASSET_CHECK {
 
     script:
     """
-    if [[ ${zipped_sketch} == *.gz ]]
+    if [[ ${zipped_sketch} = *.gz ]]
     then
         gunzip --force ${zipped_sketch}
     else
