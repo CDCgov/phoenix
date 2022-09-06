@@ -70,7 +70,11 @@ fi
 
 # Accounts for manual entry or passthrough situations
 if [[ -f "${db_path}" ]]; then
-	NCBI_ratio="${db_path}"
+	#Clean up database so the name doesn't start with lowercase letter (change to uppercase) and remove brackets
+	sed 's/^\(.\)/\U\1/' $db_path > db_path_update.txt
+	sed -i 's/\[//' db_path_update.txt
+	sed -i 's/\]//' db_path_update.txt
+	NCBI_ratio=db_path_update.txt
 #	NCBI_ratio_date=$(echo "${db_path}" | rev | cut -d'_' -f1 | cut -d'.' -f2 | rev) #expects date
 	NCBI_ratio_date="20210819"
 else
@@ -139,7 +143,6 @@ while IFS='' read -r line; do
 			taxid="No tax id given or empty when making lookup"
 		fi
 		expected_length=$(echo "scale=0; 1000000 * ${arr_line[4]} / 1 " | bc | cut -d'.' -f1)
-		echo "${arr_line[5]}"
 		reference_count="${arr_line[6]}"
 		stdev=$(echo "scale=4; 1000000 * ${arr_line[5]} /1 " | bc | cut -d"." -f1)
 		if [[ "${reference_count}" -lt 10 ]]; then
