@@ -8,7 +8,7 @@ process CALCULATE_ASSEMBLY_RATIO {
     path(ncbi_database)
 
     output:
-    tuple val(meta), path('*.txt'), emit: ratio
+    tuple val(meta), path('*_Assembly_ratio_*.txt'), emit: ratio
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
