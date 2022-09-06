@@ -117,7 +117,7 @@ workflow PHOENIX_EXQC {
 
     //unzip any zipped databases
     ASSET_CHECK (
-        params.path2db
+        params.zipped_sketch
     )
     
     // Remove PhiX reads
@@ -244,7 +244,7 @@ workflow PHOENIX_EXQC {
 
     // Running Mash distance to get top 20 matches for fastANI to speed things up
     MASH_DIST (
-        BBMAP_REFORMAT.out.reads, params.mash_sketch
+        BBMAP_REFORMAT.out.reads, ASSET_CHECK.out.mash_sketch
     )
     ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 

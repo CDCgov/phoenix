@@ -501,6 +501,9 @@ else
 fi
 
 echo "---------- ${sample_name} completed as ${status} ----------"  >> "${sample_name}.synopsis"
+echo "\nWARNINGS: out of line with what is expected and MAY cause problems downstream."  >> "${sample_name}.synopsis"
+echo "\nALERT: something to note, does not mean it is a poor-quality assembly."  >> "${sample_name}.synopsis"
+
 
 #Script exited gracefully (unless something else inside failed)
 exit 0
