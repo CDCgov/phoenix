@@ -64,6 +64,10 @@ if [[ "${options_found}" -eq 0 ]]; then
 	exit 1
 fi
 
+if [[ "${database}" = "./" ]]; then
+	database="."
+fi
+
 # set the correct path for bc/wget - needed for terra
 if [[ $terra = "terra" ]]; then
 	bc_path=/opt/conda/envs/phoenix/bin/bc

@@ -326,7 +326,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
             ST_2 = ST[1]
         else:
             ST_1 = ST[0]
-            ST_2 = "NA"
+            ST_2 = "-"
     except:
         ST = 'Unknown'
     try:

@@ -1168,8 +1168,8 @@ else
 fi
 
 echo "---------- ${sample_name} completed as ${status} ----------"  >> "${sample_name}.synopsis"
-echo "\nWARNINGS: out of line with what is expected and MAY cause problems downstream."  >> "${sample_name}.synopsis"
-echo "\nALERT: something to note, does not mean it is a poor-quality assembly."  >> "${sample_name}.synopsis"
+echo "WARNINGS: out of line with what is expected and MAY cause problems downstream."  >> "${sample_name}.synopsis"
+echo "ALERT: something to note, does not mean it is a poor-quality assembly."  >> "${sample_name}.synopsis"
 
 if [[ "${internal_phoenix}" == "true" ]]; then
   printf "\n*BUSCO defines core genes as single-copy orthologs that should be highly conserved among the closely related species."  >> "${sample_name}.synopsis"
