@@ -75,8 +75,9 @@ if [[ $terra = "terra" ]]; then
 	certificate_check="--no-check-certificate"
 else
 	bc_path=bc
-	wget_path=wget
+	wget_path=/usr/bin/wget
 	certificate_check=""
+	which wget
 fi
 
 # Based upon standard naming protocols pulling last portion of path off should result in proper name

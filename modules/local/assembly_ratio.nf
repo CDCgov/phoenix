@@ -9,6 +9,7 @@ process CALCULATE_ASSEMBLY_RATIO {
 
     output:
     tuple val(meta), path('*_Assembly_ratio_*.txt'), emit: ratio
+    tuple val(meta), path('*_GC_content_*.txt')     , emit: gc_content
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"

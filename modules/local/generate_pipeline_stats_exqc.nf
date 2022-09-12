@@ -28,7 +28,8 @@ process GENERATE_PIPELINE_STATS_EXQC {
     path(taxID), \
     path(fastANI_formatted_file), \
     path(assembly_ratio_file), \
-    path(amr_file)
+    path(amr_file), \
+    path(gc_content)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
@@ -63,6 +64,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -x $srst_fullgenes_file \\
         -y $mlst_file \\
         -2 $amr_file \\
+        -4 $gc_content \\
         -3
     """
 }

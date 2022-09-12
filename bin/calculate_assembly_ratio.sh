@@ -158,6 +158,18 @@ while IFS='' read -r line; do
 			fi
 			stdevs=$(echo "scale=4 ; ( ${bigger} - ${smaller} ) / ${stdev}" | bc )
 		fi
+		#GC content
+		gc_min="${arr_line[7]}"
+		gc_max="${arr_line[8]}"
+		gc_mean="${arr_line[10]}"
+		gc_count="${arr_line[12]}"
+		if [[ "${gc_count}" -lt 10 ]]; then
+			gc_stdev="Not calculated on species with n<10 references"
+		else
+			gc_stdev="${arr_line[11]}"
+		fi
+		echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+
 
 
 		break

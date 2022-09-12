@@ -351,6 +351,7 @@ workflow PHOENIX_EXQC {
         FORMAT_ANI.out.ani_best_hit, \
         CALCULATE_ASSEMBLY_RATIO.out.ratio, \
         AMRFINDERPLUS_RUN.out.report, \
+        CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
         true
     )
 

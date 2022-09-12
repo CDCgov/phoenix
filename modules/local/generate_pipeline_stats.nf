@@ -23,7 +23,8 @@ process GENERATE_PIPELINE_STATS {
     path(taxID), \
     path(fastANI_formatted_file), \
     path(assembly_ratio_file), \
-    path(amr_file)
+    path(amr_file), \
+    path(gc_content)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
@@ -52,6 +53,7 @@ process GENERATE_PIPELINE_STATS {
         -v $gamma_replicon \\
         -w $gamma_HV \\
         -y $mlst_file \\
-        -2 $amr_file
+        -2 $amr_file \\
+        -4 $gc_content
     """
 }

@@ -273,7 +273,7 @@ workflow PHOENIX_EXTERNAL {
     assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
     .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
-    // Calculating the assembly ratio
+    // Calculating the assembly ratio and gather GC% stats
     CALCULATE_ASSEMBLY_RATIO (
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
@@ -301,6 +301,7 @@ workflow PHOENIX_EXTERNAL {
         FORMAT_ANI.out.ani_best_hit, \
         CALCULATE_ASSEMBLY_RATIO.out.ratio, \
         AMRFINDERPLUS_RUN.out.report, \
+        CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
         false
     )
 

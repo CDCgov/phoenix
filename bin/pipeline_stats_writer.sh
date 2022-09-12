@@ -44,6 +44,7 @@ show_help () {
     -z* assembly_only_sample (true or false)
     -2* amr_tsv_file
     -3
+    -4 gc_content_file
     "
 }
 
@@ -53,7 +54,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:3" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -142,6 +143,9 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:3" optio
     2)
       #echo "Option -2 triggered, argument = ${OPTARG}"
       amr_file=${OPTARG};;
+    4)
+      #echo "Option -4 triggered, argument = ${OPTARG}"
+      gc_content_file=${OPTARG};;
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
       internal_phoenix="true";;
@@ -825,6 +829,46 @@ else
 	status="FAILED"
 fi
 
+# Getting GC% information out of quast and gc files
+if [[ -s "${quast_report}" ]]; then
+	# Extract gc content from quast report
+	GC_con=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
+  if [[ -f "${gc_content_file}" ]]; then # if gc_content file exists get stdev line
+    gc_stdev=$(awk 'NR==3' "${gc_content_file}" | cut -d' ' -f2)
+    if [[ "${gc_stdev}" = *"Not calculated on species with n<10 references"* ]]; then #check that there was enough references for stdev calculation
+      printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "WARNING" "Low references for STDev"  >> "${sample_name}.synopsis"
+    else
+      #Check that GC content is within the range we want (2.58 on either side)
+      gc_mean=$(awk 'NR==6' "${gc_content_file}" | cut -d' ' -f2)
+      devs=$( echo 2.58 \* ${gc_stdev} | bc -l)
+      gc_right=$( echo ${gc_mean} + ${devs} | bc -l) # right of the mean
+      gc_left=$( echo ${gc_mean} - ${devs} | bc -l) # left of the mean
+      gc_stdev=$( printf "%.5f" ${gc_stdev})
+      if [[ $GC_con < $gc_left ]]; then
+        gc_left=$( echo ${gc_mean} - ${devs} | bc -l | xargs printf "%.5f") # just making it more readable
+        gc_stdev=$( printf "%.5f" ${gc_stdev}) # just making it more readable
+        gc_mean=$( printf "%.5f" ${gc_mean}) # just making it more readable
+        printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "WARNING" "GC Content (%GC-${GC_con}) is less than ${gc_left} (2.58*${gc_stdev}stdevs) away from the mean of ${gc_mean}."  >> "${sample_name}.synopsis"
+      elif [[ $GC_con > $gc_right ]]; then
+        gc_right=$( echo ${gc_mean} + ${devs} | bc -l | xargs printf "%.5f") # just making it more readable
+        gc_stdev=$( printf "%.5f" ${gc_stdev}) # just making it more readable
+        gc_mean=$( printf "%.5f" ${gc_mean}) # just making it more readable
+        printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "WARNING" "GC Content (%GC-${GC_con}) is greater than ${gc_right} (2.58*${gc_stdev}stdevs) away from the mean of ${gc_mean}."  >> "${sample_name}.synopsis"
+      else
+        gc_right=$( echo ${gc_mean} + ${devs} | bc -l | xargs printf "%.5f") # just making it more readable
+        gc_left=$( echo ${gc_mean} - ${devs} | bc -l | xargs printf "%.5f") # just making it more readable
+        gc_mean=$( printf "%.5f" ${gc_mean}) # just making it more readable
+        printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "SUCCESS" "%GC-${GC_con} is within ${gc_left}-${gc_right} (2.58*${gc_stdev}stdevs) away from the mean of ${gc_mean}."  >> "${sample_name}.synopsis"
+      fi
+    fi
+  else # if gc_content file does not exist report failure
+    printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "FAILED" "%GC-${GC_con}, but ${sample_name}_GC_content_20210819.txt does not exists. ${sample_name}_GC_content_20210819.txt was suppose to be created in assembly ratio step."  >> "${sample_name}.synopsis"
+  fi
+else
+  printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "FAILED" "${sample_name}_report.tsv does not exist"  >> "${sample_name}.synopsis"
+	status="FAILED"
+fi
+
 if [[ -s "${taxID_file}" ]]; then
 	source_call=$(head -n1 "${taxID_file}")
 	tax_source="UNK"
@@ -863,6 +907,7 @@ if [[ -f "${assembly_ratio_file}" ]]; then
   assembly_ratio=$(tail -n1 "${assembly_ratio_file}" | cut -d' ' -f2)
   stdev_line=$(head -n4 "${assembly_ratio_file}" | tail -n1)
   species_stdev_line=$(head -n3 "${assembly_ratio_file}" | tail -n1)
+  gc_content=$(head  )
     if [[ "${stdev_line}" = "Isolate_St.Devs: N/A" ]]; then
       st_dev="N/A"
     else
