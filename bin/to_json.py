@@ -16,7 +16,7 @@ def parseArgs(args=None):
 
 def jsonConverter(filePath):
     
-    if filePath.endswith(".csv"):#convert CSV files
+    if filePath.endswith(".csv") or filePath.endswith(".txt"):#convert CSV files
         df = pd.read_csv(filePath, header=0)
         df.to_json(filePath[:-4] + ".json")
     else: #convert tab delim files
