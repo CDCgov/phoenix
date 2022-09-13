@@ -1,4 +1,4 @@
-def VERSION = 'https://github.com/jenniferlu717/KrakenTools/commit/ff29ebc975b8416bceb1e3928f360ac098fbd0e3' // Version information not provided by tool on CLI
+def VERSION = '1.2' // Version information not provided by tool on CLI
 
 process KRAKENTOOLS_KREPORT2MPA {
     tag "$meta.id"
