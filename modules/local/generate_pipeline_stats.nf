@@ -31,7 +31,16 @@ process GENERATE_PIPELINE_STATS {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // terra=true sets paths for bc/wget for terra container paths
+    if (params.terra==false) {
+        terra = ""
+    } else if (params.terra==true) {
+        terra = "PATH=/opt/conda/envs/phoenix/bin/bc:$PATH"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    $terra
     pipeline_stats_writer.sh \\
         -a $fastp_raw_qc \\
         -b $fastp_total_qc \\

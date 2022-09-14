@@ -16,7 +16,16 @@ process MLST {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // terra=true sets paths for bc/wget for terra container paths
+    if (params.terra==false) {
+        terra = ""
+    } else if (params.terra==true) {
+        terra = "PATH=/opt/conda/envs/phoenix/bin/wget:$PATH"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    $terra
     mlst \\
         --threads $task.cpus \\
         $fasta \\
