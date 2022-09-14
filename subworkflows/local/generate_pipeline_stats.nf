@@ -22,12 +22,12 @@ workflow GENERATE_PIPELINE_STATS_WF {
         gamma_pf
         quast_report
         busco
-        asmbld_report          // channel: tuple (meta) path(report): KRAKEN2_TRIMD.out.report
-        asmbld_krona_html      // channel: tuple (meta) path(krona_html): KRAKEN2_TRIMD.out.krona_html
-        asmbld_k2_bh_summary   // channel: tuple (meta) path(k2_bh_summary): KRAKEN2_TRIMD.out.k2_bh_summary
-        wtasmbld_report        // channel: tuple (meta) path(report): KRAKEN2_TRIMD.out.report
-        wtasmbld_krona_html    // channel: tuple (meta) path(krona_html): KRAKEN2_TRIMD.out.krona_html
-        wtasmbld_k2_bh_summary // channel: tuple (meta) path(k2_bh_summary): KRAKEN2_TRIMD.out.k2_bh_summary
+        asmbld_report          // channel: tuple (meta) path(report): KRAKEN2_ASMBLD.out.report
+        asmbld_krona_html      // channel: tuple (meta) path(krona_html): KRAKEN2_ASMBLD.out.krona_html
+        asmbld_k2_bh_summary   // channel: tuple (meta) path(k2_bh_summary): KRAKEN2_ASMBLD.out.k2_bh_summary
+        wtasmbld_report        // channel: tuple (meta) path(report): KRAKEN2_WTASMBLD.out.report
+        wtasmbld_krona_html    // channel: tuple (meta) path(krona_html): KRAKEN2_WTASMBLD.out.krona_html
+        wtasmbld_k2_bh_summary // channel: tuple (meta) path(k2_bh_summary): KRAKEN2_WTASMBLD.out.k2_bh_summary
         taxa_id
         format_ani
         assembly_ratio

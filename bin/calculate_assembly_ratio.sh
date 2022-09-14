@@ -20,14 +20,14 @@ show_help () {
 	echo "required: -d = path to specific sorted database with statistics related to entries from NCBI"
 #	echo "required: -e = path to Isolate folder that needs to have Assembly and ANI folders and an isolateID.tax file"
 	echo "required: -q = quast report.tsv file"
-	echo "required: -t = tax file from output of determine_taxaID.sh"
+	echo "required: -tax = tax file from output of determine_taxaID.sh"
 	echo "required: -s = sample_name"
 	echo "optional: -f = give a specific taxonomy to compare against in the database"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?d:q:t:f:s:t:" option; do
+while getopts ":h?d:q:tax:f:s:terra:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -41,7 +41,7 @@ while getopts ":h?d:q:t:f:s:t:" option; do
 		q) #changed from e
 			echo "Option -q triggered, argument = ${OPTARG}"
 			quast_report=${OPTARG};;
-		t)
+		tax)
 			echo "Option -t triggered, argument = ${OPTARG}"
 			tax_file=${OPTARG};; # comes from determine_taxID.sh
 		f)
