@@ -42,7 +42,7 @@ while getopts ":h?d:q:x:f:s:t:" option; do
 			echo "Option -q triggered, argument = ${OPTARG}"
 			quast_report=${OPTARG};;
 		x)
-			echo "Option -tax triggered, argument = ${OPTARG}"
+			echo "Option -x triggered, argument = ${OPTARG}"
 			tax_file=${OPTARG};; # comes from determine_taxID.sh
 		f)
 			echo "Option -f triggered, argument = ${OPTARG}"
@@ -54,8 +54,7 @@ while getopts ":h?d:q:x:f:s:t:" option; do
 			sample_name=${OPTARG};;
 		t)
 			echo "Option -t triggered"
-			terra=${OPTARG}
-			;;
+			terra=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
