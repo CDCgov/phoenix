@@ -27,7 +27,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?d:q:tax:f:s:terra:" option; do
+while getopts ":h?d:q:tax:f:s:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -42,7 +42,7 @@ while getopts ":h?d:q:tax:f:s:terra:" option; do
 			echo "Option -q triggered, argument = ${OPTARG}"
 			quast_report=${OPTARG};;
 		tax)
-			echo "Option -t triggered, argument = ${OPTARG}"
+			echo "Option -tax triggered, argument = ${OPTARG}"
 			tax_file=${OPTARG};; # comes from determine_taxID.sh
 		f)
 			echo "Option -f triggered, argument = ${OPTARG}"

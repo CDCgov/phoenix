@@ -17,7 +17,7 @@ process CALCULATE_ASSEMBLY_RATIO {
     if (params.terra==false) {
         terra = ""
     } else if (params.terra==true) {
-        terra = "-t terra"
+        terra = "-terra terra"
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
