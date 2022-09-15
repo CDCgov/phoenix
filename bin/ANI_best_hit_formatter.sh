@@ -23,7 +23,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?a:n:" option; do
+while getopts ":h?a:n:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -37,6 +37,9 @@ while getopts ":h?a:n:" option; do
 		n)
 			echo "Option -n triggered, argument = ${OPTARG}"
 			sample_name=${OPTARG};;
+		t)
+			echo "Option -t triggered"
+			terra=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -45,6 +48,13 @@ while getopts ":h?a:n:" option; do
 			;;
 	esac
 done
+
+# set the correct path for bc/wget - needed for terra
+if [[ $terra = "terra" ]]; then
+	bc_path=/opt/conda/envs/phoenix/bin/bc
+else
+	bc_path=bc
+fi
 
 if [[ "${options_found}" -eq 0 ]]; then
 	echo "No options found"
@@ -89,8 +99,8 @@ best_percent=${def_array[2]}
 fragment_matches=${def_array[3]}
 total_fragments=${def_array[4]}
 #echo "${fragment_matches} of ${total_fragments}"
-best_percent=$(echo "scale=2; $best_percent / 1" | bc -l)
-best_coverage=$(echo "scale=2; 100 * $fragment_matches / $total_fragments" | bc -l)
+best_percent=$(echo "scale=2; $best_percent / 1" | $bc_path -l)
+best_coverage=$(echo "scale=2; 100 * $fragment_matches / $total_fragments" | $bc_path -l)
 #best_coverage=$(awk 'BEGIN {printf "%.4f";x=fragment_matches;y=total_fragments;print 100*x/y}')
 #best_coverage=$(awk -v frag="${def_array[3]}" tot="${def_array[4]}" 'BEGIN{printf "%.4f", frag * 100 / tot}')
 
