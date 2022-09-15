@@ -32,7 +32,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:x" option; do
+while getopts ":1?a:b:c:d:e:f:g:x:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)

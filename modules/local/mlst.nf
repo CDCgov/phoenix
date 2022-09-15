@@ -25,7 +25,6 @@ process MLST {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
-    $terra
     mlst \\
         --threads $task.cpus \\
         $fasta \\

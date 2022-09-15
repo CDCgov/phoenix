@@ -35,12 +35,11 @@ process GENERATE_PIPELINE_STATS {
     if (params.terra==false) {
         terra = ""
     } else if (params.terra==true) {
-        terra = "PATH=/opt/conda/envs/phoenix/bin/bc:$PATH"
+        terra = "-5 terra"
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
-    $terra
     pipeline_stats_writer.sh \\
         -a $fastp_raw_qc \\
         -b $fastp_total_qc \\
@@ -48,7 +47,7 @@ process GENERATE_PIPELINE_STATS {
         -d ${trimmed_reads[1]} \\
         -e $kraken2_trimd_report \\
         -f $kraken2_trimd_summary \\
-        -g $krona_trimd\\
+        -g $krona_trimd \\
         -h $assembly_scaffolds \\
         -i $filtered_assembly \\
         -m $kraken2_weighted_report \\
@@ -63,6 +62,7 @@ process GENERATE_PIPELINE_STATS {
         -w $gamma_HV \\
         -y $mlst_file \\
         -2 $amr_file \\
-        -4 $gc_content
+        -4 $gc_content \\
+        $terra
     """
 }
