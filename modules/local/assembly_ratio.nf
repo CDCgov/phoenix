@@ -22,6 +22,6 @@ process CALCULATE_ASSEMBLY_RATIO {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
-    calculate_assembly_ratio.sh -d $ncbi_database -q $quast_report -tax $taxa_file -s ${prefix} $terra
+    calculate_assembly_ratio.sh -d $ncbi_database -q $quast_report --tax $taxa_file -s ${prefix} $terra
     """
 }
