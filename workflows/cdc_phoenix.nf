@@ -60,7 +60,7 @@ include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_s
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
 include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
-include { GET_SRST2_MLST                 } from '../modules/local/get_MLST_scheme'
+include { GET_SRST2_MLST                 } from '../modules/local/get_MLST_SRST2'
 
 /*
 ========================================================================================
