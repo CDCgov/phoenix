@@ -1,18 +1,18 @@
 process SRST2_MLST {
     tag "${meta.id}"
-    label 'process_low'
+    label 'process_medium'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
         'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
 
     input:
-    tuple val(meta), path(fastq_s)
-    path(taxonomy)
+    tuple val(meta), path(fastqs)
+    tuple val(meta), path(getmlstout), path(alleles), path(profiles)
 
     output:
-    tuple val(meta), path("getmlst.out")               , optional:true, emit: gene_results
-    tuple val(meta), path("*_mlst_*_results.txt")                , optional:true, emit: mlst_results
+    //tuple val(meta), path("*_mlst_*_results.txt")              , optional:true, emit: mlst_results
+    tuple val(meta), path("*_srst2.mlst")                        , optional:true, emit: mlst_results
     tuple val(meta), path("*.pileup")                            ,                emit: pileup
     tuple val(meta), path("*.sorted.bam")                        ,                emit: sorted_bam
     path "versions.yml"                                          ,                emit: versions
@@ -23,31 +23,46 @@ process SRST2_MLST {
     script:
     def args = task.ext.args ?: ""
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def read_s = meta.single_end ? "--input_se ${fastq_s}" : "--input_pe ${fastq_s[0]} ${fastq_s[1]}"
+    def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
     """
+    counter=1
+    for getout in $getmlstout
+    do
+      echo "\${getout}"
+      line="\$(tail -n1 \${getout})"
+      # Pulls suggested command info from the getmlst script
+      mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
+      mlst_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
+      mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
+      #mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2)
 
-    species=\$(tail -n1 ${taxonomy} | cut -d\$'\t' -f2)
-    genus=\$(tail -n2 ${taxonomy} | head -n1 | cut -d\$'\t' -f2)
-    echo "\${genus} ___ \${species}"
-    python -V
+      #mv \${mlst_db}_profiles_csv profiles_csv
 
-    db_entry="\${genus} \${species}"
+      echo "Test: \${mlst_db} \${mlst_defs} \${mlst_delimiter}"
 
-    getMLST2.py --species '\$db_entry' > getmlst.out
-
-    # Pulls suggested command info from the getmlst script
-    suggested_command=\$(tail -n2 "getmlst.out" | head -n1)
-    mlst_db=\$(echo "\${suggested_command}" | cut -d' ' -f11)
-    mlst_defs=\$(echo "\${suggested_command}" | cut -d' ' -f13)
-    mlst_delimiter=\$(echo "\${suggested_command}" | cut -d' ' -f15)
-
-    srst2 ${read_s} \\
-        --threads $task.cpus \\
-        --output ${prefix} \\
-        --mlst_db \${mlst_db} \\
-        --mlst_definitions \${mlst_defs} \\
-        --mlst_delimiter \${mlst_delimiter} \\
-        $args
+      srst2 ${read_s} \\
+          --threads $task.cpus \\
+          --output \${counter}_${prefix} \\
+          --mlst_db "\${mlst_db}".fasta \\
+          --mlst_definitions \${mlst_defs} \\
+          --mlst_delimiter \${mlst_delimiter} \\
+          $args
+      if [[ "\${counter}" -eq 1 ]]; then
+        header="\$(head -n1 1_${prefix}*.txt)"
+        trailer="\$(tail -n1 1_${prefix}*.txt)"
+        full_header="database \${header}"
+        full_trailer="\${mlst_db} \${trailer}"
+        echo "\${full_header}" > ${prefix}_srst2.mlst
+        echo "\${full_trailer}" >> ${prefix}_srst2.mlst
+      else
+        trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
+        full_trailer="\${mlst_db} \${trailer}"
+        echo "\${full_trailer}" >> ${prefix}_srst2.mlst
+      fi
+      rm \${counter}_${prefix}*.txt
+      counter=\$(( counter + 1 ))
+      #mv profiles_csv \${mlst_db}_profiles_csv
+    done
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

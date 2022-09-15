@@ -59,8 +59,8 @@ include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summar
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
-//include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
-//include { GET_SRST2_MLST                 } from '../modules/local/get_MLST_scheme'
+include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
+include { GET_SRST2_MLST                 } from '../modules/local/get_MLST_scheme'
 
 /*
 ========================================================================================
@@ -119,7 +119,7 @@ workflow PHOENIX_EXQC {
     ASSET_CHECK (
         params.zipped_sketch
     )
-    
+
     // Remove PhiX reads
     BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
@@ -283,9 +283,9 @@ workflow PHOENIX_EXQC {
         best_hit_ch, params.taxa
     )
 
-/*    // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
+    // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
     GET_SRST2_MLST (
-        meta, DETERMINE_TAXA_ID.out.taxonomy
+        DETERMINE_TAXA_ID.out.taxonomy
     )
     ch_versions = ch_versions.mix(GET_SRST2_MLST.out.versions)
 
@@ -295,7 +295,7 @@ workflow PHOENIX_EXQC {
         FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads]}, GET_SRST2_MLST.out.getMLST_out
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
-    */
+
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
@@ -306,7 +306,7 @@ workflow PHOENIX_EXQC {
         DETERMINE_TAXA_ID.out.taxonomy
     )
 
-    // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
+    // Combining taxa and scaffolds to run amrfinder and get the point mutations.
     amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
     .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])
 
@@ -355,7 +355,7 @@ workflow PHOENIX_EXQC {
         true
     )
 
-    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
+    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
     line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
     .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
     .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
