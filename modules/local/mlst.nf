@@ -16,19 +16,16 @@ process MLST {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) {
-        terra = ""
-    } else if (params.terra==true) {
-        terra = "PATH=/opt/conda/envs/phoenix/bin/wget:$PATH"
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
+    // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
     """
-    mlst \\
-        --threads $task.cpus \\
-        $fasta \\
-        > ${prefix}.tsv
+    unzipped_fasta=\$(basename ${fasta} .gz)
+    if [[ ${fasta} = *.gz ]]
+    then
+        gunzip --force ${fasta}
+        mlst --threads $task.cpus \$unzipped_fasta > ${prefix}.tsv
+    else
+        mlst --threads $task.cpus $fasta > ${prefix}.tsv
+    fi
 
     scheme=\$(cut -d \$'\t' -f2 ${prefix}.tsv)
     if [[ \$scheme == "abaumannii_2" ]]; then
