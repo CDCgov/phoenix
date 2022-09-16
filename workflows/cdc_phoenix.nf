@@ -60,7 +60,7 @@ include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_s
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
 include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
-include { GET_SRST2_MLST                 } from '../modules/local/get_MLST_SRST2'
+include { GET_MLST_SRST2                 } from '../modules/local/get_MLST_SRST2'
 
 /*
 ========================================================================================
@@ -284,17 +284,17 @@ workflow PHOENIX_EXQC {
     )
 
     // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
-    GET_SRST2_MLST (
+    GET_MLST_SRST2 (
         DETERMINE_TAXA_ID.out.taxonomy
     )
-    ch_versions = ch_versions.mix(GET_SRST2_MLST.out.versions)
+    ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
 
     // Idenitifying mlst genes in trimmed reads
     SRST2_MLST (
-        GET_SRST2_MLST.out
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads]}, GET_SRST2_MLST.out.getMLST_out
+        FASTP_TRIMD.out.reads, GET_MLST_SRST2.out.getMLST_out
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
+
 
 
     // Fetch AMRFinder Database
