@@ -7,7 +7,6 @@ task phoenix {
     String samplename
     String kraken2db = "null"
     String docker = "quay.io/jvhagey/phoenix:1.0.0"
-    String version = "v1.0.0"
     Int    memory = 40
     Int    cpu = 8
     Int    disk_size = 100
@@ -28,7 +27,7 @@ task phoenix {
     # Run PHoeNIx
     mkdir ~{samplename}
     cd ~{samplename}
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r ~{version} -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
       # Everything finished, pack up the results and clean up
       rm -rf .nextflow/ work/
       cd ..
