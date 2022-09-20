@@ -34,8 +34,11 @@ task phoenix {
       tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz 
     else
       # Run failed
+      tar -cf - work/ | gzip -n --best > work.tar.gz
       #save line for debugging specific file - just change "collated_versions.yml" to specific file name
-      #find  /cromwell_root/ -path "*work*" -name "*collated_versions.yml" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /cromwell_root/ -path "*work*" -name "*.command.err" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /cromwell_root/ -path "*work*" -name "*.command.out" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
       exit 1
     fi
     
@@ -63,6 +66,7 @@ task phoenix {
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee QC_REASON
   >>>
   output {
+    File   work_files                   = "work.tar.gz"
     String phoenix_version              = read_string("VERSION")
     String phoenix_docker               = docker
     String analysis_date                = read_string("DATE")
@@ -153,7 +157,7 @@ task phoenix {
     File amr_taxa_match           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
     File amr_hits                 = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_amr_hits.tsv"
     #full results
-    File full_results             = "~{samplename}.tar.gz"    
+    File full_results             = "~{samplename}.tar.gz"
   }
   runtime {
     docker: "~{docker}"
