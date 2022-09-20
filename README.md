@@ -6,7 +6,7 @@
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
 
-🚨🚧 **This software is currently under active development and states not part of the beta testing are advised to use with caution as it is likely to change often until there is an offical stable release (estimated early Sep 2022).** 🚧🚨
+🚨🚧 **This software is currently under active development and states not part of the beta testing are advised to use with caution as it is likely to change often until there is an offical stable release (estimated Sep 2022).** 🚧🚨
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
