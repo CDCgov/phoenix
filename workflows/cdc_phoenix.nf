@@ -289,9 +289,13 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
 
+    // Combining weighted kraken report with the FastANI hit based on meta.id
+    mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads -> [[id:meta.id], reads]}\
+    .join(GET_MLST_SRST2.out.getMLST_out.map{meta, getMLST_out -> [[id:meta.id], getMLST_out]},  by: [0])
+
     // Idenitifying mlst genes in trimmed reads
     SRST2_MLST (
-        FASTP_TRIMD.out.reads, GET_MLST_SRST2.out.getMLST_out
+        mid_srst2_ch
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 

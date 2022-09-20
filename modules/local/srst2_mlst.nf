@@ -7,8 +7,7 @@ process SRST2_MLST {
         'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
 
     input:
-    tuple val(meta), path(fastqs)
-    tuple val(meta), path(getmlstout), path(alleles), path(profiles)
+    tuple val(meta), path(fastqs), path(getmlstout), path(alleles), path(profiles)
 
     output:
     //tuple val(meta), path("*_mlst_*_results.txt")              , optional:true, emit: mlst_results
