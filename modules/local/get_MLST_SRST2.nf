@@ -15,9 +15,11 @@ process GET_MLST_SRST2 {
     tuple val(meta),  path(taxonomy)
 
     output:
-    tuple val(meta), path("*_getMLST_out.txt"), path("*.fasta"), path("*_profiles.csv")       , emit: getMLST_out
+    tuple val(meta), path("*_getMLST_out.txt")                                                , emit: getMLSTs
+    tuple val(meta), path("*.fasta")                                                          , emit: fastas
+    tuple val(meta), path("*_profiles.csv")                                                   , emit: profiles
     tuple val(meta), path("*_pull_dates.txt")                                                 , emit: pull_date
-    path "versions.yml"                                , emit: versions
+    path "versions.yml"                                                                       , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
