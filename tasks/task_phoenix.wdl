@@ -29,7 +29,7 @@ task phoenix {
     cd ~{samplename}
     if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
       # Everything finished, pack up the results and clean up
-      tar -cf - work/ | gzip -n --best > work.tar.gz
+      #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
       cd ..
       tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz 
@@ -67,7 +67,7 @@ task phoenix {
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee QC_REASON
   >>>
   output {
-    File?   work_files                   = "work.tar.gz"
+    File?  work_files                   = "work.tar.gz"
     String phoenix_version              = read_string("VERSION")
     String phoenix_docker               = docker
     String analysis_date                = read_string("DATE")
