@@ -16,8 +16,8 @@ process GET_MLST_SRST2 {
 
     output:
     tuple val(meta), path("*_getMLST_out.txt")                                                , emit: getMLSTs
-    tuple val(meta), path("*.fasta")                                                          , emit: fastas
-    tuple val(meta), path("*_profiles.csv")                                                   , emit: profiles
+    tuple val(meta), path("*.fasta")                                           , optional:true, emit: fastas
+    tuple val(meta), path("*_profiles.csv")                                    , optional:true, emit: profiles
     tuple val(meta), path("*_pull_dates.txt")                                                 , emit: pull_date
     path "versions.yml"                                                                       , emit: versions
 
@@ -61,10 +61,12 @@ process GET_MLST_SRST2 {
       if [[ "\${entry}" = *"baumannii#1" ]]; then
   			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
   			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
-
   		elif [[ "\${entry}" = *"baumannii#2" ]]; then
   			sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
   			sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+      elif [[ "\${entry}" = "No match found" ]]; then
+    		touch "\${entry_no_spaces}.fasta"
+    		touch "\${entry_no_spaces}_profiles.csv"
       fi
       echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
       counter=\$(( counter + 1))

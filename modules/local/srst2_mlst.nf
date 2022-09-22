@@ -12,8 +12,8 @@ process SRST2_MLST {
     output:
     //tuple val(meta), path("*_mlst_*_results.txt")              , optional:true, emit: mlst_results
     tuple val(meta), path("*_srst2.mlst")                        , optional:true, emit: mlst_results
-    tuple val(meta), path("*.pileup")                            ,                emit: pileup
-    tuple val(meta), path("*.sorted.bam")                        ,                emit: sorted_bam
+    tuple val(meta), path("*.pileup")                            , optional:true, emit: pileup
+    tuple val(meta), path("*.sorted.bam")                        , optional:true, emit: sorted_bam
     path "versions.yml"                                          ,                emit: versions
 
     when:
@@ -29,34 +29,39 @@ process SRST2_MLST {
     do
       echo "\${getout}"
       line="\$(tail -n1 \${getout})"
-      # Pulls suggested command info from the getmlst script
-      mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
-      mlst_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
-      mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
-      #mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2)
-
-      #mv \${mlst_db}_profiles_csv profiles_csv
-
-      echo "Test: \${mlst_db} \${mlst_defs} \${mlst_delimiter}"
-
-      srst2 ${read_s} \\
-          --threads $task.cpus \\
-          --output \${counter}_${prefix} \\
-          --mlst_db "\${mlst_db}".fasta \\
-          --mlst_definitions \${mlst_defs} \\
-          --mlst_delimiter \${mlst_delimiter} \\
-          $args
-      if [[ "\${counter}" -eq 1 ]]; then
-        header="\$(head -n1 1_${prefix}*.txt)"
-        trailer="\$(tail -n1 1_${prefix}*.txt)"
-        full_header="database \${header}"
-        full_trailer="\${mlst_db} \${trailer}"
-        echo "\${full_header}" > ${prefix}_srst2.mlst
-        echo "\${full_trailer}" >> ${prefix}_srst2.mlst
+      if [[ "\${line}" = "No match found"]]; then
+        echo "database  Sample" > "\${counter}_${prefix}*.txt)"
+        echo "No match found  \$[prefix}" > "\${counter}_${prefix}*.txt)"
       else
-        trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
-        full_trailer="\${mlst_db} \${trailer}"
-        echo "\${full_trailer}" >> ${prefix}_srst2.mlst
+        # Pulls suggested command info from the getmlst script
+        mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
+        mlst_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
+        mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
+        #mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2)
+
+        #mv \${mlst_db}_profiles_csv profiles_csv
+
+        echo "Test: \${mlst_db} \${mlst_defs} \${mlst_delimiter}"
+
+        srst2 ${read_s} \\
+            --threads $task.cpus \\
+            --output \${counter}_${prefix} \\
+            --mlst_db "\${mlst_db}".fasta \\
+            --mlst_definitions \${mlst_defs} \\
+            --mlst_delimiter \${mlst_delimiter} \\
+            $args
+      fi
+      if [[ "\${counter}" -eq 1 ]]; then
+          header="\$(head -n1 1_${prefix}*.txt)"
+          trailer="\$(tail -n1 1_${prefix}*.txt)"
+          full_header="database \${header}"
+          full_trailer="\${mlst_db} \${trailer}"
+          echo "\${full_header}" > ${prefix}_srst2.mlst
+          echo "\${full_trailer}" >> ${prefix}_srst2.mlst
+      else
+          trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
+          full_trailer="\${mlst_db} \${trailer}"
+          echo "\${full_trailer}" >> ${prefix}_srst2.mlst
       fi
       rm \${counter}_${prefix}*.txt
       counter=\$(( counter + 1 ))
