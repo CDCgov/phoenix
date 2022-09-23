@@ -60,7 +60,7 @@ process GET_MLST_SRST2 {
       if [[ "\${entry}" = "No match found" ]]; then
     		touch "\${entry_no_spaces}.fasta"
     		touch "\${entry_no_spaces}_profiles.csv"
-        echo "DB:No match found       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+        echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
       else
         getMLST2_phoenix.py --species "\$entry"
         if [[ "\${entry}" = *"baumannii#1" ]]; then
