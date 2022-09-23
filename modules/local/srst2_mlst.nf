@@ -30,8 +30,8 @@ process SRST2_MLST {
       echo "\${getout}"
       line="\$(tail -n1 \${getout})"
       if [[ "\${line}" = "DB:No match found"* ]]; then
-        echo "database  Sample" > "\${counter}_${prefix}*.txt)"
-        echo "No match found  \$[prefix}" > "\${counter}_${prefix}*.txt)"
+        echo "database  Sample" > "\${counter}_${prefix}.txt)"
+        echo "No match found  ${prefix}" >> "\${counter}_${prefix}.txt"
       else
         # Pulls suggested command info from the getmlst script
         mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
