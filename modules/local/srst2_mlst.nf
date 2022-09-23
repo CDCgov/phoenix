@@ -64,9 +64,8 @@ process SRST2_MLST {
           found_last_locus="False"
           for item in \$trailer_list
           do
-            if if [[ "\${counter}" -eq 1 ]];; then
+            if [[ "\${counter}" -eq 1 ]];; then
               formatted_trailer="\${formatted_trailer}  \${mlst_db}]"
-            fi
             elif [[ "\${counter}" -ge 2 ]] && [[ "\${counter}" -lt 10 ]]; then
               formatted_trailer="\${formatted_trailer}  \${header_list}[\${counter}](\${trailer_list}[\${counter}])"
             elif [[ "\${counter}" -eq 2 ]] || [[ "\${counter}" -ge 10 ]]; then
