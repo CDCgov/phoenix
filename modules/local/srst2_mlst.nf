@@ -30,8 +30,9 @@ process SRST2_MLST {
       echo "\${getout}"
       line="\$(tail -n1 \${getout})"
       if [[ "\${line}" = "DB:No match found"* ]]; then
-        echo "database  Sample" > "\${counter}_${prefix}.txt)"
-        echo "No match found  ${prefix}" >> "\${counter}_${prefix}.txt"
+        tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
+        echo "database Taxonomy_used_for_lookup Sample" > "\${counter}_${prefix}.txt"
+        echo "No match found  \${tax_with_no_scheme}  ${prefix}" >> "\${counter}_${prefix}.txt"
         mlst_db="No match found"
       else
         # Pulls suggested command info from the getmlst script
