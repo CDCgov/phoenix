@@ -28,13 +28,7 @@ task phoenix {
     mkdir ~{samplename}
     cd ~{samplename}
 
-    # Copy krakendb - needed for if you keep the krakendb outside the files for the workspace
-    date # check time before
-    mkdir new_kraken_db_path
-    cp ~{kraken2db} new_kraken_db_path
-    date # check time after
-
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db $PWD/new_kraken_db_path; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
