@@ -31,8 +31,8 @@ process SRST2_MLST {
       line="\$(tail -n1 \${getout})"
       if [[ "\${line}" = "DB:No match found"* ]]; then
         tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-        echo "database Taxonomy_used_for_lookup Sample" > "\${counter}_${prefix}.txt"
-        echo "No match found  \${tax_with_no_scheme}  ${prefix}" >> "\${counter}_${prefix}.txt"
+        echo "Sample  database  Taxonomy_used_for_lookup" > "\${counter}_${prefix}.txt"
+        echo "${prefix} No match found  \${tax_with_no_scheme}" >> "\${counter}_${prefix}.txt"
         mlst_db="No match found"
       else
         # Pulls suggested command info from the getmlst script
@@ -53,10 +53,30 @@ process SRST2_MLST {
             --mlst_delimiter \${mlst_delimiter} \\
             $args
       fi
+      header="Sample  database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)"
       if [[ "\${counter}" -eq 1 ]]; then
-          header="\$(head -n1 1_${prefix}*.txt)"
-          trailer="\$(tail -n1 1_${prefix}*.txt)"
-          full_header="database \${header}"
+          raw_header="\$(head -n1 1_${prefix}*.txt)"
+          raw_trailer="\$(tail -n1 1_${prefix}*.txt)"
+          formatter_trailer="${prefix}  \${mlst_db}"
+          IFS=' ' read -r -a trailer_list <<< "\$raw_trailer"
+          IFS=' ' read -r -a header_list <<< "\$raw_header"
+          counter=0
+          found_last_locus="False"
+          for item in \$trailer_list: do
+            if [[ "\${counter}" -ge 2 ]] && [[ "\${counter}" -lt 10 ]]; then
+              formatted_trailer="\${formatted_trailer}  \${header_list}[\${counter}](\${trailer_list}[\${counter}])"
+            elif [[ "\${counter}" -eq 2 ]] || [[ "\${counter}" -ge 10 ]]; then
+              if [[ "\${header_list}[\${counter}]" = "mismatches" ]]; then
+                found_last_locus="True"
+              fi
+              if [[ "\${found_last_locus}" = "False" ]]; then
+                formatted_trailer="\${formatted_trailer}  \${header_list}[\${counter}](\${trailer_list}[\${counter}])"
+              else
+                formatted_trailer="\${formatted_trailer}  \${trailer_list}[\${counter}]"
+              fi
+            counter=\$(( counter + 1 ))
+          done
+          #full_header="database \${header}"
           full_trailer="\${mlst_db} \${trailer}"
           echo "\${full_header}" > ${prefix}_srst2.mlst
           echo "\${full_trailer}" >> ${prefix}_srst2.mlst
