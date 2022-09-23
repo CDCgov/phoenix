@@ -57,16 +57,18 @@ process GET_MLST_SRST2 {
     do
       echo "Entry#\${counter}-\${entry}|"
       entry_no_spaces="\${entry// /_}"
-      getMLST2_phoenix.py --species "\$entry"
-      if [[ "\${entry}" = *"baumannii#1" ]]; then
-  			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
-  			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
-  		elif [[ "\${entry}" = *"baumannii#2" ]]; then
-  			sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
-  			sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
-      elif [[ "\${entry}" = "No match found" ]]; then
+      if [[ "\${entry}" = "No match found" ]]; then
     		touch "\${entry_no_spaces}.fasta"
     		touch "\${entry_no_spaces}_profiles.csv"
+      else
+        getMLST2_phoenix.py --species "\$entry"
+        if [[ "\${entry}" = *"baumannii#1" ]]; then
+    			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
+    			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
+    		elif [[ "\${entry}" = *"baumannii#2" ]]; then
+    			sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
+    			sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+        fi
       fi
       echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
       counter=\$(( counter + 1))
