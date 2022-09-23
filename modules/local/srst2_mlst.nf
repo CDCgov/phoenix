@@ -62,7 +62,8 @@ process SRST2_MLST {
           IFS=' ' read -r -a header_list <<< "\$raw_header"
           counter=0
           found_last_locus="False"
-          for item in \$trailer_list: do
+          for item in \$trailer_list
+          do
             if [[ "\${counter}" -ge 2 ]] && [[ "\${counter}" -lt 10 ]]; then
               formatted_trailer="\${formatted_trailer}  \${header_list}[\${counter}](\${trailer_list}[\${counter}])"
             elif [[ "\${counter}" -eq 2 ]] || [[ "\${counter}" -ge 10 ]]; then
