@@ -75,6 +75,7 @@ process SRST2_MLST {
               else
                 formatted_trailer="\${formatted_trailer}  \${trailer_list}[\${counter}]"
               fi
+            fi
             counter=\$(( counter + 1 ))
           done
           #full_header="database \${header}"
