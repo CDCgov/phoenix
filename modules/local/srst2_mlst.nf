@@ -29,7 +29,7 @@ process SRST2_MLST {
     do
       echo "\${getout}"
       line="\$(tail -n1 \${getout})"
-      if [[ "\${line}" = "No match found"]]; then
+      if [[ "\${line}" = "DB:No match found"* ]]; then
         echo "database  Sample" > "\${counter}_${prefix}*.txt)"
         echo "No match found  \$[prefix}" > "\${counter}_${prefix}*.txt)"
       else
