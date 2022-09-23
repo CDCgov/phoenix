@@ -64,7 +64,10 @@ process SRST2_MLST {
           found_last_locus="False"
           for item in \$trailer_list
           do
-            if [[ "\${counter}" -ge 2 ]] && [[ "\${counter}" -lt 10 ]]; then
+            if if [[ "\${counter}" -eq 1 ]];; then
+              formatted_trailer="\${formatted_trailer}  \${mlst_db}]"
+            fi
+            elif [[ "\${counter}" -ge 2 ]] && [[ "\${counter}" -lt 10 ]]; then
               formatted_trailer="\${formatted_trailer}  \${header_list}[\${counter}](\${trailer_list}[\${counter}])"
             elif [[ "\${counter}" -eq 2 ]] || [[ "\${counter}" -ge 10 ]]; then
               if [[ "\${header_list}[\${counter}]" = "mismatches" ]]; then
@@ -79,8 +82,8 @@ process SRST2_MLST {
             counter=\$(( counter + 1 ))
           done
           #full_header="database \${header}"
-          full_trailer="\${mlst_db} \${trailer}"
-          echo "\${full_header}" > ${prefix}_srst2.mlst
+          full_trailer="\${mlst_db} \${formatted_trailer}"
+          echo "\${header}" > ${prefix}_srst2.mlst
           echo "\${full_trailer}" >> ${prefix}_srst2.mlst
       else
           trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
