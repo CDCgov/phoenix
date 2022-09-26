@@ -66,20 +66,20 @@ process SRST2_MLST {
           IFS=' ' read -r -a header_list <<< "\$raw_header"
           inner_counter=0
           found_last_locus="False"
-          for item in \$trailer_list
+          for item in \$trailer_list[@]
           do
-            if [[ "\${innner_counter}" -eq 1 ]]; then
+            if [[ "\${inner_counter}" -eq 1 ]]; then
               formatted_trailer="\${formatted_trailer}  \${mlst_db}]"
             elif [[ "\${inner_counter}" -ge 2 ]] && [[ "\${inner_counter}" -lt 10 ]]; then
-              formatted_trailer="\${formatted_trailer}  \${header_list}[\${inner_counter}](\${trailer_list}[\${inner_counter}])"
+              formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
             elif [[ "\${inner_counter}" -eq 2 ]] || [[ "\${inner_counter}" -ge 10 ]]; then
-              if [[ "\${header_list}[\${inner_counter}]" = "mismatches" ]]; then
+              if [[ "\${header_list[\${inner_counter}]}" = "mismatches" ]]; then
                 found_last_locus="True"
               fi
               if [[ "\${found_last_locus}" = "False" ]]; then
-                formatted_trailer="\${formatted_trailer}  \${header_list}[\${inner_counter}](\${trailer_list}[\${inner_counter}])"
+                formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
               else
-                formatted_trailer="\${formatted_trailer}  \${trailer_list}[\${inner_counter}]"
+                formatted_trailer="\${formatted_trailer}  \${trailer_list[\${inner_counter}]}"
               fi
             fi
             inner_counter=\$(( inner_counter + 1 ))
@@ -90,9 +90,9 @@ process SRST2_MLST {
           echo "\${full_trailer}" >> ${prefix}_srst2.mlst
         fi
       else
-        if [[ "\${no_match}" = "True" ]];
+        if [[ "\${no_match}" = "True" ]]; then
           tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-          echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "\${counter_${prefix}.txt"
+          echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "\${counter}_${prefix}.txt"
         else
           trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
           full_trailer="\${mlst_db} \${trailer}"
