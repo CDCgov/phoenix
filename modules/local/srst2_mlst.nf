@@ -54,7 +54,7 @@ process SRST2_MLST {
       fi
       header="Sample  database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)"
       if [[ "\${counter}" -eq 1 ]]; then
-        if [[ "\${no_match}" = "True" ]];
+        if [[ "\${no_match}" = "True" ]]; then
           tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
           echo "\${header}" > ${prefix}_srst2.mlst
           echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "${prefix}_srst2.mlst"
