@@ -57,7 +57,7 @@ process SRST2_MLST {
       if [[ "\${counter}" -eq 1 ]]; then
           raw_header="\$(head -n1 1_${prefix}*.txt)"
           raw_trailer="\$(tail -n1 1_${prefix}*.txt)"
-          formatter_trailer="${prefix}  \${mlst_db}"
+          formatted_trailer="${prefix}  \${mlst_db}"
           IFS=' ' read -r -a trailer_list <<< "\$raw_trailer"
           IFS=' ' read -r -a header_list <<< "\$raw_header"
           counter=0
