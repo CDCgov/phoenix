@@ -99,7 +99,9 @@ process SRST2_MLST {
           echo "\${full_trailer}" >> ${prefix}_srst2.mlst
         fi
       fi
-      rm \${counter}_${prefix}*.txt
+      if [[ -f \${counter}_${prefix}*.txt ]]; then
+        rm \${counter}_${prefix}*.txt
+      fi
       counter=\$(( counter + 1 ))
       #mv profiles_csv \${mlst_db}_profiles_csv
     done
