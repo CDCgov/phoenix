@@ -62,8 +62,8 @@ process SRST2_MLST {
           raw_header="\$(head -n1 1_${prefix}*.txt)"
           raw_trailer="\$(tail -n1 1_${prefix}*.txt)"
           formatted_trailer="${prefix}  \${mlst_db}"
-          IFS=' ' read -r -a trailer_list <<< "\$raw_trailer"
-          IFS=' ' read -r -a header_list <<< "\$raw_header"
+          IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
+          IFS=\$'\t ' read -r -a header_list <<< "\$raw_header"
           inner_counter=0
           found_last_locus="False"
           for item in \$trailer_list[@]
