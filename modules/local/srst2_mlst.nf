@@ -64,9 +64,10 @@ process SRST2_MLST {
           formatted_trailer="${prefix}  \${mlst_db}"
           IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
           IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
-          inner_counter=0
+          #inner_counter=0
           found_last_locus="False"
-          for item in \$trailer_list[@]
+          for item in "\$trailer_list[@]"
+          for (( inner_counter=0; inner_counter<="${#trailer_list[@]}"; inner_counter++ ))
           do
             if [[ "\${inner_counter}" -eq 1 ]]; then
               formatted_trailer="\${formatted_trailer}  \${mlst_db}]"
@@ -82,7 +83,7 @@ process SRST2_MLST {
                 formatted_trailer="\${formatted_trailer}  \${trailer_list[\${inner_counter}]}"
               fi
             fi
-            inner_counter=\$(( inner_counter + 1 ))
+            #inner_counter=\$(( inner_counter + 1 ))
           done
           #full_header="database \${header}"
           full_trailer="\${mlst_db} \${formatted_trailer}"
