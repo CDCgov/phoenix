@@ -69,6 +69,7 @@ process SRST2_MLST {
           for item in "\$trailer_list[@]"
           for (( inner_counter=0; inner_counter<="${#trailer_list[@]}"; inner_counter++ ))
           do
+            echo "\${inner_counter} -- \${header_list[\${inner_counter}]} -- \${trailer_list[\${inner_counter}]}"
             if [[ "\${inner_counter}" -eq 1 ]]; then
               formatted_trailer="\${formatted_trailer}  \${mlst_db}]"
             elif [[ "\${inner_counter}" -gt 2 ]] && [[ "\${inner_counter}" -lt 10 ]]; then
