@@ -53,6 +53,8 @@ process SRST2_MLST {
             $args
       fi
       header="Sample  database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)"
+      header_list=""
+      trailer_list=""
       if [[ "\${counter}" -eq 1 ]]; then
         if [[ "\${no_match}" = "True" ]]; then
           tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
@@ -66,6 +68,7 @@ process SRST2_MLST {
           IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
           inner_counter=0
           found_last_locus="False"
+          echo "\${#header_list[@]} --- \${header_list[@]} --- \${#trailer_list[@]} --- \${trailer_list[@]}"
           for item in "\$trailer_list[@]"
           do
             echo "\${inner_counter} -- \${header_list[\${inner_counter}]} -- \${trailer_list[\${inner_counter}]}"
