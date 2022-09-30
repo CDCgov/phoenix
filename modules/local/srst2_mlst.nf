@@ -69,7 +69,7 @@ process SRST2_MLST {
           inner_counter=0
           found_last_locus="False"
           echo "\${#header_list[@]} --- \${header_list[@]} --- \${#trailer_list[@]} --- \${trailer_list[@]}"
-          for item in "\$trailer_list[@]"
+          for item in "\${trailer_list[@]}"
           do
             echo "\${inner_counter} -- \${header_list[\${inner_counter}]} -- \${trailer_list[\${inner_counter}]}"
             if [[ "\${inner_counter}" -eq 1 ]]; then
