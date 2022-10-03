@@ -53,56 +53,45 @@ process SRST2_MLST {
             $args
       fi
       header="Sample  database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)"
+      if [[ "\${counter}" -eq 1 ]]; then
+        echo "\${header}" > ${prefix}_srst2.mlst
+      fi
       header_list=""
       trailer_list=""
-      if [[ "\${counter}" -eq 1 ]]; then
-        if [[ "\${no_match}" = "True" ]]; then
-          tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-          echo "\${header}" > ${prefix}_srst2.mlst
-          echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "${prefix}_srst2.mlst"
-        else
-          raw_header="\$(head -n1 1_${prefix}*.txt)"
-          raw_trailer="\$(tail -n1 1_${prefix}*.txt)"
-          formatted_trailer="${prefix}  \${mlst_db}"
-          IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
-          IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
-          inner_counter=0
-          found_last_locus="False"
-          echo "\${#header_list[@]} --- \${header_list[@]} --- \${#trailer_list[@]} --- \${trailer_list[@]}"
-          for item in "\${trailer_list[@]}"
-          do
-            echo "\${inner_counter} -- \${header_list[\${inner_counter}]} -- \${trailer_list[\${inner_counter}]}"
-            if [[ "\${inner_counter}" -eq 1 ]]; then
-              formatted_trailer="\${formatted_trailer}  \${mlst_db}]"
-            elif [[ "\${inner_counter}" -gt 2 ]] && [[ "\${inner_counter}" -lt 10 ]]; then
-              formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
-            elif [[ "\${inner_counter}" -eq 2 ]] || [[ "\${inner_counter}" -ge 10 ]]; then
-              if [[ "\${header_list[\${inner_counter}]}" = "mismatches" ]]; then
-                found_last_locus="True"
-              fi
-              if [[ "\${found_last_locus}" = "False" ]]; then
-                formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
-              else
-                formatted_trailer="\${formatted_trailer}  \${trailer_list[\${inner_counter}]}"
-              fi
-            fi
-            inner_counter=\$(( inner_counter + 1 ))
-          done
-          #full_header="database \${header}"
-          full_trailer="\${mlst_db} \${formatted_trailer}"
-          echo "\${header}" > ${prefix}_srst2.mlst
-          echo "\${formatted_trailer}" >> ${prefix}_srst2.mlst
-        fi
+      if [[ "\${no_match}" = "True" ]]; then
+        tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
+        echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "${prefix}_srst2.mlst"
       else
-        if [[ "\${no_match}" = "True" ]]; then
-          tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-          echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "\${counter}_${prefix}.txt"
-        else
-          trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
-          full_trailer="${prefix} \${mlst_db} \${trailer}"
-          echo "\${full_trailer}" >> ${prefix}_srst2.mlst
-        fi
+        raw_header="\$(head -n1 1_${prefix}*.txt)"
+        raw_trailer="\$(tail -n1 1_${prefix}*.txt)"
+        formatted_trailer="${prefix}  \${mlst_db}"
+        IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
+        IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
+        inner_counter=0
+        found_last_locus="False"
+        echo "\${#header_list[@]} --- \${header_list[@]} --- \${#trailer_list[@]} --- \${trailer_list[@]}"
+        for item in "\${trailer_list[@]}"
+        do
+          echo "\${inner_counter} -- \${header_list[\${inner_counter}]} -- \${trailer_list[\${inner_counter}]}"
+          if [[ "\${inner_counter}" -eq 1 ]]; then
+            formatted_trailer="\${formatted_trailer}  \${mlst_db}"
+          elif [[ "\${inner_counter}" -gt 2 ]] && [[ "\${inner_counter}" -lt 10 ]]; then
+            formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
+          elif [[ "\${inner_counter}" -eq 2 ]] || [[ "\${inner_counter}" -ge 10 ]]; then
+            if [[ "\${header_list[\${inner_counter}]}" = "mismatches" ]]; then
+              found_last_locus="True"
+            fi
+            if [[ "\${found_last_locus}" = "False" ]]; then
+              formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
+            else
+              formatted_trailer="\${formatted_trailer}  \${trailer_list[\${inner_counter}]}"
+            fi
+          fi
+          inner_counter=\$(( inner_counter + 1 ))
+        done
+        echo "\${formatted_trailer}" >> ${prefix}_srst2.mlst
       fi
+
       #if [[ -f \${counter}_${prefix}*.txt ]]; then
       #  rm \${counter}_${prefix}*.txt
       #fi
