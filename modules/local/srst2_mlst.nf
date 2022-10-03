@@ -99,7 +99,7 @@ process SRST2_MLST {
           echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "\${counter}_${prefix}.txt"
         else
           trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
-          full_trailer="\${mlst_db} \${trailer}"
+          full_trailer="${prefix} \${mlst_db} \${trailer}"
           echo "\${full_trailer}" >> ${prefix}_srst2.mlst
         fi
       fi
