@@ -1,54 +1,69 @@
 process AMRFINDERPLUS_RUN {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/ncbi-amrfinderplus:3.10.36'
-
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/ncbi-amrfinderplus%3A3.10.23--h17dc2d4_0':
-        'quay.io/biocontainers/ncbi-amrfinderplus:3.10.23--h17dc2d4_0' }"*/
+    //container 'staphb/ncbi-amrfinderplus:3.10.36'
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/ncbi-amrfinderplus%3A3.10.40--h6e70893_1':
+        'quay.io/biocontainers/ncbi-amrfinderplus:3.10.40--h6e70893_1' }"
 
     input:
-    tuple val(meta), path(fasta), val(organism_param)
+    tuple val(meta), path(nuc_fasta), val(organism_param), path(pro_fasta), path(gff)
     path(db)
 
     output:
-    tuple val(meta), path("${meta.id}_amr_hits.tsv")                     , emit: report
-    tuple val(meta), path("${meta.id}_all_mutations.tsv"), optional: true, emit: mutation_report 
-    path("versions.yml")                                                 , emit: versions
+    tuple val(meta), path("${meta.id}_all_hits.tsv")                        , emit: report
+    tuple val(meta), path("${meta.id}_amr_genes.tsv")                       , emit: amr_report
+    tuple val(meta), path("${meta.id}_stress_genes.tsv"),    optional: true , emit: stress_report
+    tuple val(meta), path("${meta.id}_virulence_genes.tsv"), optional: true , emit: virulence_report
+    tuple val(meta), path("${meta.id}_all_mutations.tsv"),   optional: true , emit: mutation_report
+    path("versions.yml")                                                    , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    def is_compressed = fasta.getName().endsWith(".gz") ? true : false
     def prefix = task.ext.prefix ?: "${meta.id}"
     if ( "${organism_param[0]}" != "No Match Found") {
         organism = "--organism ${organism_param[0]} --mutation_all ${prefix}_all_mutations.tsv"
     } else {
         organism = ""
     }
-    fasta_name = fasta.getName().replace(".gz", "")
-    fasta_param = "-n"
-    if (meta.containsKey("is_proteins")) {
-        if (meta.is_proteins) {
-            fasta_param = "-p"
-        }
-    }
     """
-    if [ "$is_compressed" == "true" ]; then
-        gzip -c -d $fasta > $fasta_name
+    if [[ $nuc_fasta = *.gz ]]; then
+        NUC_FNAME=\$(basename ${nuc_fasta} .gz)
+        gzip -c -d $nuc_fasta > \$NUC_FNAME
+    else
+        NUC_FNAME = $nuc_fasta
     fi
 
     mkdir amrfinderdb
     tar xzvf $db -C amrfinderdb
 
     amrfinder \\
-        $fasta_param $fasta_name \\
+        --nucleotide \$NUC_FNAME \\
+        --protein $pro_fasta \\
+        --gff $gff \\
+        --annotation_format prokka \\
         $organism \\
-        $args \\
+        --plus \\
         --database amrfinderdb \\
-        --threads $task.cpus > ${prefix}_amr_hits.tsv
+        --threads $task.cpus > ${prefix}_all_genes.tsv
+
+    grep "VIRULENCE" ${prefix}_all_hits.tsv > ${prefix}_virulence_genes.tsv
+    grep "STRESS" ${prefix}_all_hits.tsv > ${prefix}_stress_genes.tsv
+    grep "AMR" ${prefix}_all_hits.tsv > ${prefix}_amr_genes.tsv
+
+    if [ -s ${prefix}_virulence_genes.tsv ]; then
+        rm -f ${prefix}_virulence_genes.tsv
+    else
+        :
+    fi
+    if [ -s ${prefix}_stress_genes.tsv ]; then
+        rm -f ${prefix}_stress_genes.tsv
+    else
+        :
+    fi
 
     if [ ! -f ${prefix}_all_mutations.tsv ]; then
         touch ${prefix}_all_mutations.tsv

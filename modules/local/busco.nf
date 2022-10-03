@@ -4,8 +4,8 @@ process BUSCO {
     //container "ezlabgva/busco:v5.4.0_dev_cv1"
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/busco:5.3.2--pyhdfd78af_0':
-        'quay.io/biocontainers/busco:5.3.2--pyhdfd78af_0' }"
+        'https://depot.galaxyproject.org/singularity/busco:5.4.3--pyhdfd78af_0':
+        'quay.io/biocontainers/busco:5.4.3--pyhdfd78af_0' }"
         
     input:
     tuple val(meta), path('tmp_input/*')

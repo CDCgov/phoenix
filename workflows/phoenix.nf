@@ -118,7 +118,6 @@ workflow PHOENIX_EXTERNAL {
     )
     ch_versions = ch_versions.mix(BBDUK.out.versions)
 
-
     // Trim and remove low quality reads
     FASTP_TRIMD (
         BBDUK.out.reads, true, false

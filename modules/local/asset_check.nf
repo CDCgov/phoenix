@@ -6,7 +6,7 @@ process ASSET_CHECK {
     path(zipped_sketch)
 
     output:
-    path('REFSEQ_20210820_Bacteria_complete.msh'), emit: mash_sketch
+    path('*.msh'), emit: mash_sketch
 
     when:
     task.ext.when == null || task.ext.when

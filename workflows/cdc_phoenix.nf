@@ -38,6 +38,7 @@ include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP as FASTP_SINGLES         } from '../modules/local/fastp_singles'
+include { SRST2_AR                       } from '../modules/local/srst2_ar'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { BUSCO                          } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
@@ -52,6 +53,7 @@ include { DETERMINE_TOP_TAXA             } from '../modules/local/determine_top_
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
+include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
@@ -86,8 +88,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 //
 
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
-include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
-//include { MASH_DIST                                               } from '../modules/nf-core/modules/mash/dist/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'
@@ -153,10 +153,10 @@ workflow PHOENIX_EXQC {
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
     // Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_AR (
+    SRST2_AR (
         FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
     )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
+    ch_versions = ch_versions.mix(SRST2_AR.out.versions)
 
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
@@ -168,7 +168,7 @@ workflow PHOENIX_EXQC {
         FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
-        SRST2_TRIMD_AR.out.fullgene_results, \
+        SRST2_AR.out.fullgene_results, \
         KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
         true
@@ -297,6 +297,12 @@ workflow PHOENIX_EXQC {
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
     */
 
+    // get gff and protein files for amrfinder+
+    PROKKA (
+        BBMAP_REFORMAT.out.reads, [], []
+    )
+    ch_versions = ch_versions.mix(PROKKA.out.versions)
+
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
@@ -308,7 +314,9 @@ workflow PHOENIX_EXQC {
 
     // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
     amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
-    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])
+    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+    .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+    .join(PROKKA.out.gff.map{                                                 meta, gff            -> [[id:meta.id], gff ]},            by: [0])
 
     // Run AMRFinder
     AMRFINDERPLUS_RUN (
@@ -329,7 +337,7 @@ workflow PHOENIX_EXQC {
         FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
-        SRST2_TRIMD_AR.out.fullgene_results, \
+        SRST2_AR.out.fullgene_results, \
         KRAKEN2_TRIMD.out.report, \
         KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
