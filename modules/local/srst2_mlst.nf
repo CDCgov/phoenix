@@ -62,8 +62,8 @@ process SRST2_MLST {
         tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
         echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "${prefix}_srst2.mlst"
       else
-        raw_header="\$(head -n1 1_${prefix}*.txt)"
-        raw_trailer="\$(tail -n1 1_${prefix}*.txt)"
+        raw_header="\$(head -n1 \${counter}_${prefix}*.txt)"
+        raw_trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
         formatted_trailer="${prefix}  \${mlst_db}"
         IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
         IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
