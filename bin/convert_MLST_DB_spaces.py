@@ -68,7 +68,7 @@ specific_dict = { 'Acinetobacter baumannii': 'Acinetobacter baumannii#1,Acinetob
                 'Dichelobacter nodosus': 'Dichelobacter nodosus',
                 'Enterobacter cloacae': 'Enterobacter cloacae',
                 'Enterobacter asburiae': 'Enterobacter asburiae',
-                'Enterobacter hormaechei': 'Enterobacter hormaechei',
+#                'Enterobacter hormaechei': 'Enterobacter hormaechei',
                 'Enterobacter kobei': 'Enterobacter kobei',
                 'Enterobacter luwigii': 'Enterobacter luwigii',
                 'Enterobacter nimipressuralis': 'Enterobacter nimipressuralis',
