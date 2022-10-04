@@ -74,7 +74,7 @@ process SRST2_MLST {
         do
           echo "\${inner_counter} -- \${header_list[\${inner_counter}]} -- \${trailer_list[\${inner_counter}]}"
           if [[ "\${inner_counter}" -eq 1 ]]; then
-            formatted_trailer="\${formatted_trailer}  \${mlst_db}"
+            formatted_trailer="\${formatted_trailer}  \${trailer_list[\${inner_counter}]}"
           elif [[ "\${inner_counter}" -gt 2 ]] && [[ "\${inner_counter}" -lt 10 ]]; then
             formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
           elif [[ "\${inner_counter}" -eq 2 ]] || [[ "\${inner_counter}" -ge 10 ]]; then
