@@ -85,8 +85,8 @@ if [[ -f "${db_path}" ]]; then
 	sed -i 's/\[//' db_path_update.txt
 	sed -i 's/\]//' db_path_update.txt
 	NCBI_ratio=db_path_update.txt
-#	NCBI_ratio_date=$(echo "${db_path}" | rev | cut -d'_' -f1 | cut -d'.' -f2 | rev) #expects date
-	NCBI_ratio_date="20210819"
+	NCBI_ratio_date=$(echo "${db_path}" | rev | cut -d'_' -f1 | cut -d'.' -f2 | rev) #expects date
+#	NCBI_ratio_date="20210819"
 else
 	echo "No ratio DB, exiting"
 	exit
