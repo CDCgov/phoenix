@@ -153,10 +153,10 @@ class NfcoreTemplate {
         if (workflow.success) {
             if (workflow.stats.ignoredCount == 0) {
                 log.info "-${colors.purple}[$workflow.manifest.name]${colors.green} Pipeline completed successfully${colors.reset}-"
-                log.info "${colors.biyellow} \n***Reminder: If your lab has received funds (ELC, SHARP, etc.) to sequence isolates under the HAI/AR component of the AR Lab Network, please upload relevant sequence files to CDC's NCBI HAI-Seq Umbrella Project (ID 531911). Also, update any relevant alerts records with the HAI WGS ID and SRR ID, within 7-10 business days from sequencing completion.***\n ${colors.reset}"
+                log.info "${colors.biyellow} \n***Reminder: If your lab has received funds (ELC, SHARP, etc.) to sequence isolates under the HAI/AR component of the AR Lab Network, please upload relevant sequence files to CDC's NCBI HAI-Seq Umbrella Project (ID 531911) and update any relevant alerts records with the HAI WGS ID and SRR ID, within 7-10 business days from sequencing completion.***\n ${colors.reset}"
             } else {
                 log.info "-${colors.purple}[$workflow.manifest.name]${colors.red} Pipeline completed successfully, but with errored process(es) ${colors.reset}-"
-                log.info "${colors.biyellow} \n***Reminder: If your lab has received funds (ELC, SHARP, etc.) to sequence isolates under the HAI/AR component of the AR Lab Network, please upload relevant sequence files to CDC's NCBI HAI-Seq Umbrella Project (ID 531911). Also, update any relevant Alerts records with the HAI WGS ID and SRR ID, within 7-10 business days from sequencing completion.***\n ${colors.reset}"
+                log.info "${colors.biyellow} \n***Reminder: If your lab has received funds (ELC, SHARP, etc.) to sequence isolates under the HAI/AR component of the AR Lab Network, please upload relevant sequence files to CDC's NCBI HAI-Seq Umbrella Project (ID 531911) and update any relevant alerts records with the HAI WGS ID and SRR ID, within 7-10 business days from sequencing completion.***\n ${colors.reset}"
             }
         } else {
             log.info "-${colors.purple}[$workflow.manifest.name]${colors.red} Pipeline completed with errors${colors.reset}-"
