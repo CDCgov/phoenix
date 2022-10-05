@@ -32,7 +32,6 @@ process SPADES {
     def phred_offset = params.phred
     
     """
-    echo ${maxmem}
     bash ${baseDir}/bin/pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
     sh ${baseDir}/bin/beforeSpades.sh -k ${k2_bh_summary} -n ${meta.id} -d ${params.outdir}
 

@@ -11,10 +11,7 @@ process AMRFINDERPLUS_RUN {
     path(db)
 
     output:
-    tuple val(meta), path("${meta.id}_all_hits.tsv")                        , emit: report
-    tuple val(meta), path("${meta.id}_amr_genes.tsv")                       , emit: amr_report
-    tuple val(meta), path("${meta.id}_stress_genes.tsv"),    optional: true , emit: stress_report
-    tuple val(meta), path("${meta.id}_virulence_genes.tsv"), optional: true , emit: virulence_report
+    tuple val(meta), path("${meta.id}_all_genes.tsv")                       , emit: report
     tuple val(meta), path("${meta.id}_all_mutations.tsv"),   optional: true , emit: mutation_report
     path("versions.yml")                                                    , emit: versions
 
@@ -49,21 +46,6 @@ process AMRFINDERPLUS_RUN {
         --plus \\
         --database amrfinderdb \\
         --threads $task.cpus > ${prefix}_all_genes.tsv
-
-    grep "VIRULENCE" ${prefix}_all_hits.tsv > ${prefix}_virulence_genes.tsv
-    grep "STRESS" ${prefix}_all_hits.tsv > ${prefix}_stress_genes.tsv
-    grep "AMR" ${prefix}_all_hits.tsv > ${prefix}_amr_genes.tsv
-
-    if [ -s ${prefix}_virulence_genes.tsv ]; then
-        rm -f ${prefix}_virulence_genes.tsv
-    else
-        :
-    fi
-    if [ -s ${prefix}_stress_genes.tsv ]; then
-        rm -f ${prefix}_stress_genes.tsv
-    else
-        :
-    fi
 
     if [ ! -f ${prefix}_all_mutations.tsv ]; then
         touch ${prefix}_all_mutations.tsv
