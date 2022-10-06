@@ -53,27 +53,33 @@ process GET_MLST_SRST2 {
     echo "\${#db_array[@]}-\${db_array[@]}"
     #num_dbs="\${#db_array[@]}"
     counter=1
-    for entry in "\${db_array[@]}"
-    do
-      echo "Entry#\${counter}-\${entry}|"
-      entry_no_spaces="\${entry// /_}"
-      if [[ "\${entry}" = "No match found" ]]; then
-    		touch "\${entry_no_spaces}.fasta"
-    		touch "\${entry_no_spaces}_profiles.csv"
-        echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
-      else
-        getMLST2_phoenix.py --species "\$entry"
-        if [[ "\${entry}" = *"baumannii#1" ]]; then
-    			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
-    			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
-    		elif [[ "\${entry}" = *"baumannii#2" ]]; then
-    			sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
-    			sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+    if [[ ! -f dbases.xml ]]; then
+      touch "\${entry_no_spaces}.fasta"
+      touch "\${entry_no_spaces}_profiles.csv"
+      echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+    else
+      for entry in "\${db_array[@]}"
+      do
+        echo "Entry#\${counter}-\${entry}|"
+        entry_no_spaces="\${entry// /_}"
+        if [[ "\${entry}" = "No match found" ]]; then
+      		touch "\${entry_no_spaces}.fasta"
+      		touch "\${entry_no_spaces}_profiles.csv"
+          echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+        else
+          getMLST2_phoenix.py --species "\$entry"
+          if [[ "\${entry}" = *"baumannii#1" ]]; then
+      			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
+      			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
+      		elif [[ "\${entry}" = *"baumannii#2" ]]; then
+      			sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
+      			sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+          fi
         fi
-      fi
-      echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
-      counter=\$(( counter + 1))
-    done
+        echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
+        counter=\$(( counter + 1))
+      done
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

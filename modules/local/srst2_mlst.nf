@@ -30,7 +30,7 @@ process SRST2_MLST {
       no_match="False"
       echo "\${getout}"
       line="\$(tail -n1 \${getout})"
-      if [[ "\${line}" = "DB:No match found"* ]]; then
+      if [[ "\${line}" = "DB:No match found"* ]] || [[ "\${line}" = "DB:Server down"* ]]; then
         no_match="True"
         mlst_db="No match found"
       else
