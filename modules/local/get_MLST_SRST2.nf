@@ -54,9 +54,13 @@ process GET_MLST_SRST2 {
     #num_dbs="\${#db_array[@]}"
     counter=1
     if [[ ! -f dbases.xml ]]; then
-      touch "\${entry_no_spaces}.fasta"
-      touch "\${entry_no_spaces}_profiles.csv"
-      echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+      for entry in "\${db_array[@]}"
+      do
+        entry_no_spaces="\${entry// /_}"
+        touch "\${entry_no_spaces}.fasta"
+        touch "\${entry_no_spaces}_profiles.csv"
+        echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+      done
     else
       for entry in "\${db_array[@]}"
       do
