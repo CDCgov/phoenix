@@ -42,10 +42,7 @@ process GET_MLST_SRST2 {
     fi
     echo "\${genus}___\${species}"
     python -V
-    which python
-    echo "here we go"
     convert_MLST_DB_spaces.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
-    echo "there we went"
 
     dbline=\$(tail -n1 DB_defs.txt)
     echo "\$dbline"
