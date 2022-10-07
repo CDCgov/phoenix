@@ -40,7 +40,8 @@ process SRST2_AR {
         $args
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' ))
+        srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' | sed 's/) //'))
+        AMR Combined Database: $db
     END_VERSIONS
     """
 }

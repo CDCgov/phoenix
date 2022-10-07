@@ -23,6 +23,7 @@ def parseArgs(args=None):
     parser.add_argument('-u', '--mutation', dest="mutations", required=False, help='Mutation file from AMRFinder')
     parser.add_argument('-q', '--quast', required=False, help='QUAST file')
     parser.add_argument('-a', '--ar', required=False, help='AR GAMMA file')
+    parser.add_argument('-p', '--pf', required=False, help='PF GAMMA file')
     parser.add_argument('-v', '--vir', required=False, help='hypervirulence GAMMA file')
     parser.add_argument('-k', '--kraken_trim', dest="trimd_kraken", required=False, help='trimd_summary.txt from kraken2')
     parser.add_argument('-s', '--stats', dest="stats", required=False, help='Pipeline Stats file synopsis file')
@@ -196,7 +197,7 @@ def HV_Genes(input_gamma):
     HV.sort()
     num_lines = sum(1 for line in open(input_gamma))
     if num_lines==1:
-        HV="No hypervirulence genes found"
+        HV=""
     return HV
 
 def WT_kraken_stats(stats):
@@ -280,12 +281,40 @@ def Get_Mutations(amr_file):
                 point_mutations = line.split("	")[5]
                 point_mutations_list.append(point_mutations)
         if len(point_mutations_list) == 0:
-            point_mutations_list = "No point mutations found"
+            point_mutations_list = ""
         else:
             point_mutations_list = ','.join(point_mutations_list)
     return point_mutations_list
 
-def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file):
+def Get_Plasmids(pf_file):
+    plasmid_marker_list = []
+    with open(pf_file, 'r') as f:
+        header=next(f) # just use to skip first line
+        for line in f:
+            Gene = line.split()[0]
+            plasmid_marker_list.append(Gene)
+    if len(plasmid_marker_list) == 0:
+        plasmid_marker_list = ""
+    else:
+        plasmid_marker_list = ','.join(plasmid_marker_list)
+    return plasmid_marker_list
+
+def Get_BUSCO_Gene_Count(stats):
+    with open(stats, 'r') as f:
+        matched_line = [line for line in f if "BUSCO" in line]
+        split_list = matched_line[0].split('  ')
+        lineage = re.sub( "BUSCO_", '', split_list[0])
+        percent = split_list[2].split(' ')[1]
+        ratio = split_list[2].split(' ')[9].rstrip('\n')
+        busco_line = percent + ' ' + ratio
+    busco_file = True
+    return busco_line, lineage, busco_file
+
+def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file, pf_file):
+    try:
+        plasmid_marker_list = Get_Plasmids(pf_file)
+    except:
+        plasmid_marker_list = 'Unknown'
     try:
         point_mutations_list = Get_Mutations(amr_file)
     except:
@@ -312,6 +341,12 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
     except:
         Contigs = 'Unknown'
     try:
+        busco_line, lineage, busco_file = Get_BUSCO_Gene_Count(stats)
+    except:
+        busco_file = None
+        busco_line = 'Unknown'
+        lineage = 'Unknown'
+    try:
         GC = GC_Content(quast_file)
     except:
         GC = 'Unknown'
@@ -336,7 +371,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
             Scheme_2 = Scheme[1]
         else:
             Scheme_1 = Scheme[0]
-            Scheme_2 = "NA"
+            Scheme_2 = "-"
     except:
         Scheme = 'Unknown'
     try:
@@ -351,7 +386,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Non_Bla = 'Unknown'
     try:
         HV = HV_Genes(gamma_hv)
-        if HV=="No hypervirulence genes found":
+        if HV=="":
             pass
         else:
             HV = ','.join(HV)
@@ -370,11 +405,14 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
-    Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + GC + '\t' + read_match + '\t' + scaffold_match + '\t' + Bla + '\t' + Non_Bla + '\t' + HV + '\t' + point_mutations_list + '\t' + Reason
+    if busco_file is None:
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+    elif busco_file is not None:
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
     return Line
 
-def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations):
-    Line = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations)
+def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations, pf_file):
+    Line = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file)
     Out = open(out_file, 'w')
     Out.write(Line)
     Out.close()
@@ -382,7 +420,7 @@ def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_fil
 def main():
     args = parseArgs()
     # if the output file already exists remove it
-    Isolate_Line_File(args.taxa, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.mutations)
+    Isolate_Line_File(args.taxa, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.mutations, args.pf)
 
 if __name__ == '__main__':
     main()

@@ -52,6 +52,7 @@ include { DETERMINE_TOP_TAXA             } from '../modules/local/determine_top_
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
+include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
@@ -248,6 +249,13 @@ workflow PHOENIX_EXTERNAL {
     DETERMINE_TAXA_ID (
         best_hit_ch, params.taxa
     )
+    ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
+
+    // get gff and protein files for amrfinder+
+    PROKKA (
+        BBMAP_REFORMAT.out.reads, [], []
+    )
+    ch_versions = ch_versions.mix(PROKKA.out.versions)
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
@@ -260,7 +268,9 @@ workflow PHOENIX_EXTERNAL {
 
     // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
     amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
-    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])
+    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+    .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+    .join(PROKKA.out.gff.map{                                                 meta, gff            -> [[id:meta.id], gff ]},            by: [0])
 
     // Run AMRFinder
     AMRFINDERPLUS_RUN (
@@ -276,6 +286,7 @@ workflow PHOENIX_EXTERNAL {
     CALCULATE_ASSEMBLY_RATIO (
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
+    ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
     GENERATE_PIPELINE_STATS_WF (
         FASTP_TRIMD.out.reads, \
@@ -309,6 +320,7 @@ workflow PHOENIX_EXTERNAL {
     .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
     .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
     .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
     .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
@@ -337,7 +349,7 @@ workflow PHOENIX_EXTERNAL {
 
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
-        all_summaries_ch
+        all_summaries_ch, false
     )
     ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

@@ -282,6 +282,13 @@ workflow PHOENIX_EXQC {
     DETERMINE_TAXA_ID (
         best_hit_ch, params.taxa
     )
+    ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
+
+    // get gff and protein files for amrfinder+
+    PROKKA (
+        BBMAP_REFORMAT.out.reads, [], []
+    )
+    ch_versions = ch_versions.mix(PROKKA.out.versions)
 
 /*    // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
     GET_SRST2_MLST (
@@ -296,12 +303,6 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
     */
-
-    // get gff and protein files for amrfinder+
-    PROKKA (
-        BBMAP_REFORMAT.out.reads, [], []
-    )
-    ch_versions = ch_versions.mix(PROKKA.out.versions)
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
@@ -332,6 +333,7 @@ workflow PHOENIX_EXQC {
     CALCULATE_ASSEMBLY_RATIO (
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
+    ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
     GENERATE_PIPELINE_STATS_WF (
         FASTP_TRIMD.out.reads, \
@@ -368,13 +370,14 @@ workflow PHOENIX_EXQC {
     .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
     .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
     .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
     .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
     .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
     .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])
-
+    
     // Generate summary per sample
     CREATE_SUMMARY_LINE(
         line_summary_ch
@@ -396,7 +399,7 @@ workflow PHOENIX_EXQC {
 
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
-        all_summaries_ch
+        all_summaries_ch, true
     )
     ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

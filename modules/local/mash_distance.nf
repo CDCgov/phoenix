@@ -28,6 +28,7 @@ process MASH_DIST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mash: \$(mash --version 2>&1)
+        Mash Sketch: $reference
     END_VERSIONS
     """
 }

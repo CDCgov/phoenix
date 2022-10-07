@@ -47,52 +47,54 @@ task phoenix {
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f3 | tee WARNING_COUNT
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f4 | tee COVERAGE
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f4 | tee ESTIMATED_COVERAGE
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f5 | tee GENOME_LENGTH
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f6 | tee ASSEMBLY_RATIO
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f8 | tee SPECIES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee TAXA_CONFIDENCE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee TAXA_SOURCE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee MLST_SCHEME_1
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee MLST_1
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee MLST_SCHEME_2
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee MLST_2
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee GC_PERCENT
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee KRAKEN2_TRIMD
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee KRAKEN2_WEIGHTED
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee SPECIES
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee TAXA_SOURCE
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee KRAKEN2_TRIMD
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee KRAKEN2_WEIGHTED
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee MLST_SCHEME_1
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee MLST_1
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee MLST_SCHEME_2
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee MLST_2
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f18 | tee BETA_LACTAM_RESISTANCE_GENES
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f19 | tee OTHER_AR_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee HYPERVIRULENCE_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee QC_REASON
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee AMRFINDER_POINT_MUTATIONS
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee HYPERVIRULENCE_GENES
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee QC_REASON
   >>>
   output {
-    File?  work_files                   = "work.tar.gz"
-    String phoenix_version              = read_string("VERSION")
-    String phoenix_docker               = docker
-    String analysis_date                = read_string("DATE")
-    String qc_outcome                   = read_string("QC_OUTCOME")
-    String warning_count                = read_string("WARNING_COUNT")
-    Float  coverage                     = read_float("COVERAGE")
-    Int    genome_length                = read_int("GENOME_LENGTH")
-    String assembly_ratio               = read_string("ASSEMBLY_RATIO")
-    Int    scaffold_count               = read_int("NUM_SCAFFOLDS")
-    String species                      = read_string("SPECIES")
-    String taxa_confidence              = read_string("TAXA_CONFIDENCE")
-    String taxa_source                  = read_string("TAXA_SOURCE")
-    String mlst_scheme_1                = read_string("MLST_SCHEME_1")
-    String mlst_1                       = read_string("MLST_1")
-    String mlst_scheme_2                = read_string("MLST_SCHEME_2")
-    String mlst_2                       = read_string("MLST_2")
-    Float  gc_percent                   = read_float("GC_PERCENT")
-    String kraken2_trimmed              = read_string("KRAKEN2_TRIMD")
-    String kraken2_weighted             = read_string("KRAKEN2_WEIGHTED")
-    String beta_lactam_resistance_genes = read_string("BETA_LACTAM_RESISTANCE_GENES")
-    String other_ar_genes               = read_string("OTHER_AR_GENES")
-    String hypervirulence_genes         = read_string("HYPERVIRULENCE_GENES")
-    String amrfinder_point_mutations    = read_string("AMRFINDER_POINT_MUTATIONS")
-    String qc_reason                    = read_string("QC_REASON")
+    File?  work_files                        = "work.tar.gz"
+    String phoenix_version                   = read_string("VERSION")
+    String phoenix_docker                    = docker
+    String analysis_date                     = read_string("DATE")
+    String qc_outcome                        = read_string("QC_OUTCOME")
+    String warning_count                     = read_string("WARNING_COUNT")
+    Float  estimated_coverage                = read_float("ESTIMATED_COVERAGE")
+    Int    genome_length                     = read_int("GENOME_LENGTH")
+    String assembly_ratio                    = read_string("ASSEMBLY_RATIO")
+    Int    scaffold_count                    = read_int("NUM_SCAFFOLDS")
+    Float  gc_percent                        = read_float("GC_PERCENT")
+    String species                           = read_string("SPECIES")
+    String taxa_confidence                   = read_string("TAXA_CONFIDENCE")
+    String taxa_source                       = read_string("TAXA_SOURCE")
+    String kraken2_trimmed                   = read_string("KRAKEN2_TRIMD")
+    String kraken2_weighted                  = read_string("KRAKEN2_WEIGHTED")
+    String mlst_scheme_1                     = read_string("MLST_SCHEME_1")
+    String mlst_1                            = read_string("MLST_1")
+    String mlst_scheme_2                     = read_string("MLST_SCHEME_2")
+    String mlst_2                            = read_string("MLST_2")
+    String beta_lactam_resistance_genes      = read_string("BETA_LACTAM_RESISTANCE_GENES")
+    String other_ar_genes                    = read_string("OTHER_AR_GENES")
+    String amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")
+    String hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
+    String plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
+    String qc_reason                         = read_string("QC_REASON")
     #phoenix fastqc
     File raw_read1_html           = "~{samplename}/results/~{samplename}/fastqc/~{samplename}_1_fastqc.html"
     File raw_read1_zip            = "~{samplename}/results/~{samplename}/fastqc/~{samplename}_1_fastqc.zip"
@@ -157,7 +159,7 @@ task phoenix {
     #phoenix amrfinder
     File amrfinder_organism       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
     File amr_taxa_match           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
-    File amr_hits                 = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_amr_hits.tsv"
+    File amr_hits                 = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_amr_genes.tsv"
     #full results
     File full_results             = "~{samplename}.tar.gz"
   }

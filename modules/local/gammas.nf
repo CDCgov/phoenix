@@ -48,6 +48,7 @@ process GAMMA_S {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         gamma: $VERSION
+        Database: $db
     END_VERSIONS
     """
 }

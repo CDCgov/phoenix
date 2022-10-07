@@ -9,12 +9,14 @@ process GATHER_SUMMARY_LINES {
 
     input:
     path(summary_line_files)
+    val(busco_val)
 
     output:
     path 'Phoenix_Output_Report.tsv'  , emit: summary_report
     path "versions.yml"               , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
+    def busco_parameter = busco_val ? "--busco" : ""
     """
     if [ -f "empty_summaryline.tsv" ]; then
         rm empty_summaryline.tsv
@@ -23,7 +25,7 @@ process GATHER_SUMMARY_LINES {
             rm placeholder.txt
             new_summary_line_files=\$(echo \$new_summary_line_files | sed 's/placeholder.txt //')
         fi
-        Create_phoenix_summary_tsv.py --out Phoenix_Output_Report.tsv \$new_summary_line_files
+        Create_phoenix_summary_tsv.py --out Phoenix_Output_Report.tsv $busco_parameter \$new_summary_line_files
     elif [ -f "placeholder.txt" ]; then
         rm placeholder.txt
         new_summary_line_files=\$(echo $summary_line_files | sed 's/placeholder.txt //')
@@ -31,10 +33,11 @@ process GATHER_SUMMARY_LINES {
             rm empty_summaryline.tsv
             new_summary_line_files=\$(echo \$new_summary_line_files | sed 's/empty_summaryline.tsv //')
         fi
-        Create_phoenix_summary_tsv.py --out Phoenix_Output_Report.tsv \$new_summary_line_files
+        Create_phoenix_summary_tsv.py --out Phoenix_Output_Report.tsv $busco_parameter \$new_summary_line_files
     else
         Create_phoenix_summary_tsv.py \\
             --out Phoenix_Output_Report.tsv \\
+            $busco_parameter \\
             $summary_line_files
     fi
 

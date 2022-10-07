@@ -14,6 +14,7 @@ process CREATE_SUMMARY_LINE {
     path(mlst_file), \
     path(hypervirulence_gamma_file), \
     path(ar_gamma_file), \
+    path(pf_gamma_file), \
     path(quast_report), \
     path(ratio_file), \
     path(synopsis), \
@@ -33,6 +34,7 @@ process CREATE_SUMMARY_LINE {
         -t $trimmed_qc_data_file \\
         -a $ar_gamma_file \\
         -v $hypervirulence_gamma_file \\
+        -p $pf_gamma_file \\
         -r $ratio_file \\
         -m $mlst_file \\
         -u $amr_file \\
