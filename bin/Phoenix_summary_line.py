@@ -363,7 +363,8 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
             ST_1 = ST[0]
             ST_2 = "-"
     except:
-        ST = 'Unknown'
+        ST_1 = 'Unknown'
+        ST_2 = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
         if len(Scheme) > 1:
@@ -373,7 +374,8 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
             Scheme_1 = Scheme[0]
             Scheme_2 = "-"
     except:
-        Scheme = 'Unknown'
+        Scheme_1 = 'Unknown'
+        Scheme_2 = 'Unknown'
     try:
         Bla = Bla_Genes(gamma_ar)
         Bla = ','.join(Bla)

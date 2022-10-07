@@ -62,7 +62,7 @@ include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_s
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
 include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
-include { GET_MLST_SRST2                 } from '../modules/local/get_MLST_SRST2'
+include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
 
 /*
 ========================================================================================
@@ -296,8 +296,6 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
 
-    GET_MLST_SRST2.out.getMLSTs.view()
-
     // Combining weighted kraken report with the FastANI hit based on meta.id
     mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads -> [[id:meta.id], reads]}\
     .join(GET_MLST_SRST2.out.getMLSTs.map{meta, getMLSTs -> [[id:meta.id], getMLSTs]},  by: [0])\
@@ -310,8 +308,6 @@ workflow PHOENIX_EXQC {
         mid_srst2_ch
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
-
-
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
