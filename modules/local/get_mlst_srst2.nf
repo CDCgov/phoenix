@@ -42,7 +42,10 @@ process GET_MLST_SRST2 {
     fi
     echo "\${genus}___\${species}"
     python -V
+    which python
+    echo "here we go"
     convert_MLST_DB_spaces.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
+    echo "there we went"
 
     dbline=\$(tail -n1 DB_defs.txt)
     echo "\$dbline"
@@ -57,6 +60,7 @@ process GET_MLST_SRST2 {
         touch "\${entry_no_spaces}.fasta"
         touch "\${entry_no_spaces}_profiles.csv"
         echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+        echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
       done
     else
       for entry in "\${db_array[@]}"
