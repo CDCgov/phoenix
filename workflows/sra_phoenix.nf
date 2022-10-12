@@ -99,7 +99,6 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 
 // Info required for completion email and summary
 def multiqc_report = []
-def count = 0
 
 workflow SRA_PHOENIX {
 
