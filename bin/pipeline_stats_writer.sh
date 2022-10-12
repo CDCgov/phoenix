@@ -152,6 +152,7 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:5:3" o
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
       internal_phoenix="true";;
+
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -719,6 +720,7 @@ if [[ "${kraken2_weighted_success}" = true ]]; then
     printf "%-30s: %-8s : %s\\n" "KRONA_WEIGHTED" "FAILED" "${sample_name}_weighted.html not found"  >> "${sample_name}.synopsis"
     status="FAILED"
   fi
+
 else
   printf "%-30s: %-8s : %s\\n" "KRONA_WEIGHTED" "FAILED" "kraken2 weighted did not complete successfully"  >> "${sample_name}.synopsis"
   status="FAILED"
@@ -765,6 +767,7 @@ if [[ -s "${kraken2_weighted_summary}" ]]; then
 			status="FAILED"
 		else
 			#printf "%-30s: %-8s : %s\\n" "weighted Classify" "SUCCESS" "${speciespercent}%${true_speciespercent%} ${genusweighted} ${speciesweighted} with ${unclass}%${true_unclass%} unclassified weighted"
+
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "SUCCESS" "${genusweighted}(${genusweightedpercent}%) ${speciesweighted}(${speciesweightedpercent}%) with ${unclass_string}% unclassified scaffolds"  >> "${sample_name}.synopsis"
 		fi
 	fi
@@ -783,6 +786,7 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
 	while IFS= read -r line; do
 		arrLine=(${line})
 		# First element in array is the percent of reads identified as the current taxa
+
 		if [[ "${arrLine[3]}" = "U" ]]; then
 			unclass=${arrLine[0]}
 		elif [[ "${arrLine[3]}" = "R" ]]; then
@@ -1085,7 +1089,15 @@ if [[ -s "${mlst_file}" ]]; then
     elif [[ "${mlst_type}" = '-' ]]; then
       printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
     else
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
+      if [[ "${percent_match}" -lt 95 ]]; then
+        if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
+          printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "% Identity(${percent_match}%) and % coverage(${coverage_match}%) is too low. ${fastANI_info}"  >> "${sample_name}.synopsis"
+        else
+          printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "% Identity(${percent_match}%) is too low: ${fastANI_info}"  >> "${sample_name}.synopsis"
+        fi
+      elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
+        printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "% coverage is too low (${coverage_match}%). ${fastANI_info}"  >> "${sample_name}.synopsis"
+      fi
     fi
   fi
 else
@@ -1229,8 +1241,6 @@ echo "ALERT: something to note, does not mean it is a poor-quality assembly."  >
 if [[ "${internal_phoenix}" == "true" ]]; then
   printf "\n*BUSCO defines core genes as single-copy orthologs that should be highly conserved among the closely related species."  >> "${sample_name}.synopsis"
 fi
-
-
 
 #Script exited gracefully (unless something else inside failed)
 exit 0
