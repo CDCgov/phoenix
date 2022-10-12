@@ -18,6 +18,7 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 
 //input on command line
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
+if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
 
 /*
 ========================================================================================
@@ -55,6 +56,7 @@ include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimize
 include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
+include { AMRFINDERPLUS_UPDATE           } from '../modules/local/update_amrfinder_db'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
@@ -90,7 +92,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
-include { AMRFINDERPLUS_UPDATE                                    } from '../modules/nf-core/modules/amrfinderplus/update/main'
 
 /*
 ========================================================================================
@@ -297,11 +298,10 @@ workflow PHOENIX_EXQC {
     ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
 
     // Combining weighted kraken report with the FastANI hit based on meta.id
-    mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads -> [[id:meta.id], reads]}\
-    .join(GET_MLST_SRST2.out.getMLSTs.map{meta, getMLSTs -> [[id:meta.id], getMLSTs]},  by: [0])\
-    .join(GET_MLST_SRST2.out.fastas.map{meta, fastas -> [[id:meta.id], fastas]},  by: [0])\
-    .join(GET_MLST_SRST2.out.profiles.map{meta, profiles -> [[id:meta.id], profiles]},  by: [0])
-
+    mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads    -> [[id:meta.id], reads]}\
+    .join(GET_MLST_SRST2.out.getMLSTs.map{   meta, getMLSTs -> [[id:meta.id], getMLSTs]},  by: [0])\
+    .join(GET_MLST_SRST2.out.fastas.map{     meta, fastas   -> [[id:meta.id], fastas]},    by: [0])\
+    .join(GET_MLST_SRST2.out.profiles.map{   meta, profiles -> [[id:meta.id], profiles]},  by: [0])
 
     // Idenitifying mlst genes in trimmed reads
     SRST2_MLST (

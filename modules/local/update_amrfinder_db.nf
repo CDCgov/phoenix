@@ -1,11 +1,9 @@
 process AMRFINDERPLUS_UPDATE {
     tag "update"
     label 'process_low'
-
-    conda (params.enable_conda ? "bioconda::ncbi-amrfinderplus=3.10.23" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/ncbi-amrfinderplus%3A3.10.23--h17dc2d4_0':
-        'quay.io/biocontainers/ncbi-amrfinderplus:3.10.23--h17dc2d4_0' }"
+        'https://depot.galaxyproject.org/singularity/ncbi-amrfinderplus%3A3.10.40--h6e70893_1':
+        'quay.io/biocontainers/ncbi-amrfinderplus:3.10.40--h6e70893_1' }"
 
     output:
     path "amrfinderdb.tar.gz", emit: db
@@ -24,6 +22,7 @@ process AMRFINDERPLUS_UPDATE {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         amrfinderplus: \$(amrfinder --version)
+        amrfinderplus_db_version: \$(head amrfinderdb/latest/version.txt)
     END_VERSIONS
     """
 }

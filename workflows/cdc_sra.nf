@@ -16,6 +16,7 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 
 //input on command line
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
+if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
 
 /*
 ========================================================================================
@@ -25,6 +26,43 @@ if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input sample
 
 ch_multiqc_config        = file("$projectDir/assets/multiqc_config.yaml", checkIfExists: true)
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config) : Channel.empty()
+
+/*
+========================================================================================
+    IMPORT LOCAL MODULES
+========================================================================================
+*/
+
+include { ASSET_CHECK              } from '../modules/local/asset_check'
+include { BBDUK                    } from '../modules/local/bbduk'
+include { FASTP as FASTP_TRIMD     } from '../modules/local/fastp'
+include { FASTP as FASTP_SINGLES   } from '../modules/local/fastp_singles'
+include { SRST2_AR                 } from '../modules/local/srst2_ar'
+include { RENAME_FASTA_HEADERS     } from '../modules/local/rename_fasta_headers'
+include { BUSCO                    } from '../modules/local/busco'
+include { GAMMA_S as GAMMA_PF      } from '../modules/local/gammas'
+include { GAMMA as GAMMA_AR        } from '../modules/local/gamma'
+include { GAMMA as GAMMA_HV        } from '../modules/local/gamma'
+include { MLST                     } from '../modules/local/mlst'
+include { BBMAP_REFORMAT           } from '../modules/local/contig_less500'
+include { QUAST                    } from '../modules/local/quast'
+include { MASH_DIST                } from '../modules/local/mash_distance'
+include { FASTANI                  } from '../modules/local/fastani'
+include { DETERMINE_TOP_TAXA       } from '../modules/local/determine_top_taxa'
+include { FORMAT_ANI               } from '../modules/local/format_ANI_best_hit'
+include { GATHERING_READ_QC_STATS  } from '../modules/local/fastp_minimizer'
+include { DETERMINE_TAXA_ID        } from '../modules/local/tax_classifier'
+include { PROKKA                   } from '../modules/local/prokka'
+include { GET_TAXA_FOR_AMRFINDER   } from '../modules/local/get_taxa_for_amrfinder'
+include { AMRFINDERPLUS_UPDATE     } from '../modules/local/update_amrfinder_db'
+include { AMRFINDERPLUS_RUN        } from '../modules/local/run_amrfinder'
+include { CALCULATE_ASSEMBLY_RATIO } from '../modules/local/assembly_ratio'
+include { CREATE_SUMMARY_LINE      } from '../modules/local/phoenix_summary_line'
+include { FETCH_FAILED_SUMMARIES   } from '../modules/local/fetch_failed_summaries'
+include { GATHER_SUMMARY_LINES     } from '../modules/local/phoenix_summary'
+include { GENERATE_PIPELINE_STATS  } from '../modules/local/generate_pipeline_stats'
+include { SRST2_MLST               } from '../modules/local/srst2_mlst'
+include { GET_MLST_SRST2           } from '../modules/local/get_mlst_srst2'
 
 /*
 ========================================================================================
@@ -46,37 +84,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkfl
 
 /*
 ========================================================================================
-    IMPORT LOCAL MODULES
-========================================================================================
-*/
-
-include { ASSET_CHECK                                       } from '../modules/local/asset_check'
-include { BBDUK                                             } from '../modules/local/bbduk'
-include { FASTP as FASTP_TRIMD                              } from '../modules/local/fastp'
-include { FASTP as FASTP_SINGLES                            } from '../modules/local/fastp_singles'
-include { RENAME_FASTA_HEADERS                              } from '../modules/local/rename_fasta_headers'
-include { BUSCO                                             } from '../modules/local/busco'
-include { GAMMA_S as GAMMA_PF                               } from '../modules/local/gammas'
-include { GAMMA as GAMMA_AR                                 } from '../modules/local/gamma'
-include { GAMMA as GAMMA_HV                                 } from '../modules/local/gamma'
-include { MLST                                              } from '../modules/local/mlst'
-include { BBMAP_REFORMAT                                    } from '../modules/local/contig_less500'
-include { QUAST                                             } from '../modules/local/quast'
-include { MASH_DIST                                         } from '../modules/local/mash_distance'
-include { FASTANI                                           } from '../modules/local/fastani'
-include { DETERMINE_TOP_TAXA                                } from '../modules/local/determine_top_taxa'
-include { FORMAT_ANI                                        } from '../modules/local/format_ANI_best_hit'
-include { GATHERING_READ_QC_STATS                           } from '../modules/local/fastp_minimizer'
-include { DETERMINE_TAXA_ID                                 } from '../modules/local/tax_classifier'
-include { GET_TAXA_FOR_AMRFINDER                            } from '../modules/local/get_taxa_for_amrfinder'
-include { AMRFINDERPLUS_RUN                                 } from '../modules/local/run_amrfinder'
-include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/local/assembly_ratio'
-include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
-include { FETCH_FAILED_SUMMARIES                            } from '../modules/local/fetch_failed_summaries'
-include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
-include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
-/*
-========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
 ========================================================================================
 */
@@ -85,7 +92,7 @@ include { GENERATE_PIPELINE_STATS                           } from '../modules/l
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { SRST2_SRST2 as SRST2_TRIMD_AR                           } from '../modules/nf-core/modules/srst2/srst2/main'
+include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
@@ -97,12 +104,12 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 
 // Info required for completion email and summary
 def multiqc_report = []
+def count = 0
 
 workflow SRA_PHOENIX {
 
     ch_versions     = Channel.empty() // Used to collect the software versions
-    spades_ch       = Channel.empty() // Used later to make new channel with single_end: true when scaffolds are created
-    
+
     //fetch sra files, their associated fastq files, format fastq names, and create samplesheet for sra samples
     GET_SRA (
         params.new_samplesheet
@@ -114,13 +121,12 @@ workflow SRA_PHOENIX {
         GET_SRA.out.samplesheet
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
-    
 
     //unzip any zipped databases
     ASSET_CHECK (
-        params.path2db
+        params.zipped_sketch
     )
-    
+
     // Remove PhiX reads
     BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
@@ -154,16 +160,10 @@ workflow SRA_PHOENIX {
     ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
     // Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_AR (
+    SRST2_AR (
         FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
     )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_AR.out.versions)
-
-    /*// Idenitifying AR genes in trimmed reads
-    SRST2_TRIMD_MLST (
-        FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'mlst'], reads, params.mlstdb]}
-    )
-    ch_versions = ch_versions.mix(SRST2_TRIMD_MLST.out.versions) */
+    ch_versions = ch_versions.mix(SRST2_AR.out.versions)
 
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
@@ -175,7 +175,7 @@ workflow SRA_PHOENIX {
         FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
-        SRST2_TRIMD_AR.out.fullgene_results, \
+        SRST2_AR.out.fullgene_results, \
         KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
         true
@@ -251,7 +251,7 @@ workflow SRA_PHOENIX {
 
     // Running Mash distance to get top 20 matches for fastANI to speed things up
     MASH_DIST (
-        BBMAP_REFORMAT.out.reads, params.mash_sketch
+        BBMAP_REFORMAT.out.reads, ASSET_CHECK.out.mash_sketch
     )
     ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
@@ -265,12 +265,13 @@ workflow SRA_PHOENIX {
     )
 
     // Combining filtered scaffolds with the top taxa list based on meta.id
-    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{meta, reads         -> [[id:meta.id], reads]}\
-    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{ meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])
+    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{ meta, reads           -> [[id:meta.id], reads]}\
+    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{  meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]},   by: [0])\
+    .join(DETERMINE_TOP_TAXA.out.reference_files.map{meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
 
     // Getting species ID
     FASTANI (
-        top_taxa_list_ch, params.refseq_fasta_database
+        top_taxa_list_ch
     )
     ch_versions = ch_versions.mix(FASTANI.out.versions)
 
@@ -288,6 +289,31 @@ workflow SRA_PHOENIX {
     DETERMINE_TAXA_ID (
         best_hit_ch, params.taxa
     )
+    ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
+
+    // get gff and protein files for amrfinder+
+    PROKKA (
+        BBMAP_REFORMAT.out.reads, [], []
+    )
+    ch_versions = ch_versions.mix(PROKKA.out.versions)
+
+    // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
+    GET_MLST_SRST2 (
+        DETERMINE_TAXA_ID.out.taxonomy
+    )
+    ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
+
+    // Combining weighted kraken report with the FastANI hit based on meta.id
+    mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads    -> [[id:meta.id], reads]}\
+    .join(GET_MLST_SRST2.out.getMLSTs.map{   meta, getMLSTs -> [[id:meta.id], getMLSTs]},  by: [0])\
+    .join(GET_MLST_SRST2.out.fastas.map{     meta, fastas   -> [[id:meta.id], fastas]},    by: [0])\
+    .join(GET_MLST_SRST2.out.profiles.map{   meta, profiles -> [[id:meta.id], profiles]},  by: [0])
+
+    // Idenitifying mlst genes in trimmed reads
+    SRST2_MLST (
+        mid_srst2_ch
+    )
+    ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
@@ -300,7 +326,9 @@ workflow SRA_PHOENIX {
 
     // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
     amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
-    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])
+    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+    .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+    .join(PROKKA.out.gff.map{                                                 meta, gff            -> [[id:meta.id], gff ]},            by: [0])
 
     // Run AMRFinder
     AMRFINDERPLUS_RUN (
@@ -316,12 +344,13 @@ workflow SRA_PHOENIX {
     CALCULATE_ASSEMBLY_RATIO (
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
+    ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
     GENERATE_PIPELINE_STATS_WF (
         FASTP_TRIMD.out.reads, \
         GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
         GATHERING_READ_QC_STATS.out.fastp_total_qc, \
-        SRST2_TRIMD_AR.out.fullgene_results, \
+        SRST2_AR.out.fullgene_results, \
         KRAKEN2_TRIMD.out.report, \
         KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
@@ -343,6 +372,7 @@ workflow SRA_PHOENIX {
         FORMAT_ANI.out.ani_best_hit, \
         CALCULATE_ASSEMBLY_RATIO.out.ratio, \
         AMRFINDERPLUS_RUN.out.report, \
+        CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
         true
     )
 
@@ -351,6 +381,7 @@ workflow SRA_PHOENIX {
     .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
     .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
     .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
     .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
@@ -379,7 +410,7 @@ workflow SRA_PHOENIX {
 
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
-        all_summaries_ch
+        all_summaries_ch, true
     )
     ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

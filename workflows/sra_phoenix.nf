@@ -16,6 +16,7 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 
 //input on command line
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
+if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
 
 /*
 ========================================================================================
@@ -25,24 +26,6 @@ if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input sample
 
 ch_multiqc_config        = file("$projectDir/assets/multiqc_config.yaml", checkIfExists: true)
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config) : Channel.empty()
-
-/*
-========================================================================================
-    IMPORT SUBWORKFLOWS
-========================================================================================
-*/
-
-//
-// SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
-//
-
-include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
-include { SPADES_WF                                         } from '../subworkflows/local/spades_failure'
-include { GENERATE_PIPELINE_STATS_WF                        } from '../subworkflows/local/generate_pipeline_stats'
-include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
-include { KRAKEN2_WF as KRAKEN2_TRIMD                       } from '../subworkflows/local/kraken2krona'
-include { KRAKEN2_WF as KRAKEN2_ASMBLD                      } from '../subworkflows/local/kraken2krona'
-include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkflows/local/kraken2krona'
 
 /*
 ========================================================================================
@@ -67,13 +50,33 @@ include { DETERMINE_TOP_TAXA                                } from '../modules/l
 include { FORMAT_ANI                                        } from '../modules/local/format_ANI_best_hit'
 include { GATHERING_READ_QC_STATS                           } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID                                 } from '../modules/local/tax_classifier'
+include { PROKKA                                            } from '../modules/local/prokka'
+include { AMRFINDERPLUS_UPDATE                              } from '../modules/local/update_amrfinder_db'
 include { GET_TAXA_FOR_AMRFINDER                            } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN                                 } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES                            } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
-include { GENERATE_PIPELINE_STATS                           } from '../modules/local/generate_pipeline_stats'
+
+/*
+========================================================================================
+    IMPORT SUBWORKFLOWS
+========================================================================================
+*/
+
+//
+// SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
+//
+
+include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
+include { SPADES_WF                                         } from '../subworkflows/local/spades_failure'
+include { GENERATE_PIPELINE_STATS_WF                        } from '../subworkflows/local/generate_pipeline_stats'
+include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
+include { KRAKEN2_WF as KRAKEN2_TRIMD                       } from '../subworkflows/local/kraken2krona'
+include { KRAKEN2_WF as KRAKEN2_ASMBLD                      } from '../subworkflows/local/kraken2krona'
+include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkflows/local/kraken2krona'
+
 /*
 ========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
@@ -84,6 +87,7 @@ include { GENERATE_PIPELINE_STATS                           } from '../modules/l
 // MODULE: Installed directly from nf-core/modules
 //
 
+include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
@@ -95,12 +99,12 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 
 // Info required for completion email and summary
 def multiqc_report = []
+def count = 0
 
 workflow SRA_PHOENIX {
 
     ch_versions     = Channel.empty() // Used to collect the software versions
-    spades_ch       = Channel.empty() // Used later to make new channel with single_end: true when scaffolds are created
-    
+
     //fetch sra files, their associated fastq files, format fastq names, and create samplesheet for sra samples
     GET_SRA (
         params.new_samplesheet
@@ -115,7 +119,7 @@ workflow SRA_PHOENIX {
     
     //unzip any zipped databases
     ASSET_CHECK (
-        params.path2db
+        params.zipped_sketch
     )
     
     // Remove PhiX reads
@@ -123,7 +127,6 @@ workflow SRA_PHOENIX {
         INPUT_CHECK.out.reads, params.bbdukdb
     )
     ch_versions = ch_versions.mix(BBDUK.out.versions)
-
 
     // Trim and remove low quality reads
     FASTP_TRIMD (
@@ -217,7 +220,7 @@ workflow SRA_PHOENIX {
 
     // Running Mash distance to get top 20 matches for fastANI to speed things up
     MASH_DIST (
-        BBMAP_REFORMAT.out.reads, params.mash_sketch
+        BBMAP_REFORMAT.out.reads, ASSET_CHECK.out.mash_sketch
     )
     ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
@@ -227,16 +230,17 @@ workflow SRA_PHOENIX {
 
     // Generate file with list of paths of top taxa for fastANI
     DETERMINE_TOP_TAXA (
-        top_taxa_ch, params.refseq_fasta_database
+        top_taxa_ch
     )
 
     // Combining filtered scaffolds with the top taxa list based on meta.id
-    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{meta, reads         -> [[id:meta.id], reads]}\
-    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{ meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])
+    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{ meta, reads           -> [[id:meta.id], reads]}\
+    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{  meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]},   by: [0])\
+    .join(DETERMINE_TOP_TAXA.out.reference_files.map{meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
 
     // Getting species ID
     FASTANI (
-        top_taxa_list_ch, params.refseq_fasta_database
+        top_taxa_list_ch
     )
     ch_versions = ch_versions.mix(FASTANI.out.versions)
 
@@ -255,6 +259,12 @@ workflow SRA_PHOENIX {
         best_hit_ch, params.taxa
     )
 
+    // get gff and protein files for amrfinder+
+    PROKKA (
+        BBMAP_REFORMAT.out.reads, [], []
+    )
+    ch_versions = ch_versions.mix(PROKKA.out.versions)
+
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
@@ -266,7 +276,9 @@ workflow SRA_PHOENIX {
 
     // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
     amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
-    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])
+    .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+    .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+    .join(PROKKA.out.gff.map{                                                 meta, gff            -> [[id:meta.id], gff ]},            by: [0])
 
     // Run AMRFinder
     AMRFINDERPLUS_RUN (
@@ -282,6 +294,7 @@ workflow SRA_PHOENIX {
     CALCULATE_ASSEMBLY_RATIO (
         assembly_ratios_ch, params.ncbi_assembly_stats
     )
+    ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
     GENERATE_PIPELINE_STATS_WF (
         FASTP_TRIMD.out.reads, \
@@ -306,6 +319,7 @@ workflow SRA_PHOENIX {
         FORMAT_ANI.out.ani_best_hit, \
         CALCULATE_ASSEMBLY_RATIO.out.ratio, \
         AMRFINDERPLUS_RUN.out.report, \
+        CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
         false
     )
 
@@ -314,6 +328,7 @@ workflow SRA_PHOENIX {
     .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
     .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+    .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
     .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
     .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
@@ -342,7 +357,7 @@ workflow SRA_PHOENIX {
 
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
-        all_summaries_ch
+        all_summaries_ch, false
     )
     ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
