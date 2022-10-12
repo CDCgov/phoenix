@@ -22,7 +22,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?x:d:a:" option; do
+while getopts ":h?x:d:a:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -45,6 +45,10 @@ while getopts ":h?x:d:a:" option; do
 			database_and_version=$(echo ${database_basename##*/} | cut -d'_' -f1,2)
 			REFSEQ_date=$(echo ${database_basename##*/} | cut -d'_' -f2)
 			;;
+		t)
+			echo "Option -t triggered"
+			terra=${OPTARG}
+			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -58,6 +62,21 @@ if [[ "${options_found}" -eq 0 ]]; then
 	echo "No argument supplied to best_hit_from_kraken_noconfig.sh, exiting"
 	show_help
 	exit 1
+fi
+
+if [[ "${database}" = "./" ]]; then
+	database="."
+fi
+
+# set the correct path for bc/wget - needed for terra
+if [[ $terra = "terra" ]]; then
+	bc_path=/opt/conda/envs/phoenix/bin/bc
+	wget_path=/opt/conda/envs/phoenix/bin/wget
+	certificate_check="--no-check-certificate"
+else
+	bc_path=bc
+	wget_path=/usr/bin/wget
+	certificate_check=""
 fi
 
 # Based upon standard naming protocols pulling last portion of path off should result in proper name
@@ -85,7 +104,7 @@ while IFS= read -r var; do
 	dist=$(echo ${var} | cut -d' ' -f3)
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
-	if ((( $(echo "$dist <= $cutoff" | bc -l) )) && [ ${kmers} -gt 0 ]); then
+		if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 0 ]); then
 		if [[ -f "${database}/${source}.gz" ]]; then
 			echo "${database}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 #		if [[ -f "${GCF_name}.gz" ]]; then
@@ -100,8 +119,8 @@ while IFS= read -r var; do
 				beta=${filename:7:3}
 				charlie=${filename:10:3}
 				echo "Copying - ${filename}"
-				echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${database}/${source}.gz"
-				wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${database}/${source}.gz
+				echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${database}/${source}.gz"
+				$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${database}/${source}.gz
 	#			echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz"
 	#			wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz
 				#curl --remote-name --remote-time "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz"

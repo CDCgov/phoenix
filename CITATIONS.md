@@ -1,4 +1,4 @@
-# nf-core/quaisar: Citations
+# cdcgov/phoenix: Citations
 
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 
@@ -11,6 +11,46 @@
 ## Pipeline tools
 
 * [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+* [BBmap](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/)
+  > BBMap – Bushnell B. – sourceforge.net/projects/bbmap/
+
+* [FastP](https://github.com/OpenGene/fastp)
+  > Chen, S., Zhou, Y., Chen, Y., & Gu, J. (2018). Fastp: An ultra-fast all-in-one FASTQ preprocessor. Bioinformatics, 34(17), i884–i890. https://doi.org/10.1093/bioinformatics/bty560
+
+* [Kraken2](https://github.com/DerrickWood/kraken2/wiki)
+  > Wood, D. E., Lu, J., & Langmead, B. (2019). Improved metagenomic analysis with Kraken 2. Genome Biology, 20(1), 1–13. https://doi.org/10.1186/s13059-019-1891-0
+
+* [SRST2](https://github.com/katholt/srst2)
+  > Inouye, M., Dashnow, H., Raven, L. A., Schultz, M. B., Pope, B. J., Tomita, T., Zobel, J., & Holt, K. E. (2014). SRST2: Rapid genomic surveillance for public health and hospital microbiology labs. Genome Medicine, 6(11), 1–16. https://doi.org/10.1186/s13073-014-0090-6
+
+* [SPAdes](https://github.com/ablab/spades#citation)
+  > Prjibelski A., Antipov D., Meleshko D., Lapidus A., Korobeynikov A. (2020). Using SPAdes De Novo Assembler. Current protocols in bioinformatics, 70(1), 1934-3396. doi.org/10.1002/cpbi.102. 
+
+* [GAMMA](https://academic.oup.com/bioinformatics/article/38/2/546/6355578)  
+  > Stanton, R. A., Vlachos, N., & Halpin, A. L. (2022). GAMMA: a tool for the rapid identification, classification and annotation of translated gene matches from sequencing data. Bioinformatics, 38(2), 546–548. https://doi.org/10.1093/bioinformatics/btab607  
+
+* [MLST](https://github.com/tseemann/mlst#citations)   
+    > The mlst software incorporates components of the PubMLST database which must be cited in any publications that use mlst: "This publication made use of the PubMLST website (https://pubmlst.org/) developed by Keith Jolley (Jolley & Maiden 2010, BMC Bioinformatics, 11:595) and sited at the University of Oxford. The development of that website was funded by the Wellcome Trust".  
+
+    > You should also cite this software (currently unpublished) as: Seemann T, mlst Github https://github.com/tseemann/mlst 
+ 
+* [BUSCO](https://busco.ezlab.org/#cite-us)
+  > The novelties introduced in BUSCO v4 and v5 and the new BUSCO datasets (*_odb10) are described here. If you've used these versions the correct citation would be:
+
+   > Mosè Manni, Matthew R Berkeley, Mathieu Seppey, Felipe A Simão, Evgeny M Zdobnov, BUSCO Update: Novel and Streamlined Workflows along with Broader and Deeper Phylogenetic Coverage for Scoring of Eukaryotic, Prokaryotic, and Viral Genomes. Molecular Biology and Evolution, Volume 38, Issue 10, October 2021, Pages 4647–4654
+
+   > The following protocol covers the various BUSCO running modes and workflows, BUSCO setup, guidelines to interpret the results, and additional analyses, e.g., for building phylogenomic trees and visualizing syntenies using BUSCO results:
+
+   > Manni, M., Berkeley, M. R., Seppey, M., & Zdobnov, E. M. (2021). BUSCO: Assessing genomic data quality and beyond. Current Protocols, 1, e323. doi: 10.1002/cpz1.323
+
+* [QUAST](http://quast.sourceforge.net/)
+  > Mikheenko, A., Prjibelski, A., Saveliev, V., Antipov, D., & Gurevich, A. (2018). Versatile genome assembly evaluation with QUAST-LG. Bioinformatics, 34(13), i142–i150. https://doi.org/10.1093/bioinformatics/bty266
+
+* [MASH](https://github.com/marbl/Mash)
+  > Ondov, B. D., Treangen, T. J., Melsted, P., Mallonee, A. B., Bergman, N. H., Koren, S., & Phillippy, A. M. (2016). Mash: Fast genome and metagenome distance estimation using MinHash. Genome Biology, 17(1), 1–14. https://doi.org/10.1186/s13059-016-0997-x  
+
+* [FastANI](https://github.com/ParBLiSS/FastANI)
+  > Jain, C., Rodriguez-R, L. M., Phillippy, A. M., Konstantinidis, K. T., & Aluru, S. (2018). High throughput ANI analysis of 90K prokaryotic genomes reveals clear species boundaries. Nature Communications, 9(1), 1–8. https://doi.org/10.1038/s41467-018-07641-9
 
 * [MultiQC](https://pubmed.ncbi.nlm.nih.gov/27312411/)
     > Ewels P, Magnusson M, Lundin S, Käller M. MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics. 2016 Oct 1;32(19):3047-8. doi: 10.1093/bioinformatics/btw354. Epub 2016 Jun 16. PubMed PMID: 27312411; PubMed Central PMCID: PMC5039924.

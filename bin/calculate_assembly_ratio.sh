@@ -20,14 +20,14 @@ show_help () {
 	echo "required: -d = path to specific sorted database with statistics related to entries from NCBI"
 #	echo "required: -e = path to Isolate folder that needs to have Assembly and ANI folders and an isolateID.tax file"
 	echo "required: -q = quast report.tsv file"
-	echo "required: -t = tax file from output of determine_taxaID.sh"
+	echo "required: -x = tax file from output of determine_taxaID.sh"
 	echo "required: -s = sample_name"
 	echo "optional: -f = give a specific taxonomy to compare against in the database"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?d:q:t:f:s:" option; do
+while getopts ":h?d:q:x:f:s:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -41,8 +41,8 @@ while getopts ":h?d:q:t:f:s:" option; do
 		q) #changed from e
 			echo "Option -q triggered, argument = ${OPTARG}"
 			quast_report=${OPTARG};;
-		t)
-			echo "Option -t triggered, argument = ${OPTARG}"
+		x)
+			echo "Option -x triggered, argument = ${OPTARG}"
 			tax_file=${OPTARG};; # comes from determine_taxID.sh
 		f)
 			echo "Option -f triggered, argument = ${OPTARG}"
@@ -52,6 +52,9 @@ while getopts ":h?d:q:t:f:s:" option; do
 		s)
 			echo "Option -s triggered, argument = ${OPTARG}"
 			sample_name=${OPTARG};;
+		t)
+			echo "Option -t triggered"
+			terra=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -68,11 +71,22 @@ if [[ "${options_found}" -eq 0 ]]; then
 	exit
 fi
 
+# set the correct path for bc - needed for terra
+if [[ $terra = "terra" ]]; then
+	bc_path=/opt/conda/envs/phoenix/bin/bc
+else
+	bc_path=bc
+fi
+
 # Accounts for manual entry or passthrough situations
 if [[ -f "${db_path}" ]]; then
-	NCBI_ratio="${db_path}"
-#	NCBI_ratio_date=$(echo "${db_path}" | rev | cut -d'_' -f1 | cut -d'.' -f2 | rev) #expects date
-	NCBI_ratio_date="20210819"
+	#Clean up database so the name doesn't start with lowercase letter (change to uppercase) and remove brackets
+	sed 's/^\(.\)/\U\1/' $db_path > db_path_update.txt
+	sed -i 's/\[//' db_path_update.txt
+	sed -i 's/\]//' db_path_update.txt
+	NCBI_ratio=db_path_update.txt
+	NCBI_ratio_date=$(echo "${db_path}" | rev | cut -d'_' -f1 | cut -d'.' -f2 | rev) #expects date
+#	NCBI_ratio_date="20210819"
 else
 	echo "No ratio DB, exiting"
 	exit
@@ -138,10 +152,9 @@ while IFS='' read -r line; do
 		elif [ "${taxid}" = -1 ]; then
 			taxid="No tax id given or empty when making lookup"
 		fi
-		expected_length=$(echo "scale=0; 1000000 * ${arr_line[4]} / 1 " | bc | cut -d'.' -f1)
-		echo "${arr_line[5]}"
+		expected_length=$(echo "scale=0; 1000000 * ${arr_line[4]} / 1 " | $bc_path | cut -d'.' -f1)
 		reference_count="${arr_line[6]}"
-		stdev=$(echo "scale=4; 1000000 * ${arr_line[5]} /1 " | bc | cut -d"." -f1)
+		stdev=$(echo "scale=4; 1000000 * ${arr_line[5]} /1 " | $bc_path | cut -d"." -f1)
 		if [[ "${reference_count}" -lt 10 ]]; then
 			stdev="Not calculated on species with n<10 references"
 			stdevs="N/A"
@@ -153,8 +166,20 @@ while IFS='' read -r line; do
 				smaller="${assembly_length}"
 				bigger="${expected_length}"
 			fi
-			stdevs=$(echo "scale=4 ; ( ${bigger} - ${smaller} ) / ${stdev}" | bc)
+			stdevs=$(echo "scale=4 ; ( ${bigger} - ${smaller} ) / ${stdev}" | $bc_path )
 		fi
+		#GC content
+		gc_min="${arr_line[7]}"
+		gc_max="${arr_line[8]}"
+		gc_mean="${arr_line[10]}"
+		gc_count="${arr_line[12]}"
+		if [[ "${gc_count}" -lt 10 ]]; then
+			gc_stdev="Not calculated on species with n<10 references"
+		else
+			gc_stdev="${arr_line[11]}"
+		fi
+		echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+
 
 
 		break
@@ -176,7 +201,7 @@ elif [[ ! ${assembly_length} ]]; then
 	exit
 fi
 
-ratio=$(echo "scale=6; ${assembly_length} / ${expected_length}" | bc | awk '{printf "%.4f", $0}')
+ratio=$(echo "scale=6; ${assembly_length} / ${expected_length}" | $bc_path | awk '{printf "%.4f", $0}')
 
 echo -e "Actual - ${assembly_length}\nExpected - ${expected_length}\nRatio - ${ratio}\nSpecies_St.Devs - ${stdev}\nIsolate_St.Dev:${stdevs}"
 

@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-# TODO nf-core: Update the script to check the samplesheet
 # This script is based on the example at: https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/samplesheet/samplesheet_test_illumina_amplicon.csv
 
 import os
 import sys
 import errno
 import argparse
+import gzip
+import re
 
 
 def parse_args(args=None):
-    Description = "Reformat nf-core/quaisar samplesheet file and check its contents."
+    Description = "Reformat cdcgov/phoenix samplesheet file and check its contents."
     Epilog = "Example usage: python check_samplesheet.py <FILE_IN> <FILE_OUT>"
 
     parser = argparse.ArgumentParser(description=Description, epilog=Epilog)
@@ -38,7 +39,6 @@ def print_error(error, context="Line", context_str=""):
     sys.exit(1)
 
 
-# TODO nf-core: Update the check_samplesheet function
 def check_samplesheet(file_in, file_out):
     """
     This function checks that the samplesheet follows the following structure:
@@ -93,9 +93,12 @@ def check_samplesheet(file_in, file_out):
                 if fastq:
                     if fastq.find(" ") != -1:
                         print_error("FastQ file contains spaces!", "Line", line)
-                    if not fastq.endswith(".fastq.gz") and not fastq.endswith(".fq.gz"):
-                        print_error(
-                            "FastQ file does not have extension '.fastq.gz' or '.fq.gz'!",
+                    if not fastq.endswith(".fastq.gz") and not fastq.endswith(".fq.gz"): # If file is not gzipped then gzip it. 
+                        fastq_gz = fastq + ".gz"
+                        with open(fastq, "rb") as f_in:
+                            with gzip.open(fastq_gz, 'wb') as f_out: 
+                                f_out.writelines(f_in)
+                        print("FastQ file does not have extension '.fastq.gz' or '.fq.gz'! Zipping file.",
                             "Line",
                             line,
                         )
@@ -133,6 +136,12 @@ def check_samplesheet(file_in, file_out):
 #                for idx, val in enumerate(sample_mapping_dict[sample]):
 #                    fout.write(",".join(["{}_T{}".format(sample, idx + 1)] + val) + "\n")
                 for idx, val in enumerate(sample_mapping_dict[sample]):
+                    if not val[1].endswith(".gz"): # check that forward read is a gzip file
+                        val[1] = re.sub(".fastq$", ".fastq.gz", val[1])
+                        val[1] = re.sub(".fq$", ".fq.gz", val[1])
+                    if not val[2].endswith(".gz"): # check that reverse read is a gzip file
+                        val[2] = re.sub(".fastq$", ".fastq.gz", val[2])
+                        val[2] = re.sub(".fq$", ".fq.gz", val[2])
                     fout.write(",".join(["{}".format(sample)] + val) + "\n")
     else:
         print_error("No entries to process!", "Samplesheet: {}".format(file_in))

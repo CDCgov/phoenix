@@ -22,7 +22,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?i:q:n:" option; do
+while getopts ":h?i:q:n:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -42,6 +42,10 @@ while getopts ":h?i:q:n:" option; do
 			echo "Option -n triggered, argument = ${OPTARG}"
 			sample_name=${OPTARG}
 			;;
+		t)
+			echo "Option -t triggered"
+			terra=${OPTARG}
+			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -55,6 +59,13 @@ if [[ "${options_found}" -eq 0 ]]; then
 	echo "No argument supplied to kraken2_best_hit.sh, exiting"
 	show_help
 	exit 1
+fi
+
+# set the correct path for bc - needed for terra
+if [[ $terra = "terra" ]]; then
+	bc_path=/opt/conda/envs/phoenix/bin/bc
+else
+	bc_path=bc
 fi
 
 # Based upon standard naming protocols pulling last portion of path off should result in proper name
@@ -213,7 +224,7 @@ elif [[ "${list_file}" = *".kraken2_wtasmbld.report.txt" ]]; then
 	# Calculates percent of classified reads as 100*classified reads/contigs
 #	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	#echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
-	total_percent=$(echo "${unclass_percent} + ${root_percent}" | bc)
+	total_percent=$(echo "${unclass_percent} + ${root_percent}" | $bc_path)
 	unclass_percent=$(echo "${unclass_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	root_percent=$(echo "${root_percent} ${total_percent}" | awk '{ printf "%2.2f" , ($1*100)/$2 }' )
 	domain_percent=$(echo "${domain_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )

@@ -1,11 +1,7 @@
 process KRAKEN2_KRAKEN2 {
     tag "$meta.id"
     label 'process_high'
-
-    conda (params.enable_conda ? 'bioconda::kraken2=2.1.2 conda-forge::pigz=2.6' : null)
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-5799ab18b5fc681e75923b2450abaa969907ec98:87fc08d11968d081f3e8a37131c1f1f6715b6542-0' :
-        'quay.io/biocontainers/mulled-v2-5799ab18b5fc681e75923b2450abaa969907ec98:87fc08d11968d081f3e8a37131c1f1f6715b6542-0' }"
+    container 'staphb/kraken2:2.1.2-no-db'
 
     input:
     tuple val(meta), path(reads)
@@ -33,7 +29,7 @@ process KRAKEN2_KRAKEN2 {
     def classified_command = save_output_fastqs ? "--classified-out ${classified}" : ""
     def unclassified_command = save_output_fastqs ? "--unclassified-out ${unclassified}" : ""
     def readclassification_command = save_reads_assignment ? "--output ${prefix}.kraken2_${kraken_type}.classifiedreads.txt" : ""
-    def compress_reads_command = save_output_fastqs ? "pigz -p $task.cpus *.fastq" : ""
+    def compress_reads_command = save_output_fastqs ? "gzip *.fastq" : ""
 
     """
     kraken2 \\
@@ -53,7 +49,7 @@ process KRAKEN2_KRAKEN2 {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         kraken2: \$(echo \$(kraken2 --version 2>&1) | sed 's/^.*Kraken version //; s/ .*\$//')
-        pigz: \$( pigz --version 2>&1 | sed 's/pigz //g' )
+        kraken2db: $db
     END_VERSIONS
     """
 }

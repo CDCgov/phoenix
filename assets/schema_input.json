@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/quaisar/master/assets/schema_input.json",
-    "title": "nf-core/quaisar pipeline - params.input schema",
+    "$id": "https://raw.githubusercontent.com/cdcgov/phoenix/main/assets/schema_input.json",
+    "title": "cdcgov/phoenix pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {

@@ -32,27 +32,35 @@ WorkflowMain.initialise(workflow, params, log)
 ========================================================================================
 */
 
-include { PHOENIX } from './workflows/phoenix'
+include { PHOENIX_EXTERNAL } from './workflows/phoenix'
+include { PHOENIX_EXQC     } from './workflows/cdc_phoenix'
+include { SRA_PHOENIX      } from './workflows/sra_phoenix'
 
 //
-// WORKFLOW: Run main nf-core/quaisar analysis pipeline
+// WORKFLOW: Run main cdcgov/phoenix analysis pipeline
+//
+workflow PHOENIX {
+    PHOENIX_EXTERNAL ()
+}
+
+//
+// WORKFLOW: Run internal version of cdcgov/phoenix analysis pipeline that includes BUSCO, SRST2 and KRAKEN_ASMBLED
 //
 workflow CDC_PHOENIX {
-    PHOENIX ()
+    PHOENIX_EXQC ()
 }
 
 /*
 ========================================================================================
-    RUN ALL WORKFLOWS
+    RUN SRA WORKFLOWS
 ========================================================================================
 */
 
 //
 // WORKFLOW: Execute a single named workflow for the pipeline
-// See: https://github.com/nf-core/rnaseq/issues/619
 //
-workflow {
-    CDC_PHOENIX ()
+workflow SRA_LIST {
+    SRA_PHOENIX ()
 }
 
 /*

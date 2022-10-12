@@ -3,8 +3,7 @@ def VERSION = '2.1' // Version information not provided by tool on CLI
 process GAMMA {
     tag "$meta.id"
     label 'process_low'
-
-    conda (params.enable_conda ? "bioconda::gamma=2.1" : null)
+    //container 'staphb/gamma:2.1'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/gamma%3A2.1--hdfd78af_0':
         'quay.io/biocontainers/gamma:2.1--hdfd78af_0' }"
@@ -48,6 +47,7 @@ process GAMMA {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         gamma: $VERSION
+        Database: $db
     END_VERSIONS
     """
 }

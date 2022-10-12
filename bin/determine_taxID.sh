@@ -20,17 +20,20 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?k:s:f:d:" option; do
+while getopts ":h?k:s:f:d:r:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
 			echo "Invalid option found: ${OPTARG}"
-      show_help
-      exit 0
-      ;;
+			show_help
+			exit 0
+			;;
 		k)
 			echo "Option -k triggered, argument = ${OPTARG}"
 			weighted_kraken=${OPTARG};;
+		r)
+			echo "Option -r triggered, argument = ${OPTARG}"
+			trimmed_kraken=${OPTARG};;
 		s)
 			echo "Option -s triggered, argument = ${OPTARG}"
 			sample_name=${OPTARG};;
@@ -88,7 +91,14 @@ Check_source() {
 	if [[ "${start_at}" -le 2 ]]; then
 #		if [[ -s "${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt" ]]; then
 		if [[ -s "${weighted_kraken}" ]]; then
-			do_kraken2
+			do_kraken2_assembly
+		return
+		fi
+	fi
+	if [[ "${start_at}" -le 3 ]]; then
+#		if [[ -s "${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt" ]]; then
+		if [[ -s "${trimmed_kraken}" ]]; then
+			do_kraken2_reads
 		return
 		fi
 	fi
@@ -114,10 +124,33 @@ do_ANI() {
 }
 
 # Function to pull info from kraken2 output based on assembly
-do_kraken2() {
-	source="kraken2"
+do_kraken2_assembly() {
+	source="kraken2_wtasmbld"
 #	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt"
 	source_file="${weighted_kraken}"
+	#echo "${source}"
+	while IFS= read -r line  || [ -n "$line" ]; do
+		# Grab first letter of line (indicating taxonomic level)
+		first=${line::1}
+		echo $line
+		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken2, 3rd-true % of total reads, 4th-identifier)
+		if [ "${first}" = "s" ]
+		then
+			species=$(echo "${line}" | awk -F ' ' '{print $3}')
+		elif [ "${first}" = "G" ]
+		then
+			Genus=$(echo "${line}" | awk -F ' ' '{print $3}')
+		fi
+	done < "${source_file}"
+	confidence_index=$(tail -n1 "${source_file}" | cut -d' ' -f2)
+	#confidence_index="${confidence_index}"
+}
+
+# Function to pull info from kraken2 output based on assembly
+do_kraken2_reads() {
+	source="kraken2_trimmed"
+#	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt"
+	source_file="${trimmed_kraken}"
 	#echo "${source}"
 	while IFS= read -r line  || [ -n "$line" ]; do
 		# Grab first letter of line (indicating taxonomic level)
@@ -125,14 +158,14 @@ do_kraken2() {
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken2, 3rd-true % of total reads, 4th-identifier)
 		if [ "${first}" = "s" ]
 		then
-			species=$(echo "${line}" | awk -F ' ' '{print $4}')
+			species=$(echo "${line}" | awk -F ' ' '{ print $3 }')
 		elif [ "${first}" = "G" ]
 		then
-			Genus=$(echo "${line}" | awk -F ' ' '{print $4}')
+			Genus=$(echo "${line}" | awk -F ' ' '{print $3}')
 		fi
 	done < "${source_file}"
 	confidence_index=$(tail -n1 "${source_file}" | cut -d' ' -f2)
-	confidence_index="${confidence_index}"
+	#confidence_index="${confidence_index}"
 }
 
 # Start the program by checking ALL sources

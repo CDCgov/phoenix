@@ -147,7 +147,7 @@ workflow SPADES_TO_END {
 
     // Running Mash distance to get top 20 matches for fastANI to speed things up
     MASH_DIST (
-        BBMAP_REFORMAT.out.reads, params.mash_sketch
+        BBMAP_REFORMAT.out.reads, ASSET_CHECK.out.mash_sketch
     )
     ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
@@ -157,16 +157,17 @@ workflow SPADES_TO_END {
 
     // Generate file with list of paths of top taxa for fastANI
     DETERMINE_TOP_TAXA (
-        top_taxa_ch, params.refseq_fasta_database
+        top_taxa_ch
     )
 
     // Combining filtered scaffolds with the top taxa list based on meta.id
-    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{meta, reads         -> [[id:meta.id], reads]}\
-    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{ meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])
+    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{ meta, reads         -> [[id:meta.id], reads]}\
+    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{  meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+    .join(DETERMINE_TOP_TAXA.out.reference_files.map{meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
 
     // Getting species ID
     FASTANI (
-        top_taxa_list_ch, params.refseq_fasta_database
+        top_taxa_list_ch
     )
     ch_versions = ch_versions.mix(FASTANI.out.versions)
 

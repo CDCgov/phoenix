@@ -1,11 +1,7 @@
 process FASTP {
     tag "$meta.id"
     label 'process_low'
-
-    conda (params.enable_conda ? 'bioconda::fastp=0.23.2' : null)
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/fastp:0.23.2--h79da9fb_0' :
-        'quay.io/biocontainers/fastp:0.23.2--h79da9fb_0' }"
+    container 'staphb/fastp:0.23.2'
 
     input:
     tuple val(meta), path(reads)

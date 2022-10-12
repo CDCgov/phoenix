@@ -1,14 +1,14 @@
 process FASTANI {
     tag "$meta.id"
     label 'process_medium'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    container 'staphb/fastani:1.33'
+    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/fastani:1.33--h0fdf51a_0' :
-        'quay.io/biocontainers/fastani:1.33--h0fdf51a_0' }"
+        'quay.io/biocontainers/fastani:1.33--h0fdf51a_0' }"*/
 
     input:
-    tuple val(meta), path(query), path(reference)
-    path(reference_files)
+    tuple val(meta), path(query), path(reference), path(reference_files)
+    
 
     output:
     tuple val(meta), path("*.ani.txt"), emit: ani
