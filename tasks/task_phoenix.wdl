@@ -148,8 +148,8 @@ task phoenix {
     File blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20220915_srst2.psl"
     File gamma_hv_calls           = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
     File blat_hv_calls            = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
-    File gamma_pf_calls           = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20220928.gamma"
-    File blat_pf_calls            = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20220928.psl"
+    File gamma_pf_calls           = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20220916.gamma"
+    File blat_pf_calls            = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20220916.psl"
     #phoenix output
     File assembly_ratio_file      = "~{samplename}/results/~{samplename}/~{samplename}_Assembly_ratio_20220928.txt"
     File gc_content_file          = "~{samplename}/results/~{samplename}/~{samplename}_GC_content_20220928.txt"
@@ -168,7 +168,7 @@ task phoenix {
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"
-    maxRetries: 1
+    maxRetries: 0
     preemptible: 0
   }
 }
