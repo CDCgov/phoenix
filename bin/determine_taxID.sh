@@ -207,4 +207,4 @@ fi
 
 # Print output to tax file for sample
 #echo -e "(${source})-${confidence_index}-${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${OUTDATADIR}/${sample_name}.tax"
-echo -e "(${source})-${confidence_index}-${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${sample_name}.tax"
+echo -e "${source}	${confidence_index}	${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${sample_name}.tax"
