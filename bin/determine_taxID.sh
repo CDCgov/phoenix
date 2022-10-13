@@ -112,7 +112,7 @@ do_ANI() {
 	source_file="${fastani_file}"
 	if [[ -s "${fastani_file}" ]]; then
 		header=$(head -n 1 "${fastani_file}")
-		info=$( -n 1 "${fastani_file}")
+		info=$(head -n 1 "${fastani_file}")
 		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
 		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
 		confidence_index=$(echo "${info}" | cut -d'	' -f2)
