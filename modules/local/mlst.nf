@@ -37,9 +37,9 @@ process MLST {
     scheme=\$(tail -n1 | cut -d \$'\t' -f2 ${prefix}.tsv)
     if [[ \$scheme == "abaumannii_2" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
-        sed -i 's/abaumannii_2/abaumannii#2(Pasteur)/' ${prefix}_1.tsv
+        sed -i 's/abaumannii_2/abaumannii\#2(Pasteur)/' ${prefix}_1.tsv
         mlst --scheme abaumannii --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        sed -i 's/abaumannii/abaumannii#1(Oxford)/' ${prefix}_2.tsv
+        sed -i 's/abaumannii/abaumannii\#1(Oxford)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "abaumannii" ]]; then
@@ -53,12 +53,12 @@ process MLST {
         mv ${prefix}.tsv ${prefix}_1.tsv
         sed -i 's/ecoli_achtman_4/ecoli\#1(Achtman)/' ${prefix}_1.tsv
         mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        sed -i 's/ecoli/ecoli#2(Pasteur)/' ${prefix}_2.tsv
+        sed -i 's/ecoli/ecoli\#2(Pasteur)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "ecoli" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
-        sed -i 's/ecoli/ecoli\#1(Pasteur)/' ${prefix}_1.tsv
+        sed -i 's/ecoli/ecoli\#2(Pasteur)/' ${prefix}_1.tsv
         mlst --scheme ecoli_achtman_4 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         sed -i 's/ecoli_achtman_4/ecoli\#1(Achtman)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
