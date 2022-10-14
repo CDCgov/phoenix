@@ -33,6 +33,7 @@ def parseArgs(args=None):
 def MLST_Info_Only(MLST_file):
     """Pulls MLST info from *_Scheme.mlst file"""
     f = open(MLST_file, 'r')
+    f.readline()
     String1 = f.readline()
     ST = String1.split()[2]
     Scheme = String1.split()[1]
@@ -44,6 +45,7 @@ def MLST_ST(MLST_file):
     ST_list = []
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
+        lines.pop(0)
         for line in lines:
             ST = "ST" + line.split()[2]
             ST_list.append(ST)
@@ -56,6 +58,7 @@ def MLST_Scheme(MLST_file):
     Scheme_list = []
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
+        lines.pop(0)
         for line in lines:
             Scheme = line.split()[1]
             Scheme_list.append(Scheme)

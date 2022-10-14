@@ -239,11 +239,10 @@ fi
 
 
 #Print out the best taxa for each level and its corresponding % of reads reported by kraken, % reads of total, taxon description
-#echo -e "U: ${unclass_percent} (${u_percent}) unclassified\\nD: ${domain_percent} (${domain_percent_total}) ${domain}\\nP: ${phylum_percent} (${phylum_percent_total}) ${phylum}\\nC: ${class_percent} (${class_percent_total}) ${class}\\nO: ${order_percent} (${order_percent_total}) ${order}\\nF: ${family_percent} (${family_percent_total}) ${family}\\nG: ${genus_percent} (${genus_percent_total}) ${genus}\\ns: ${species_percent} (${species_percent_total}) ${species}" > "${SAMPDATADIR}/${source}/${sample_name}.summary.txt"
-echo -e "U: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
+# echo -e "U: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
 
 ###With headers
-#echo -e "Taxon level	Match percentage	Taxa\nU: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
+echo -e "Taxon level	Match percentage	Taxa\nU: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
 
 
 #Script exited gracefully (unless something else inside failed)

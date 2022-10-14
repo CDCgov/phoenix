@@ -1082,16 +1082,19 @@ fi
 # check MLST minimus
 if [[ -s "${mlst_file}" ]]; then
   if [[ $(wc -l <${mlst_file}) > 1 ]]; then #if there are two mlst schemes
-    mlst_db=$(head -n1 ${mlst_file} | cut -d$'\t' -f2)
-    mlst_type=$(head -n1 ${mlst_file} | cut -d$'\t' -f3)
-    mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
-    mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
-
-    ### In advance of adding header to mlst file
-    #mlst_db=$(tail -n2 ${mlst_file} | head -n1 | cut -d$'\t' -f2)
-    #mlst_type=$(tail -n2 ${mlst_file} | head -n1 | cut -d$'\t' -f3)
+    #mlst_db=$(head -n1 ${mlst_file} | cut -d$'\t' -f2)
+    #mlst_type=$(head -n1 ${mlst_file} | cut -d$'\t' -f3)
     #mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
     #mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
+
+    ### In advance of adding header to mlst file
+    line_count=$(wc -l "${mlst_file}")
+    mlst_db=$(head -n2 ${mlst_file} | tail -n1 | cut -d$'\t' -f2)
+    mlst_type=$(head -n2 ${mlst_file} | head -n1 | cut -d$'\t' -f3)
+    if [[ "${line_count}" -eq 3 ]]; then
+      mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
+      mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
+    fi
 
     #printing output
     if [[ "${mlst_db}" = '-' ]]; then

@@ -1,7 +1,7 @@
 process MLST {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/mlst:2.22.1' // version 2.22.1 produces add 
+    container 'staphb/mlst:2.22.1' // version 2.22.1 produces add
 
     input:
     tuple val(meta), path(fasta)
@@ -31,7 +31,10 @@ process MLST {
         \$unzipped_fasta \\
         > ${prefix}.tsv
 
-    scheme=\$(cut -d \$'\t' -f2 ${prefix}.tsv)
+    // Add in generic header
+    sed 'source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)' ${prefix}.tsv
+
+    scheme=\$(tail -n1 | cut -d \$'\t' -f2 ${prefix}.tsv)
     if [[ \$scheme == "abaumannii_2" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         sed -i 's/abaumannii_2/abaumannii(Pasteur)/' ${prefix}_1.tsv
