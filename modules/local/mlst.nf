@@ -31,36 +31,36 @@ process MLST {
         \$unzipped_fasta \\
         > ${prefix}.tsv
 
-    // Add in generic header
+    # Add in generic header
     sed 'source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)' ${prefix}.tsv
 
     scheme=\$(tail -n1 | cut -d \$'\t' -f2 ${prefix}.tsv)
     if [[ \$scheme == "abaumannii_2" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
-        sed -i 's/abaumannii_2/abaumannii(Pasteur)/' ${prefix}_1.tsv
+        sed -i 's/abaumannii_2/abaumannii#2(Pasteur)/' ${prefix}_1.tsv
         mlst --scheme abaumannii --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}_2.tsv
+        sed -i 's/abaumannii/abaumannii#1(Oxford)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "abaumannii" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
-        sed -i 's/abaumannii/abaumannii(Oxford)/' ${prefix}_1.tsv
+        sed -i 's/abaumannii/abaumannii\#1(Oxford)/' ${prefix}_1.tsv
         mlst --scheme abaumannii_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        sed -i 's/abaumannii/abaumannii(Pasteur)/' ${prefix}_2.tsv
+        sed -i 's/abaumannii/abaumannii\#2(Pasteur)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "ecoli_achtman_4" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
-        sed -i 's/ecoli_achtman_4/ecoli(Achtman)/' ${prefix}_1.tsv
+        sed -i 's/ecoli_achtman_4/ecoli\#1(Achtman)/' ${prefix}_1.tsv
         mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        sed -i 's/ecoli/ecoli(Pasteur)/' ${prefix}_2.tsv
+        sed -i 's/ecoli/ecoli#2(Pasteur)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "ecoli" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
-        sed -i 's/ecoli/ecoli(Pasteur)/' ${prefix}_1.tsv
+        sed -i 's/ecoli/ecoli\#1(Pasteur)/' ${prefix}_1.tsv
         mlst --scheme ecoli_achtman_4 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        sed -i 's/ecoli_achtman_4/ecoli(Achtman)/' ${prefix}_2.tsv
+        sed -i 's/ecoli_achtman_4/ecoli\#1(Achtman)/' ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     else
