@@ -72,7 +72,11 @@ process GET_MLST_SRST2 {
       		touch "\${entry_no_spaces}_profiles.csv"
           echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
         else
-          getMLST2_phoenix.py --species "\$entry"
+          if [[ "\${entry}" = "Streptococcus thermophilus" ]]; then
+            getMLST2_phoenix.py --species "\$entry" --force_scheme_name
+          else
+            getMLST2_phoenix.py --species "\$entry"
+          fi
           if [[ "\${entry}" = *"baumannii#1" ]]; then
       			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
       			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
