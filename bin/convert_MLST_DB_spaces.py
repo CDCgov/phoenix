@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # This script is designed to convert general genus species taxonomy to the correct name format to download the matching mlst DBs from pubmlst
+# Updated 10-19-22
 
 import argparse
 
