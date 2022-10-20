@@ -31,9 +31,6 @@ process MLST {
         \$unzipped_fasta \\
         > ${prefix}.tsv
 
-    # Add in generic header
-    sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)' ${prefix}.tsv
-
     scheme=\$(tail -n1 | cut -d \$'\t' -f2 ${prefix}.tsv)
     if [[ \$scheme == "abaumannii_2" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
@@ -58,6 +55,9 @@ process MLST {
     else
         :
     fi
+
+    # Add in generic header
+    sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 lous_9  locus_10' ${prefix}.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
