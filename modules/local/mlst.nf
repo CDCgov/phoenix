@@ -36,22 +36,22 @@ process MLST {
         mv ${prefix}.tsv ${prefix}_1.tsv
         mlst --scheme abaumannii --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
-      #  rm ${prefix}_*.tsv
+        rm ${prefix}_*.tsv
     elif [[ \$scheme == "abaumannii" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         mlst --scheme abaumannii_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
-      #  rm ${prefix}_*.tsv
+        rm ${prefix}_*.tsv
     elif [[ \$scheme == "ecoli_achtman_4" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
-      #  rm ${prefix}_*.tsv
+        rm ${prefix}_*.tsv
     elif [[ \$scheme == "ecoli" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         mlst --scheme ecoli_achtman_4 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
-      #  rm ${prefix}_*.tsv
+        rm ${prefix}_*.tsv
     else
         :
     fi
