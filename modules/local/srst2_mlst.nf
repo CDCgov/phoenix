@@ -92,7 +92,7 @@ process SRST2_MLST {
         formatted_trailer="\${formatted_trailer}  \${trailer_list[\${depth_index}]}"
         formatted_trailer="\${formatted_trailer}  \${trailer_list[\${maxMAF_index}]}"
 
-        for index in {$genes_start_index..$genes_end_index}
+        for index in {\$genes_start_index..\$genes_end_index}
         do
           echo "\${index_counter} -- \${header_list[\${index_counter}]} -- \${trailer_list[\${index_counter}]}"
           formatted_trailer="\${formatted_trailer}  \${header_list[\${index_counter}]}(\${trailer_list[\${index_counter}]})"
