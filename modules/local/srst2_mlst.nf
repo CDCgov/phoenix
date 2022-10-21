@@ -67,7 +67,7 @@ process SRST2_MLST {
         formatted_trailer="${prefix}  \${mlst_db}"
         IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
         IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
-        header_length=${#header_list[@]}
+        header_length="${#header_list[@]}"
         ST_index=1
         mismatch_index=$(( header_length - 4 ))
         uncertainty_index=$(( header_length - 3 ))
