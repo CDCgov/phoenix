@@ -60,7 +60,7 @@ process SRST2_MLST {
       trailer_list=""
       if [[ "\${no_match}" = "True" ]]; then
         tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-        echo "${prefix} No match found for \${tax_with_no_scheme} -  - - - - - - - - - - -" >> "${prefix}_srst2.mlst"
+        echo "${prefix} No match found for \${tax_with_no_scheme} -  - - - -" >> "${prefix}_srst2.mlst"
       else
         raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
         raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
@@ -94,8 +94,8 @@ process SRST2_MLST {
 
         for index in {\$genes_start_index..\$genes_end_index}
         do
-          echo "\${index_counter} -- \${header_list[\${index_counter}]} -- \${trailer_list[\${index_counter}]}"
-          formatted_trailer="\${formatted_trailer}  \${header_list[\${index_counter}]}(\${trailer_list[\${index_counter}]})"
+          echo "\${index} -- \${header_list[\${index}]} -- \${trailer_list[\${index}]}"
+          formatted_trailer="\${formatted_trailer}  \${header_list[\${index}]}(\${trailer_list[\${index}]})"
         done
         echo "\${formatted_trailer}" >> ${prefix}_srst2.mlst
       fi
