@@ -67,14 +67,14 @@ process SRST2_MLST {
         formatted_trailer="${prefix}  \${mlst_db}"
         IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
         IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
-        header_length="${#header_list[@]}"
+        header_length="\${#header_list[@]}"
         ST_index=1
-        mismatch_index=$(( header_length - 4 ))
-        uncertainty_index=$(( header_length - 3 ))
-        depth_index=$(( header_length - 2 ))
-        maxMAF_index=$(( header_length - 1))
+        mismatch_index=\$(( header_length - 4 ))
+        uncertainty_index=\$(( header_length - 3 ))
+        depth_index=\$(( header_length - 2 ))
+        maxMAF_index=\$(( header_length - 1))
         genes_start_index=2
-        genes_end_index=$(( header_length - 5 ))
+        genes_end_index=\$(( header_length - 5 ))
         # Original Index will be something as follows for a 7 gene scheme
         #
         # Sample  ST      adk     atpA    dxr     glyA    recA    sodA    tpi     mismatches      uncertainty     depth   maxMAF
