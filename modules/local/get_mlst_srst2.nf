@@ -77,15 +77,21 @@ process GET_MLST_SRST2 {
           else
             getMLST2_phoenix.py --species "\$entry"
           fi
-          if [[ "\${entry}" = *"baumannii#1" ]]; then
-      			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
-      			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
-      		elif [[ "\${entry}" = *"baumannii#2" ]]; then
-      			sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
-      			sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+          if [[ ! -f dbases.xml ]]; then
+            touch "\${entry_no_spaces}.fasta"
+            touch "\${entry_no_spaces}_profiles.csv"
+            echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+          else
+            if [[ "\${entry}" = *"baumannii#1" ]]; then
+      			   sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
+      			   sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
+      		  elif [[ "\${entry}" = *"baumannii#2" ]]; then
+      			   sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
+      			   sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+            fi
           fi
+          echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
         fi
-        echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
         counter=\$(( counter + 1))
       done
     fi
