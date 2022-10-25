@@ -303,11 +303,21 @@ workflow PHOENIX_EXQC {
     .join(GET_MLST_SRST2.out.fastas.map{     meta, fastas   -> [[id:meta.id], fastas]},    by: [0])\
     .join(GET_MLST_SRST2.out.profiles.map{   meta, profiles -> [[id:meta.id], profiles]},  by: [0])
 
-    // Idenitifying mlst genes in trimmed reads
+    // Identifying mlst genes in trimmed reads
     SRST2_MLST (
         mid_srst2_ch
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
+
+    combined_srst2_ch = MLST.out.tsv_file.map{meta, tsv           -> [[id:meta.id], tsv]}\
+    .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0]\
+    .join(DETERMINE_TAXA_ID.out.taxonomy.map  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0]
+
+    // Combining and adding flare to all MLST outputs
+    CHECK_MLST (
+        combined_srst2_ch
+    )
+    ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
@@ -382,7 +392,7 @@ workflow PHOENIX_EXQC {
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
     .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
     .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])
-    
+
     // Generate summary per sample
     CREATE_SUMMARY_LINE(
         line_summary_ch
