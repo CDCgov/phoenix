@@ -160,29 +160,29 @@ def gs_to_pubmlst(genus, species):
                 'Yersinia ruckeri': 'Yersinia ruckeri'
                 }
     generic_dict = { 'Achromobacter': 'Achromobacter spp.',
-               'Aeromonas': 'Aeromonas spp.',
-               'Arcobacter': 'Arcobacter spp.',
-               'Bordetella': 'Bordetella spp.',
-               'Borrelia': 'Borrelia spp.',
-               'Brachyspira': 'Brachyspira spp.',
-               'Brucella': 'Brucella spp.',
-               'Chlamydiales': 'Chlamydiales spp.',
-               'Cronobacter': 'Cronobacter spp.',
-               'Edwardsiella': 'Edwardsiella spp.',
-               'Geotrichum': 'Geotrichum spp.',
-               'Leptospira': 'Leptospira spp.,Leptospira spp.#2,Leptospira spp.#3',
-               'Mycobacteria': 'Mycobacteria spp.',
-               'Neisseria': 'Neisseria spp.',
-               'Rhodococcus': 'Rhodococcus spp.',
-               'Shewanella': 'Shewanella spp.',
-               'Sinorhizobium': 'Sinorhizobium spp.',
-               'Streptomyces': 'Streptomyces spp',
-               'Taylorella': 'Taylorella spp.',
-               'Tenacibaculum': 'Tenacibaculum spp.',
-               'Ureaplasma': 'Ureaplasma spp.',
-               'Vibrio': 'Vibrio spp.',
-               'Wolbachia ': 'Wolbachia ',
-               }
+                'Aeromonas': 'Aeromonas spp.',
+                'Arcobacter': 'Arcobacter spp.',
+                'Bordetella': 'Bordetella spp.',
+                'Borrelia': 'Borrelia spp.',
+                'Brachyspira': 'Brachyspira spp.',
+                'Brucella': 'Brucella spp.',
+                'Chlamydiales': 'Chlamydiales spp.',
+                'Cronobacter': 'Cronobacter spp.',
+                'Edwardsiella': 'Edwardsiella spp.',
+                'Geotrichum': 'Geotrichum spp.',
+                'Leptospira': 'Leptospira spp.,Leptospira spp.#2,Leptospira spp.#3',
+                'Mycobacteria': 'Mycobacteria spp.',
+                'Neisseria': 'Neisseria spp.',
+                'Rhodococcus': 'Rhodococcus spp.',
+                'Shewanella': 'Shewanella spp.',
+                'Sinorhizobium': 'Sinorhizobium spp.',
+                'Streptomyces': 'Streptomyces spp',
+                'Taylorella': 'Taylorella spp.',
+                'Tenacibaculum': 'Tenacibaculum spp.',
+                'Ureaplasma': 'Ureaplasma spp.',
+                'Vibrio': 'Vibrio spp.',
+                'Wolbachia ': 'Wolbachia ',
+            }
     print("Looking up Genus species:",genus,species)
     if str(genus+" "+species) in specific_dict:
         #f.write(specific_dict[args.genus+" "+args.species]+"\n")
@@ -349,4 +349,4 @@ if str(args.convert)!="False":
     convert(args.original)
 else:
     print("Looking up Genus species:",args.genus,args.species)
-	gs_to_pubmlst(args.genus,args.species)
+    gs_to_pubmlst(args.genus,args.species)
