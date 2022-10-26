@@ -258,7 +258,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			allele_names=[]
 			print(original_line)
 			original_items=original_line.split("	")
-#			print("\n".join(original_items))
+			print("\n".join(original_items))
 
 			if MLST_filetype == "mlst":
 				sample=original_items[0]
