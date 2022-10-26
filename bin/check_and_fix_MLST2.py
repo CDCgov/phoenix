@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 #
 # Description: Script to go through an isolates MLST output and check and reformat any instances of partial or multiple profiles found. SUB for profile or allele means that there is
