@@ -218,8 +218,8 @@ def download_MLST_files(tax_to_download, work_dir):
 # main function that looks if all MLST types are defined for an outptu mlst file
 def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 	location="/".join(taxonomy_file.split("/")[0:-1])+"/mlst"
-	print taxonomy_file
-	isolate_name = taxonomy_file.split("/")[-2]
+	#print taxonomy_file
+	isolate_name = taxonomy_file.split(".")[:-1]
 	tax_file = open(taxonomy_file, 'r')
 	today=datetime.today().strftime('%Y-%m-%d')
 	for line in tax_file:
