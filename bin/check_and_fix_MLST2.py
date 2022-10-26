@@ -256,9 +256,9 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			allele_list=[]
 			expanded_allele_list=[]
 			allele_names=[]
-			print(original_line)
+			#print(original_line)
 			original_items=original_line.split("	")
-			print("\n".join(original_items))
+			#print("\n".join(original_items))
 
 			if MLST_filetype == "mlst":
 				sample=original_items[0]
@@ -319,7 +319,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 
 			#allele_list=[['1'], ['3'], ['189','3'], ['2'], ['2'], ['96','107'], ['3']]
 			elif MLST_filetype == "srst2":
-				print len(original_items)
+				print original_items,len(original_items)
 				sample=original_items[0]
 				db_name=original_items[1]
 				original_type=original_items[2]
