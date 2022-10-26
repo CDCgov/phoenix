@@ -310,7 +310,7 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 
-    combined_srst2_ch = MLST.out.tsv_file.map{meta, tsv           -> [[id:meta.id], tsv]}\
+    combined_srst2_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
     .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
 
@@ -361,7 +361,8 @@ workflow PHOENIX_EXQC {
         KRAKEN2_TRIMD.out.k2_bh_summary, \
         RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
         BBMAP_REFORMAT.out.reads, \
-        MLST.out.tsv, \
+        //MLST.out.tsv, \
+        CHECK_MLST.tsv /
         GAMMA_HV.out.gamma, \
         GAMMA_AR.out.gamma, \
         GAMMA_PF.out.gamma, \
