@@ -1,19 +1,8 @@
 #!/usr/bin/env python
 
-# This script is designed to convert general genus species taxonomy to the correct name format to download the matching mlst DBs from pubmlst
-# Updated 10-19-22
+# In format that can be imported directly to python scripts
 
-# import argparse
-#
-#
-# def parseArgs(args=None):
-#     """Takes in a taxa file and creates a file with the taxa found"""
-#     parser = argparse.ArgumentParser(description='Script to convert taxonomy to correctly formatted mlst database name(s) to pull from pubmlst')
-#     parser.add_argument('-G', '--genus', dest="genus", required=False, help='genus of taxonomy')
-#     parser.add_argument('-s', '--species', dest="species", required=False, help='species of taxonomy')
-#     parser.add_argument('-c', '--convert', dest="convert", required=False, default="False", help='flag if needing to convert from standard to srst2 (downloadable) db name ')
-#     return parser.parse_args()
-
+# # Function to look up correct pubmlst name for downloading
 def gs_to_db(genus, species):
     specific_dict = { 'Acinetobacter baumannii': 'Acinetobacter baumannii#1,Acinetobacter baumannii#2',
                 'Acinetobacter calcoaceticus': 'Acinetobacter baumannii#1,Acinetobacter baumannii#2',
@@ -191,7 +180,7 @@ def gs_to_db(genus, species):
         #f.write("No Match Found\n")
         print("No match found")
 
-
+# Function to look up correct pubmlst name from mlst tool output
 def convert(to_convert):
     standard_to_srst2 = {   'abaumannii': 'Acinetobacter baumannii#1',
             'abaumannii(Oxford)': 'Acinetobacter baumannii#1',
@@ -339,22 +328,3 @@ def convert(to_convert):
     else:
         print("No match found")
         return "No match found"
-#
-# args = parseArgs()
-# if str(args.convert)!="False":
-#     print("Looking to convert:",args.convert)
-#     if str(args.convert) in standard_to_srst2:
-#         print(standard_to_srst2[args.convert])
-#     else:
-#         print("No match found")
-# else:
-#     print("Looking up Genus species:",args.genus,args.species)
-#     if str(args.genus+" "+args.species) in specific_dict:
-#         #f.write(specific_dict[args.genus+" "+args.species]+"\n")
-#         print(specific_dict[args.genus+" "+args.species])
-#     elif str(args.genus) in generic_dict:
-#         #f.write(generic_dict[args.genus]+"\n")
-#         print(generic_dict[args.genus])
-#     else:
-#         #f.write("No Match Found\n")
-#         print("No match found")

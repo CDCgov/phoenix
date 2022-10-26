@@ -25,7 +25,7 @@ import argparse
 import collections
 import itertools as it
 #from pathlib import Path
-import convert_MLST_DB_spaces
+import convert_mlst_to_pubMLST
 import xml.dom.minidom as xml
 import urllib2 as url
 import re
@@ -495,7 +495,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 				if "(" in db_name:
 					new_db_name = db_name.split("(")[0]
 				if lookup_allele_profile:
-					new_db_name=convert_MLST_DB_spaces.convert(db_name)
+					new_db_name=convert_mlst_to_pubMLST.convert(db_name)
 					#unicode_name_for_lookup=bytestring.decode(new_db_name)
 					print("Downloading profile file for:", new_db_name)
 					profile_file = download_MLST_files(new_db_name, str(location))
