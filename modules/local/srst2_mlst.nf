@@ -60,11 +60,11 @@ process SRST2_MLST {
       trailer_list=""
       if [[ "\${no_match}" = "True" ]]; then
         tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-        echo "${prefix} No match found for \${tax_with_no_scheme} -  - - - -" >> "${prefix}_srst2.mlst"
+        echo "${prefix} No match found for \${tax_with_no_scheme}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
       else
         raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
         raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
-        formatted_trailer="${prefix}  \${mlst_db}"
+        formatted_trailer="${prefix}	\${mlst_db}"
         IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
         IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
         header_length="\${#header_list[@]}"
@@ -83,20 +83,20 @@ process SRST2_MLST {
         # Expected Index will be as follows for the same isolate to accomomdate splunk ingestion of varying gene counts
         #
         # Sample  database  ST  mismatches  uncertainty depth maxMAF  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 locus_9 locus_10
-        # 0       1         2   3           4           5     6       7       8       9       10      11      12        13    14      15      16
+        # 0     1   2   3           4           5     6       7       8       9       10      11      12        13    14      15      16
 
         echo "\${#header_list[@]} --- \${header_list[@]} --- \${#trailer_list[@]} --- \${trailer_list[@]}"
-        formatted_trailer="\${formatted_trailer}  \${trailer_list[\${ST_index}]}"
-        formatted_trailer="\${formatted_trailer}  \${trailer_list[\${mismatch_index}]}"
-        formatted_trailer="\${formatted_trailer}  \${trailer_list[\${uncertainty_index}]}"
-        formatted_trailer="\${formatted_trailer}  \${trailer_list[\${depth_index}]}"
-        formatted_trailer="\${formatted_trailer}  \${trailer_list[\${maxMAF_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${ST_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${mismatch_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${uncertainty_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${depth_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${maxMAF_index}]}"
 
         #for index in {\$genes_start_index..\$genes_end_index}
         for (( index=\${genes_start_index} ; index <= \${genes_end_index} ; index++ ));
         do
           echo "\${index} -- \${header_list[\${index}]} -- \${trailer_list[\${index}]}"
-          formatted_trailer="\${formatted_trailer}  \${header_list[\${index}]}(\${trailer_list[\${index}]})"
+          formatted_trailer="\${formatted_trailer}	\${header_list[\${index}]}(\${trailer_list[\${index}]})"
         done
         echo "\${formatted_trailer}" >> ${prefix}_srst2.mlst
       fi
