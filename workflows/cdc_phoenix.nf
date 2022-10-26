@@ -362,7 +362,7 @@ workflow PHOENIX_EXQC {
         RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
         BBMAP_REFORMAT.out.reads, \
         //MLST.out.tsv, \
-        CHECK_MLST.out.tsv \
+        CHECK_MLST.out.checked_MLSTs \
         GAMMA_HV.out.gamma, \
         GAMMA_AR.out.gamma, \
         GAMMA_PF.out.gamma, \
