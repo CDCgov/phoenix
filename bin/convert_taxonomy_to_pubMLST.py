@@ -12,7 +12,7 @@ def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to convert taxonomy to correctly formatted mlst database name(s) to pull from pubmlst')
     parser.add_argument('-G', '--genus', dest="genus", required=False, help='genus of taxonomy')
     parser.add_argument('-s', '--species', dest="species", required=False, help='species of taxonomy')
-	parser.add_argument('-o', '--original', dest="original", required=False, help='DB name from the original mlst tool, to look up name format for pubmlst downloading')
+    parser.add_argument('-o', '--original', dest="original", required=False, help='DB name from the original mlst tool, to look up name format for pubmlst downloading')
     parser.add_argument('-c', '--convert', dest="convert", required=False, default="False", help='flag if needing to convert from standard to srst2 (downloadable) db name')
     return parser.parse_args()
 
