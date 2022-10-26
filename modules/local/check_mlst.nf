@@ -27,7 +27,7 @@ process CHECK_MLST {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getMLST: $VERSION
+        CHECKMLST: $VERSION
     END_VERSIONS
     """
 }

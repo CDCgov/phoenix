@@ -3,17 +3,19 @@
 # This script is designed to convert general genus species taxonomy to the correct name format to download the matching mlst DBs from pubmlst
 # Updated 10-19-22
 
-import argparse
+# import argparse
+#
+#
+# def parseArgs(args=None):
+#     """Takes in a taxa file and creates a file with the taxa found"""
+#     parser = argparse.ArgumentParser(description='Script to convert taxonomy to correctly formatted mlst database name(s) to pull from pubmlst')
+#     parser.add_argument('-G', '--genus', dest="genus", required=False, help='genus of taxonomy')
+#     parser.add_argument('-s', '--species', dest="species", required=False, help='species of taxonomy')
+#     parser.add_argument('-c', '--convert', dest="convert", required=False, default="False", help='flag if needing to convert from standard to srst2 (downloadable) db name ')
+#     return parser.parse_args()
 
-
-def parseArgs(args=None):
-    """Takes in a taxa file and creates a file with the taxa found"""
-    parser = argparse.ArgumentParser(description='Script to convert taxonomy to correctly formatted mlst database name(s) to pull from pubmlst')
-    parser.add_argument('-G', '--genus', dest="genus", required=True, help='genus of taxonomy')
-    parser.add_argument('-s', '--species', dest="species", required=True, help='species of taxonomy')
-    return parser.parse_args()
-
-specific_dict = { 'Acinetobacter baumannii': 'Acinetobacter baumannii#1,Acinetobacter baumannii#2',
+def gs_to_db(genus, species):
+    specific_dict = { 'Acinetobacter baumannii': 'Acinetobacter baumannii#1,Acinetobacter baumannii#2',
                 'Acinetobacter calcoaceticus': 'Acinetobacter baumannii#1,Acinetobacter baumannii#2',
                 'Acinetobacter nosocomialis': 'Acinetobacter baumannii#1,Acinetobacter baumannii#2',
                 'Acinetobacter pittii': 'Acinetobacter baumannii#1,Acinetobacter baumannii#2',
@@ -154,9 +156,7 @@ specific_dict = { 'Acinetobacter baumannii': 'Acinetobacter baumannii#1,Acinetob
                 'Yersinia pseudotuberculosis': 'Yersinia pseudotuberculosis',
                 'Yersinia ruckeri': 'Yersinia ruckeri'
                 }
-
-
-generic_dict = { 'Achromobacter': 'Achromobacter spp.',
+    generic_dict = { 'Achromobacter': 'Achromobacter spp.',
                'Aeromonas': 'Aeromonas spp.',
                'Arcobacter': 'Arcobacter spp.',
                'Bordetella': 'Bordetella spp.',
@@ -180,8 +180,22 @@ generic_dict = { 'Achromobacter': 'Achromobacter spp.',
                'Vibrio': 'Vibrio spp.',
                'Wolbachia ': 'Wolbachia ',
                }
+    print("Looking up Genus species:",genus,species)
+    if str(genus+" "+species) in specific_dict:
+        #f.write(specific_dict[args.genus+" "+args.species]+"\n")
+        print(specific_dict[genus+" "+species])
+    elif str(genus) in generic_dict:
+        #f.write(generic_dict[args.genus]+"\n")
+        print(generic_dict[genus])
+    else:
+        #f.write("No Match Found\n")
+        print("No match found")
 
-standard_to_srst2 = {   'abaumannii': 'Acinetobacter baumannii#1',
+
+def convert(to_convert):
+    standard_to_srst2 = {   'abaumannii': 'Acinetobacter baumannii#1',
+            'abaumannii(Oxford)': 'Acinetobacter baumannii#1',
+            'abaumannii(Pasteur)': 'Acinetobacter baumannii#2',
             'abaumannii_2': 'Acinetobacter baumannii#2',
             'achromobacter': 'Achromobacter spp.',
             'aeromonas': 'Aeromonas spp.',
@@ -224,6 +238,8 @@ standard_to_srst2 = {   'abaumannii': 'Acinetobacter baumannii#1',
             'dnodosus': 'Dichelobacter nodosus',
             'ecloacae': 'Enterobacter cloacae',
             'ecoli': 'Escherichia coli#1',
+            'ecoli(Achtman)': 'Escherichia coli#1',
+            'ecoli(Pasteur)': 'Escherichia coli#2',
             'ecoli_2': 'Escherichia coli#2',
             'edwardsiella': 'Edwardsiella spp.',
             'efaecalis': 'Enterococcus faecalis',
@@ -316,16 +332,29 @@ standard_to_srst2 = {   'abaumannii': 'Acinetobacter baumannii#1',
             'ypseudotuberculosis': 'Yersinia pseudotuberculosis',
             'yruckeri': 'Yersinia ruckeri',
             }
-
-
-args = parseArgs()
-print(args.genus+" "+args.species)
-if str(args.genus+" "+args.species) in specific_dict:
-    #f.write(specific_dict[args.genus+" "+args.species]+"\n")
-    print(specific_dict[args.genus+" "+args.species])
-elif str(args.genus) in generic_dict:
-    #f.write(generic_dict[args.genus]+"\n")
-    print(generic_dict[args.genus])
-else:
-    #f.write("No Match Found\n")
-    print("No match found")
+    print("Looking to convert:",to_convert)
+    if str(to_convert) in standard_to_srst2:
+        print(standard_to_srst2[to_convert])
+        return standard_to_srst2[to_convert]
+    else:
+        print("No match found")
+        return "No match found"
+#
+# args = parseArgs()
+# if str(args.convert)!="False":
+#     print("Looking to convert:",args.convert)
+#     if str(args.convert) in standard_to_srst2:
+#         print(standard_to_srst2[args.convert])
+#     else:
+#         print("No match found")
+# else:
+#     print("Looking up Genus species:",args.genus,args.species)
+#     if str(args.genus+" "+args.species) in specific_dict:
+#         #f.write(specific_dict[args.genus+" "+args.species]+"\n")
+#         print(specific_dict[args.genus+" "+args.species])
+#     elif str(args.genus) in generic_dict:
+#         #f.write(generic_dict[args.genus]+"\n")
+#         print(generic_dict[args.genus])
+#     else:
+#         #f.write("No Match Found\n")
+#         print("No match found")
