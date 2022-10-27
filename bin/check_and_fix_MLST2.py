@@ -530,7 +530,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 	checked_schemes.sort(reverse=True, key = lambda x: x[2])
 
 	for i in checked_schemes:
-		print(i[1], i[5][2])
+		#print(i[1], i[5][2])
 		if i[1] == "abaumannii" or i[1] == "abaumannii(Oxford)" or i[1] == "Acinetobacter_baumannii#1":
 			if str(i[5][2]) == "182" or str(i[5][2]) == "189":
 				print("FAKE NEWS!!!")
@@ -558,14 +558,17 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			for i in checked_schemes:
 				print(i)
 				allele_section=""
-				for j in range (0,len(i[4])):
-					if len(i[4][j].split("_")) > 1:
-						gene_id=i[4][j].split("_")[1]
-					else:
-						gene_id=i[4][j]
-					allele_section=allele_section+gene_id+"("+i[5][j]+")	"
-				allele_section.strip()
-				allele_section=allele_section+"\n"
+				if i[3] == 1:
+					allele_section="-"
+				else:
+					for j in range (0,len(i[4])):
+						if len(i[4][j].split("_")) > 1:
+							gene_id=i[4][j].split("_")[1]
+						else:
+							gene_id=i[4][j]
+						allele_section=allele_section+gene_id+"("+i[5][j]+")	"
+					allele_section.strip()
+					allele_section=allele_section+"\n"
 				writer.write(isolate_name+"	"+i[6]+"	"+i[7]+"	"+i[1]+"	"+i[2]+"	"+allele_section)
 
 
