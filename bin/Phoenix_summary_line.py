@@ -40,28 +40,45 @@ def MLST_Info_Only(MLST_file):
     Out = ST + ' (' + Scheme + ')'
     return Out
 
-def MLST_ST(MLST_file):
-    """Pulls MLST info from *_Scheme.mlst file"""
-    ST_list = []
-    with open(MLST_file, 'r') as f:
-        lines = f.readlines()
-        lines.pop(0)
-        for line in lines:
-            ST = "ST" + line.split()[2]
-            ST_list.append(ST)
-        if "ST-" in ST_list:
-            ST_list = [re.sub("ST-", "-", i) for i in ST_list]
-    return ST_list
+# def MLST_ST(MLST_file):
+#     """Pulls MLST info from *_Scheme.mlst file"""
+#     ST_list = []
+#     with open(MLST_file, 'r') as f:
+#         lines = f.readlines()
+#         lines.pop(0)
+#         for line in lines:
+#             ST = "ST" + line.split()[2]
+#             ST_list.append(ST)
+#         if "ST-" in ST_list:
+#             ST_list = [re.sub("ST-", "-", i) for i in ST_list]
+#     return ST_list
 
 def MLST_Scheme(MLST_file):
     """Pulls MLST info from *_Scheme.mlst file"""
-    Scheme_list = []
+    Scheme_list = [[],[],[],[],[]]
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
         lines.pop(0)
         for line in lines:
-            Scheme = line.split()[1]
-            Scheme_list.append(Scheme)
+			source = line.split()[1]
+			date = line.split(2)
+			DB_ID = line.split()[3]
+            Scheme = line.split()[4]
+			alleles = "-".join(line.split()[5:])
+			if Scheme in Scheme_list[0]:
+				for i in range(0,len(Scheme_list[0])):
+					if DB_ID == Scheme_list[0][i]:
+						Scheme_list[1][i].append(Scheme)
+						Scheme_list[2][i].append(alleles)
+						Scheme_list[3][i].append(source)
+						Scheme_list[4][i].append(date)
+			else:
+				Scheme_list[0].append(DB_ID)
+				Scheme_list[1].append(Scheme)
+				Scheme_list[2].append(alleles)
+				Scheme_list[3].append(source)
+				Scheme_list[4].append(date)
+
     return Scheme_list
 
 def Contig_Count(input_quast):
@@ -357,24 +374,27 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Species = Assembly_Ratio_Species(ratio_file)
     except:
         Species = 'Unknown'
-    try:
-        ST = MLST_ST(MLST_file)
-        if len(ST) > 1:
-            ST_1 = ST[0]
-            ST_2 = ST[1]
-        else:
-            ST_1 = ST[0]
-            ST_2 = "-"
-    except:
-        ST_1 = 'Unknown'
-        ST_2 = 'Unknown'
+    # try:
+    #     ST = MLST_ST(MLST_file)
+    #     if len(ST) > 1:
+    #         ST_1 = ST[0]
+    #         ST_2 = ST[1]
+    #     else:
+    #         ST_1 = ST[0]
+    #         ST_2 = "-"
+    # except:
+    #     ST_1 = 'Unknown'
+    #     ST_2 = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
-        if len(Scheme) > 1:
-            Scheme_1 = Scheme[0]
-            Scheme_2 = Scheme[1]
+        if len(Scheme[0]) > 1:
+            Scheme_1 = Scheme[1][0]
+			ST_1 = Sceme[2][0]
+            Scheme_2 = Scheme[1][1]
+			ST_2 = Scheme[2][1]
         else:
-            Scheme_1 = Scheme[0]
+            Scheme_1 = Scheme[1][0]
+			ST_1 = Sceme[2][0]
             Scheme_2 = "-"
     except:
         Scheme_1 = 'Unknown'
