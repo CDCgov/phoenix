@@ -23,7 +23,7 @@ process CHECK_MLST {
 
     script:
     """
-    check_and_fix_MLST2.py --input mlst_file --srst2 srst2_file --taxonomy taxonomy_file
+    check_and_fix_MLST2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
