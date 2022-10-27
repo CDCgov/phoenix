@@ -123,7 +123,7 @@ def getSpeciesInfo(species_node, species, exact):
 	else:
 		return None
 
-def download_MLST_files(tax_to_download, work_dir):
+def download_MLST_files(tax_to_download):
 	ssl._create_default_https_context = ssl._create_unverified_context
 	docFile = url.urlopen("http://pubmlst.org/data/dbases.xml")
 	force=False
@@ -151,12 +151,12 @@ def download_MLST_files(tax_to_download, work_dir):
 	#species_all_fasta_filename = work_dir+species_name_underscores + '.fasta'
 	#species_all_fasta_file = open(species_all_fasta_filename, 'w')
 	#print(type(work_dir), work_dir)
-	log_filename = work_dir+"/mlst_data_download_{}_{}.log".format(species_name_underscores, species_info.retrieved)
+	log_filename = "/mlst_data_download_{}_{}.log".format(species_name_underscores, species_info.retrieved)
 	log_file = open(log_filename, "w")
 	profile_path = urlparse(species_info.profiles_url).path.encode('utf-8')
 	#print(type(work_dir), work_dir)
 	#print(type(profile_path), profile_path)
-	profile_filename = work_dir+"/"+species_name_underscores+"_"+profile_path.split('/')[-1].replace("profiles_csv", "profiles.csv")
+	profile_filename = species_name_underscores+"_"+profile_path.split('/')[-1].replace("profiles_csv", "profiles.csv")
 	#log_file.write("definitions: {}\n".format(profile_filename))
 	log_file.write("{} profiles\n".format(species_info.profiles_count))
 	#log_file.write("sourced from: {}\n\n".format(species_info.profiles_url))
@@ -498,7 +498,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 					new_db_name=convert_mlst_to_pubMLST.convert(db_name)
 					#unicode_name_for_lookup=bytestring.decode(new_db_name)
 					print("Downloading profile file for:", new_db_name)
-					profile_file = download_MLST_files(new_db_name, str(location))
+					profile_file = download_MLST_files(new_db_name)
 					print("Looking up:", current_alleles, "in", profile_file)
 					db_file = open(profile_file,'r')
 					db_line=db_file.readline().strip()
