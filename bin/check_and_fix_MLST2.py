@@ -151,7 +151,7 @@ def download_MLST_files(tax_to_download):
 	#species_all_fasta_filename = work_dir+species_name_underscores + '.fasta'
 	#species_all_fasta_file = open(species_all_fasta_filename, 'w')
 	#print(type(work_dir), work_dir)
-	log_filename = "/mlst_data_download_{}_{}.log".format(species_name_underscores, species_info.retrieved)
+	log_filename = "mlst_data_download_{}_{}.log".format(species_name_underscores, species_info.retrieved)
 	log_file = open(log_filename, "w")
 	profile_path = urlparse(species_info.profiles_url).path.encode('utf-8')
 	#print(type(work_dir), work_dir)
