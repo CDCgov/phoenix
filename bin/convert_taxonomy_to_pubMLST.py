@@ -74,7 +74,7 @@ def gs_to_pubmlst(genus, species):
                 'Dichelobacter nodosus': 'Dichelobacter nodosus',
                 'Enterobacter cloacae': 'Enterobacter cloacae',
                 'Enterobacter asburiae': 'Enterobacter asburiae',
-#                'Enterobacter hormaechei': 'Enterobacter hormaechei',
+                'Enterobacter hormaechei': 'Enterobacter cloacae',
                 'Enterobacter kobei': 'Enterobacter kobei',
                 'Enterobacter luwigii': 'Enterobacter luwigii',
                 'Enterobacter nimipressuralis': 'Enterobacter nimipressuralis',

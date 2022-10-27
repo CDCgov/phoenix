@@ -310,13 +310,13 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 
-    combined_srst2_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
+    combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
     .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
 
     // Combining and adding flare to all MLST outputs
     CHECK_MLST (
-        combined_srst2_ch
+        combined_mlst_ch
     )
     ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
