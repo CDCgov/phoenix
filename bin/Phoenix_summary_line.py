@@ -60,11 +60,11 @@ def MLST_Scheme(MLST_file):
         lines = f.readlines()
         lines.pop(0)
         for line in lines:
-            print(line)
+            print("A:", line)
             source = line.split('\t')[1]
-            date = line.split(2)
-            DB_ID = line.split()[3]
-            Scheme = line.split()[4]
+            date = line.split('\t')(2)
+            DB_ID = line.split('\t')[3]
+            Scheme = line.split('\t')[4]
             alleles = "-".join(line.split()[5:])
             print("Debug:", source, date, DB_ID, Scheme, alleles)
             if Scheme in Scheme_list[0]:
