@@ -387,7 +387,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
     #     ST_2 = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
-		print(Scheme)
+        print(Scheme)
         if len(Scheme[0]) > 1:
             Scheme_1 = Scheme[1][0]
             ST_1 = Scheme[2][0]
