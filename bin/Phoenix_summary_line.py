@@ -406,6 +406,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
             Scheme_1 = Scheme[1][0]
             ST_1 = Scheme[2][0]
             Scheme_2 = "-"
+            ST_2 = "-"
     except:
         ST_1 = 'Unknown'
         ST_2 = 'Unknown'
