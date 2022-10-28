@@ -71,7 +71,7 @@ def MLST_Scheme(MLST_file):
             DB_ID = split_line[3]
             print(DB_ID)
             Scheme = str(split_line[4])
-            print(Sceme)
+            print(Scheme)
             alleles = "-".join(split_line[5:])
             print("Debug:", source, date, DB_ID, Scheme, alleles)
             if Scheme in Scheme_list[0]:
