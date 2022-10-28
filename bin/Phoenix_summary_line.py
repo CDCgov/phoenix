@@ -60,6 +60,7 @@ def MLST_Scheme(MLST_file):
         lines = f.readlines()
         lines.pop(0)
         for line in lines:
+            line.strip()
             print("A:", line)
             print(line.split("\t"))
             source = line.split('\t')[1]
