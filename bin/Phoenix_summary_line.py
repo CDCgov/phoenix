@@ -275,11 +275,8 @@ def Get_Kraken_reads(stats, trimd_kraken):
 
 def Get_Taxa_Source(taxa_file):
     with open(taxa_file, 'r') as f:
-        print(taxa_file)
         first_line = f.readline()
-        print(first_line)
         fline=first_line.strip().split("\t")
-        print(fline[0], fline[1], fline[2])
         #taxa_source = re.findall(r'\(.*?\)', first_line)[0]
         #taxa_source = re.sub( "\(|\)", '', taxa_source)
         taxa_source=fline[0]
