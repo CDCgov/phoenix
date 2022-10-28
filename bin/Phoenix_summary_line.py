@@ -286,6 +286,7 @@ def Get_Taxa_Source(taxa_file):
         first_line = f.readline()
         taxa_source = re.findall(r'\(.*?\)', first_line)[0]
         taxa_source = re.sub( "\(|\)", '', taxa_source)
+        print(taxa_source)
         if (taxa_source == "ANI_REFSEQ"):
             percent_match = re.findall(r'-.*?%ID', first_line)[0]
             percent_match = re.sub( "-|ID", '', percent_match)
