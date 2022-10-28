@@ -78,7 +78,7 @@ def MLST_Scheme(MLST_file):
                 Scheme_list[2].append(alleles)
                 Scheme_list[3].append(source)
                 Scheme_list[4].append(date)
-
+    print(Scheme_list)
     return Scheme_list
 
 def Contig_Count(input_quast):
