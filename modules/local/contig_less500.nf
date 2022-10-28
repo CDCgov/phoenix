@@ -20,8 +20,11 @@ process BBMAP_REFORMAT {
     def raw      = "in=${reads[0]}"
     def trimmed  = "out=${prefix}.filtered.scaffolds.fa.gz"
     def minlength = params.minlength
+    def maxmem = task.memory.toGiga()-8 // keep heap mem low so and rest of space to java expansion.
     """
+    maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
     reformat.sh \\
+        -Xmx\$maxmem \\
         $raw \\
         $trimmed \\
         threads=$task.cpus \\
