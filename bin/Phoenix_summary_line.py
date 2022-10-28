@@ -70,7 +70,7 @@ def MLST_Scheme(MLST_file):
             print(date)
             DB_ID = split_line[3]
             print(DB_ID)
-            Scheme = split_line[4]
+            Scheme = str(split_line[4])
             print(Sceme)
             alleles = "-".join(split_line[5:])
             print("Debug:", source, date, DB_ID, Scheme, alleles)
