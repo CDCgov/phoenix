@@ -278,22 +278,23 @@ def Get_Taxa_Source(taxa_file):
         print(taxa_file)
         first_line = f.readline()
         print(first_line)
-        fline=first_line.split("\t")
+        fline=first_line.strip().split("\t")
         print(fline[0], fline[1], fline[2])
-        taxa_source = re.findall(r'\(.*?\)', first_line)[0]
-        taxa_source = re.sub( "\(|\)", '', taxa_source)
-        print(taxa_source)
+        #taxa_source = re.findall(r'\(.*?\)', first_line)[0]
+        #taxa_source = re.sub( "\(|\)", '', taxa_source)
+        taxa_source=fline[0]
+        percent_match=fline[1]
         if (taxa_source == "ANI_REFSEQ"):
-            percent_match = re.findall(r'-.*?%ID', first_line)[0]
-            percent_match = re.sub( "-|ID", '', percent_match)
+            #percent_match = re.findall(r'-.*?%ID', first_line)[0]
+            #percent_match = re.sub( "-|ID", '', percent_match)
             percent_match = percent_match + " ANI_match"
         if (taxa_source == "kraken2_trimmed"):
-            percent_match = re.findall(r'-.*?-', first_line)[0]
-            percent_match = re.sub( "-", '', percent_match)
+            #percent_match = re.findall(r'-.*?-', first_line)[0]
+            #percent_match = re.sub( "-", '', percent_match)
             percent_match = percent_match + "% Reads_assigned"
         if (taxa_source == "kraken2_wtasmbld"):
-            percent_match = re.findall(r'-.*?-', first_line)[0]
-            percent_match = re.sub( "-", '', percent_match)
+            #percent_match = re.findall(r'-.*?-', first_line)[0]
+            #percent_match = re.sub( "-", '', percent_match)
             percent_match = percent_match + "% Scaffolds_assigned"
     return taxa_source, percent_match
 
@@ -393,7 +394,6 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
     #     ST_2 = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
-        print(Scheme)
         if len(Scheme[0]) > 1:
             Scheme_1 = Scheme[1][0]
             ST_1 = Scheme[2][0]
