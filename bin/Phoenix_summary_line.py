@@ -80,7 +80,6 @@ def MLST_Scheme(MLST_file):
                 Scheme_list[2].append(alleles)
                 Scheme_list[3].append(source)
                 Scheme_list[4].append(date)
-            print(Scheme_list)
     return Scheme_list
 
 def Contig_Count(input_quast):
@@ -279,6 +278,8 @@ def Get_Taxa_Source(taxa_file):
         print(taxa_file)
         first_line = f.readline()
         print(first_line)
+        fline=first_line.split("\t")
+        print(fline[0], fline[1], fline[2])
         taxa_source = re.findall(r'\(.*?\)', first_line)[0]
         taxa_source = re.sub( "\(|\)", '', taxa_source)
         print(taxa_source)
