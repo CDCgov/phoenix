@@ -1,6 +1,6 @@
 process SRST2_AR {
     tag "${meta.id}"
-    label 'process_low'
+    label 'process_medium'
     //container 'staphb/srst2:0.2.0'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
