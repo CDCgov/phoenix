@@ -60,24 +60,24 @@ def MLST_Scheme(MLST_file):
         lines = f.readlines()
         lines.pop(0)
         for line in lines:
-			source = line.split()[1]
-			date = line.split(2)
-			DB_ID = line.split()[3]
+            source = line.split()[1]
+            date = line.split(2)
+            DB_ID = line.split()[3]
             Scheme = line.split()[4]
-			alleles = "-".join(line.split()[5:])
-			if Scheme in Scheme_list[0]:
-				for i in range(0,len(Scheme_list[0])):
-					if DB_ID == Scheme_list[0][i]:
-						Scheme_list[1][i].append(Scheme)
-						Scheme_list[2][i].append(alleles)
-						Scheme_list[3][i].append(source)
-						Scheme_list[4][i].append(date)
-			else:
-				Scheme_list[0].append(DB_ID)
-				Scheme_list[1].append(Scheme)
-				Scheme_list[2].append(alleles)
-				Scheme_list[3].append(source)
-				Scheme_list[4].append(date)
+            alleles = "-".join(line.split()[5:])
+            if Scheme in Scheme_list[0]:
+                for i in range(0,len(Scheme_list[0])):
+                    if DB_ID == Scheme_list[0][i]:
+                        Scheme_list[1][i].append(Scheme)
+                        Scheme_list[2][i].append(alleles)
+                        Scheme_list[3][i].append(source)
+                        Scheme_list[4][i].append(date)
+            else:
+                Scheme_list[0].append(DB_ID)
+                Scheme_list[1].append(Scheme)
+                Scheme_list[2].append(alleles)
+                Scheme_list[3].append(source)
+                Scheme_list[4].append(date)
 
     return Scheme_list
 
@@ -298,7 +298,7 @@ def Get_Mutations(amr_file):
         lines = f.readlines()[1:]
         for line in lines:
             if "POINT" in line:
-                point_mutations = line.split("	")[5]
+                point_mutations = line.split("    ")[5]
                 point_mutations_list.append(point_mutations)
         if len(point_mutations_list) == 0:
             point_mutations_list = ""
@@ -389,12 +389,12 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Scheme = MLST_Scheme(MLST_file)
         if len(Scheme[0]) > 1:
             Scheme_1 = Scheme[1][0]
-			ST_1 = Sceme[2][0]
+            ST_1 = Sceme[2][0]
             Scheme_2 = Scheme[1][1]
-			ST_2 = Scheme[2][1]
+            ST_2 = Scheme[2][1]
         else:
             Scheme_1 = Scheme[1][0]
-			ST_1 = Sceme[2][0]
+            ST_1 = Sceme[2][0]
             Scheme_2 = "-"
     except:
         Scheme_1 = 'Unknown'
