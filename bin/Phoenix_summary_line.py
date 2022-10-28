@@ -61,19 +61,12 @@ def MLST_Scheme(MLST_file):
         lines.pop(0)
         for rawline in lines:
             line=rawline.strip()
-            print("A:", line)
             split_line = line.split("\t")
-            print("B:", split_line)
             source = split_line[1]
-            print(source)
             date = split_line[2]
-            print(date)
             DB_ID = split_line[3]
-            print(DB_ID)
             Scheme = str(split_line[4])
-            print(Scheme)
             alleles = "-".join(split_line[5:])
-            print("Debug:", source, date, DB_ID, Scheme, alleles)
             if Scheme in Scheme_list[0]:
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
@@ -283,7 +276,9 @@ def Get_Kraken_reads(stats, trimd_kraken):
 
 def Get_Taxa_Source(taxa_file):
     with open(taxa_file, 'r') as f:
+        print(taxa_file)
         first_line = f.readline()
+        print(first_line)
         taxa_source = re.findall(r'\(.*?\)', first_line)[0]
         taxa_source = re.sub( "\(|\)", '', taxa_source)
         print(taxa_source)
