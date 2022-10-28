@@ -32,7 +32,6 @@ process BBMAP_REFORMAT {
         minlength=$minlength \\
         &> ${prefix}.bbmap_filtered.log
 
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         bbmap: \$(bbversion.sh)

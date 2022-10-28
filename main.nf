@@ -40,14 +40,25 @@ include { SRA_PHOENIX      } from './workflows/sra_phoenix'
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
 //
 workflow PHOENIX {
-    PHOENIX_EXTERNAL ()
+    main:
+        PHOENIX_EXTERNAL ()
+    emit:
+        scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
+        trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
+        mlst             = PHOENIX_EXTERNAL.out.mlst
+        amrfinder_report = PHOENIX_EXTERNAL.out.report
 }
 
 //
 // WORKFLOW: Run internal version of cdcgov/phoenix analysis pipeline that includes BUSCO, SRST2 and KRAKEN_ASMBLED
 //
 workflow CDC_PHOENIX {
-    PHOENIX_EXQC ()
+    main:
+        PHOENIX_EXQC ()
+    emit:
+        scaffolds        = PHOENIX_EXQC.out.scaffolds
+        trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
+        amrfinder_report = PHOENIX_EXQC.out.report
 }
 
 /*
@@ -60,7 +71,12 @@ workflow CDC_PHOENIX {
 // WORKFLOW: Execute a single named workflow for the pipeline
 //
 workflow SRA_LIST {
-    SRA_PHOENIX ()
+    main:
+        SRA_PHOENIX ()
+    emit:
+        scaffolds        = SRA_PHOENIX.out.scaffolds
+        trimmed_reads    = SRA_PHOENIX.out.trimmed_reads
+        amrfinder_report = SRA_PHOENIX.out.report
 }
 
 /*
