@@ -62,21 +62,17 @@ def MLST_Scheme(MLST_file):
         for rawline in lines:
             line=rawline.strip()
             print("A:", line)
-            split_line=line.split("\t")
+            split_line = line.split("\t")
             print("B:", split_line)
-            source1=split_line[1]
-            print(source1)
-            source = line.split("\t")[1]
-            print(line.split("\t")[1])
-            date=split_line[2]
+            source = split_line[1]
+            print(source)
+            date = split_line[2]
             print(date)
-            date = line.split("\t")(2)
-            print(line.split("\t")[2])
-            DB_ID = line.split("\t")[3]
-            print(line.split("\t")[3])
-            Scheme = line.split("\t")[4]
-            print(line.split("\t")[4])
-            alleles = "-".join(line.split("\t")[5:])
+            DB_ID = split_line[3]
+            print(DB_ID)
+            Scheme = split_line[4]
+            print(Sceme)
+            alleles = "-".join(split_line[5:])
             print("Debug:", source, date, DB_ID, Scheme, alleles)
             if Scheme in Scheme_list[0]:
                 for i in range(0,len(Scheme_list[0])):
