@@ -68,6 +68,8 @@ def MLST_Scheme(MLST_file):
             print(source1)
             source = line.split("\t")[1]
             print(line.split("\t")[1])
+            date=split_line[2]
+            print(date)
             date = line.split("\t")(2)
             print(line.split("\t")[2])
             DB_ID = line.split("\t")[3]
