@@ -61,6 +61,7 @@ def MLST_Scheme(MLST_file):
         lines.pop(0)
         for line in lines:
             print("A:", line)
+            print(line.split("\t"))
             source = line.split('\t')[1]
             date = line.split('\t')(2)
             DB_ID = line.split('\t')[3]
