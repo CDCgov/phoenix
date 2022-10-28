@@ -1,6 +1,6 @@
 process PROKKA {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_high'
     container 'staphb/prokka:1.14.5'
 
     /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
