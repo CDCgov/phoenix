@@ -47,6 +47,8 @@ process AMRFINDERPLUS_RUN {
         --database amrfinderdb \\
         --threads $task.cpus > ${prefix}_all_genes.tsv
 
+    sed -i '1s/ /_/g' ${prefix}_all_genes.tsv
+
     if [ ! -f ${prefix}_all_mutations.tsv ]; then
         touch ${prefix}_all_mutations.tsv
     fi
