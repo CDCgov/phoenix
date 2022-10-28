@@ -59,8 +59,8 @@ def MLST_Scheme(MLST_file):
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
         lines.pop(0)
-        for line in lines:
-            line.strip()
+        for rawline in lines:
+            line=rawline.strip()
             print("A:", line)
             print(line.split("\t"))
             source = line.split('\t')[1]
