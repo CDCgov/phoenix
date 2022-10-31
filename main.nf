@@ -46,7 +46,7 @@ workflow PHOENIX {
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
         mlst             = PHOENIX_EXTERNAL.out.mlst
-        amrfinder_report = PHOENIX_EXTERNAL.out.report
+        amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
 }
 
 //
@@ -58,7 +58,7 @@ workflow CDC_PHOENIX {
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
-        amrfinder_report = PHOENIX_EXQC.out.report
+        amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
 }
 
 /*
@@ -76,7 +76,7 @@ workflow SRA_LIST {
     emit:
         scaffolds        = SRA_PHOENIX.out.scaffolds
         trimmed_reads    = SRA_PHOENIX.out.trimmed_reads
-        amrfinder_report = SRA_PHOENIX.out.report
+        amrfinder_report = SRA_PHOENIX.out.amrfinder_report
 }
 
 /*
