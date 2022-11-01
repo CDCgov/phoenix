@@ -63,7 +63,7 @@ def MLST_Scheme(MLST_file):
         for rawline in lines:
             line=rawline.strip()
             print(line)
-            split_line = line.split("\t")
+            split_line = line.strip().split("\t")
             print("\n".join(split_line))
             source = split_line[1]
             date = split_line[2]
