@@ -828,7 +828,7 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
       #echo "${arrLine[0]} - ${total_percent} - ${percent} - ${percent_integer} - ${kraken2_contamination_threshold} - ${classification}"
       if [[ "${classification}" == "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
         number_of_genera=$(( number_of_genera + 1 ))
-        echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+        #echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
       fi
     fi
 	done < "${kraken2_weighted_report}"
@@ -1065,7 +1065,7 @@ if [[ -s "${formatted_fastANI}" ]]; then
     printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No assembly file to work with"  >> "${sample_name}.synopsis"
   else
     if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}%ID  ${coverage_match}%cov ${organism}(tax)   ${reference}(ref)"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}-%ID ${coverage_match}%cov  tax=${organism}  ref=${reference}"  >> "${sample_name}.synopsis"
     else
       if [[ "${percent_match}" -lt 95 ]]; then
         if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
@@ -1085,14 +1085,16 @@ fi
 
 # check MLST minimus
 if [[ -s "${mlst_file}" ]]; then
-  if [[ $(wc -l <${mlst_file}) > 2 ]]; then #if there are two mlst schemes
+  line_count=$(wc -l "${mlst_file}" | cut -d' ' -f1)
+  echo "${line_count}"
+  if [[ "${line_count}" > 2 ]]; then #if there are two mlst schemes
     #mlst_db=$(head -n1 ${mlst_file} | cut -d$'\t' -f2)
     #mlst_type=$(head -n1 ${mlst_file} | cut -d$'\t' -f3)
     #mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
     #mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
 
     ### In advance of adding header to mlst file
-    line_count=$(wc -l "${mlst_file}" | cut -d' ' -f1)
+
     mlst_db=$(head -n2 ${mlst_file} | tail -n1 | cut -d$'\t' -f4)
     mlst_type=$(head -n2 ${mlst_file} | tail -n1 | cut -d$'\t' -f5)
     if [[ "${line_count}" -eq 3 ]]; then
@@ -1128,7 +1130,12 @@ elif [[ ${line_count} == 2 ]]; then #if there is only one mlst scheme
     fi
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
+    main_line=$(head -n1 ${mlst_file})
+    if [[ "${main_line}" = "Sample  Source"* ]]; then
+        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No MLST entries in ${sample_name}.tsv"  >> "${sample_name}.synopsis"
+    else
+        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
+    fi
   status="FAILED"
 fi
 
