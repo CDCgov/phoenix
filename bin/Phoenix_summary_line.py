@@ -81,11 +81,13 @@ def MLST_Scheme(MLST_file):
                         Scheme_list[4][i].append(date)
             else:
                 print("NOT in Scheme_list[0]")
+                print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
                 Scheme_list[0].append(DB_ID)
                 Scheme_list[1].append(Scheme)
                 Scheme_list[2].append(alleles)
                 Scheme_list[3].append(source)
                 Scheme_list[4].append(date)
+                print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
             print("\n".join(Scheme_list))
     return Scheme_list
 
