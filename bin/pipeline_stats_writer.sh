@@ -1091,7 +1091,6 @@ if [[ -s "${mlst_file}" ]]; then
   if [[ ${line_count} -ge 2 ]]; then
       while read mlst_line; do
           if [[ "${current_index}" -ge 2 ]]; then
-              mlst_line=$(head -n"${line}" | tail -n1)
               echo "${mlst_line}"
               mlst_db=$(echo "${mlst_line}" | cut -d$'\t' -f4)
               mlst_type=$(echo "${mlst_line}" | cut -d$'\t' -f5)
