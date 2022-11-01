@@ -1087,22 +1087,25 @@ fi
 if [[ -s "${mlst_file}" ]]; then
   line_count=$(wc -l "${mlst_file}" | cut -d' ' -f1)
   echo "${line_count}"
+  current_index=1
   if [[ ${line_count} -ge 2 ]]; then
-      for (( line=2; line<=$line_count; line++ ))
-      do
-          mlst_line=$(head -n"${line}" | tail -n1)
-          echo "${mlst_line}"
-          mlst_db=$(echo "${mlst_line}" | cut -d$'\t' -f4)
-          mlst_type=$(echo "${mlst_line}" | cut -d$'\t' -f5)
-          mlst_source=$(echo "${mlst_line}" | cut -d$'\t' -f2)
-          if [[ "${mlst_db}" = '-' ]]; then
-            printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-          elif [[ "${mlst_type}" = '-' ]]; then
-            printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db} via ${mlst_source}"  >> "${sample_name}.synopsis"
-          else
-            printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type} via ${mlst_source}"  >> "${sample_name}.synopsis"
+      while read mlst_line; do
+          if [[ "${current_index}" -ge 2 ]]; then
+              mlst_line=$(head -n"${line}" | tail -n1)
+              echo "${mlst_line}"
+              mlst_db=$(echo "${mlst_line}" | cut -d$'\t' -f4)
+              mlst_type=$(echo "${mlst_line}" | cut -d$'\t' -f5)
+              mlst_source=$(echo "${mlst_line}" | cut -d$'\t' -f2)
+              if [[ "${mlst_db}" = '-' ]]; then
+                printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
+              elif [[ "${mlst_type}" = '-' ]]; then
+                printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db} via ${mlst_source}"  >> "${sample_name}.synopsis"
+              else
+                printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type} via ${mlst_source}"  >> "${sample_name}.synopsis"
+              fi
           fi
-      done
+          current_index=$(( current_index + 1 ))
+      done < "${mlst_file}"
   fi
 else
     main_line=$(head -n1 ${mlst_file})
