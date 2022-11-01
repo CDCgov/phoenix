@@ -1087,47 +1087,21 @@ fi
 if [[ -s "${mlst_file}" ]]; then
   line_count=$(wc -l "${mlst_file}" | cut -d' ' -f1)
   echo "${line_count}"
-  if [[ "${line_count}" > 2 ]]; then #if there are two mlst schemes
-    #mlst_db=$(head -n1 ${mlst_file} | cut -d$'\t' -f2)
-    #mlst_type=$(head -n1 ${mlst_file} | cut -d$'\t' -f3)
-    #mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
-    #mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
-
-    ### In advance of adding header to mlst file
-
-    mlst_db=$(head -n2 ${mlst_file} | tail -n1 | cut -d$'\t' -f4)
-    mlst_type=$(head -n2 ${mlst_file} | tail -n1 | cut -d$'\t' -f5)
-    if [[ "${line_count}" -eq 3 ]]; then
-        mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f4)
-        mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f5)
-    fi
-
-    #printing output
-    if [[ "${mlst_db}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-    elif [[ "${mlst_type}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
-    else
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
-    fi
-    if [[ "${mlst_db_2}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-    elif [[ "${mlst_type_2}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db_2^^}" "FAILED" "No type identified, but scheme is ${mlst_db_2}"  >> "${sample_name}.synopsis"
-    else
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db_2^^}" "SUCCESS" "ST${mlst_type_2}"  >> "${sample_name}.synopsis"
-    fi
-elif [[ ${line_count} == 2 ]]; then #if there is only one mlst scheme
-    mlst_db=$(tail -n1 ${mlst_file} | cut -d$'\t' -f4)
-    mlst_type=$(tail -n1 ${mlst_file} | cut -d$'\t' -f5)
-    #printing output
-    if [[ "${mlst_db}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-    elif [[ "${mlst_type}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
-    else
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
-    fi
+  if [[ ${line_count} -ge 2 ]]; then
+      for (( line=2; line<=$line_count; line++ ))
+      do
+          mlst_line=$(head -n"${line}" | tail -n1)
+          mlst_db=$(cut -d$'\t' -f4)
+          mlst_type=$(cut -d$'\t' -f5)
+          mlst_source=$(cut -d$'\t' -f2)
+          if [[ "${mlst_db}" = '-' ]]; then
+            printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
+          elif [[ "${mlst_type}" = '-' ]]; then
+            printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db} via ${mlst_source}"  >> "${sample_name}.synopsis"
+          else
+            printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type} via ${mlst_source}"  >> "${sample_name}.synopsis"
+          fi
+      done
   fi
 else
     main_line=$(head -n1 ${mlst_file})
