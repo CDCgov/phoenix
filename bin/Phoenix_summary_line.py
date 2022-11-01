@@ -302,7 +302,7 @@ def Get_Mutations(amr_file):
         lines = f.readlines()[1:]
         for line in lines:
             if "POINT" in line:
-                point_mutations = line.split("    ")[5]
+                point_mutations = line.split("\t")[5]
                 point_mutations_list.append(point_mutations)
         if len(point_mutations_list) == 0:
             point_mutations_list = ""
