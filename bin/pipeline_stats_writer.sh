@@ -1091,6 +1091,7 @@ if [[ -s "${mlst_file}" ]]; then
       for (( line=2; line<=$line_count; line++ ))
       do
           mlst_line=$(head -n"${line}" | tail -n1)
+          echo "${mlst_line}"
           mlst_db=$(echo "${mlst_line}" | cut -d$'\t' -f4)
           mlst_type=$(echo "${mlst_line}" | cut -d$'\t' -f5)
           mlst_source=$(echo "${mlst_line}" | cut -d$'\t' -f2)
