@@ -59,6 +59,7 @@ def MLST_Scheme(MLST_file):
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
         lines.pop(0)
+        print(lines)
         for rawline in lines:
             line=rawline.strip()
             print(line)
