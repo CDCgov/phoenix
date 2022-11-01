@@ -913,9 +913,9 @@ if [[ -s "${taxID_file}" ]]; then
 	source_call=$(head -n1 "${taxID_file}")
 	tax_source="UNK"
   tax_source=$(echo "${source_call}" | cut -d'  ' -f1)
-  dec_family=$(grep "F:" "${taxID_file}" | cut -d' ' -f2)
-  dec_genus=$(grep "G:" "${taxID_file}" | cut -d' ' -f2)
-  dec_species=$(grep "s:" "${taxID_file}" | cut -d' ' -f2)
+  dec_family=$(grep "F:" "${taxID_file}" | cut -d$'\t' -f2)
+  dec_genus=$(grep "G:" "${taxID_file}" | cut -d$'\t' -f2)
+  dec_species=$(grep "s:" "${taxID_file}" | cut -d$'\t' -f2)
 
 	if [[ "$dec_genus" != "Not_assigned" ]] && [[ "$dec_species" != "Not_assigned" ]]; then
 		printf "%-30s: %-8s : %s\\n" "TAXA-${tax_source}" "SUCCESS" "${dec_genus} ${dec_species}"  >> "${sample_name}.synopsis"
