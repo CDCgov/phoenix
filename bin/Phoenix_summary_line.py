@@ -30,15 +30,15 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--out', required=True, help='output file name')
     return parser.parse_args()
 
-def MLST_Info_Only(MLST_file):
-    """Pulls MLST info from *_Scheme.mlst file"""
-    f = open(MLST_file, 'r')
-    f.readline()
-    String1 = f.readline()
-    ST = String1.split()[2]
-    Scheme = String1.split()[1]
-    Out = ST + ' (' + Scheme + ')'
-    return Out
+# def MLST_Info_Only(MLST_file):
+#     """Pulls MLST info from *_Scheme.mlst file"""
+#     f = open(MLST_file, 'r')
+#     f.readline()
+#     String1 = f.readline()
+#     ST = String1.split()[2]
+#     Scheme = String1.split()[1]
+#     Out = ST + ' (' + Scheme + ')'
+#     return Out
 
 # def MLST_ST(MLST_file):
 #     """Pulls MLST info from *_Scheme.mlst file"""
@@ -63,7 +63,7 @@ def MLST_Scheme(MLST_file):
         for rawline in lines:
             line=rawline.strip()
             print(line)
-            split_line = line.strip().split("\t")
+            split_line = line.split("\t")
             print("\n".join(split_line))
             source = split_line[1]
             date = split_line[2]
@@ -71,6 +71,8 @@ def MLST_Scheme(MLST_file):
             Scheme = str(split_line[4])
             alleles = "-".join(split_line[5:])
             if DB_ID in Scheme_list[0]:
+                print("In Scheme_list[0]")
+                print(Scheme_list[0])
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
                         Scheme_list[1][i].append(Scheme)
@@ -78,6 +80,7 @@ def MLST_Scheme(MLST_file):
                         Scheme_list[3][i].append(source)
                         Scheme_list[4][i].append(date)
             else:
+                print("NOT in Scheme_list[0]")
                 Scheme_list[0].append(DB_ID)
                 Scheme_list[1].append(Scheme)
                 Scheme_list[2].append(alleles)
