@@ -63,13 +63,13 @@ def MLST_Scheme(MLST_file):
             line=rawline.strip()
             print(line)
             split_line = line.split("\t")
-            print(split_line)
+            print("\n".join(split_line))
             source = split_line[1]
             date = split_line[2]
             DB_ID = split_line[3]
             Scheme = str(split_line[4])
             alleles = "-".join(split_line[5:])
-            if Scheme in Scheme_list[0]:
+            if DB_ID in Scheme_list[0]:
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
                         Scheme_list[1][i].append(Scheme)
@@ -82,7 +82,7 @@ def MLST_Scheme(MLST_file):
                 Scheme_list[2].append(alleles)
                 Scheme_list[3].append(source)
                 Scheme_list[4].append(date)
-            print(Scheme_list)
+            print("\n".join(Scheme_list))
     return Scheme_list
 
 def Contig_Count(input_quast):
