@@ -912,7 +912,7 @@ fi
 if [[ -s "${taxID_file}" ]]; then
 	source_call=$(head -n1 "${taxID_file}")
 	tax_source="UNK"
-  tax_source=$(echo "${source_call}" | cut -d'  ' -f1)
+  tax_source=$(echo "${source_call}" | cut -d$'\t' -f1)
   dec_family=$(grep "F:" "${taxID_file}" | cut -d$'\t' -f2)
   dec_genus=$(grep "G:" "${taxID_file}" | cut -d$'\t' -f2)
   dec_species=$(grep "s:" "${taxID_file}" | cut -d$'\t' -f2)
@@ -1047,22 +1047,25 @@ fi
 
 #Check fastANI REFSEQ
 if [[ -s "${formatted_fastANI}" ]]; then
-  fastANI_date=$(echo "${formatted_fastANI}" | rev | cut -d'_' -f1 | rev | cut -d'.' -f2)
-  fastANI_info=$(head -n2 "${formatted_fastANI}" | tail -n1)
-  percent_match=$(echo "${fastANI_info}" | cut -d'.' -f1)
-  coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  #fastANI_date=$(echo "${formatted_fastANI}" | rev | cut -d'_' -f1 | rev | cut -d'.' -f2)
+  #fastANI_info=$(head -n2 "${formatted_fastANI}" | tail -n1)
+  #percent_match=$(echo "${fastANI_info}" | cut -d'.' -f1)
+  #coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
 
   ### In anticipation of cleaned up output
   fastANI_date=$(echo "${formatted_fastANI}" | rev | cut -d'_' -f1 | rev | cut -d'.' -f2)
   fastANI_info=$(head -n2 "${formatted_fastANI}" | tail -n1)
   percent_match=$(echo "${fastANI_info}" | cut -d'.' -f1)
   coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  organism=$(echo "${fastANI_info}" | cut -d$'\t' -f3)
+  reference=$(echo "${fastANI_info}" | cut -d$'\t' -f4)
+
 
   if [[ "${percent_match}" = "0."* ]]; then
     printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No assembly file to work with"  >> "${sample_name}.synopsis"
   else
     if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${fastANI_info}"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}%ID  ${coverage_match}%cov ${organism}(tax)   ${reference}(ref)"  >> "${sample_name}.synopsis"
     else
       if [[ "${percent_match}" -lt 95 ]]; then
         if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
@@ -1112,7 +1115,7 @@ if [[ -s "${mlst_file}" ]]; then
     else
       printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db_2^^}" "SUCCESS" "ST${mlst_type_2}"  >> "${sample_name}.synopsis"
     fi
-elif [[ $(wc -l <${mlst_file} | cut -d' ' -f1) == 2 ]]; then #if there is only one mlst scheme
+elif [[ ${line_count} == 2 ]]; then #if there is only one mlst scheme
     mlst_db=$(tail -n1 ${mlst_file} | cut -d$'\t' -f4)
     mlst_type=$(tail -n1 ${mlst_file} | cut -d$'\t' -f5)
     #printing output
