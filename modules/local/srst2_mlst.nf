@@ -110,7 +110,7 @@ process SRST2_MLST {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' | cut -d')' -f1 ))
+        srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
     END_VERSIONS
     """
 }
