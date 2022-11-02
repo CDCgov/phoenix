@@ -4,11 +4,9 @@ workflows:
    - name: phoenix-wdl
      subclass: WDL
      primaryDescriptorPath: /phoenix/workflows/wf_phoenix.wdl
-     publish: True
    - name: phoenix-nf
-     subclass: WDL
-     primaryDescriptorPath: /phoenix/workflows/phoenix.nf
-     publish: True
+     subclass: NFL
+     primaryDescriptorPath: /nextflow.config
      authors:
        - name: Jill Hagey
          email: qpk9@cdc.gov
