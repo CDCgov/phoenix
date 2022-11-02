@@ -1,0 +1,36 @@
+reports:
+  "multiqc/multiqc_report.html":
+    display: "MultiQC HTML report"
+  "Phoenix_Output_Report.tsv":
+    display: "PHoeNIx output report"
+  "**/*.synopsis":
+    display: "Summary of stats for the an individual sample"
+    mimeType: txt
+  "**/*.tax":
+    display: "Best taxonomy assignment from either Kraken2 or FastANI"
+    mimeType: txt
+  "**/mlst/*.tsv":
+    display: "MLST"
+  "**/quast/_report.tsv":
+    display: "Quast report"
+  "**/kraken2_asmbld_weighted/*.wtasmbld_summary.txt":
+    display: "Best hit from kraken2 on weighted scaffolds"
+  "**/kraken2_trimd/*.trimd_summary.txt":
+    display: "Best hit from kraken2 on trimmed reads"
+  "**/Assembly/*.spades.log":
+    display: "Spades log"
+    mimeType: txt
+  "**/Assembly/*.bbmap_filtered.log":
+    display: "BBmap log from filtering <500bp contigs"
+    mimeType: txt
+  "**/AMRFinder/*_all_genes.tsv":
+    display: "AMRFinder Output"
+  "**/gamma_ar/*_ResGANNCBI_*_srst2.gamma":
+    display: "GAMMA AR gene calls"
+    mimeType: tsv
+  "**/gamma_hv/*_HyperVirulence_*.gamma":
+    display: "GAMMA Hypervirulence calls"
+    mimeType: tsv
+  "**/gamma_pf/*_PF-Replicons_*.gamma":
+    display: "GAMMA identified plasmid indicators"
+    mimeType: tsv
