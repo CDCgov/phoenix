@@ -1,13 +1,16 @@
 # Dockstore config version, not pipeline version
 version: 1.2
 workflows:
-   - name: phoenix
+   - name: phoenix-wdl
+     subclass: WDL
+     primaryDescriptorPath: /phoenix/workflows/wf_phoenix.wdl
+     publish: True
+   - name: phoenix-nf
+     subclass: WDL
+     primaryDescriptorPath: /phoenix/workflows/phoenix.nf
      publish: True
      authors:
        - name: Jill Hagey
          email: qpk9@cdc.gov
          affiliation: Division of Healthcare Quality Promotion (DHQP), CDC
          orcid: 0000-0002-1308-3429
-     filters:
-       branches: 
-         - v1.0.1
