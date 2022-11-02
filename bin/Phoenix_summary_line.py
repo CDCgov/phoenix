@@ -76,10 +76,12 @@ def MLST_Scheme(MLST_file):
                 print(Scheme_list[0])
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
+                        print("Adding to", Scheme_list[0])
                         Scheme_list[1][i].append(Scheme)
                         Scheme_list[2][i].append(alleles)
                         Scheme_list[3][i].append(source)
                         Scheme_list[4][i].append(date)
+                        print(Scheme_list)
             else:
                 print("NOT in Scheme_list[0]")
                 print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
