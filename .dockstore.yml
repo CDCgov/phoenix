@@ -6,7 +6,7 @@ workflows:
        - name: Jill Hagey
          email: qpk9@cdc.gov
          affiliation: Division of Healthcare Quality Promotion (DHQP), CDC
-         orcid id: 0000-0002-1308-3429
+         orcid: 0000-0002-1308-3429
      filters:
        branches: 
          - v1.0.1
