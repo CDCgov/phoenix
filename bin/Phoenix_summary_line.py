@@ -412,11 +412,11 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Scheme = MLST_Scheme(MLST_file)
         if len(Scheme[0]) > 1:
             Scheme_1 = ",".join(Scheme[1][0])
-            ST_1 = ",".join(Scheme[2][0])
+            ST_1 = Scheme[0][0]+":"+",".join(Scheme[2][0])
             Scheme_2 = ",".join(Scheme[1][1])
-            ST_2 = ",".join(Scheme[2][1])
+            ST_2 = Scheme[0][1]+":"+",".join(Scheme[2][1])
         else:
-            Scheme_1 = ",".join(Scheme[1][0])
+            Scheme_1 = Scheme[0][0]+":"+",".join(Scheme[1][0])
             ST_1 = ",".join(Scheme[2][0])
             Scheme_2 = "-"
             ST_2 = "-"

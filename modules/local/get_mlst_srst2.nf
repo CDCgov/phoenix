@@ -86,9 +86,6 @@ process GET_MLST_SRST2 {
       counter=\$(( counter + 1))
     done
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        getMLST: $VERSION
-    END_VERSIONS
+    echo -e "${task.process}:\n\tgetMLST: $VERSION" > versions.yml
     """
 }
