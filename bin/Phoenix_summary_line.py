@@ -77,7 +77,10 @@ def MLST_Scheme(MLST_file):
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
                         print("Adding to", Scheme_list[0][i], i)
-                        Scheme_list[1][i].append(Scheme)
+                        if Scheme_list[1][i].append(Scheme) != "-":
+                            Scheme_list[1][i].append("ST"+str(Scheme))
+                        else:
+                            Scheme_list[1][i].append(Scheme)
                         Scheme_list[2][i].append(alleles)
                         Scheme_list[3][i].append(source)
                         Scheme_list[4][i].append(date)
@@ -412,25 +415,33 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Scheme = MLST_Scheme(MLST_file)
         if len(Scheme[0]) > 1:
             if Scheme[0][0] < Scheme[0][1]:
-                MLST_type_1 = Scheme[0][0]+":"+",".join(Scheme[1][0])
-                MLST_alleles_1 = ",".join(Scheme[2][0])
-                MLST_type_2 = Scheme[0][1]+":"+",".join(Scheme[1][1])
-                MLST_alleles_2 = ",".join(Scheme[2][1])
-            else
-                MLST_type_1 = Scheme[0][1]+":"+",".join(Scheme[1][1])
-                MLST_alleles_1 = ",".join(Scheme[2][1])
-                MLST_type_2 = Scheme[0][0]+":"+",".join(Scheme[1][0])
-                MLST_alleles_2 = ",".join(Scheme[2][0])
+                MLST_scheme_1 = Scheme[0][0]
+                MLST_type_1 = ",".join(Scheme[1][0])
+                #MLST_alleles_1 = ",".join(Scheme[2][0])
+                MLST_scheme_2 = Scheme[0][1]
+                MLST_type_2 = ",".join(Scheme[1][1])
+                #MLST_alleles_2 = ",".join(Scheme[2][1])
+            else:
+                MLST_scheme_1 = Scheme[0][1]
+                MLST_type_1 = ",".join(Scheme[1][1])
+                #MLST_alleles_1 = ",".join(Scheme[2][1])
+                MLST_scheme_2 = Scheme[0][0]
+                MLST_type_2 = ",".join(Scheme[1][0])
+                #MLST_alleles_2 = ",".join(Scheme[2][0])
         else:
+            MLST_scheme_1 = Scheme[0][0]
             MLST_type_1 = Scheme[0][0]+":"+",".join(Scheme[1][0])
-            MLST_alleles_1 = ",".join(Scheme[2][0])
+            #MLST_alleles_1 = ",".join(Scheme[2][0])
+            MLST_scheme_2 = "-"
             MLST_type_2 = "-"
-            MLST_alleles_2 = "-"
+            #MLST_alleles_2 = "-"
     except:
+        MLST_scheme_1 = 'Unknown'
+        MLST_scheme_2 = 'Unknown'
         MLST_type_1 = 'Unknown'
         MLST_type_2 = 'Unknown'
-        MLST_alleles_1 = 'Unknown'
-        MLST_alleles_2 = 'Unknown'
+        #MLST_alleles_1 = 'Unknown'
+        #MLST_alleles_2 = 'Unknown'
     try:
         Bla = Bla_Genes(gamma_ar)
         Bla = ','.join(Bla)
@@ -463,9 +474,9 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
     except:
         read_match = "Unknown"
     if busco_file is None:
-        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_type_1 + '\t' + MLST_alleles_1 + '\t' + MLST_type_2 + '\t' + MLST_alleles_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
     elif busco_file is not None:
-        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_type_1 + '\t' + MLST_alleles_1 + '\t' + MLST_type_2 + '\t' + MLST_alleles_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
     return Line
 
 def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations, pf_file):

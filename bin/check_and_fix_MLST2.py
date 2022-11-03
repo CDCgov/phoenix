@@ -462,12 +462,12 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			check = False
 			bad_types = ["*", "?", "NF", "~"]
 			if any(ext in current_type for ext in bad_types):
-				original_scheme[2] = "P-SUB"
+				original_scheme[2] = "Novel_profile"
 				print("Marking", original_scheme, "as needing investigation.")
 				check = True
 			elif current_type == "-":
 				if original_scheme[3] > 1:
-					original_scheme[2] = "P-SUB"
+					original_scheme[2] = "Novel_profile"
 				check = True
 			else:
 				current_type = int(current_type)
@@ -485,8 +485,21 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 				bad_alleles = 0
 				lookup_allele_profile = True
 				for allele in original_scheme[5]:
+					# Definitions
+					#	MLST
+					#	~ : full length novel allele
+					#	? : partial match (>min_cov & > min_ID). Default min_cov = 10, Default min_ID=95%
+					#	- : Allele is missing
+					#
+					#	srst2
+					#	* : Full length match with 1+ SNP. Novel
+					#	? : edge depth is below N or average depth is below X. Default edge_depth = 2, Default average_depth = 5
+					#	- : No allele assigned, usually because no alleles achieved >90% coverage
+
+
+
 					if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
-						original_scheme[2] = "A-SUB"
+						original_scheme[2] = "1+_Novel_allele"
 						bad_alleles += 1
 						lookup_allele_profile = False
 				## Reapply dash showing no db or proximal scheme was ever found
