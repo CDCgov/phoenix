@@ -322,7 +322,8 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			elif MLST_filetype == "srst2":
 				print original_items,len(original_items)
 				sample=original_items[0]
-				db_name=original_items[1]
+				pubmlst_db_name=original_items[1]
+				db_name=convert_mlst_to_pubMLST.back_2_MLST(pubmlst_db_name)
 				original_type=original_items[2]
 				if len(original_items) > 7:
 					print("Has # items:", len(original_items))
@@ -538,9 +539,10 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			i[1] = "abaumannii(Oxford)"
 		elif i[1] == "abaumannii_2" or i[1] == "Acinetobacter_baumannii#2":
 			i[1] = "abaumannii(Pasteur)"
-		elif i[1] == "ecoli" or i[1] == "ecoli_achtman_4":
+		# I know this looks backwards....its not
+		elif i[1] == "ecoli_2" or i[1] == "ecoli_achtman_4":
 			i[1] = "ecoli(Achtman)"
-		elif i[1] == "ecoli_2" or i[1] == "Escherichia_coli#2":
+		elif i[1] == "ecoli" or i[1] == "Escherichia_coli#2":
 			i[1] = "ecoli_2(Pasteur)"
 
 

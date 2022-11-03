@@ -411,10 +411,16 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
     try:
         Scheme = MLST_Scheme(MLST_file)
         if len(Scheme[0]) > 1:
-            MLST_type_1 = Scheme[0][0]+":"+",".join(Scheme[1][0])
-            MLST_alleles_1 = ",".join(Scheme[2][0])
-            MLST_type_2 = Scheme[0][0]+":"+",".join(Scheme[1][1])
-            MLST_alleles_2 = ",".join(Scheme[2][1])
+            if Scheme[0][0] < Scheme[0][1]:
+                MLST_type_1 = Scheme[0][0]+":"+",".join(Scheme[1][0])
+                MLST_alleles_1 = ",".join(Scheme[2][0])
+                MLST_type_2 = Scheme[0][1]+":"+",".join(Scheme[1][1])
+                MLST_alleles_2 = ",".join(Scheme[2][1])
+            else
+                MLST_type_1 = Scheme[0][1]+":"+",".join(Scheme[1][1])
+                MLST_alleles_1 = ",".join(Scheme[2][1])
+                MLST_type_2 = Scheme[0][0]+":"+",".join(Scheme[1][0])
+                MLST_alleles_2 = ",".join(Scheme[2][0])
         else:
             MLST_type_1 = Scheme[0][0]+":"+",".join(Scheme[1][0])
             MLST_alleles_1 = ",".join(Scheme[2][0])
