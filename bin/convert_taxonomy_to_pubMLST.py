@@ -259,7 +259,7 @@ def convert(to_convert):
             'kkingae': 'Kingella kingae',
             'koxytoca': 'Klebsiella oxytoca',
             'kpneumoniae': 'Klebsiella pneumoniae',
-            'klebsiella': 'Klebsiella pneumonia'
+            'klebsiella': 'Klebsiella pneumonia',
             'leptospira': 'Leptospira spp.',
             'leptospira_2': 'Leptospira spp.#2',
             'leptospira_3': 'Leptospira spp.#3',
