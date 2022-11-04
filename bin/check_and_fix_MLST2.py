@@ -499,7 +499,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 
 
 					if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
-						original_scheme[2] = "1+_Novel_allele"
+						original_scheme[2] = "Novel_allele"
 						bad_alleles += 1
 						lookup_allele_profile = False
 				## Reapply dash showing no db or proximal scheme was ever found

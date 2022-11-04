@@ -433,7 +433,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
                 #MLST_alleles_2 = ",".join(Scheme[2][0])
         else:
             MLST_scheme_1 = Scheme[0][0]
-            MLST_type_1 = Scheme[0][0]+":"+",".join(Scheme[1][0])
+            MLST_type_1 = ",".join(Scheme[1][0])
             #MLST_alleles_1 = ",".join(Scheme[2][0])
             MLST_scheme_2 = "-"
             MLST_type_2 = "-"

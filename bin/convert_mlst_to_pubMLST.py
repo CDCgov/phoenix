@@ -328,7 +328,7 @@ def convert(to_convert):
     else:
         print("No match found")
         return "No match found"
-        
+
 def back_2_MLST(to_convert):
     pubmlst_to_mlst = { 'Acinetobacter baumannii#1' : 'abaumannii(Oxford)',
             'Acinetobacter baumannii#2' : 'abaumannii(Pasteur)',
@@ -384,6 +384,7 @@ def back_2_MLST(to_convert):
             'Glaesserella_parasuis' : 'hparasuis',
             'Helicobacter_pylori' : 'hpylori',
             'Helicobacter_suis' : 'hsuis',
+            'kpneumoniae' : 'klebsiella'
             'Klebsiella_aerogenes' : 'kaerogenes',
             'Kingella_kingae' : 'kkingae',
             'Klebsiella_oxytoca' : 'koxytoca',
