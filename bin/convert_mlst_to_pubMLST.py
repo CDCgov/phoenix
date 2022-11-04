@@ -384,7 +384,7 @@ def back_2_MLST(to_convert):
             'Glaesserella_parasuis' : 'hparasuis',
             'Helicobacter_pylori' : 'hpylori',
             'Helicobacter_suis' : 'hsuis',
-            'kpneumoniae' : 'klebsiella'
+            'kpneumoniae' : 'klebsiella',
             'Klebsiella_aerogenes' : 'kaerogenes',
             'Kingella_kingae' : 'kkingae',
             'Klebsiella_oxytoca' : 'koxytoca',
