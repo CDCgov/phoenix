@@ -60,7 +60,7 @@ process SRST2_MLST {
       trailer_list=""
       if [[ "\${no_match}" = "True" ]]; then
         tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-        echo "${prefix} No match found for \${tax_with_no_scheme}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
+        echo "${prefix}	No match found for \${tax_with_no_scheme}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
       else
         raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
         raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
