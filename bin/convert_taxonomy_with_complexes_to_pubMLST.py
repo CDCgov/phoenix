@@ -652,7 +652,7 @@ def gs_to_pubmlst(genus, species):
                 'Enterobacter sp.U7': 'Enterobacter cloacae',
                 'Enterobacter sp.U8': 'Enterobacter cloacae',
                 'Enterobacter sp.U9': 'Enterobacter cloacae',
-                'Enterobacter sp.X2327 ': 'Enterobacter cloacae',
+                'Enterobacter sp.X2327': 'Enterobacter cloacae',
                 'Enterococcus faecalis': 'Enterococcus faecalis',
                 'Enterococcus faecium': 'Enterococcus faecium',
                 'Escherichia coli': 'Escherichia coli#1,Escherichia coli#2',
