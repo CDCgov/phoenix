@@ -436,6 +436,7 @@ workflow PHOENIX_EXQC {
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
         amrfinder_report = AMRFINDERPLUS_RUN.out.report
+        gamma_ar         = GAMMA_AR.out.gamma
 }
 
 /*

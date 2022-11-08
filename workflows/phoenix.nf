@@ -380,8 +380,9 @@ workflow PHOENIX_EXTERNAL {
     emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
-//        mlst             = MLST.out.tsv
-//        amrfinder_report = AMRFINDERPLUS_RUN.out.report
+        mlst             = MLST.out.tsv
+        amrfinder_report = AMRFINDERPLUS_RUN.out.report
+        gamma_ar         = GAMMA_AR.out.gamma
 }
 
 /*

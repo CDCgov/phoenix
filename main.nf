@@ -47,6 +47,7 @@ workflow PHOENIX {
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
         mlst             = PHOENIX_EXTERNAL.out.mlst
         amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
+        gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
 }
 
 //
@@ -59,6 +60,7 @@ workflow CDC_PHOENIX {
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
         amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
+        gamma_ar         = PHOENIX_EXQC.out.gamma_ar
 }
 
 /*
