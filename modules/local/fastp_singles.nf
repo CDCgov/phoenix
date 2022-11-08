@@ -1,4 +1,4 @@
-process FASTP {
+process FASTP_SINGLES {
     tag "$meta.id"
     label 'process_low'
     container 'staphb/fastp:0.23.2'
