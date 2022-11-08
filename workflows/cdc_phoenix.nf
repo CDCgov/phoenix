@@ -38,7 +38,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
-include { FASTP_SINGLE as FASTP_SINGLES  } from '../modules/local/fastp_singles'
+include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
 include { SRST2_AR                       } from '../modules/local/srst2_ar'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { BUSCO                          } from '../modules/local/busco'
