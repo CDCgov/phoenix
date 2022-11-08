@@ -7,7 +7,7 @@ process BBMAP_REFORMAT {
     tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path('*filtered.scaffolds.fa.gz')   , emit: reads
+    tuple val(meta), path('*filtered.scaffolds.fa.gz')   , emit: filtered_scaffolds
     tuple val(meta), path('*.log')                       , emit: log
     path "versions.yml"                                  , emit: versions
 
@@ -20,7 +20,7 @@ process BBMAP_REFORMAT {
     def raw      = "in=${reads[0]}"
     def trimmed  = "out=${prefix}.filtered.scaffolds.fa.gz"
     def minlength = params.minlength
-    def maxmem = task.memory.toGiga()-8 // keep heap mem low so and rest of space to java expansion.
+    def maxmem = task.memory.toGiga()-5 // keep heap mem low so and rest of mem is for java expansion.
     """
     maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
     reformat.sh \\
