@@ -757,7 +757,7 @@ def gs_to_pubmlst(genus, species):
                 'Vibrio': 'Vibrio spp.',
                 'Wolbachia ': 'Wolbachia ',
             }
-    print("Looking up Genus species:",genus,species)
+    #print("Looking up Genus species:",genus,species)
     if str(genus+" "+species) in specific_dict:
         #f.write(specific_dict[args.genus+" "+args.species]+"\n")
         print(specific_dict[genus+" "+species])
@@ -911,7 +911,7 @@ def convert(to_convert):
             'ypseudotuberculosis': 'Yersinia pseudotuberculosis',
             'yruckeri': 'Yersinia ruckeri',
             }
-    print("Looking to convert:",to_convert)
+    #print("Looking to convert:",to_convert)
     if str(to_convert) in standard_to_srst2:
         print(standard_to_srst2[to_convert])
         return standard_to_srst2[to_convert]
@@ -1054,7 +1054,7 @@ def back_2_MLST(to_convert):
             'Yersinia_pseudotuberculosis' : 'yersinia',
             'Yersinia_ruckeri' : 'yruckeri',
     }
-    print("Looking to unconvert:",to_convert)
+    #print("Looking to unconvert:",to_convert)
     if str(to_convert) in pubmlst_to_mlst:
         print(pubmlst_to_mlst[to_convert])
         return pubmlst_to_mlst[to_convert]
@@ -1064,8 +1064,8 @@ def back_2_MLST(to_convert):
 
 args = parseArgs()
 if str(args.convert)!="False":
-    print("Looking to convert:",args.original)
+    #print("Looking to convert:",args.original)
     convert(args.original)
 else:
-    print("Looking up Genus species:",args.genus,args.species)
+    #print("Looking up Genus species:",args.genus,args.species)
     gs_to_pubmlst(args.genus,args.species)

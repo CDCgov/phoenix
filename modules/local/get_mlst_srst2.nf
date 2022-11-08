@@ -44,7 +44,7 @@ process GET_MLST_SRST2 {
     python -V
     which python
     echo "here we go"
-    convert_taxonomy_to_pubMLST.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
+    convert_taxonomy_with_complexes_to_pubMLST.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
     echo "there we went"
 
     dbline=\$(tail -n1 DB_defs.txt)
