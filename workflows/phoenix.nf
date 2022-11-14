@@ -252,8 +252,10 @@ workflow PHOENIX_EXTERNAL {
     )
     ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
+    empty_ch = file(params.placeholder)
+
     combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
-    .join(params.placeholder)\
+    .join(empty_ch)\
     .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
 
     // Combining and adding flare to all MLST outputs
