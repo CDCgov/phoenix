@@ -252,7 +252,7 @@ workflow PHOENIX_EXTERNAL {
     )
     ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
-    empty_ch = file(params.placeholder)
+    empty_ch = Channel.fromPath(params.placeholder)
 
     combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
     .join(empty_ch)\
