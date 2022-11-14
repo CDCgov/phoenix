@@ -320,6 +320,12 @@ workflow PHOENIX_EXQC {
     )
     ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
+    // get gff and protein files for amrfinder+
+    PROKKA (
+        BBMAP_REFORMAT.out.reads, [], []
+    )
+    ch_versions = ch_versions.mix(PROKKA.out.versions)
+
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)

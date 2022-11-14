@@ -11,7 +11,7 @@ WorkflowPhoenix.initialise(params, log)
 
 
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config ] 
+def checkPathParamList = [ params.input, params.multiqc_config ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 //input on command line
@@ -58,6 +58,7 @@ include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/l
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES                            } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
+include { CHECK_MLST                                        } from '../modules/local/check_mlst'
 
 /*
 ========================================================================================
@@ -110,17 +111,17 @@ workflow SRA_PHOENIX {
     )
     ch_versions = ch_versions.mix(GET_SRA.out.versions)
 
-    //pass new 
+    //pass new
     INPUT_CHECK (
         GET_SRA.out.samplesheet
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
-    
+
     //unzip any zipped databases
     ASSET_CHECK (
         params.zipped_sketch
     )
-    
+
     // Remove PhiX reads
     BBDUK (
         INPUT_CHECK.out.reads, params.bbdukdb
@@ -258,6 +259,15 @@ workflow SRA_PHOENIX {
         best_hit_ch, params.taxa
     )
 
+    combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
+    .join(params.placeholder)\
+    .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
+
+    // Combining and adding flare to all MLST outputs
+    CHECK_MLST (
+        combined_mlst_ch
+    )
+
     // get gff and protein files for amrfinder+
     PROKKA (
         BBMAP_REFORMAT.out.reads, [], []
@@ -273,7 +283,7 @@ workflow SRA_PHOENIX {
         DETERMINE_TAXA_ID.out.taxonomy
     )
 
-    // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
+    // Combining taxa and scaffolds to run amrfinder and get the point mutations.
     amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
     .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
     .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
@@ -322,9 +332,10 @@ workflow SRA_PHOENIX {
         false
     )
 
-    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
+    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
     line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-    .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+    //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+    .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
     .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -342,7 +353,7 @@ workflow SRA_PHOENIX {
     ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
     // Collect all the summary files prior to fetch step to force the fetch process to wait
-    failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving.. 
+    failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving..
     summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
 
     // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
