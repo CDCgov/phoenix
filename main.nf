@@ -32,9 +32,10 @@ WorkflowMain.initialise(workflow, params, log)
 ========================================================================================
 */
 
-include { PHOENIX_EXTERNAL } from './workflows/phoenix'
-include { PHOENIX_EXQC     } from './workflows/cdc_phoenix'
-include { SRA_PHOENIX      } from './workflows/sra_phoenix'
+include { PHOENIX_EXTERNAL       } from './workflows/phoenix'
+include { PHOENIX_EXQC           } from './workflows/cdc_phoenix'
+include { SRA_PHOENIX            } from './workflows/sra_phoenix'
+//include { SCAFFOLD_EXTERNAL      } from './workflows/scaffolds'
 
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
@@ -80,6 +81,19 @@ workflow SRA_LIST {
         trimmed_reads    = SRA_PHOENIX.out.trimmed_reads
         amrfinder_report = SRA_PHOENIX.out.amrfinder_report
 }
+
+/*
+========================================================================================
+    RUN SCAFFOLD WORKFLOW
+========================================================================================
+*/
+
+//
+// WORKFLOW: Entry point to analyze scaffold file(s) and run everything after Spades
+//
+//workflow SCAFFOLD_LIST {
+    //main: SCAFFOLD_EXTERNAL ()
+//}
 
 /*
 ========================================================================================
