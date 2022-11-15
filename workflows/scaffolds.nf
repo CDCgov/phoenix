@@ -58,7 +58,6 @@ include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_a
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 
 /*
@@ -68,7 +67,6 @@ include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summar
 */
 
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-include { SPADES_WF                      } from '../subworkflows/local/spades_workflow'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
@@ -116,7 +114,7 @@ workflow SCAFFOLD_EXTERNAL {
 */
     // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            SPADES_WF.out.spades_ch
+            //scaffolds provided by user 
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -287,17 +285,7 @@ workflow SCAFFOLD_EXTERNAL {
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
         // Collect all the summary files prior to fetch step to force the fetch process to wait
-        failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving.. 
         summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
-
-        // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
-        FETCH_FAILED_SUMMARIES (
-            params.outdir, failed_summaries_ch, summaries_ch
-        )
-
-        // combine all line summaries into one channel
-        spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
-        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
