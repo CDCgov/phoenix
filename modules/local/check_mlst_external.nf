@@ -12,7 +12,7 @@ process CHECK_MLST {
     container "quay.io/biocontainers/python:2.7--1"
 
     input:
-    tuple val(meta), path(mlst_file), path(taxonomy_file)
+    tuple val(meta), path(mlst_file), path(srst2_file), path(taxonomy_file)
 
     output:
     tuple val(meta), path("*_combined.tsv")                                                   , emit: checked_MLSTs
@@ -23,7 +23,7 @@ process CHECK_MLST {
 
     script:
     """
-    check_and_fix_MLST2.py --input $mlst_file --taxonomy $taxonomy_file
+    check_and_fix_MLST2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

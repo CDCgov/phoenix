@@ -65,7 +65,7 @@ include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summar
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
 include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
 include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
-include { CHECK_MLST                     } from '../modules/local/check_mlst'
+include { CHECK_MLST                     } from '../modules/local/check_mlst_external'
 
 /*
 ========================================================================================
