@@ -420,26 +420,26 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
             if Scheme[0][0] < Scheme[0][1]:
                 MLST_scheme_1 = Scheme[0][0]
                 print("1,1-before sort", Scheme[1][0])
-                mlst_types_1=sorted(Scheme[1][0]).reverse()
+                mlst_types_1=sorted(Scheme[1][0])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 print("1,1-after sort", MLST_type_1)
                 #MLST_alleles_1 = ",".join(Scheme[2][0])
                 MLST_scheme_2 = Scheme[0][1]
                 print("2,1-before sort", Scheme[1][1])
-                mlst_types_2=sorted(Scheme[1][1]).reverse()
+                mlst_types_2=sorted(Scheme[1][1])[::-1]
                 MLST_type_2 = ",".join(mlst_types_2)
                 print("2,1-after sort", MLST_type_2)
                 #MLST_alleles_2 = ",".join(Scheme[2][1])
             else:
                 MLST_scheme_1 = Scheme[0][1]
                 print("1,2-before sort", Sceme[1][1])
-                mlst_types_1=sorted(Scheme[1][1]).reverse()
+                mlst_types_1=sorted(Scheme[1][1])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 print("1,2-after sort", MLST_type_1)
                 #MLST_alleles_1 = ",".join(Scheme[2][1])
                 MLST_scheme_2 = Scheme[0][0]
                 print("2,2-before sort", Scheme[1][0])
-                mlst_types_2=sorted(Scheme[1][0]).reverse()
+                mlst_types_2=sorted(Scheme[1][0])[::-1]
                 MLST_type_2 = ",".join(mlst_types_2)
                 print("2,2-after sort", MLST_type_2)
                 #MLST_alleles_2 = ",".join(Scheme[2][0])
