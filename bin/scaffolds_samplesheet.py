@@ -17,3 +17,5 @@ def parseArgs(args=None):
 
 cwd = os.getcwd()
 scaffLoc = "results/scaffolds_files/"
+suffA = "scaffolds.fa.gz"
+suffB = "scaffolds.fa.gz"
