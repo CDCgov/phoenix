@@ -35,6 +35,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
+include { SCAFFOLDS_SAMPLESHEET_CHECK    } from '../modules/local/scaffolds_samplesheet_check'
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
@@ -112,7 +113,12 @@ workflow SCAFFOLD_EXTERNAL {
     END PLACEHOLDER FOR SCAFFOLDS INPUT PROCESSING
 ========================================================================================
 */
-    // Rename scaffold headers
+        ch_versions     = Channel.empty() // Used to collect the software versions
+        
+        //Create samplesheet
+        SCAFFOLDS_SAMPLESHEET_CHECK ()
+        
+        // Rename scaffold headers
         RENAME_FASTA_HEADERS (
             //scaffolds provided by user 
         )
