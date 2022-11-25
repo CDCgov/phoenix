@@ -269,8 +269,7 @@ workflow SCAFFOLD_EXTERNAL {
         )
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
-        line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-        .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+        line_summary_ch = MLST.out.tsv.map{                              meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -278,7 +277,7 @@ workflow SCAFFOLD_EXTERNAL {
         .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
         .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
-        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
+        //.join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]}, by: [0])
 
         // Generate summary per sample that passed SPAdes
@@ -322,7 +321,6 @@ workflow SCAFFOLD_EXTERNAL {
 
     emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
-        trimmed_reads    = FASTP_TRIMD.out.reads
         mlst             = MLST.out.tsv
         amrfinder_report = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
