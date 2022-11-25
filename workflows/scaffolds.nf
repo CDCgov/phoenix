@@ -100,27 +100,14 @@ def count = 0
 workflow SCAFFOLD_EXTERNAL {
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
-/*
-========================================================================================
-    BEGIN PLACEHOLDER FOR SCAFFOLDS INPUT PROCESSING
-========================================================================================
-*/
-
-
-
-/*
-========================================================================================
-    END PLACEHOLDER FOR SCAFFOLDS INPUT PROCESSING
-========================================================================================
-*/
-        ch_versions     = Channel.empty() // Used to collect the software versions
         
         //Create samplesheet
         SCAFFOLDS_SAMPLESHEET_CHECK ()
+        ch_versions = ch_versions.mix(SCAFFOLDS_SAMPLESHEET_CHECK.out.versions)
         
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            //scaffolds provided by user 
+            SCAFFOLDS_SAMPLESHEET_CHECK.out.samplesheet
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -245,6 +232,8 @@ workflow SCAFFOLD_EXTERNAL {
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         GENERATE_PIPELINE_STATS_WF (
+        
+            //start changes here
             FASTP_TRIMD.out.reads, \
             GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
             GATHERING_READ_QC_STATS.out.fastp_total_qc, \
@@ -252,6 +241,14 @@ workflow SCAFFOLD_EXTERNAL {
             KRAKEN2_TRIMD.out.report, \
             KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
+            //end changes
+            [], \
+            [], \
+            [], \
+            [], \
+            [], \
+            [], \
+            [], \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             MLST.out.tsv, \
