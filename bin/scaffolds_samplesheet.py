@@ -15,3 +15,5 @@ def parseArgs(args=None):
     parser.add_argument('file', nargs=argparse.REMAINDER)
     return parser.parse_args()
 
+cwd = os.getcwd()
+scaffLoc = "results/scaffolds_files/"
