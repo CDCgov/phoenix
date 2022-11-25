@@ -18,15 +18,14 @@ def parseArgs(args=None):
 cwd = os.getcwd()
 scaffLoc = "results/scaffolds_files/"
 suffA = "scaffolds.fa.gz"
-suffB = "scaffolds.fa.gz"
+
 
 def formatFilesSamplesheet(partialCsv):
     
-    df = pd.read_csv(partialCsv[0], names= ['sample','fastq_1','fastq_2'])
+    df = pd.read_csv(partialCsv[0], names= ['sample','scaffolds_file'])
     
-    df['fastq_1'] = fastqLoc + df['sample'] + suffA
+    df['scaffolds_file'] = fastqLoc + df['sample'] + suffA
     
-    df['fastq_2'] = fastqLoc + df['sample'] + suffB
 
     df = df.to_csv(cwd + "/samplesheet.csv", index=False, header=True)
 
