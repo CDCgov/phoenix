@@ -25,7 +25,6 @@ def formatFilesSamplesheet(partialCsv):
     df = pd.read_csv(partialCsv[0], names= ['sample','scaffolds_file'])
     
     df['scaffolds_file'] = fastqLoc + df['sample'] + suffA
-    
 
     df = df.to_csv(cwd + "/samplesheet.csv", index=False, header=True)
 
