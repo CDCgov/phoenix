@@ -21,7 +21,7 @@ process BBDUK {
     def raw      = meta.single_end ? "in=${reads[0]}" : "in1=${reads[0]} in2=${reads[1]}"
     def trimmed  = meta.single_end ? "out=${prefix}.fastq.gz" : "out1=${prefix}_cleaned_1.fastq.gz out2=${prefix}_cleaned_2.fastq.gz"
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
-    def maxmem = task.memory.toGiga()-8 // keep heap mem low so and rest of mem is for java expansion.
+    def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
     """
     maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
     bbduk.sh \\

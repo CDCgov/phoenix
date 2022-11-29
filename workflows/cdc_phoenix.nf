@@ -431,12 +431,14 @@ workflow PHOENIX_EXQC {
         )
         multiqc_report = MULTIQC.out.report.toList()
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
-
+ 
     emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
+        paired_trmd_json = FASTP_TRIMD.out.json
         amrfinder_report = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
+        summary_report   = GATHER_SUMMARY_LINES.out.summary_report
 }
 
 /*
