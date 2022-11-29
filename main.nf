@@ -59,8 +59,10 @@ workflow CDC_PHOENIX {
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
+        paired_trmd_json = PHOENIX_EXQC.out.paired_trmd_json
         amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
         gamma_ar         = PHOENIX_EXQC.out.gamma_ar
+        summary_report   = PHOENIX_EXQC.out.summary_report
 }
 
 /*
