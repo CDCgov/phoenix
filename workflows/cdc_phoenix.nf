@@ -65,6 +65,7 @@ include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summar
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
 include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
 include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
+include { CHECK_MLST                     } from '../modules/local/check_mlst_external'
 
 /*
 ========================================================================================
@@ -303,11 +304,21 @@ workflow PHOENIX_EXQC {
         .join(GET_MLST_SRST2.out.fastas.map{     meta, fastas   -> [[id:meta.id], fastas]},    by: [0])\
         .join(GET_MLST_SRST2.out.profiles.map{   meta, profiles -> [[id:meta.id], profiles]},  by: [0])
 
-        // Idenitifying mlst genes in trimmed reads
+        // Identifying mlst genes in trimmed reads
         SRST2_MLST (
             mid_srst2_ch
         )
         ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
+
+        combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
+        .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
+        .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
+
+        // Combining and adding flare to all MLST outputs
+        CHECK_MLST (
+            combined_mlst_ch
+        )
+        ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
         // Fetch AMRFinder Database
         AMRFINDERPLUS_UPDATE( )
@@ -350,7 +361,8 @@ workflow PHOENIX_EXQC {
             KRAKEN2_TRIMD.out.k2_bh_summary, \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
-            MLST.out.tsv, \
+            //MLST.out.tsv, \
+            CHECK_MLST.out.checked_MLSTs, \
             GAMMA_HV.out.gamma, \
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
@@ -372,7 +384,8 @@ workflow PHOENIX_EXQC {
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-        .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+        //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+      .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -382,7 +395,7 @@ workflow PHOENIX_EXQC {
         .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
         .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])
-        
+
         // Generate summary per sample
         CREATE_SUMMARY_LINE(
             line_summary_ch
@@ -431,14 +444,16 @@ workflow PHOENIX_EXQC {
         )
         multiqc_report = MULTIQC.out.report.toList()
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
- 
-    emit:
+        
+      emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
         paired_trmd_json = FASTP_TRIMD.out.json
         amrfinder_report = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
         summary_report   = GATHER_SUMMARY_LINES.out.summary_report
+
+        
 }
 
 /*

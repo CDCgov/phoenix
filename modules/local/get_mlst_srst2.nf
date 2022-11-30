@@ -44,7 +44,7 @@ process GET_MLST_SRST2 {
     python -V
     which python
     echo "here we go"
-    convert_MLST_DB_spaces.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
+    convert_taxonomy_with_complexes_to_pubMLST.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
     echo "there we went"
 
     dbline=\$(tail -n1 DB_defs.txt)
@@ -53,42 +53,40 @@ process GET_MLST_SRST2 {
     echo "\${#db_array[@]}-\${db_array[@]}"
     #num_dbs="\${#db_array[@]}"
     counter=1
-    if [[ ! -f dbases.xml ]]; then
-      for entry in "\${db_array[@]}"
-      do
-        entry_no_spaces="\${entry// /_}"
-        touch "\${entry_no_spaces}.fasta"
-        touch "\${entry_no_spaces}_profiles.csv"
-        echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
-        echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
-      done
-    else
-      for entry in "\${db_array[@]}"
-      do
-        echo "Entry#\${counter}-\${entry}|"
-        entry_no_spaces="\${entry// /_}"
-        if [[ "\${entry}" = "No match found" ]]; then
-      		touch "\${entry_no_spaces}.fasta"
-      		touch "\${entry_no_spaces}_profiles.csv"
-          echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+    for entry in "\${db_array[@]}"
+    do
+      echo "Entry#\${counter}-\${entry}|"
+      entry_no_spaces="\${entry// /_}"
+      if [[ "\${entry}" = "No match found" ]]; then
+    		touch "\${entry_no_spaces}.fasta"
+    		touch "\${entry_no_spaces}_profiles.csv"
+			touch "\${entry_no_spaces}_pull_dates.txt"
+        echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+      else
+        if [[ "\${entry}" = "Streptococcus thermophilus" ]]; then
+          getMLST2_phoenix.py --species "\$entry" --force_scheme_name
         else
           getMLST2_phoenix.py --species "\$entry"
+        fi
+        if [[ ! -f dbases.xml ]]; then
+          touch "\${entry_no_spaces}.fasta"
+          touch "\${entry_no_spaces}_profiles.csv"
+          echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
+        else
           if [[ "\${entry}" = *"baumannii#1" ]]; then
-      			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
-      			sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
-      		elif [[ "\${entry}" = *"baumannii#2" ]]; then
-      			sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
-      			sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+    			   sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
+    			   sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
+    		  elif [[ "\${entry}" = *"baumannii#2" ]]; then
+    			   sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
+    			   sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
           fi
         fi
         echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
-        counter=\$(( counter + 1))
-      done
-    fi
+      fi
+      counter=\$(( counter + 1))
+    done
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        getMLST: $VERSION
-    END_VERSIONS
+    echo -e "\"${task.process}\":
+        getMLST: $VERSION" > versions.yml
     """
 }

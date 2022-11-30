@@ -24,7 +24,7 @@ process SRST2_MLST {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
     """
-    counter=1
+    scheme_count=1
     for getout in $getmlstout
     do
       no_match="False"
@@ -46,62 +46,71 @@ process SRST2_MLST {
 
         srst2 ${read_s} \\
             --threads $task.cpus \\
-            --output \${counter}_${prefix} \\
+            --output \${scheme_count}_${prefix} \\
             --mlst_db "\${mlst_db}".fasta \\
             --mlst_definitions \${mlst_defs} \\
             --mlst_delimiter \${mlst_delimiter} \\
             $args
       fi
-      header="Sample  database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 Extra_info(extra_loci,CC,srst2_match_info)"
-      if [[ "\${counter}" -eq 1 ]]; then
+      header="Sample	database	ST	mismatches	uncertainty	depth	maxMAF	locus_1	locus_2	locus_3	locus_4	locus_5	locus_6	locus_7	locus_8	locus_9	locus_10"
+      if [[ "\${scheme_count}" -eq 1 ]]; then
         echo "\${header}" > ${prefix}_srst2.mlst
       fi
       header_list=""
       trailer_list=""
       if [[ "\${no_match}" = "True" ]]; then
         tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-        echo "${prefix} No match found  - - - - - - - - \${tax_with_no_scheme}" >> "${prefix}_srst2.mlst"
+        echo "${prefix}	No match found for \${tax_with_no_scheme}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
       else
-        raw_header="\$(head -n1 \${counter}_${prefix}*.txt)"
-        raw_trailer="\$(tail -n1 \${counter}_${prefix}*.txt)"
-        formatted_trailer="${prefix}  \${mlst_db}"
+        raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
+        raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
+        formatted_trailer="${prefix}	\${mlst_db}"
         IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
         IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
-        inner_counter=0
-        found_last_locus="False"
+        header_length="\${#header_list[@]}"
+        ST_index=1
+        mismatch_index=\$(( header_length - 4 ))
+        uncertainty_index=\$(( header_length - 3 ))
+        depth_index=\$(( header_length - 2 ))
+        maxMAF_index=\$(( header_length - 1))
+        genes_start_index=2
+        genes_end_index=\$(( header_length - 5 ))
+        # Original Index will be something as follows for a 7 gene scheme
+        #
+        # Sample  ST      adk     atpA    dxr     glyA    recA    sodA    tpi     mismatches      uncertainty     depth   maxMAF
+        # 0       1       2       3       4       5       6       7       8       9                10             11      12
+        #
+        # Expected Index will be as follows for the same isolate to accomomdate splunk ingestion of varying gene counts
+        #
+        # Sample  database  ST  mismatches  uncertainty depth maxMAF  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 locus_9 locus_10
+        # 0     1   2   3           4           5     6       7       8       9       10      11      12        13    14      15      16
+
         echo "\${#header_list[@]} --- \${header_list[@]} --- \${#trailer_list[@]} --- \${trailer_list[@]}"
-        for item in "\${trailer_list[@]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${ST_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${mismatch_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${uncertainty_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${depth_index}]}"
+        formatted_trailer="\${formatted_trailer}	\${trailer_list[\${maxMAF_index}]}"
+
+        #for index in {\$genes_start_index..\$genes_end_index}
+        for (( index=\${genes_start_index} ; index <= \${genes_end_index} ; index++ ));
         do
-          echo "\${inner_counter} -- \${header_list[\${inner_counter}]} -- \${trailer_list[\${inner_counter}]}"
-          if [[ "\${inner_counter}" -eq 1 ]]; then
-            formatted_trailer="\${formatted_trailer}  \${trailer_list[\${inner_counter}]}"
-          elif [[ "\${inner_counter}" -gt 2 ]] && [[ "\${inner_counter}" -lt 10 ]]; then
-            formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
-          elif [[ "\${inner_counter}" -eq 2 ]] || [[ "\${inner_counter}" -ge 10 ]]; then
-            if [[ "\${header_list[\${inner_counter}]}" = "mismatches" ]]; then
-              found_last_locus="True"
-            fi
-            if [[ "\${found_last_locus}" = "False" ]]; then
-              formatted_trailer="\${formatted_trailer}  \${header_list[\${inner_counter}]}(\${trailer_list[\${inner_counter}]})"
-            else
-              formatted_trailer="\${formatted_trailer}  \${trailer_list[\${inner_counter}]}"
-            fi
-          fi
-          inner_counter=\$(( inner_counter + 1 ))
+          echo "\${index} -- \${header_list[\${index}]} -- \${trailer_list[\${index}]}"
+          formatted_trailer="\${formatted_trailer}	\${header_list[\${index}]}(\${trailer_list[\${index}]})"
         done
         echo "\${formatted_trailer}" >> ${prefix}_srst2.mlst
       fi
 
-      #if [[ -f \${counter}_${prefix}*.txt ]]; then
-      #  rm \${counter}_${prefix}*.txt
+      #if [[ -f \${scheme_count}_${prefix}*.txt ]]; then
+      #  rm \${scheme_count}_${prefix}*.txt
       #fi
-      counter=\$(( counter + 1 ))
+      scheme_count=\$(( scheme_count + 1 ))
       #mv profiles_csv \${mlst_db}_profiles_csv
     done
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' ))
+        srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
     END_VERSIONS
     """
 }

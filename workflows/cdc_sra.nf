@@ -11,7 +11,7 @@ WorkflowPhoenix.initialise(params, log)
 
 
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config ] 
+def checkPathParamList = [ params.input, params.multiqc_config ]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 //input on command line
@@ -63,6 +63,7 @@ include { GATHER_SUMMARY_LINES     } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS  } from '../modules/local/generate_pipeline_stats'
 include { SRST2_MLST               } from '../modules/local/srst2_mlst'
 include { GET_MLST_SRST2           } from '../modules/local/get_mlst_srst2'
+include { CHECK_MLST                     } from '../modules/local/check_mlst'
 
 /*
 ========================================================================================
@@ -115,7 +116,7 @@ workflow SRA_PHOENIX {
     )
     ch_versions = ch_versions.mix(GET_SRA.out.versions)
 
-    //pass new 
+    //pass new
     INPUT_CHECK (
         GET_SRA.out.samplesheet
     )
@@ -258,7 +259,6 @@ workflow SRA_PHOENIX {
     top_taxa_ch = MASH_DIST.out.dist.map{ meta, dist  -> [[id:meta.id], dist]}\
     .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{   meta, reads -> [[id:meta.id], reads ]}, by: [0])
 
-    // Generate file with list of paths of top taxa for fastANI
     DETERMINE_TOP_TAXA (
         top_taxa_ch, params.refseq_fasta_database
     )
@@ -314,6 +314,29 @@ workflow SRA_PHOENIX {
     )
     ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 
+    // Identifying mlst genes in trimmed reads
+    SRST2_MLST (
+    mid_srst2_ch
+    )
+    ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
+
+    combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
+    .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
+    .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
+    // Combining and adding flare to all MLST outputs
+
+    // Chcks MLST files for correct types, improved info on imperfect matches, and identifying paralog types
+    CHECK_MLST (
+    combined_mlst_ch
+    )
+    ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
+
+    // get gff and protein files for amrfinder+
+    PROKKA (
+        BBMAP_REFORMAT.out.reads, [], []
+    )
+    ch_versions = ch_versions.mix(PROKKA.out.versions)
+
     // Fetch AMRFinder Database
     AMRFINDERPLUS_UPDATE( )
     ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
@@ -355,7 +378,8 @@ workflow SRA_PHOENIX {
         KRAKEN2_TRIMD.out.k2_bh_summary, \
         RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
         BBMAP_REFORMAT.out.filtered_scaffolds, \
-        MLST.out.tsv, \
+        //MLST.out.tsv, \
+        CHECK_MLST.out.checked_MLSTs, \
         GAMMA_HV.out.gamma, \
         GAMMA_AR.out.gamma, \
         GAMMA_PF.out.gamma, \
@@ -375,9 +399,10 @@ workflow SRA_PHOENIX {
         true
     )
 
-    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
+    // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
     line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-    .join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+    //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
+    .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
     .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
     .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\

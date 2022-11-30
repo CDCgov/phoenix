@@ -18,7 +18,7 @@ task phoenix {
     # Make sample form
     echo "sample,fastq_1,fastq_2" > sample.csv
     echo "~{samplename},~{read1},~{read2}" >> sample.csv
-    
+
     # Debug
     export TMP_DIR=$TMPDIR
     export TMP=$TMPDIR
@@ -33,7 +33,7 @@ task phoenix {
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
       cd ..
-      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz 
+      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz
     else
       # Run failed
       tar -cf - work/ | gzip -n --best > work.tar.gz
@@ -43,7 +43,7 @@ task phoenix {
       find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
       exit 1
     fi
-    
+
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f3 | tee WARNING_COUNT
@@ -142,7 +142,7 @@ task phoenix {
     File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}.txt"
     #phoenix quast and mlst
     File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
-    File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}.tsv"
+    File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
     #phoenix gamma
     File gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20220915_srst2.gamma"
     File blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20220915_srst2.psl"

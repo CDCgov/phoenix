@@ -112,12 +112,10 @@ do_ANI() {
 	source_file="${fastani_file}"
 	if [[ -s "${fastani_file}" ]]; then
 		header=$(head -n 1 "${fastani_file}")
-		percents_count=$(echo "${header}" | tr -cd '%' | wc -c)
-		echo "${header}"
-		Genus=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f3)
-		species=$(echo "${header}" | cut -d' ' -f2 | cut -d'(' -f1 | sed 's/[][]//g')
-		confidence_index=$(echo "${header}" | cut -d' ' -f1 | cut -d'-' -f1,2)
-		echo "${Genus}-${species}"
+		info=$(tail -n 1 "${fastani_file}")
+		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
+		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
+		confidence_index=$(echo "${info}" | cut -d'	' -f2)
 	else
 		echo "source file (${fastani_file}) is empty"
 	fi
@@ -207,4 +205,4 @@ fi
 
 # Print output to tax file for sample
 #echo -e "(${source})-${confidence_index}-${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${OUTDATADIR}/${sample_name}.tax"
-echo -e "(${source})-${confidence_index}-${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${sample_name}.tax"
+echo -e "${source}	${confidence_index}	${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${sample_name}.tax"
