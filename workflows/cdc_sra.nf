@@ -76,7 +76,7 @@ include { CHECK_MLST                     } from '../modules/local/check_mlst'
 //
 
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
-include { SPADES_WF                                         } from '../subworkflows/local/spades_failure'
+include { SPADES_WF                                         } from '../subworkflows/local/spades_workflow'
 include { GENERATE_PIPELINE_STATS_WF                        } from '../subworkflows/local/generate_pipeline_stats'
 include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
 include { KRAKEN2_WF as KRAKEN2_TRIMD                       } from '../subworkflows/local/kraken2krona'
@@ -196,75 +196,76 @@ workflow SRA_PHOENIX {
 
     // Getting MLST scheme for taxa
     MLST (
-        BBMAP_REFORMAT.out.reads
+        BBMAP_REFORMAT.out.filtered_scaffolds
     )
     ch_versions = ch_versions.mix(MLST.out.versions)
 
     // Running gamma to identify hypervirulence genes in scaffolds
     GAMMA_HV (
-        BBMAP_REFORMAT.out.reads, params.hvgamdb
+        BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
     )
     ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
 
     // Running gamma to identify AR genes in scaffolds
     GAMMA_AR (
-        BBMAP_REFORMAT.out.reads, params.ardb
+        BBMAP_REFORMAT.out.filtered_scaffolds, params.ardb
     )
     ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
     GAMMA_PF (
-        BBMAP_REFORMAT.out.reads, params.gamdbpf
+        BBMAP_REFORMAT.out.filtered_scaffolds, params.gamdbpf
     )
     ch_versions = ch_versions.mix(GAMMA_PF.out.versions)
 
     // Getting Assembly Stats
     QUAST (
-        BBMAP_REFORMAT.out.reads
+        BBMAP_REFORMAT.out.filtered_scaffolds
     )
     ch_versions = ch_versions.mix(QUAST.out.versions)
 
     if (params.busco_db_path != null) {
         // Checking single copy genes for assembly completeness
         BUSCO (
-            BBMAP_REFORMAT.out.reads, 'auto', params.busco_db_path, []
+            BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', params.busco_db_path, []
         )
         ch_versions = ch_versions.mix(BUSCO.out.versions)
     } else {
         // Checking single copy genes for assembly completeness
         BUSCO (
-            BBMAP_REFORMAT.out.reads, 'auto', [], []
+            BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', [], []
         )
         ch_versions = ch_versions.mix(BUSCO.out.versions)
     }
 
     // Checking for Contamination in assembly creating krona plots and best hit files
     KRAKEN2_ASMBLD (
-        BBMAP_REFORMAT.out.reads,"asmbld", [], QUAST.out.report_tsv
+        BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv
     )
     ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
     // Creating krona plots and best hit files for weighted assembly
     KRAKEN2_WTASMBLD (
-        BBMAP_REFORMAT.out.reads,"wtasmbld", [], QUAST.out.report_tsv
+        BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
     )
     ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
     // Running Mash distance to get top 20 matches for fastANI to speed things up
     MASH_DIST (
-        BBMAP_REFORMAT.out.reads, ASSET_CHECK.out.mash_sketch
+        BBMAP_REFORMAT.out.filtered_scaffolds, ASSET_CHECK.out.mash_sketch
     )
     ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
     // Combining mash dist with filtered scaffolds based on meta.id
     top_taxa_ch = MASH_DIST.out.dist.map{ meta, dist  -> [[id:meta.id], dist]}\
-    .join(BBMAP_REFORMAT.out.reads.map{   meta, reads -> [[id:meta.id], reads ]}, by: [0])
+    .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{   meta, reads -> [[id:meta.id], reads ]}, by: [0])
 
-    // Generate file with list of paths of top taxa for fastANI
-    top_taxa_ch
-)
-// Combining filtered scaffolds with the top taxa list based on meta.id
-    top_taxa_list_ch = BBMAP_REFORMAT.out.reads.map{meta, reads         -> [[id:meta.id], reads]}\
-    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{ meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+    DETERMINE_TOP_TAXA (
+        top_taxa_ch, params.refseq_fasta_database
+    )
+
+    // Combining filtered scaffolds with the top taxa list based on meta.id
+    top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, reads           -> [[id:meta.id], reads]}\
+    .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{  meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]},   by: [0])\
     .join(DETERMINE_TOP_TAXA.out.reference_files.map{meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
 
     // Getting species ID
@@ -291,7 +292,7 @@ workflow SRA_PHOENIX {
 
     // get gff and protein files for amrfinder+
     PROKKA (
-        BBMAP_REFORMAT.out.reads, [], []
+        BBMAP_REFORMAT.out.filtered_scaffolds, [], []
     )
     ch_versions = ch_versions.mix(PROKKA.out.versions)
 
@@ -345,8 +346,8 @@ workflow SRA_PHOENIX {
         DETERMINE_TAXA_ID.out.taxonomy
     )
 
-    // Combining taxa and scaffolds to run amrfinder and get the point mutations.
-    amr_channel = BBMAP_REFORMAT.out.reads.map{                               meta, reads          -> [[id:meta.id], reads]}\
+    // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
+    amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                               meta, reads          -> [[id:meta.id], reads]}\
     .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
     .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
     .join(PROKKA.out.gff.map{                                                 meta, gff            -> [[id:meta.id], gff ]},            by: [0])
@@ -376,7 +377,7 @@ workflow SRA_PHOENIX {
         KRAKEN2_TRIMD.out.krona_html, \
         KRAKEN2_TRIMD.out.k2_bh_summary, \
         RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
-        BBMAP_REFORMAT.out.reads, \
+        BBMAP_REFORMAT.out.filtered_scaffolds, \
         //MLST.out.tsv, \
         CHECK_MLST.out.checked_MLSTs, \
         GAMMA_HV.out.gamma, \

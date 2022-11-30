@@ -19,11 +19,12 @@ show_help () {
 	echo "required: -d = path to specific sorted database with statistics related to entries from NCBI"
 	echo "required: -n = sample name of file"
 	echo "required: -k = kraken trimmed best hit summary"
+	echo "required: -s = synopsis file"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?d:n:k:" option; do
+while getopts ":h?d:n:k:s:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -40,6 +41,9 @@ while getopts ":h?d:n:k:" option; do
 		k)
 			echo "Option -k triggered, argument = ${OPTARG}"
 			k2_bh_summary=${OPTARG};;
+		s)
+			echo "Option -s triggered, argument = ${OPTARG}"
+			synopsis=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -54,8 +58,13 @@ gpercent=$(grep -R 'G:' $k2_bh_summary | cut -d ' ' -f2 | tr -d '\n')
 species=$(grep -R 's:' $k2_bh_summary | cut -d ' ' -f3 | tr -d '\n')
 spercent=$(grep -R 's:' $k2_bh_summary | cut -d ' ' -f2 | tr -d '\n')
 name=$(echo "${genus}(${gpercent}%) ${species}(${spercent}%)")
+species_col=$(echo "${genus} ${species}")
 
-echo "${sample_name}\tFAIL\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\t${name}\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tSPAdes_Failure" | tr -d '\n' > ${sample_name}_summaryline_failure.tsv
+
+#get the number of warnings in the synopsis file
+warning_count=$(grep ": WARNING  :" $synopsis | wc -l)
+
+echo "${sample_name}\tFAIL\t${warning_count}\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\t${species_col}\tUnknown\tkraken2_trimmed\t${name}\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tSPAdes_Failure" | tr -d '\n' > ${sample_name}_summaryline_failure.tsv
 cp ${sample_name}_summaryline_failure.tsv ${output_path}/${sample_name}/
 # copy the synopsis file
 cp ${sample_name}.synopsis ${output_path}/${sample_name}

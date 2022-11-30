@@ -11,7 +11,7 @@ WorkflowPhoenix.initialise(params, log)
 
 
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config ] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
+def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
 // Check mandatory parameters
@@ -35,13 +35,12 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
+include { SCAFFOLDS_SAMPLESHEET_CHECK    } from '../modules/local/scaffolds_samplesheet_check'
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
-include { SRST2_AR                       } from '../modules/local/srst2_ar'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
-include { BUSCO                          } from '../modules/local/busco'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
@@ -55,17 +54,12 @@ include { FORMAT_ANI                     } from '../modules/local/format_ANI_bes
 include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
 include { PROKKA                         } from '../modules/local/prokka'
-include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_UPDATE           } from '../modules/local/update_amrfinder_db'
+include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
-include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
-include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
-include { CHECK_MLST                     } from '../modules/local/check_mlst_external'
 
 /*
 ========================================================================================
@@ -74,7 +68,6 @@ include { CHECK_MLST                     } from '../modules/local/check_mlst_ext
 */
 
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-include { SPADES_WF                      } from '../subworkflows/local/spades_workflow'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
@@ -90,9 +83,9 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
-include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
-include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/modules/fastqc/main'
+include { MULTIQC                      } from '../modules/nf-core/modules/multiqc/main'
+include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
 /*
 ========================================================================================
@@ -102,84 +95,19 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 
 // Info required for completion email and summary
 def multiqc_report = []
+def count = 0
 
-workflow PHOENIX_EXQC {
+workflow SCAFFOLD_EXTERNAL {
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
-
-        //
-        // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
-        //
-
-        // Call in reads
-        INPUT_CHECK (
-            ch_input
-        )
-        ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
-
-        //unzip any zipped databases
-        ASSET_CHECK (
-            params.zipped_sketch
-        )
-
-        // Remove PhiX reads
-        BBDUK (
-            INPUT_CHECK.out.reads, params.bbdukdb
-        )
-        ch_versions = ch_versions.mix(BBDUK.out.versions)
-
-        // Trim and remove low quality reads
-        FASTP_TRIMD (
-            BBDUK.out.reads, true, false
-        )
-        ch_versions = ch_versions.mix(FASTP_TRIMD.out.versions)
-
-        // Rerun on unpaired reads to get stats, nothing removed
-        FASTP_SINGLES (
-            FASTP_TRIMD.out.reads_fail
-        )
-        ch_versions = ch_versions.mix(FASTP_SINGLES.out.versions)
-
-        // Combining fastp json outputs based on meta.id
-        fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0])
-
-        // Script gathers data from jsons for pipeline stats file
-        GATHERING_READ_QC_STATS(
-            fastp_json_ch
-        )
-
-        // Running Fastqc on trimmed reads
-        FASTQCTRIMD (
-            FASTP_TRIMD.out.reads
-        )
-        ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
-
-        // Idenitifying AR genes in trimmed reads
-        SRST2_AR (
-            FASTP_TRIMD.out.reads.map{ meta, reads -> [ [id:meta.id, single_end:meta.single_end, db:'gene'], reads, params.ardb]}
-        )
-        ch_versions = ch_versions.mix(SRST2_AR.out.versions)
-
-        // Checking for Contamination in trimmed reads, creating krona plots and best hit files
-        KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
-        )
-        ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
-
-        SPADES_WF (
-            FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
-            GATHERING_READ_QC_STATS.out.fastp_total_qc, \
-            GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
-            SRST2_AR.out.fullgene_results, \
-            KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
-            KRAKEN2_TRIMD.out.k2_bh_summary, \
-            true
-        )
-        ch_versions = ch_versions.mix(SPADES_WF.out.versions)
-
+        
+        //Create samplesheet
+        SCAFFOLDS_SAMPLESHEET_CHECK ()
+        ch_versions = ch_versions.mix(SCAFFOLDS_SAMPLESHEET_CHECK.out.versions)
+        
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            SPADES_WF.out.spades_ch
+            SCAFFOLDS_SAMPLESHEET_CHECK.out.samplesheet
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -218,26 +146,6 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
-        if (params.busco_db_path != null) {
-            // Checking single copy genes for assembly completeness
-            BUSCO (
-                BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', params.busco_db_path, []
-            )
-            ch_versions = ch_versions.mix(BUSCO.out.versions)
-        } else {
-            // Checking single copy genes for assembly completeness
-            BUSCO (
-                BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', [], []
-            )
-            ch_versions = ch_versions.mix(BUSCO.out.versions)
-        }
-
-        // Checking for Contamination in assembly creating krona plots and best hit files
-        KRAKEN2_ASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv
-        )
-        ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
-
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
             BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
@@ -260,8 +168,8 @@ workflow PHOENIX_EXQC {
         )
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
-        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads         -> [[id:meta.id], reads]}\
-        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{ meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, reads           -> [[id:meta.id], reads]}\
+        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{  meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]}, by: [0])\
         .join(DETERMINE_TOP_TAXA.out.reference_files.map{meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
 
         // Getting species ID
@@ -292,34 +200,6 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(PROKKA.out.versions)
 
-        // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
-        GET_MLST_SRST2 (
-            DETERMINE_TAXA_ID.out.taxonomy
-        )
-        ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
-
-        // Combining weighted kraken report with the FastANI hit based on meta.id
-        mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads    -> [[id:meta.id], reads]}\
-        .join(GET_MLST_SRST2.out.getMLSTs.map{   meta, getMLSTs -> [[id:meta.id], getMLSTs]},  by: [0])\
-        .join(GET_MLST_SRST2.out.fastas.map{     meta, fastas   -> [[id:meta.id], fastas]},    by: [0])\
-        .join(GET_MLST_SRST2.out.profiles.map{   meta, profiles -> [[id:meta.id], profiles]},  by: [0])
-
-        // Identifying mlst genes in trimmed reads
-        SRST2_MLST (
-            mid_srst2_ch
-        )
-        ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
-
-        combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
-        .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
-
-        // Combining and adding flare to all MLST outputs
-        CHECK_MLST (
-            combined_mlst_ch
-        )
-        ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
-
         // Fetch AMRFinder Database
         AMRFINDERPLUS_UPDATE( )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
@@ -329,7 +209,7 @@ workflow PHOENIX_EXQC {
             DETERMINE_TAXA_ID.out.taxonomy
         )
 
-        // Combining taxa and scaffolds to run amrfinder and get the point mutations.
+        // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
         amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                               meta, reads          -> [[id:meta.id], reads]}\
         .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
         .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
@@ -345,32 +225,38 @@ workflow PHOENIX_EXQC {
         assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
         .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
-        // Calculating the assembly ratio
+        // Calculating the assembly ratio and gather GC% stats
         CALCULATE_ASSEMBLY_RATIO (
             assembly_ratios_ch, params.ncbi_assembly_stats
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         GENERATE_PIPELINE_STATS_WF (
+        
+            //start changes here
             FASTP_TRIMD.out.reads, \
             GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
             GATHERING_READ_QC_STATS.out.fastp_total_qc, \
-            SRST2_AR.out.fullgene_results, \
+            [], \
             KRAKEN2_TRIMD.out.report, \
             KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
+            //end changes
+            [], \
+            [], \
+            [], \
+            [], \
+            [], \
+            [], \
+            [], \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
-            //MLST.out.tsv, \
-            CHECK_MLST.out.checked_MLSTs, \
+            MLST.out.tsv, \
             GAMMA_HV.out.gamma, \
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
             QUAST.out.report_tsv, \
-            BUSCO.out.short_summaries_specific_txt, \
-            KRAKEN2_ASMBLD.out.report, \
-            KRAKEN2_ASMBLD.out.krona_html, \
-            KRAKEN2_ASMBLD.out.k2_bh_summary, \
+            [], [], [], [], \
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
@@ -379,13 +265,11 @@ workflow PHOENIX_EXQC {
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
-            true
+            false
         )
 
-        // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-        //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
-      .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
+        // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input. 
+        line_summary_ch = MLST.out.tsv.map{                              meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -393,31 +277,21 @@ workflow PHOENIX_EXQC {
         .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
         .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
-        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
-        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])
+        //.join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
+        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]}, by: [0])
 
-        // Generate summary per sample
+        // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE(
             line_summary_ch
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
         // Collect all the summary files prior to fetch step to force the fetch process to wait
-        failed_summaries_ch         = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder)
         summaries_ch                = CREATE_SUMMARY_LINE.out.line_summary.collect()
-
-        // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
-        FETCH_FAILED_SUMMARIES (
-            params.outdir, failed_summaries_ch, summaries_ch
-        )
-
-        // combine all line summaries into one channel
-        spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
-        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            all_summaries_ch, true
+            all_summaries_ch, false
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
@@ -444,16 +318,12 @@ workflow PHOENIX_EXQC {
         )
         multiqc_report = MULTIQC.out.report.toList()
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
-        
-      emit:
+
+    emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
-        trimmed_reads    = FASTP_TRIMD.out.reads
-        paired_trmd_json = FASTP_TRIMD.out.json
+        mlst             = MLST.out.tsv
         amrfinder_report = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
-        summary_report   = GATHER_SUMMARY_LINES.out.summary_report
-
-        
 }
 
 /*

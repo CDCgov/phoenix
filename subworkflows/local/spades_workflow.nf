@@ -123,6 +123,7 @@ workflow SPADES_WF {
     emit:
         spades_ch                   = spades_ch
         spades_outcome              = SPADES.out.spades_outcome
+        scaffolds                   = SPADES.out.scaffolds
         line_summary                = CREATE_SUMMARY_LINE_FAILURE.out.line_summary
         versions                    = ch_versions // channel: [ versions.yml ]
 }
