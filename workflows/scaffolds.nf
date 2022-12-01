@@ -35,7 +35,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
-include { SCAFFOLDS_SAMPLESHEET_CHECK    } from '../modules/local/scaffolds_samplesheet_check'
+include { SCAFFOLDS_INPUT_CHECK          } from '../modules/local/scaffolds_input_check'
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
@@ -67,7 +67,6 @@ include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summar
 ========================================================================================
 */
 
-include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
@@ -102,8 +101,8 @@ workflow SCAFFOLD_EXTERNAL {
         ch_versions     = Channel.empty() // Used to collect the software versions
         
         //Create samplesheet
-        SCAFFOLDS_SAMPLESHEET_CHECK ()
-        ch_versions = ch_versions.mix(SCAFFOLDS_SAMPLESHEET_CHECK.out.versions)
+        SCAFFOLDS_INPUT_CHECK ()
+        ch_versions = ch_versions.mix(SCAFFOLDS_INPUT_CHECK.out.versions)
         
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
