@@ -1,20 +1,20 @@
 //
-// Check input samplesheet and get read channels
+// Check input samplesheet and get scaffolds channels
 //
 
 //create module below to address scaffolds
-//include { SAMPLESHEET_CHECK } from '../../modules/local/samplesheet_check'
+include { SCAFFOLDS_SAMPLESHEET_CHECK } from '../../modules/local/scaffolds_samplesheet_check'
 
-workflow INPUT_CHECK {
+workflow SCAFFOLDS_INPUT_CHECK {
     take:
     samplesheet // file: /path/to/samplesheet.csv
 
     main:
-    SAMPLESHEET_CHECK ( samplesheet )
+    SCAFFOLDS_SAMPLESHEET_CHECK ( samplesheet )
         .csv
         .splitCsv ( header:true, sep:',' )
         .map { create_scaff_channels(it) }
-        .set { reads }  //single fasta file not pairs
+        .set { scaffolds }  //single fasta file not pairs
 
     emit:
     scaffolds                                     // channel: [ val(meta), [ reads ] ]
