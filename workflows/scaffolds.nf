@@ -101,7 +101,9 @@ workflow SCAFFOLD_EXTERNAL {
         ch_versions     = Channel.empty() // Used to collect the software versions
         
         //Create samplesheet
-        SCAFFOLDS_INPUT_CHECK ()
+        SCAFFOLDS_INPUT_CHECK (
+            params.scaffolds_samplesheet
+        )
         ch_versions = ch_versions.mix(SCAFFOLDS_INPUT_CHECK.out.versions)
         
         // Rename scaffold headers
