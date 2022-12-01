@@ -25,13 +25,13 @@ workflow INPUT_CHECK {
 def create_scaff_channels(LinkedHashMap row) {
     def meta = [:]
     meta.id           = row.sample
-    meta.single_end   = row.single_end.toBoolean()
+    //meta.single_end   = row.single_end.toBoolean()
 
     def array = []
     if (!file(row.scaffolds_file).exists()) {
         exit 1, "ERROR: Please check input samplesheet -> Scaffolds file does not exist!\n${row.scaffolds_file}"
-    } 
-    if (meta.single_end) {
+    } else {
+    //if (meta.single_end) {
         array = [ meta, [ file(row.scaffolds_file) ] ]
     } //else {
         //if (!file(row.fastq_2).exists()) {
