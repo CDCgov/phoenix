@@ -108,7 +108,7 @@ workflow SCAFFOLD_EXTERNAL {
         
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            SCAFFOLDS_SAMPLESHEET_CHECK.out.samplesheet
+            SCAFFOLDS_INPUT_CHECK.out.scaffolds
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
