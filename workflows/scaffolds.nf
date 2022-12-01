@@ -82,7 +82,6 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                      } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
@@ -101,12 +100,14 @@ workflow SCAFFOLD_EXTERNAL {
         ch_versions     = Channel.empty() // Used to collect the software versions
         
         //Create samplesheet
-        SCAFFOLDS_INPUT_CHECK ()
+        SCAFFOLDS_INPUT_CHECK (
+            params.scaffolds_samplesheet
+        )
         ch_versions = ch_versions.mix(SCAFFOLDS_INPUT_CHECK.out.versions)
         
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            SCAFFOLDS_SAMPLESHEET_CHECK.out.samplesheet
+            SCAFFOLDS_INPUT_CHECK.out.scaffolds
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -310,7 +311,6 @@ workflow SCAFFOLD_EXTERNAL {
         ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
         ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
         ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-        ch_multiqc_files = ch_multiqc_files.mix(FASTQCTRIMD.out.zip.collect{it[1]}.ifEmpty([]))
 
         MULTIQC (
             ch_multiqc_files.collect()
