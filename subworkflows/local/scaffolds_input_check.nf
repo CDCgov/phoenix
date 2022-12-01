@@ -3,14 +3,14 @@
 //
 
 //create module below to address scaffolds
-//include { SAMPLESHEET_CHECK } from '../../modules/local/samplesheet_check'
+include { SCAFFOLDS_SAMPLESHEET_CHECK } from '../../modules/local/scaffolds_samplesheet_check'
 
 workflow INPUT_CHECK {
     take:
     samplesheet // file: /path/to/samplesheet.csv
 
     main:
-    SAMPLESHEET_CHECK ( samplesheet )
+    SCAFFOLDS_SAMPLESHEET_CHECK ( samplesheet )
         .csv
         .splitCsv ( header:true, sep:',' )
         .map { create_scaff_channels(it) }
