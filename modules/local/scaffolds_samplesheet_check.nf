@@ -1,6 +1,7 @@
 process SCAFFOLDS_SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process-low'
+    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
     
     conda (params.enable_conda ? "conda-forge::pandas=1.1.5" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
