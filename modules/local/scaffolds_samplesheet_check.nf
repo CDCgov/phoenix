@@ -24,4 +24,5 @@ process SCAFFOLDS_SAMPLESHEET_CHECK {
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
+    """
 }
