@@ -35,11 +35,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
-include { SCAFFOLDS_INPUT_CHECK          } from '../modules/local/scaffolds_input_check'
-include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { BBDUK                          } from '../modules/local/bbduk'
-include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
-include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
@@ -68,7 +63,6 @@ include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summar
 */
 
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
-include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
 
