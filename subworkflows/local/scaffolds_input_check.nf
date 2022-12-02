@@ -18,7 +18,7 @@ workflow SCAFFOLDS_INPUT_CHECK {
 
     emit:
     scaffolds                                     // channel: [ val(meta), [ reads ] ]
-    versions = SAMPLESHEET_CHECK.out.versions    // channel: [ versions.yml ]
+    versions = SCAFFOLDS_SAMPLESHEET_CHECK.out.versions    // channel: [ versions.yml ]
 }
 
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
