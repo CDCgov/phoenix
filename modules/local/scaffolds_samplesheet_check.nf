@@ -1,6 +1,6 @@
 process SCAFFOLDS_SAMPLESHEET_CHECK {
     tag "$samplesheet"
-    label 'process-low'
+    label 'process_low'
 
 
     conda (params.enable_conda ? "conda-forge::pandas=1.1.5" : null)
