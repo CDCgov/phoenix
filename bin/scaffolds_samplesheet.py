@@ -17,7 +17,7 @@ def parseArgs(args=None):
 
 cwd = os.getcwd()
 scaffLoc = "scaffolds_files/"
-suffA = "scaffolds.fa.gz"
+suffA = ".scaffolds.fa.gz"
 
 
 def formatFilesSamplesheet(partialCsv):
