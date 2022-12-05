@@ -62,6 +62,7 @@ include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summar
 ========================================================================================
 */
 
+include { SCAFFOLDS_INPUT_CHECK          } from '../subworkflows/local/scaffolds_input_check'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
