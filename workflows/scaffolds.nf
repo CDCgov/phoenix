@@ -35,6 +35,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
+include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
