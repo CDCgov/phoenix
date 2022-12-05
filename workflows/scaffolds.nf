@@ -100,6 +100,8 @@ workflow SCAFFOLD_EXTERNAL {
         )
         ch_versions = ch_versions.mix(SCAFFOLDS_INPUT_CHECK.out.versions)
         
+        //spades_ch = SCAFFOLDS_INPUT_CHECK.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
+        
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
             SCAFFOLDS_INPUT_CHECK.out.scaffolds
