@@ -15,7 +15,7 @@
 - Added emits to allow linking of workflows to close [#42](https://github.com/CDCgov/phoenix/issues/42) [#e32132d](https://github.com/CDCgov/phoenix/commit/e32132dffc656214a9977ab6c0b22efb86f72f6f).  
 
 **Output File Changes:**  
-- Removed spaces in header of *_all_genes.tsv file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#](link to issue)
+- Removed spaces in header of *_all_genes.tsv file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#fd048d1](https://github.com/CDCgov/phoenix/commit/fd048d1a54ca262617eeef32d85cd4f47650af23)
 - Fixed error causing PROKKA output to not be in Annotation folder [#d014aa0](https://github.com/CDCgov/phoenix/commit/d014aa00b27c1fa9e2d1b1151bc7f6c44d8a82b3).  
 - Nick to add files that had headers added
 
