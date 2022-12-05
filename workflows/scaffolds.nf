@@ -64,6 +64,7 @@ include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summar
 
 include { SCAFFOLDS_INPUT_CHECK          } from '../subworkflows/local/scaffolds_input_check'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
+include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
 
@@ -91,7 +92,7 @@ def multiqc_report = []
 def count = 0
 
 workflow SCAFFOLD_EXTERNAL {
-    
+
         ch_versions     = Channel.empty() // Used to collect the software versions
         
         //Create samplesheet
@@ -100,8 +101,8 @@ workflow SCAFFOLD_EXTERNAL {
         )
         ch_versions = ch_versions.mix(SCAFFOLDS_INPUT_CHECK.out.versions)
         
-        //spades_ch = SCAFFOLDS_INPUT_CHECK.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
-        
+        spades_ch = SCAFFOLDS_INPUT_CHECK.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
+
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
             SCAFFOLDS_INPUT_CHECK.out.scaffolds
