@@ -138,6 +138,24 @@ workflow SCAFFOLD_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GAMMA_PF.out.versions)
 
+        // Getting Assembly Stats
+        QUAST (
+            BBMAP_REFORMAT.out.filtered_scaffolds
+        )
+        ch_versions = ch_versions.mix(QUAST.out.versions)
+
+        // Creating krona plots and best hit files for weighted assembly
+        KRAKEN2_WTASMBLD (
+            BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
+        )
+        ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
+
+        // Running Mash distance to get top 20 matches for fastANI to speed things up
+        MASH_DIST (
+            BBMAP_REFORMAT.out.filtered_scaffolds, ASSET_CHECK.out.mash_sketch
+        )
+        ch_versions = ch_versions.mix(MASH_DIST.out.versions)
+
 }
 
 /*
