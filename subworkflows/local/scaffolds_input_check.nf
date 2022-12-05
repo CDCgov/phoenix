@@ -25,7 +25,7 @@ workflow SCAFFOLDS_INPUT_CHECK {
 def create_scaff_channels(LinkedHashMap row) {
     def meta = [:]
     meta.id           = row.sample
-    //meta.single_end   = row.single_end.toBoolean()
+    meta.single_end   = true //row.single_end.toBoolean()
 
     def array = []
     if (!file(row.scaffolds_file).exists()) {
