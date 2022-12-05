@@ -151,10 +151,10 @@ workflow SCAFFOLD_EXTERNAL {
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
         // Creating krona plots and best hit files for weighted assembly
-        KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
-        )
-        ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
+        //KRAKEN2_WTASMBLD (
+            //BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
+        //)
+        //ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
         // Running Mash distance to get top 20 matches for fastANI to speed things up
         MASH_DIST (
@@ -162,6 +162,82 @@ workflow SCAFFOLD_EXTERNAL {
         )
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
+        // Combining mash dist with filtered scaffolds based on meta.id
+        top_taxa_ch = MASH_DIST.out.dist.map{ meta, dist  -> [[id:meta.id], dist]}\
+        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{   meta, reads -> [[id:meta.id], reads ]}, by: [0])
+
+        // Generate file with list of paths of top taxa for fastANI
+        DETERMINE_TOP_TAXA (
+            top_taxa_ch
+        )
+
+        // Combining filtered scaffolds with the top taxa list based on meta.id
+        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, reads           -> [[id:meta.id], reads]}\
+        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{  meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+        .join(DETERMINE_TOP_TAXA.out.reference_files.map{meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
+
+        // Getting species ID
+        FASTANI (
+            top_taxa_list_ch
+        )
+        ch_versions = ch_versions.mix(FASTANI.out.versions)
+
+        // Reformat ANI headers
+        FORMAT_ANI (
+            FASTANI.out.ani
+        )
+
+        // Combining weighted kraken report with the FastANI hit based on meta.id
+        //best_hit_ch = KRAKEN2_WTASMBLD.out.report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
+        //.join(FORMAT_ANI.out.ani_best_hit.map{        meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]},  by: [0])\
+        
+
+        // Getting ID from either FastANI or if fails, from Kraken2
+        //DETERMINE_TAXA_ID (
+            //best_hit_ch, params.taxa
+        //)
+        //ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
+
+        // get gff and protein files for amrfinder+
+        PROKKA (
+            BBMAP_REFORMAT.out.filtered_scaffolds, [], []
+        )
+        ch_versions = ch_versions.mix(PROKKA.out.versions)
+
+        // Fetch AMRFinder Database
+        AMRFINDERPLUS_UPDATE( )
+        ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)
+
+        // Create file that has the organism name to pass to AMRFinder
+        //GET_TAXA_FOR_AMRFINDER (
+            //DETERMINE_TAXA_ID.out.taxonomy
+        //)
+
+        // Combining taxa and scaffolds to run amrfinder and get the point mutations. 
+        amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                               meta, reads          -> [[id:meta.id], reads]}\
+        //.join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+        .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+        .join(PROKKA.out.gff.map{                                                 meta, gff            -> [[id:meta.id], gff ]},            by: [0])
+
+        // Run AMRFinder
+        AMRFINDERPLUS_RUN (
+            amr_channel, AMRFINDERPLUS_UPDATE.out.db
+        )
+        ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
+
+        // Combining determined taxa with the assembly stats based on meta.id
+        //assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
+        //.join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
+
+        // Calculating the assembly ratio and gather GC% stats
+        //CALCULATE_ASSEMBLY_RATIO (
+            //assembly_ratios_ch, params.ncbi_assembly_stats
+        //)
+        //ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
+
+        
+
+//add generate stats report here
 }
 
 /*
