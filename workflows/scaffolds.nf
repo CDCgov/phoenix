@@ -121,7 +121,23 @@ workflow SCAFFOLD_EXTERNAL {
         )
         ch_versions = ch_versions.mix(MLST.out.versions)
 
-        
+        // Running gamma to identify hypervirulence genes in scaffolds
+        GAMMA_HV (
+            BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
+        )
+        ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
+
+        // Running gamma to identify AR genes in scaffolds
+        GAMMA_AR (
+            BBMAP_REFORMAT.out.filtered_scaffolds, params.ardb
+        )
+        ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
+
+        GAMMA_PF (
+            BBMAP_REFORMAT.out.filtered_scaffolds, params.gamdbpf
+        )
+        ch_versions = ch_versions.mix(GAMMA_PF.out.versions)
+
 }
 
 /*
