@@ -91,7 +91,7 @@ def multiqc_report = []
 def count = 0
 
 workflow SCAFFOLD_EXTERNAL {
-    main:
+    
         ch_versions     = Channel.empty() // Used to collect the software versions
         
         //Create samplesheet
