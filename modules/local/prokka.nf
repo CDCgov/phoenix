@@ -44,7 +44,20 @@ process PROKKA {
         --prefix $prefix \\
         \$FNAME
 
-    mv ${prefix}/* .
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.gff > ./${prefix}.gff
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.gbk > ./${prefix}.gbk
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.fna > ./${prefix}.fna
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.faa > ./${prefix}.faa
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.ffn > ./${prefix}.ffn
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.sqn > ./${prefix}.sqn
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.fsa > ./${prefix}.fsa
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.tbl > ./${prefix}.tbl
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.err > ./${prefix}.err
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.log > ./${prefix}.log
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.txt > ./${prefix}.txt
+    sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.tsv > ./${prefix}.tsv
+
+    #mv ${prefix}/* .
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
