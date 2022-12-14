@@ -47,7 +47,7 @@ process PROKKA {
 
     while IFS= read -r line || [ -n "\$line" ]; do
         if [[ "\${line}" = ">"* ]]; then
-            no_cov_line=$(echo "\${line}" | rev | cut -d"_" -f3- | rev)
+            no_cov_line=\$(echo "\${line}" | rev | cut -d"_" -f3- | rev)
             echo "\${no_cov_line}" >> "\${FNAME}"
         else
             echo "\${line}" >> "\${FNAME}"
