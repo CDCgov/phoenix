@@ -57,10 +57,10 @@ workflow SPADES_WF {
             .join(krona_html.map{                            meta, html             -> [[id:meta.id],html]},             by: [0])\
             .join(k2_bh_summary.map{                         meta, ksummary         -> [[id:meta.id],ksummary]},         by: [0])\
             .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{meta, taxonomy         -> [[id:meta.id],taxonomy]},         by: [0])
-            
+
             // Adding the outcome of spades (scaffolds created or not) to the channel
             pipeline_stats_ch = pipeline_stats_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
-            
+
             // Generate pipeline stats for case when spades fails to create scaffolds
             GENERATE_PIPELINE_STATS_FAILURE_EXQC (
                 pipeline_stats_ch
@@ -72,7 +72,7 @@ workflow SPADES_WF {
             .join(k2_bh_summary.map{                                                       meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])\
             .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{meta, taxonomy -> [[id:meta.id],taxonomy]},         by: [0])\
 
-            // Adding the outcome of spades (scaffolds created or not) to the channel 
+            // Adding the outcome of spades (scaffolds created or not) to the channel
             line_summary_ch = line_summary_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
 
         } else {
@@ -123,7 +123,7 @@ workflow SPADES_WF {
     emit:
         spades_ch                   = spades_ch
         spades_outcome              = SPADES.out.spades_outcome
-        scaffolds                   = SPADES.out.scaffolds
+
         line_summary                = CREATE_SUMMARY_LINE_FAILURE.out.line_summary
         versions                    = ch_versions // channel: [ versions.yml ]
 }
