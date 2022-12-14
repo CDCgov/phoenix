@@ -45,12 +45,12 @@ process PROKKA {
     mv \${fasta} \${NFNAME}
     gunzip -f \${NFNAME}
 
-    while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "${line}" = ">"* ]]; then
-            no_cov_line=$(echo "${line}" | rev | cut -d"_" -f3- | rev)
-            echo "${no_cov_line}" >> "${FNAME}"
+    while IFS= read -r line || [ -n "\$line" ]; do
+        if [[ "\${line}" = ">"* ]]; then
+            no_cov_line=$(echo "\${line}" | rev | cut -d"_" -f3- | rev)
+            echo "\${no_cov_line}" >> "\${FNAME}"
         else
-            echo "${line}" >> "${FNAME}"
+            echo "\${line}" >> "\${FNAME}"
         fi
     done < \${NFNAME_U}
 
