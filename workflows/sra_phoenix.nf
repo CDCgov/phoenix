@@ -71,7 +71,7 @@ include { CHECK_MLST                                        } from '../modules/l
 //
 
 include { INPUT_CHECK                                       } from '../subworkflows/local/input_check'
-include { SPADES_WF                                         } from '../subworkflows/local/spades_workflow'
+include { SPADES_WF                                         } from '../subworkflows/local/spades_failure'
 include { GENERATE_PIPELINE_STATS_WF                        } from '../subworkflows/local/generate_pipeline_stats'
 include { GET_SRA                                           } from '../subworkflows/local/sra_processing'
 include { KRAKEN2_WF as KRAKEN2_TRIMD                       } from '../subworkflows/local/kraken2krona'
