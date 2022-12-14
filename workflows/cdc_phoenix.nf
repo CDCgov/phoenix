@@ -74,7 +74,7 @@ include { CHECK_MLST                     } from '../modules/local/check_mlst_ext
 */
 
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-include { SPADES_WF                      } from '../subworkflows/local/spades_workflow'
+include { SPADES_WF                      } from '../subworkflows/local/spades_failure'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
@@ -176,6 +176,12 @@ workflow PHOENIX_EXQC {
             true
         )
         ch_versions = ch_versions.mix(SPADES_WF.out.versions)
+
+        // get gff and protein files for amrfinder+
+        PROKKA (
+            SPADES_WF.out.spades_ch, [], []
+        )
+        ch_versions = ch_versions.mix(PROKKA.out.versions)
 
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
@@ -285,12 +291,6 @@ workflow PHOENIX_EXQC {
             best_hit_ch, params.taxa
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
-
-        // get gff and protein files for amrfinder+
-        PROKKA (
-            BBMAP_REFORMAT.out.filtered_scaffolds, [], []
-        )
-        ch_versions = ch_versions.mix(PROKKA.out.versions)
 
         // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
         GET_MLST_SRST2 (
@@ -444,7 +444,7 @@ workflow PHOENIX_EXQC {
         )
         multiqc_report = MULTIQC.out.report.toList()
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
-        
+
       emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
@@ -453,7 +453,7 @@ workflow PHOENIX_EXQC {
         gamma_ar         = GAMMA_AR.out.gamma
         summary_report   = GATHER_SUMMARY_LINES.out.summary_report
 
-        
+
 }
 
 /*
