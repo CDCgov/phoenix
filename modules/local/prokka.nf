@@ -41,7 +41,7 @@ process PROKKA {
     # Original copy of zipped input fasta
     NFNAME=\$(basename ${fasta} .fa.gz)_original.fa.gz
     # Working copy of unziped input fasta to create and format main prokka input fasta (Cant have cov_x in for downstream)
-    NFNAME_U=$(basename ${NFNAME} .gz)
+    NFNAME_U=\$(basename ${NFNAME} .gz)
     mv \${fasta} \${NFNAME}
     gunzip -f \${NFNAME}
 
