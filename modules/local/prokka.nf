@@ -36,8 +36,24 @@ process PROKKA {
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prodigal_opt = prodigal_tf ? "--prodigaltf ${prodigal_tf[0]}" : ""
     """
+    # Main output unzipped formatted fasta headers lines
     FNAME=\$(basename ${fasta} .gz)
-    gunzip -f ${fasta}
+    # Original copy of zipped input fasta
+    NFNAME=\$(basename ${fasta} .fa.gz)_original.fa.gz
+    # Working copy of unziped input fasta to create and format main prokka input fasta (Cant have cov_x in for downstream)
+    NFNAME_U=$(basename ${NFNAME} .gz)
+    mv \${fasta} \${NFNAME}
+    gunzip -f \${NFNAME}
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "${line}" = ">"* ]]; then
+            no_cov_line=$(echo "${line}" | rev | cut -d"_" -f3- | rev)
+            echo "${no_cov_line}" >> "${FNAME}"
+        else
+            echo "${line}" >> "${FNAME}"
+        fi
+    done < \${NFNAME_U}
+
     prokka \\
         $args \\
         --cpus $task.cpus \\
