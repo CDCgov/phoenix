@@ -40,19 +40,12 @@ process PROKKA {
     FNAME=\$(basename ${fasta} .gz)
     # Original copy of zipped input fasta
     NFNAME=\$(basename ${fasta} .fa.gz)_original.fa.gz
-    # Working copy of unziped input fasta to create and format main prokka input fasta (Cant have cov_x in for downstream)
+    # Working copy of unzipped input fasta to create and format main prokka input fasta (Cant have cov_x in for downstream)
     NFNAME_U=\$(basename \${NFNAME} .gz)
     mv \${fasta} \${NFNAME}
     gunzip -f \${NFNAME}
-
-    while IFS= read -r line || [ -n "\$line" ]; do
-        if [[ "\${line}" = ">"* ]]; then
-            no_cov_line=\$(echo "\${line}" | rev | cut -d"_" -f3- | rev)
-            echo "\${no_cov_line}" >> "\${FNAME}"
-        else
-            echo "\${line}" >> "\${FNAME}"
-        fi
-    done < \${NFNAME_U}
+    
+    sed 's/${prefix}/NODE/g' \${NFNAME_U} > \${FNAME}
 
     prokka \\
         $args \\
