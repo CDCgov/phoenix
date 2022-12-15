@@ -177,12 +177,6 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(SPADES_WF.out.versions)
 
-        // get gff and protein files for amrfinder+
-        PROKKA (
-            SPADES_WF.out.spades_ch, [], []
-        )
-        ch_versions = ch_versions.mix(PROKKA.out.versions)
-
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
             SPADES_WF.out.spades_ch
@@ -194,6 +188,12 @@ workflow PHOENIX_EXQC {
             RENAME_FASTA_HEADERS.out.renamed_scaffolds
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
+                
+        // get gff and protein files for amrfinder+
+        PROKKA (
+            BBMAP_REFORMAT.out.filtered_scaffolds, [], []
+        )
+        ch_versions = ch_versions.mix(PROKKA.out.versions)
 
         // Getting MLST scheme for taxa
         MLST (
