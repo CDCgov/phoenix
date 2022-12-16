@@ -189,12 +189,6 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
                 
-        // get gff and protein files for amrfinder+
-        PROKKA (
-            BBMAP_REFORMAT.out.filtered_scaffolds, [], []
-        )
-        ch_versions = ch_versions.mix(PROKKA.out.versions)
-
         // Getting MLST scheme for taxa
         MLST (
             BBMAP_REFORMAT.out.filtered_scaffolds
@@ -319,6 +313,12 @@ workflow PHOENIX_EXQC {
             combined_mlst_ch
         )
         ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
+
+        // get gff and protein files for amrfinder+
+        PROKKA (
+            BBMAP_REFORMAT.out.filtered_scaffolds, [], []
+        )
+        ch_versions = ch_versions.mix(PROKKA.out.versions)
 
         // Fetch AMRFinder Database
         AMRFINDERPLUS_UPDATE( )
