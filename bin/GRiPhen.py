@@ -25,8 +25,13 @@ def parseArgs(args=None):
     return parser.parse_args()
 
 def Get_Parent_Folder(directory):
+    '''getting project and platform info from the paths'''
+    #Project - parent folder (first folder that is in the outdir)
     project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
-    return project
+    # get everything after CEMB
+    cemb_path = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
+    platform = cemb_path.split("CEMB",1)[1].lstrip("/") # remove backslash on left side to make it clean
+    return project, platform
 
 def make_ar_dictionary(ar_db):
     seq_id_list = []
@@ -90,11 +95,12 @@ def get_scaffold_count(quast_report):
     with open(quast_report, 'r') as f:
         for line in f:
             if ('# contigs (>= 0 bp)' in line):
-                scaffolds = line.split()[-1]
+                scaffolds = int(line.split()[-1])
                 break
     return scaffolds
 
 def Get_BUSCO_Gene_Count(busco_short_summary):
+    """Parse BUSCO file to get the lineage and % of matching BUSCOs"""
     with open(busco_short_summary, 'r') as f:
         for line in f:
             if "The lineage dataset is:" in line:
@@ -105,38 +111,50 @@ def Get_BUSCO_Gene_Count(busco_short_summary):
                 found_buscos = int(re.search(r'\d+', line).group())
             if "Total BUSCO groups searched" in line:
                 total_buscos = int(re.search(r'\d+', line).group())
-    percent_busco = str(round(((found_buscos/total_buscos)*100),2))
-    busco_line = lineage + " (" + percent_busco + "%)"
-    return busco_line
+    percent_busco = round(((found_buscos/total_buscos)*100),2)
+    #busco_line = lineage + " (" + percent_busco + "%)" # old busco line
+    busco_metrics =  [lineage, percent_busco]
+    return busco_metrics
 
-def get_assembly_ratio(asmbld_ratio):
+def get_assembly_ratio(asmbld_ratio, tax_file):
+    '''Collects the assembly ratio, stdev and method used to determine taxa.'''
     with open(asmbld_ratio, 'r') as f:
         for line in f:
             if "Tax: " in line:
                 taxa =  (line.split("Tax: ",1)[1]).strip()
             if "Isolate_St.Devs:" in line:
-                stdev =  (line.split("Isolate_St.Devs: ",1)[1]).strip()
+                stdev = (line.split("Isolate_St.Devs: ",1)[1]).strip()
+                if stdev == 'N/A': #handling making stdev a float only if its a number
+                    pass
+                else:
+                    stdev =  float(stdev)
             if "Ratio: " in line:
-                ratio =  (line.split("Ratio: ",1)[1]).strip()
-    assembly_ratio_line = ratio + " (stdev " + stdev + ") " + taxa
-    return assembly_ratio_line
+                ratio =  float((line.split("Ratio: ",1)[1]).strip())
+    #assembly_ratio_line = ratio + " (stdev " + stdev + ") " + taxa #old way of reporting in one line
+    with open(tax_file, 'r') as f:
+        tax_method = f.readline().split("\t")[0]
+    assembly_ratio_metrics = [ratio, stdev, tax_method]
+    return assembly_ratio_metrics
 
-def Checking_auto_pass_fail(coverage, length, assembly_ratio_line):
+def Checking_auto_pass_fail(coverage, length, assembly_stdev):
     """Checking auto pass fail conditions"""
-    st_dev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev
+    #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
     if coverage < 30.00:
         QC_result = "FAIL"
         QC_reason = "coverage_below_30(" + str(coverage) + ")"
+    elif coverage > 100.00:
+        QC_result = "FAIL"
+        QC_reason = "coverage_above_100(" + str(coverage) + ")"
     elif int(length) <= 1000000:
         QC_result = "FAIL"
         QC_reason = "smaller_than_1000000_bps(" + str(length) + ")"
-    elif str(st_dev) == "N/A":
+    elif str(assembly_stdev) == "N/A":
         QC_result = "PASS"
-        QC_reason = "STDev was NA"
-    elif str(st_dev) != "N/A": # have to have a second layer cuz you can't make NA a float
-        if float(st_dev) > 2.58:
+        QC_reason = "STDev was N/A"
+    elif str(assembly_stdev) != "N/A": # have to have a second layer cuz you can't make NA a float
+        if float(assembly_stdev) > 2.58:
             QC_result = "FAIL"
-            QC_reason="STDev_above_2.58(" + str(st_dev) + ")"
+            QC_reason="STDev_above_2.58(" + str(assembly_stdev) + ")"
         else:
             QC_result = "PASS"
             QC_reason = ""
@@ -297,11 +315,12 @@ def parse_ani(fast_ani_file):
     coverage = ani_df["% Coverage"][0]
     organism = ani_df["Organism"][0]
     source_file = ani_df["Source File"][0]
-    Species_Support = str(ID) + "%ID-" + str(coverage) + "%COV-" + organism + "(" + source_file + ")"
-    return Species_Support
+    #Species_Support = str(ID) + "%ID-" + str(coverage) + "%COV-" + organism + "(" + source_file + ")" #old way of reporting
+    FastANI_output_list = [source_file, ID, coverage, organism]
+    return FastANI_output_list
 
 def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
-    """Parsing the gamma file run on the plasmid marker database."""
+    """Parsing the srst2 file run on the ar gene database."""
     srst2_df = pd.read_csv(srst2_file, sep='\t', header=0)
     percent_lengths = round(srst2_df["coverage"]).tolist()
     genes = srst2_df["allele"].tolist()
@@ -339,7 +358,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_srst2_df
 
-def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, srst2_file, ar_dic):
+def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
         Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads = get_Q30(trim_stats)
@@ -359,25 +378,28 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
         print("Warning: " + sample_name + "_report.tsv not found")
         Scaffold_Count = 'Unknown'
     try:
-        busco_line = Get_BUSCO_Gene_Count(busco_short_summary)
+        busco_metrics = Get_BUSCO_Gene_Count(busco_short_summary)
     except FileNotFoundError:
         print("Warning: short_summary.specific." + sample_name + ".filtered.scaffolds.fa.txt not found.")
-        busco_line = 'Unknown'
+        busco = stdev = tax_method = 'Unknown'
+        busco_metrics = [lineage, percent_busco]
     try:
-        assembly_ratio_line = get_assembly_ratio(asmbld_ratio)
+        assembly_ratio_metrics = get_assembly_ratio(asmbld_ratio, tax_file)
     except FileNotFoundError:
         print("Warning: " + sample_name + "_Assembly_ratio_*.txt not found.")
-        assembly_ratio_line = 'Unknown'
+        ratio = stdev = tax_method = 'Unknown'
+        assembly_ratio_metrics = [ratio, stdev, tax_method]
     try:
-        QC_result, QC_reason = Checking_auto_pass_fail(Coverage, Assembly_Length, assembly_ratio_line)
+        QC_result, QC_reason = Checking_auto_pass_fail(Coverage, Assembly_Length, assembly_ratio_metrics[1])
     except FileNotFoundError: 
         print("Warning: Possibly coverage and assembly length was not calculated and/or"+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
     try:
-        Species_Support = parse_ani(fast_ani_file)
+        FastANI_output_list = parse_ani(fast_ani_file)
     except FileNotFoundError: 
         print("Warning: " + sample_name + "*.fastANI.txt not found")
-        Species_Support = 'Unknown'
+        ani_source_file = fastani_ID = fastani_coverage = fastani_organism = 'Unknown'
+        FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
     try:
         Scheme_list = parse_mlst(mlst_file)
         if len(Scheme_list[0]) > 1: # If there is more than one scheme
@@ -436,8 +458,8 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
         srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
     except FileNotFoundError: 
         print("Warning: " + sample_name + "__fullgenes__ResGANNCBI__*_srst2__results.txt not found")
-    return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, Species_Support, \
-    Scaffold_Count, busco_line, assembly_ratio_line, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2
+    return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, \
+    Scaffold_Count, busco_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2
 
 def Get_Files(directory, sample_name):
     '''Create file paths to collect files from sample folder.'''
@@ -452,14 +474,16 @@ def Get_Files(directory, sample_name):
     gamma_pf_file = glob.glob(directory + "gamma_pf/" + sample_name + "_*.gamma")[0]
     gamma_hv_file = glob.glob(directory + "gamma_hv/" + sample_name + "_*.gamma")[0]
     fast_ani_file = directory + "ANI/fastANI/" + sample_name + ".fastANI.txt"
+    tax_file = directory + sample_name + ".tax" # this file will tell you if kraken2 wtassembly, kraken2 trimmed (reads) or fastani determined the taxa
     srst2_file = glob.glob(directory + "srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")[0]
-    return trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, srst2_file
+    return trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
-def Append_Lists(project, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, Species_Support, \
-            Scaffold_Count, busco_line, assembly_ratio_line, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, \
-            Projects, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, \
-            Scaffold_Count_L, busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L):
+def Append_Lists(project, platform, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, \
+            Scaffold_Count, busco_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, \
+            Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L):
         Projects.append(project)
+        Platforms.append(platform)
         Sample_Names.append(str(sample_name))
         Q30_R1_per_L.append(Q30_R1_per)
         Q30_R2_per_L.append(Q30_R2_per)
@@ -469,10 +493,16 @@ def Append_Lists(project, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Tot
         Asmbld_kraken_L.append(Asmbld_kraken)
         Coverage_L.append(Coverage)
         Assembly_Length_L.append(Assembly_Length)
-        Species_Support_L.append(Species_Support)
+        Species_Support_L.append(FastANI_output_list[0])
+        fastani_organism_L.append(FastANI_output_list[3])
+        fastani_ID_L.append(FastANI_output_list[1])
+        fastani_coverage_L.append(FastANI_output_list[2])
         Scaffold_Count_L.append(Scaffold_Count)
-        busco_line_L.append(busco_line)
-        assembly_ratio_line_L.append(assembly_ratio_line)
+        busco_lineage_L.append(busco_metrics[0])
+        percent_busco_L.append(busco_metrics[1])
+        assembly_ratio_L.append(assembly_ratio_metrics[0])
+        assembly_stdev_L.append(assembly_ratio_metrics[1])
+        tax_method_L.append(assembly_ratio_metrics[2])
         QC_result_L.append(QC_result)
         QC_reason_L.append(QC_reason)
         MLST_scheme_1_L.append(MLST_scheme_1)
@@ -481,14 +511,17 @@ def Append_Lists(project, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Tot
         MLST_type_2_L.append(MLST_type_2)
         MLST_alleles_1_L.append(MLST_alleles_1)
         MLST_alleles_2_L.append(MLST_alleles_2)
-        return Projects, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, \
-        Scaffold_Count_L, busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L
+        return Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+        Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L
 
-def Create_df(Projects, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L,
-Scaffold_Count_L, busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L):
+def Create_df(Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L,
+Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L):
     #combine all metrics into a dataframe
     data = {'WGS ID'                 : Sample_Names,
+        'Platform'                   : Platforms,
         'Project'                    : Projects,
+        'Auto_PassFail'              : QC_result_L,
+        'PassFail_Reason'            : QC_reason_L,
         'Q30_R1_[%]'                 : Q30_R1_per_L,
         'Q30_R2_[%]'                 : Q30_R2_per_L,
         'Total_Sequenced_[bp]'       : Total_Seq_bp_L,
@@ -496,12 +529,16 @@ Scaffold_Count_L, busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L,
         'Estimated_Coverage'         : Coverage_L,
         'Scaffolds'                  : Scaffold_Count_L,
         'Assembly_Length'            : Assembly_Length_L,
-        'Assembly_Ratio'             : assembly_ratio_line_L,
-        'BUSCO'                      : busco_line_L,
-        'Auto_PassFail'              : QC_result_L,
-        'PassFail_Reason'            : QC_reason_L,
+        'Assembly_Ratio'             : assembly_ratio_L,
+        'Assembly_StDev'             : assembly_stdev_L,
+        'Taxa_Source'                : tax_method_L,
+        'BUSCO_Lineage'              : busco_lineage_L,
+        'BUSCO_%Match'               : percent_busco_L,
         'Kraken_ID_Raw_Reads'        : Trim_kraken_L,
         'Kraken_ID_WtAssembly'       : Asmbld_kraken_L,
+        'FastANI_Organism'           : fastani_organism_L, 
+        'FastANI_%ID'                : fastani_ID_L, 
+        'FastANI_%Coverage'          : fastani_coverage_L,
         'Species_Support_ANI'        : Species_Support_L,
         'Primary_MLST_Scheme_Name'   : MLST_scheme_1_L,
         'Primary_MLST'               : MLST_type_1_L,
@@ -580,10 +617,14 @@ def write_to_excel(df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count):
     workbook = writer.book
     (max_row, max_col) = df.shape # Get the dimensions of the dataframe.
     worksheet = writer.sheets['Sheet1']
-    # Setting columns to numbers
-    number_format = workbook.add_format({'num_format': '#,##0'})
-    worksheet.set_column('E:F', None, number_format)
-    worksheet.set_column('H:I', None, number_format)
+    # Setting columns to numbers so you can have commas that make it more huamn readable
+    number_comma_format = workbook.add_format({'num_format': '#,##0'})
+    worksheet.set_column('H:I', None, number_comma_format)
+    worksheet.set_column('K:L', None, number_comma_format)
+    # Setting columns to float so its more huamn readable
+    number_dec_format = workbook.add_format({'num_format': '0.000'})
+    worksheet.set_column('M:N', None, number_dec_format)
+    # getting values to set column widths automatically 
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
         max_len = max((
@@ -597,33 +638,32 @@ def write_to_excel(df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count):
     cell_format_grey = workbook.add_format({'bg_color': '#AEB6BF', 'font_color': '#000000', 'bold': True})
     cell_format_darkgrey = workbook.add_format({'bg_color': '#808B96', 'font_color': '#000000', 'bold': True})
     # Headers
-    worksheet.merge_range('A1:B1', "PHoeNIx Summary", cell_format_light_blue)
-    worksheet.merge_range('C1:V1', "QC Metrics", cell_format_lightgrey)
+    worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
+    worksheet.merge_range('D1:V1', "QC Metrics", cell_format_lightgrey)
     worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
-    worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_grey)
-    worksheet.merge_range(0, (qc_max_col + ar_gene_count + pf_gene_count), 0 ,(qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_darkgrey)
+    worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count - 1), "Plasmid Incompatibility Replicons^^", cell_format_grey)
+    worksheet.merge_range(0, (qc_max_col + ar_gene_count + pf_gene_count), 0 ,(qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^^", cell_format_darkgrey)
     # Setting colors for footers and conditional formating
     yellow_format = workbook.add_format({'bg_color': '#FFEB9C', 'font_color': '#000000'}) # Light yellow fill with black text.
-    red_format = workbook.add_format({'bg_color': '#FF0000', 'font_color': '#000000'}) # red fill with black text.
-    green_format = workbook.add_format({'bg_color': '#80E880', 'font_color': '#000000'})
+    red_format = workbook.add_format({'bg_color': '#F5B7B1', 'font_color': '#000000'}) # red fill with black text.
+    orange_format = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000'})
     # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column.
-    worksheet.conditional_format('G3:G' + str(max_row), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
-    worksheet.conditional_format('G3:G' + str(max_row), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
+    worksheet.conditional_format('J3:J' + str(max_row), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
+    worksheet.conditional_format('J3:J' + str(max_row), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.
-    worksheet.conditional_format('L3:L' + str(max_row), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
+    worksheet.conditional_format('D3:D' + str(max_row), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
     # Creating footers
-    worksheet.merge_range('A' + str(max_row + 4) + ':E' + str(max_row + 4),'Cells in YELLOW denote isolates outside of 40-100X coverage', yellow_format)
-    worksheet.merge_range('A' + str(max_row + 5) + ':M' + str(max_row + 5),'Rows in GREEN denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', green_format)
-    worksheet.merge_range('A' + str(max_row + 6) + ':G' + str(max_row + 6),'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, stdev > 2.58, assembly < 1Mbps)', red_format)
+    worksheet.merge_range('A' + str(max_row + 4) + ':E' + str(max_row + 4),'Cells in YELLOW denote isolates outside of 30-100X coverage', yellow_format)
+    worksheet.merge_range('A' + str(max_row + 5) + ':N' + str(max_row + 5),'Rows in ORANGE denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format)
+    worksheet.merge_range('A' + str(max_row + 6) + ':H' + str(max_row + 6),'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, stdev > 2.58, assembly length < 1Mbps)', red_format)
     # More footers - Disclaimer etc.
     worksheet.merge_range('A' + str(max_row + 7) + ':P' + str(max_row + 7),"^Using Antibiotic Resistance Gene database ResGANNCBI_20220915 (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.")
-    worksheet.merge_range('A' + str(max_row + 8) + ':P' + str(max_row + 8),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database (Hyper_Virulence_20220414); gene matches noted with [%Nuc_Identity, %Coverage].")
-    worksheet.merge_range('A' + str(max_row + 9) + ':P' + str(max_row + 9),"^^^Using the plasmid incompatibility replicons plasmidFinder database (PF-Replicons_20220916) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].")
+    worksheet.merge_range('A' + str(max_row + 8) + ':P' + str(max_row + 8),"^^Using the plasmid incompatibility replicons plasmidFinder database (PF-Replicons_20220916) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].")
+    worksheet.merge_range('A' + str(max_row + 9) + ':P' + str(max_row + 9),"^^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database (Hyper_Virulence_20220414); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].")
     worksheet.merge_range('A' + str(max_row + 10) + ':P' + str(max_row + 10),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.")
     #adding review and date info
     worksheet.write('A' + str(max_row + 12), "Reviewed by:")
     worksheet.write('D' + str(max_row + 12), "Date:")
-    #Reviewed by:	Gillian McAllister		Date: 10/20/22
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
 
@@ -633,14 +673,11 @@ def write_to_excel(df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count):
 ## No file created failure for gamma
 ## double check the numbers are correct.
 
-#Project - parent folder (first folder that is in the outdir)
-#relative/sumbission - rest of the path
-
 def main():
     args = parseArgs()
     # create empty lists to append to later
-    Projects, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, \
-    busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L = ([] for i in range(22))
+    Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+    busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L = ([] for i in range(29))
     ar_df = pd.DataFrame() #create empty dataframe to fill later for AR genes
     pf_df = pd.DataFrame() #create another empty dataframe to fill later for Plasmid markers
     hv_df = pd.DataFrame() #create another empty dataframe to fill later for hypervirulence genes
@@ -650,25 +687,25 @@ def main():
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
     with open(args.samplesheet) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
-        header = next(csv_reader)
+        header = next(csv_reader) # skip the first line of the samplesheet
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
-            project = Get_Parent_Folder(directory)
-            trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, srst2_file = Get_Files(directory, sample_name)
+            project, platform = Get_Parent_Folder(directory)
+            trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
-            srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, Species_Support, Scaffold_Count, busco_line, assembly_ratio_line, QC_result, \
-            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2 = Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, srst2_file, ar_dic)
+            srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, Scaffold_Count, busco_metrics, assembly_ratio_metrics, QC_result, \
+            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2 = Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)
             #Collect this mess of variables into appeneded lists
-            Projects, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, \
-            Scaffold_Count_L, busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L = Append_Lists(project, \
-            sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, Species_Support, Scaffold_Count, busco_line, \
-            assembly_ratio_line, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, \
-            Projects, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, \
-            Scaffold_Count_L, busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L)
+            Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L = Append_Lists(project, \
+            platform, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, Scaffold_Count, busco_metrics, \
+            assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, \
+            Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L)
     # combine all lists into a dataframe
-    df = Create_df(Projects, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, \
-    Scaffold_Count_L, busco_line_L, assembly_ratio_line_L, QC_result_L, QC_reason_L,MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L )
+    df = Create_df(Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+    Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L )
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS ID column

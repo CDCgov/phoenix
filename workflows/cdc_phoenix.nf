@@ -66,6 +66,7 @@ include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipel
 include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
 include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
 include { CHECK_MLST                     } from '../modules/local/check_mlst_external'
+include { GRIPHEN                        } from '../modules/local/griphen'
 
 /*
 ========================================================================================
@@ -386,7 +387,7 @@ workflow PHOENIX_EXQC {
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
         //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
-      .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
+        .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -421,6 +422,23 @@ workflow PHOENIX_EXQC {
             all_summaries_ch, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+
+        griphen_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc               -> [[id:meta.id], fastp_total_qc]}\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                  meta, k2_bh_summary                -> [[id:meta.id], k2_bh_summary]},                 by: [0])\
+        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{               meta, k2_bh_summary                -> [[id:meta.id], k2_bh_summary]},                 by: [0])\
+        .join(QUAST.out.report_tsv.map{                             meta, report_tsv                   -> [[id:meta.id], report_tsv]},                    by: [0])\
+        .join(FORMAT_ANI.out.ani_best_hit.map{                      meta, ani_best_hit                 -> [[id:meta.id], ani_best_hit ]},                 by: [0])\
+        .join(GAMMA_HV.out.gamma.map{                               meta, gamma                        -> [[id:meta.id], gamma]},                         by: [0])\
+        .join(GAMMA_AR.out.gamma.map{                               meta, gamma                        -> [[id:meta.id], gamma]},                         by: [0])\
+        .join(GAMMA_PF.out.gamma.map{                               meta, gamma                        -> [[id:meta.id], gamma]},                         by: [0])\
+        .join(BUSCO.out.short_summaries_specific_txt.map{           meta, short_summaries_specific_txt -> [[id:meta.id], short_summaries_specific_txt]},  by: [0])\
+        .join(SRST2_AR.out.fullgene_results.map{                    meta, fullgene_results             -> [[id:meta.id], fullgene_results]},              by: [0])\
+        .join(CHECK_MLST.out.checked_MLSTs.map{                     meta, checked_MLSTs                -> [[id:meta.id], checked_MLSTs]},                 by: [0])\
+        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{               meta, ratio                        -> [[id:meta.id], ratio]},                         by: [0])
+
+        GRIPHEN(
+            griphen_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
+        )
 
         // Collecting the software versions
         CUSTOM_DUMPSOFTWAREVERSIONS (
