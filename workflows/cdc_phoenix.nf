@@ -103,7 +103,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 
 // Info required for completion email and summary
 def multiqc_report = []
-def count = 0
+def count = 0 // this keeps the pipeline exit and reminder statement from being printed multiple times. See "COMPLETION EMAIL AND SUMMARY" section
 
 workflow PHOENIX_EXQC {
     main:
@@ -190,7 +190,7 @@ workflow PHOENIX_EXQC {
             RENAME_FASTA_HEADERS.out.renamed_scaffolds
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
-                
+
         // Getting MLST scheme for taxa
         MLST (
             BBMAP_REFORMAT.out.filtered_scaffolds
@@ -423,21 +423,30 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-        griphen_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc               -> [[id:meta.id], fastp_total_qc]}\
-        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                  meta, k2_bh_summary                -> [[id:meta.id], k2_bh_summary]},                 by: [0])\
-        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{               meta, k2_bh_summary                -> [[id:meta.id], k2_bh_summary]},                 by: [0])\
-        .join(QUAST.out.report_tsv.map{                             meta, report_tsv                   -> [[id:meta.id], report_tsv]},                    by: [0])\
-        .join(FORMAT_ANI.out.ani_best_hit.map{                      meta, ani_best_hit                 -> [[id:meta.id], ani_best_hit ]},                 by: [0])\
-        .join(GAMMA_HV.out.gamma.map{                               meta, gamma                        -> [[id:meta.id], gamma]},                         by: [0])\
-        .join(GAMMA_AR.out.gamma.map{                               meta, gamma                        -> [[id:meta.id], gamma]},                         by: [0])\
-        .join(GAMMA_PF.out.gamma.map{                               meta, gamma                        -> [[id:meta.id], gamma]},                         by: [0])\
-        .join(BUSCO.out.short_summaries_specific_txt.map{           meta, short_summaries_specific_txt -> [[id:meta.id], short_summaries_specific_txt]},  by: [0])\
-        .join(SRST2_AR.out.fullgene_results.map{                    meta, fullgene_results             -> [[id:meta.id], fullgene_results]},              by: [0])\
-        .join(CHECK_MLST.out.checked_MLSTs.map{                     meta, checked_MLSTs                -> [[id:meta.id], checked_MLSTs]},                 by: [0])\
-        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{               meta, ratio                        -> [[id:meta.id], ratio]},                         by: [0])
+
+        /*BBDUK.out.reads.multiMap{ meta, reads -> reads: reads }.set{ BBDUK_SPLIT }
+        BBDUK_SPLIT.reads.view()
+
+        // collect and combine outputs that griphen expects.
+        GATHERING_READ_QC_STATS.out.fastp_total_qc.multiMap{ meta, fastp_total_qc -> fastp_total_qc: fastp_total_qc }.set{ GATHERING_READ_QC_STATS_SPLIT }
+        griphen_ch = GATHERING_READ_QC_STATS_SPLIT.fastp_total_qc.collect()
+        //.combine(
+        //KRAKEN2_TRIMD.out.k2_bh_summary.multiMap{ meta, k2_bh_summary -> k2_bh_summary: k2_bh_summary }.set{ KRAKEN2_TRIMD_SPLIT }.collect())
+        //KRAKEN2_WTASMBLD.out.k2_bh_summary.collect().combine(
+        //QUAST.out.report_tsv.collect().combine(
+        //FORMAT_ANI.out.ani_best_hit.collect().combine(
+        //GAMMA_HV.out.gamma.collect().combine(
+        //GAMMA_AR.out.gamma.collect().combine(
+        //GAMMA_PF.out.gamma.collect().combine(
+        //BUSCO.out.short_summaries_specific_txt.collect().combine(
+        //SRST2_AR.out.fullgene_results.collect().combine(
+        //CHECK_MLST.out.checked_MLSTs.collect().combine(
+        //CALCULATE_ASSEMBLY_RATIO.out.ratio.collect())))))))))))
+
+        griphen_ch.view()*/
 
         GRIPHEN(
-            griphen_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
         )
 
         // Collecting the software versions
