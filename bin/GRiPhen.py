@@ -14,19 +14,26 @@ import csv
 from Bio import SeqIO
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
-##Usage: >python GRiPhen.py -s ./samplesheet.csv -a ../PHX/phoenix/assets/databases/ResGANNCBI_20220915_srst2.fasta
+##Usage: >python GRiPhen.py -s ./samplesheet.csv -a ../PHX/phoenix/assets/databases/ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 def parseArgs(args=None):
-    parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet')
-    parser.add_argument('-s', '--samplesheet', dest='samplesheet', help='')
-    parser.add_argument('-a', '--ar_db', dest='ar_db', help='')
+    parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
+    parser.add_argument('-s', '--samplesheet', required=True, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
+    parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
+    parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
+    parser.add_argument('-o', '--output', default="GRiPHen_Report.csv", required=False, dest='output', help='Name of output file.')
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
 
 def Get_Parent_Folder(directory):
     '''getting project and platform info from the paths'''
     #Project - parent folder (first folder that is in the outdir)
+    #relative/submission - rest of the path
+    #handing if trailing backslash isn't in there.
+    if directory[-1] != "/":
+        directory = directory + "/"
+    # get project from directory path
     project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
     # get everything after CEMB
     cemb_path = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
@@ -136,23 +143,26 @@ def get_assembly_ratio(asmbld_ratio, tax_file):
     assembly_ratio_metrics = [ratio, stdev, tax_method]
     return assembly_ratio_metrics
 
-def Checking_auto_pass_fail(coverage, length, assembly_stdev):
+def Checking_auto_pass_fail(coverage, length, assembly_stdev, asmbld_ratio):
     """Checking auto pass fail conditions"""
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
-    if coverage < 30.00:
+    if coverage == "Unknown" or coverage < 30.00:
         QC_result = "FAIL"
         QC_reason = "coverage_below_30(" + str(coverage) + ")"
     elif coverage > 100.00:
         QC_result = "FAIL"
         QC_reason = "coverage_above_100(" + str(coverage) + ")"
-    elif int(length) <= 1000000:
+    elif int(length) <= 1000000 or length == "Unknown":
         QC_result = "FAIL"
         QC_reason = "smaller_than_1000000_bps(" + str(length) + ")"
     elif str(assembly_stdev) == "N/A":
         QC_result = "PASS"
-        QC_reason = "STDev was N/A"
-    elif str(assembly_stdev) != "N/A": # have to have a second layer cuz you can't make NA a float
-        if float(assembly_stdev) > 2.58:
+        QC_reason = "STDev was N/A, < 10 genomes as reference"
+    elif str(assembly_stdev) != "N/A": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
+        if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
+            QC_result = "FAIL"
+            QC_reason="Assembly file not Found"
+        elif float(assembly_stdev) > 2.58:
             QC_result = "FAIL"
             QC_reason="STDev_above_2.58(" + str(assembly_stdev) + ")"
         else:
@@ -197,11 +207,12 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
     if df.empty:
-        df = pd.DataFrame({'WGS ID':[sample_name], 'No_AR_Genes_Found':['[-/-]'] })
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'AR_Database':[DB], 'No_AR_Genes_Found':['[-/-]'] })
     else:
         df.columns = column_name # add column names
-        df["WGS ID"] = sample_name
+        df["WGS_ID"] = sample_name
         df["AR_Database"] = DB
+        df["No_AR_Genes_Found"] = ""
         df.index = [sample_name]
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_df
@@ -221,11 +232,12 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
     if df.empty:
-        df = pd.DataFrame({'WGS ID':[sample_name], 'HV_Database':[DB], 'No_HVGs_Found':['[-/-]'] })
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'HV_Database':[DB], 'No_HVGs_Found':['[-/-]'] })
     else:
         df.columns = hv_column_name # add column names
-        df["WGS ID"] = sample_name
+        df["WGS_ID"] = sample_name
         df["HV_Database"] = DB
+        df["No_HVGs_Found"] = ""
         df.index = [sample_name]
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_df
@@ -234,6 +246,8 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     """Parsing the gamma file run on the plasmid marker database."""
     gamma_df = pd.read_csv(gamma_pf_file, sep='\t', header=0)
     DB = (gamma_pf_file.rsplit('/', 1)[-1]).rsplit('_')[1] + "_" + (gamma_pf_file.rsplit('/', 1)[-1]).rsplit('_')[2].strip(".gamma") + "([95NT/60]) "
+    if DB == "":
+        DB ="Unknown"
     percent_NT_IDs = round(gamma_df["Match_Percent"]*100).tolist() # round % to whole number
     percent_lengths = round(gamma_df["Length_Percent"]*100).tolist() # round % to whole number - this is the coverage
     contig_numbers = gamma_df["Contig"].str.split("_").str[1] #Parse "Contig" column in gamma file
@@ -262,11 +276,12 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     #building a new dataframe - create giant row
     df = pd.DataFrame(pf_coverage).T
     if df.empty:
-        df = pd.DataFrame({'WGS ID':[sample_name], 'Plasmid_Replicon_Database':[DB], 'No_Plasmid_Markers':['[-/-]'] })
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'Plasmid_Replicon_Database':[DB], 'No_Plasmid_Markers':['[-/-]'] })
     else:
         df.columns = pf_column_name # add column 'HV_Database':[DB], names
-        df["WGS ID"] = sample_name
+        df["WGS_ID"] = sample_name
         df["Plasmid_Replicon_Database"] = DB
+        df['No_Plasmid_Markers'] = ""
         df.index = [sample_name]
     pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return pf_df
@@ -353,7 +368,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
     df.columns = column_name # add column names
-    df["WGS ID"] = sample_name
+    df["WGS_ID"] = sample_name
     df.index = [sample_name]
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_srst2_df
@@ -381,7 +396,7 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
         busco_metrics = Get_BUSCO_Gene_Count(busco_short_summary)
     except FileNotFoundError:
         print("Warning: short_summary.specific." + sample_name + ".filtered.scaffolds.fa.txt not found.")
-        busco = stdev = tax_method = 'Unknown'
+        lineage = percent_busco = 'Unknown'
         busco_metrics = [lineage, percent_busco]
     try:
         assembly_ratio_metrics = get_assembly_ratio(asmbld_ratio, tax_file)
@@ -390,7 +405,7 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
         ratio = stdev = tax_method = 'Unknown'
         assembly_ratio_metrics = [ratio, stdev, tax_method]
     try:
-        QC_result, QC_reason = Checking_auto_pass_fail(Coverage, Assembly_Length, assembly_ratio_metrics[1])
+        QC_result, QC_reason = Checking_auto_pass_fail(Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0])
     except FileNotFoundError: 
         print("Warning: Possibly coverage and assembly length was not calculated and/or"+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
@@ -439,43 +454,71 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
     try:
         ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df)
     except FileNotFoundError: 
-        print("Warning: " + sample_name + "_*.gamma not found")
-        col_name = 'No_AR_Genes_Found'
-        ar_df = pd.DataFrame({'WGS ID':[sample_name], col_name:['File not found'] })
+        print("Warning: Gamma file for ar database on " + sample_name + " not found")
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['GAMMA file not found'] })
+        df.index = [sample_name]
+        ar_df = pd.concat([ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         pf_df = parse_gamma_pf(gamma_pf_file, sample_name, pf_df)
     except FileNotFoundError: 
-        print("Warning: " + sample_name + "_*.gamma not found")
-        col_name = 'No_Plasmid_Markers'
-        pf_df = pd.DataFrame({'WGS ID':[sample_name], col_name:['File not found'] })
+        print("Warning: Gamma file for pf database on " + sample_name + " not found")
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_Plasmid_Markers':['File not found'], 'Plasmid_Replicon_Database':['GAMMA file not found'] })
+        df.index = [sample_name]
+        pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         hv_df = parse_gamma_hv(gamma_hv_file, sample_name, hv_df)
     except FileNotFoundError: 
-        print("Warning: " + sample_name + "_*.gamma not found")
-        col_name = 'No_HVGs_Found'
-        hv_df = pd.DataFrame({'WGS ID':[sample_name], col_name:['File not found'] })
+        print("Warning: Gamma file for hv database on " + sample_name + " not found")
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_HVGs_Found':['File not found'], 'HV_Database':['GAMMA file not found'] })
+        df.index = [sample_name]
+        hv_df = pd.concat([hv_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
     except FileNotFoundError: 
         print("Warning: " + sample_name + "__fullgenes__ResGANNCBI__*_srst2__results.txt not found")
+        df = pd.DataFrame({'WGS_ID':[sample_name]})
+        df.index = [sample_name]
+        srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, \
     Scaffold_Count, busco_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2
 
 def Get_Files(directory, sample_name):
     '''Create file paths to collect files from sample folder.'''
-    trim_stats = directory + "fastp_trimd/" + sample_name + "_trimmed_read_counts.txt"
-    kraken_trim = directory + "kraken2_trimd/" + sample_name + ".trimd_summary.txt"
-    kraken_wtasmbld = directory + "kraken2_asmbld_weighted/" + sample_name + ".wtasmbld_summary.txt"
-    quast_report = directory + "quast/" + sample_name + "_report.tsv"
-    mlst_file = directory + "mlst/" + sample_name + "_combined.tsv"
-    busco_short_summary =  glob.glob(directory + "BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")[0]
-    asmbld_ratio = glob.glob(directory + sample_name + "_Assembly_ratio_*.txt")[0]
-    gamma_ar_file = glob.glob(directory + "gamma_ar/" + sample_name + "_*.gamma")[0]
-    gamma_pf_file = glob.glob(directory + "gamma_pf/" + sample_name + "_*.gamma")[0]
-    gamma_hv_file = glob.glob(directory + "gamma_hv/" + sample_name + "_*.gamma")[0]
-    fast_ani_file = directory + "ANI/fastANI/" + sample_name + ".fastANI.txt"
-    tax_file = directory + sample_name + ".tax" # this file will tell you if kraken2 wtassembly, kraken2 trimmed (reads) or fastani determined the taxa
-    srst2_file = glob.glob(directory + "srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")[0]
+    # if there is a trailing / remove it
+    directory = directory.rstrip('/')
+    # create file names
+    trim_stats = directory + "/fastp_trimd/" + sample_name + "_trimmed_read_counts.txt"
+    kraken_trim = directory + "/kraken2_trimd/" + sample_name + ".trimd_summary.txt"
+    kraken_wtasmbld = directory + "/kraken2_asmbld_weighted/" + sample_name + ".wtasmbld_summary.txt"
+    quast_report = directory + "/quast/" + sample_name + "_report.tsv"
+    mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
+    # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
+    try:
+        busco_short_summary =  glob.glob(directory + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")[0]
+    except IndexError:
+        busco_short_summary =  directory + "/BUSCO/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+    try:
+        asmbld_ratio = glob.glob(directory + "/" + sample_name + "_Assembly_ratio_*.txt")[0]
+    except IndexError:
+        asmbld_ratio = directory + "/" + sample_name + "_Assembly_ratio_blank.txt"
+    try:
+        gamma_ar_file = glob.glob(directory + "/gamma_ar/" + sample_name + "_*.gamma")[0]
+    except IndexError:
+        gamma_ar_file = directory + "/gamma_ar/" + sample_name + "_blank.gamma"
+    try:
+        gamma_pf_file = glob.glob(directory + "/gamma_pf/" + sample_name + "_*.gamma")[0]
+    except IndexError:
+        gamma_pf_file = directory + "/gamma_pf/" + sample_name + "_blank.gamma"
+    try: 
+        gamma_hv_file = glob.glob(directory + "/gamma_hv/" + sample_name + "_*.gamma")[0]
+    except IndexError:
+        gamma_hv_file = directory + "/gamma_hv/" + sample_name + "_blank.gamma"
+    fast_ani_file = directory + "/ANI/fastANI/" + sample_name + ".fastANI.txt"
+    tax_file = directory + "/" + sample_name + ".tax" # this file will tell you if kraken2 wtassembly, kraken2 trimmed (reads) or fastani determined the taxa
+    try:
+        srst2_file = glob.glob(directory + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")[0]
+    except IndexError:
+        srst2_file = directory + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
     return trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
 def Append_Lists(project, platform, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, \
@@ -517,7 +560,7 @@ def Append_Lists(project, platform, sample_name, Q30_R1_per, Q30_R2_per, Total_S
 def Create_df(Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L,
 Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L):
     #combine all metrics into a dataframe
-    data = {'WGS ID'                 : Sample_Names,
+    data = {'WGS_ID'                 : Sample_Names,
         'Platform'                   : Platforms,
         'Project'                    : Projects,
         'Auto_PassFail'              : QC_result_L,
@@ -556,11 +599,12 @@ def add_srst2(ar_df, srst2_ar_df):
     common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes
     # Combine values in cells for columns that are in both dataframes
     for col in common_cols:
-        if col != "WGS ID":
+        if col != "WGS_ID":
             ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
-            ar_combined_df[col] = ar_combined_df[col].map(lambda x: x.lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
+            ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
         else:
             ar_combined_df[col] = srst2_ar_df[col]
+    # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
     #drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
     srst2_ar_df.drop(common_cols, axis = 1, inplace=True)
     ar_df.drop(common_cols, axis = 1, inplace=True)
@@ -569,9 +613,9 @@ def add_srst2(ar_df, srst2_ar_df):
     # Add cols that are unique to gamma ar_df
     ar_combined_df = ar_combined_df.join(ar_df)
     #fixing column orders
-    ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS ID']
+    ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\((.*)\).*').values.tolist() # get all ar drug names form column names
-    sorted_drug_names = sorted(list(set([drug for sublist in ar_drugs_list for drug in sublist]))[1:]) #get unique drug names (with set) and drop nan that comes from WGS ID column and sort
+    sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:]) #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
     for drug in sorted_drug_names:
         column_list = [col for col in ar_combined_df.columns if drug in col] # get column names filtered for each drug name
         # since drug names have cross over with names we need to do some clean up
@@ -583,6 +627,7 @@ def add_srst2(ar_df, srst2_ar_df):
         else:
             pass
         ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[column_list]], axis=1, sort=False) # setting column's order by combining dataframes
+    # Cleaning things up if there are 
     return ar_combined_ordered_df
 
 def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
@@ -601,16 +646,16 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
     ar_df = ar_df.loc[:, ar_cols]
     # combining srst2 and gamma ar dataframes
     final_ar_df = add_srst2(ar_df, srst2_ar_df)
-    ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS ID column
+    ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
     # combining all dataframes
-    final_df = pd.merge(df, final_ar_df, how="left", on=["WGS ID","WGS ID"])
-    final_df = pd.merge(final_df, pf_df, how="left", on=["WGS ID","WGS ID"])
-    final_df = pd.merge(final_df, hv_df, how="left", on=["WGS ID","WGS ID"])
+    final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
+    final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
+    final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
     return final_df, ar_max_col
 
-def write_to_excel(df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count):
+def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
-    writer = pd.ExcelWriter('OA_Report.xlsx', engine='xlsxwriter')
+    writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
     df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=1)
     # Get the xlsxwriter workfbook worksheet objects for formating
@@ -667,11 +712,18 @@ def write_to_excel(df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count):
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
 
-####### how to handle errors!
-# If file doesn't exist value -> Failed --> done!
-## Gamma can't find AR genes creates file with only header
-## No file created failure for gamma
 ## double check the numbers are correct.
+def blind_samples(final_df, control_file):
+    """If you passed a file to -c this will swap out sample names to 'blind' the WGS_IDs in the final excel file."""
+    with open(control_file, 'r') as controls:
+        header = next(controls) # skip the first line of the samplesheet
+        for line in controls:
+            old_sample_name = line.split(",")[0]
+            new_sample_name = line.split(",")[1].rstrip("\n")
+            if new_sample_name != old_sample_name:
+                final_df['WGS_ID'] = final_df['WGS_ID'].replace(old_sample_name, new_sample_name)
+    # create new csv file
+    return final_df
 
 def main():
     args = parseArgs()
@@ -707,10 +759,15 @@ def main():
     df = Create_df(Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L )
     (qc_max_row, qc_max_col) = df.shape
-    pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS ID column
-    hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS ID column
+    pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
+    hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
     final_df, ar_max_col = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
-    write_to_excel(final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col)
+    # Checking if there was a control sheet submitted
+    if args.control_list !=None:
+        final_df = blind_samples(final_df, args.control_list)
+    else:
+        final_df = final_df
+    write_to_excel(args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col)
 
 if __name__ == '__main__':
     main()

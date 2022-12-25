@@ -1,13 +1,13 @@
 process GRIPHEN {
-    tag "$meta.id"
     label 'process_low'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
-    tuple val(meta), path(fastp_stats), path(kraken2_trmd_summary), path(kraken2_wtasmbld_summary),
-    path(quast_report), path(ani_file), path(gamma_hv_file), path(gamma_ar_file), path(gamma_pf_file),
-    path(busco_file), path(srst2_ar_file), path(mlst_file), path(assembly_ratio_file)
-    path(samplesheet)
+    path(summary_line_files)
+    //path(fastp_stats), path(kraken2_trmd_summary), path(kraken2_wtasmbld_summary)
+    //path(quast_report), path(ani_file), path(gamma_hv_file), path(gamma_ar_file), path(gamma_pf_file),
+    //path(busco_file), path(srst2_ar_file), path(mlst_file), path(assembly_ratio_file)
+    path(original_samplesheet)
     path(db)
 
     output:
@@ -16,7 +16,6 @@ process GRIPHEN {
 
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    def prefix = task.ext.prefix ?: "${meta.id}"
     """
     while IFS="" read -r line;
     do
@@ -27,7 +26,7 @@ process GRIPHEN {
         else
             echo \$sample_name,${params.outdir}/\$sample_name >> samplesheet_converted.csv
         fi
-    done < Caz_Avi_samples.csv
+    done < ${original_samplesheet}
 
     GRiPhen.py -s samplesheet_converted.csv -a $db
 
