@@ -227,6 +227,7 @@ def convert(to_convert):
             'dnodosus': 'Dichelobacter nodosus',
             'ecloacae': 'Enterobacter cloacae',
             'ecoli': 'Escherichia coli#1',
+            'ecoli_achtman_4' : 'Escherichia coli#1',
             'ecoli(Achtman)': 'Escherichia coli#1',
             'ecoli(Pasteur)': 'Escherichia coli#2',
             'ecoli_2': 'Escherichia coli#2',
