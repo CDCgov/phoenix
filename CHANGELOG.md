@@ -1,5 +1,7 @@
 # CDCgov/phoenix: Changelog
 
+Below are the list of changes to phx since is initial release. As fixes can take multiple commits to fix the linked commit are the point at which the fix was complete. Sometimes additional changes are needed later so commits give an approximate reference for the fix. Check commits on the specific file of interest if the commit link seems off. 
+
 ## [v1.0.0](https://github.com/CDCgov/phoenix/releases/tag/v1.0.0) (10/12/2022)
 
 🎉First official release.🎉
@@ -13,6 +15,8 @@
 **Implemented Enhancements:**  
 - Anticipate updates from Erin and Robert [#](link to PR) (thanks to @user)  
 - Added emits to allow linking of workflows to close [#42](https://github.com/CDCgov/phoenix/issues/42) [#e32132d](https://github.com/CDCgov/phoenix/commit/e32132dffc656214a9977ab6c0b22efb86f72f6f).  
+- Nick to add information on MLST check and fix changes for both PHOENIX and CDC_PHOENIX (also note file names changes)
+- Maria to add information on -entry SCAFFOLDS
 
 **Output File Changes:**  
 - Removed spaces in header of *_all_genes.tsv file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#fd048d1](https://github.com/CDCgov/phoenix/commit/fd048d1a54ca262617eeef32d85cd4f47650af23)
@@ -21,6 +25,7 @@
 
 **Fixed Bugs:**  
 - Edit to allow nf-tower to work [#b21d61f](https://github.com/CDCgov/phoenix/commit/b21d61f269212311737dffecd54664d7c8019f09)  
+- Fixed failure when prokka throws error for sample names being too long (Error: ID must <= 37 chars long) [#e48e01f](https://github.com/CDCgov/phoenix/commit/e48e01fbac298541f55e949e8e8f04396aa791e8). Now sample name length doesn't matter.
 
 **Database Updates:**  
 - Description of updates and why [#](links to files)  
