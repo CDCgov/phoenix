@@ -432,7 +432,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
                 #MLST_alleles_2 = ",".join(Scheme[2][1])
             else:
                 MLST_scheme_1 = Scheme[0][1]
-                print("1,2-before sort", Sceme[1][1])
+                print("1,2-before sort", Scheme[1][1])
                 mlst_types_1=sorted(Scheme[1][1])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 print("1,2-after sort", MLST_type_1)
