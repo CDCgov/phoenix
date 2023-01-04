@@ -66,7 +66,7 @@ include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipel
 include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
 include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
 include { CHECK_MLST                     } from '../modules/local/check_mlst_external'
-include { GRIPHEN                        } from '../modules/local/griphen'
+include { GRIPHIN                        } from '../modules/local/griphin'
 
 /*
 ========================================================================================
@@ -423,29 +423,7 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-
-        /*BBDUK.out.reads.multiMap{ meta, reads -> reads: reads }.set{ BBDUK_SPLIT }
-        BBDUK_SPLIT.reads.view()
-
-        // collect and combine outputs that griphen expects.
-        GATHERING_READ_QC_STATS.out.fastp_total_qc.multiMap{ meta, fastp_total_qc -> fastp_total_qc: fastp_total_qc }.set{ GATHERING_READ_QC_STATS_SPLIT }
-        griphen_ch = GATHERING_READ_QC_STATS_SPLIT.fastp_total_qc.collect()
-        //.combine(
-        //KRAKEN2_TRIMD.out.k2_bh_summary.multiMap{ meta, k2_bh_summary -> k2_bh_summary: k2_bh_summary }.set{ KRAKEN2_TRIMD_SPLIT }.collect())
-        //KRAKEN2_WTASMBLD.out.k2_bh_summary.collect().combine(
-        //QUAST.out.report_tsv.collect().combine(
-        //FORMAT_ANI.out.ani_best_hit.collect().combine(
-        //GAMMA_HV.out.gamma.collect().combine(
-        //GAMMA_AR.out.gamma.collect().combine(
-        //GAMMA_PF.out.gamma.collect().combine(
-        //BUSCO.out.short_summaries_specific_txt.collect().combine(
-        //SRST2_AR.out.fullgene_results.collect().combine(
-        //CHECK_MLST.out.checked_MLSTs.collect().combine(
-        //CALCULATE_ASSEMBLY_RATIO.out.ratio.collect())))))))))))
-
-        griphen_ch.view()*/
-
-        GRIPHEN(
+        GRIPHIN(
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
         )
 

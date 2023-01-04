@@ -10,11 +10,12 @@ import argparse
 import json
 import re
 import xlsxwriter as ws
+from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
 from Bio import SeqIO
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
-##Usage: >python GRiPhen.py -s ./samplesheet.csv -a ../PHX/phoenix/assets/databases/ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output
+##Usage: >python GRiPhin.py -s ./samplesheet.csv -a ../PHX/phoenix/assets/databases/ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 def parseArgs(args=None):
@@ -22,7 +23,7 @@ def parseArgs(args=None):
     parser.add_argument('-s', '--samplesheet', required=True, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
-    parser.add_argument('-o', '--output', default="GRiPHen_Report.csv", required=False, dest='output', help='Name of output file.')
+    parser.add_argument('-o', '--output', default="GRiPhin_Report", required=False, dest='output', help='Name of output file.')
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
 
@@ -493,6 +494,7 @@ def Get_Files(directory, sample_name):
     quast_report = directory + "/quast/" + sample_name + "_report.tsv"
     mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
     # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
+    # You only need this for glob because glob will throw an index error if not.
     try:
         busco_short_summary =  glob.glob(directory + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")[0]
     except IndexError:
@@ -630,6 +632,28 @@ def add_srst2(ar_df, srst2_ar_df):
     # Cleaning things up if there are 
     return ar_combined_ordered_df
 
+def big5_check(final_ar_df):
+    """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
+    columns_to_highlight = []
+    all_genes = final_ar_df.columns
+    big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
+    blaOXA_48_like = [ "blaOXA-48", "blaOXA-54", "blaOXA-162", "blaOXA-181", "blaOXA-199", "blaOXA-204", "blaOXA-232", "blaOXA-244", "blaOXA-245", "blaOXA-247", "blaOXA-252", "blaOXA-370", "blaOXA-416", "blaOXA-436", \
+    "blaOXA-438", "blaOXA-439", "blaOXA-484", "blaOXA-505", "blaOXA-514", "blaOXA-515", "blaOXA-517", "blaOXA-519", "blaOXA-535", "blaOXA-538", "blaOXA-546", "blaOXA-547", "blaOXA-566", "blaOXA-567", "blaOXA-731", \
+    "blaOXA-788", "blaOXA-793", "blaOXA-833", "blaOXA-894", "blaOXA-918", "blaOXA-920", "blaOXA-922", "blaOXA-923", "blaOXA-924", "blaOXA-929", "blaOXA-933", "blaOXA-934", "blaOXA-1038", "blaOXA-1039", "blaOXA-1055", "blaOXA-1119", "blaOXA-1146" ]
+    # combine lists
+    big5_keep = big5_keep + blaOXA_48_like
+    # remove list of genes that look like big 5 but don't have activity
+    big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "blaOXA-163", "blaOXA-405"]
+    # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
+    for gene in all_genes:
+        for keep_gene in big5_keep:
+            if keep_gene in gene:
+                columns_to_highlight.append(gene)
+    #loop through list of genes to drop and removed if they are in the highlight list
+    for drop_gene in big5_drop:
+        columns_to_highlight = [gene for gene in columns_to_highlight if drop_gene not in gene]
+    return columns_to_highlight
+
 def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
     hv_cols = list(hv_df)
     pf_cols = list(pf_df)
@@ -647,13 +671,15 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
     # combining srst2 and gamma ar dataframes
     final_ar_df = add_srst2(ar_df, srst2_ar_df)
     ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
+    # now we will check for the "big 5" genes for highlighting later.
+    columns_to_highlight = big5_check(final_ar_df)
     # combining all dataframes
     final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
-    return final_df, ar_max_col
+    return final_df, ar_max_col, columns_to_highlight, final_ar_df
 
-def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count):
+def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
@@ -697,6 +723,20 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     worksheet.conditional_format('J3:J' + str(max_row), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.
     worksheet.conditional_format('D3:D' + str(max_row), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
+    # conditional formating to highlight big 5 genes
+    # Start iterating through the columns and the rows to apply the format
+    column_count = 0
+    for column in ar_df.columns:
+        for gene in columns_to_highlight:
+            if column == gene: # if the column is one of the big 5 genes to highlight
+                for row in range(ar_df.shape[0]):
+                    col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+                    row_adjustment = row + 2
+                    cell = xl_rowcol_to_cell(row_adjustment, col_adjustment)   # Gets the excel location like A1
+                    cell_value = ar_df.iloc[row, column_count] # get the value in that cell
+                    if cell_value != "":
+                        worksheet.write(cell, cell_value, orange_format)
+        column_count = column_count + 1
     # Creating footers
     worksheet.merge_range('A' + str(max_row + 4) + ':E' + str(max_row + 4),'Cells in YELLOW denote isolates outside of 30-100X coverage', yellow_format)
     worksheet.merge_range('A' + str(max_row + 5) + ':N' + str(max_row + 5),'Rows in ORANGE denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format)
@@ -712,7 +752,7 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
 
-## double check the numbers are correct.
+
 def blind_samples(final_df, control_file):
     """If you passed a file to -c this will swap out sample names to 'blind' the WGS_IDs in the final excel file."""
     with open(control_file, 'r') as controls:
@@ -761,13 +801,13 @@ def main():
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df= Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
     else:
         final_df = final_df
-    write_to_excel(args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col)
+    write_to_excel(args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df)
 
 if __name__ == '__main__':
     main()
