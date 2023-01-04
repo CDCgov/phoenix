@@ -221,9 +221,12 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
         if (params.busco_db_path != null) {
+            // Accounting for passing relative paths
+            busco_db_path = channel.fromPath(params.busco_db_path, relative: true)
+
             // Checking single copy genes for assembly completeness
             BUSCO (
-                BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', params.busco_db_path, []
+                BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', busco_db_path, []
             )
             ch_versions = ch_versions.mix(BUSCO.out.versions)
         } else {

@@ -20,19 +20,20 @@ include { KRAKEN_BEST_HIT as KRAKEN2_BH_WTASMBLD            } from '../../module
 
 workflow KRAKEN2_WF {
     take:
-    fasta // channel: tuple (meta) path(read_R1, reads_R2) or tuple (meta) path(scaffolds)
-    type // val: trimd, asmbld or wtasmbld 
+    fasta    // channel: tuple (meta) path(read_R1, reads_R2) or tuple (meta) path(scaffolds)
+    type     // val: trimd, asmbld or wtasmbld 
     qc_stats //GATHERING_READ_QC_STATS.out.fastp_total_qc
-    quast //QUAST.out.report_tsv --> only for wtasmbld and asmbld
+    quast    //QUAST.out.report_tsv --> only for wtasmbld and asmbld
 
     main:
     ch_versions     = Channel.empty() // Used to collect the software versions
+    kraken2db_path = channel.fromPath(params.kraken2db, relative: true) // creating variable so pipeline can handle relative inputs for the kraken database
 
     if(type =="trimd") {
 
         // Checking for Contamination in trimmed reads
         KRAKEN2_TRIMD (
-            fasta, params.kraken2db, "trimd", true, true
+            fasta, kraken2db_path, "trimd", true, true
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -83,7 +84,7 @@ workflow KRAKEN2_WF {
     } else if(type =="asmbld") {
         // Checking for Contamination in scaffolds
         KRAKEN2_ASMBLD (
-            fasta, params.kraken2db, "asmbld", true, true
+            fasta, kraken2db_path, "asmbld", true, true
         )
         ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
@@ -133,7 +134,7 @@ workflow KRAKEN2_WF {
 
         // Getting species ID as back up for FastANI and checking contamination isn't in assembly
         KRAKEN2_WTASMBLD (
-            fasta, params.kraken2db, "wtasmbld", true, true
+            fasta, kraken2db_path, "wtasmbld", true, true
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 /*        if (params.kraken2db != null) { // If you pass a database path use that instead of default ./phoenix/assests/databases
@@ -149,10 +150,10 @@ workflow KRAKEN2_WF {
             )
             ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
         }*/
-    
+
         // Create weighted kraken report based on scaffold length
         KRAKENTOOLS_MAKEKREPORT (
-            KRAKEN2_WTASMBLD.out.classified_reads_assignment, params.ktaxmap
+            KRAKEN2_WTASMBLD.out.classified_reads_assignment, kraken2db_path
         )
         ch_versions = ch_versions.mix(KRAKENTOOLS_MAKEKREPORT.out.versions)
 
