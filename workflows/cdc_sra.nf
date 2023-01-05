@@ -20,6 +20,24 @@ if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!'
 
 /*
 ========================================================================================
+    SETUP
+========================================================================================
+*/
+
+// Info required for completion email and summary
+def multiqc_report = []
+// Creating channel so pipeline can handle relative inputs for the kraken database. If you just create a channel with one krakendb then only one sample goes through.
+def kraken_db_list = []
+def sample_count = (new File(params.input).readLines().size())-1 // Get the number of samples from the input file.
+for(int val=0;val<sample_count;val++) { kraken_db_list.add(params.kraken2db); } // Add KrakenDB to list the one for each sample
+kraken2db_path  = Channel.fromPath(kraken_db_list, relative: true) // Make paths in list full paths now and put in channel
+// Doing the same for busco path
+def busco_db_list = []
+for(int val=0;val<sample_count;val++) { busco_db_list.add(params.busco_db_path); } // Add KrakenDB to list the one for each sample
+busco_db_path = channel.fromPath(busco_db_list, relative: true)
+
+/*
+========================================================================================
     CONFIG FILES
 ========================================================================================
 */
@@ -103,9 +121,6 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 ========================================================================================
 */
 
-// Info required for completion email and summary
-def multiqc_report = []
-
 workflow SRA_PHOENIX {
 
     ch_versions     = Channel.empty() // Used to collect the software versions
@@ -167,7 +182,7 @@ workflow SRA_PHOENIX {
 
     // Checking for Contamination in trimmed reads, creating krona plots and best hit files
     KRAKEN2_TRIMD (
-        FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
+        FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, [], kraken2db_path
     )
     ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -226,7 +241,7 @@ workflow SRA_PHOENIX {
     if (params.busco_db_path != null) {
         // Checking single copy genes for assembly completeness
         BUSCO (
-            BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', params.busco_db_path, []
+            BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', busco_db_list, []
         )
         ch_versions = ch_versions.mix(BUSCO.out.versions)
     } else {
@@ -239,13 +254,13 @@ workflow SRA_PHOENIX {
 
     // Checking for Contamination in assembly creating krona plots and best hit files
     KRAKEN2_ASMBLD (
-        BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv
+        BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv, kraken2db_path
     )
     ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
     // Creating krona plots and best hit files for weighted assembly
     KRAKEN2_WTASMBLD (
-        BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
+        BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv, kraken2db_path
     )
     ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
@@ -435,6 +450,11 @@ workflow SRA_PHOENIX {
     // Combining sample summaries into final report
     GATHER_SUMMARY_LINES (
         all_summaries_ch, true
+    )
+    ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+
+    GRIPHIN(
+        all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
     )
     ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

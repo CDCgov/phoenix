@@ -21,15 +21,15 @@ process KRAKEN2_KRAKEN2 {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def paired       = meta.single_end ? "" : "--paired"
-    def classified   = meta.single_end ? "${prefix}.classified.fastq"   : "${prefix}.classified#.fastq"
-    def unclassified = meta.single_end ? "${prefix}.unclassified.fastq" : "${prefix}.unclassified#.fastq"
-    def classified_command = save_output_fastqs ? "--classified-out ${classified}" : ""
-    def unclassified_command = save_output_fastqs ? "--unclassified-out ${unclassified}" : ""
+    def args                       = task.ext.args ?: ''
+    def prefix                     = task.ext.prefix ?: "${meta.id}"
+    def paired                     = meta.single_end ? "" : "--paired"
+    def classified                 = meta.single_end ? "${prefix}.classified.fastq"   : "${prefix}.classified#.fastq"
+    def unclassified               = meta.single_end ? "${prefix}.unclassified.fastq" : "${prefix}.unclassified#.fastq"
+    def classified_command         = save_output_fastqs ? "--classified-out ${classified}" : ""
+    def unclassified_command       = save_output_fastqs ? "--unclassified-out ${unclassified}" : ""
     def readclassification_command = save_reads_assignment ? "--output ${prefix}.kraken2_${kraken_type}.classifiedreads.txt" : ""
-    def compress_reads_command = save_output_fastqs ? "gzip *.fastq" : ""
+    def compress_reads_command     = save_output_fastqs ? "gzip *.fastq" : ""
 
     """
     kraken2 \\

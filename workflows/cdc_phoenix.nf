@@ -9,7 +9,6 @@ def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 // Validate input parameters
 WorkflowPhoenix.initialise(params, log)
 
-
 // Check input path parameters to see if they exist
 def checkPathParamList = [ params.input, params.multiqc_config ] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -19,6 +18,25 @@ for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true
 //input on command line
 if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
 if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+
+/*
+========================================================================================
+    SETUP
+========================================================================================
+*/
+
+// Info required for completion email and summary
+def multiqc_report = []
+def count = 0 // this keeps the pipeline exit and reminder statement from being printed multiple times. See "COMPLETION EMAIL AND SUMMARY" section
+// Creating channel so pipeline can handle relative inputs for the kraken database. If you just create a channel with one krakendb then only one sample goes through.
+def kraken_db_list = []
+def sample_count = (new File(params.input).readLines().size())-1 // Get the number of samples from the input file.
+for(int val=0;val<sample_count;val++) { kraken_db_list.add(params.kraken2db); } // Add KrakenDB to list the one for each sample
+kraken2db_path  = Channel.fromPath(kraken_db_list, relative: true) // Make paths in list full paths now and put in channel
+// Doing the same for busco path
+def busco_db_list = []
+for(int val=0;val<sample_count;val++) { busco_db_list.add(params.busco_db_path); } // Add KrakenDB to list the one for each sample
+busco_db_path = channel.fromPath(busco_db_list, relative: true)
 
 /*
 ========================================================================================
@@ -101,10 +119,6 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 ========================================================================================
 */
 
-// Info required for completion email and summary
-def multiqc_report = []
-def count = 0 // this keeps the pipeline exit and reminder statement from being printed multiple times. See "COMPLETION EMAIL AND SUMMARY" section
-
 workflow PHOENIX_EXQC {
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
@@ -164,7 +178,7 @@ workflow PHOENIX_EXQC {
 
         // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, []
+            FASTP_TRIMD.out.reads, "trimd", GATHERING_READ_QC_STATS.out.fastp_total_qc, [], kraken2db_path
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -221,9 +235,6 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
         if (params.busco_db_path != null) {
-            // Accounting for passing relative paths
-            busco_db_path = channel.fromPath(params.busco_db_path, relative: true)
-
             // Checking single copy genes for assembly completeness
             BUSCO (
                 BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', busco_db_path, []
@@ -239,13 +250,13 @@ workflow PHOENIX_EXQC {
 
         // Checking for Contamination in assembly creating krona plots and best hit files
         KRAKEN2_ASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv
+            BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv, kraken2db_path
         )
         ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
+            BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv, kraken2db_path
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
@@ -256,8 +267,8 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
         // Combining mash dist with filtered scaffolds based on meta.id
-        top_taxa_ch = MASH_DIST.out.dist.map{ meta, dist  -> [[id:meta.id], dist]}\
-        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{   meta, reads -> [[id:meta.id], reads ]}, by: [0])
+        top_taxa_ch = MASH_DIST.out.dist.map{           meta, dist  -> [[id:meta.id], dist]}\
+        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads -> [[id:meta.id], reads ]}, by: [0])
 
         // Generate file with list of paths of top taxa for fastANI
         DETERMINE_TOP_TAXA (
@@ -265,9 +276,9 @@ workflow PHOENIX_EXQC {
         )
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
-        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads         -> [[id:meta.id], reads]}\
-        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{ meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])\
-        .join(DETERMINE_TOP_TAXA.out.reference_files.map{meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
+        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads           -> [[id:meta.id], reads]}\
+        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{              meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+        .join(DETERMINE_TOP_TAXA.out.reference_files.map{            meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -309,9 +320,9 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
 
-        combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
-        .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
+        combined_mlst_ch = MLST.out.tsv.map{     meta, tsv           -> [[id:meta.id], tsv]}\
+        .join(SRST2_MLST.out.mlst_results.map{   meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
+        .join(DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
 
         // Combining and adding flare to all MLST outputs
         CHECK_MLST (
@@ -335,10 +346,10 @@ workflow PHOENIX_EXQC {
         )
 
         // Combining taxa and scaffolds to run amrfinder and get the point mutations.
-        amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                               meta, reads          -> [[id:meta.id], reads]}\
-        .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{ meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
-        .join(PROKKA.out.faa.map{                                                 meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
-        .join(PROKKA.out.gff.map{                                                 meta, gff            -> [[id:meta.id], gff ]},            by: [0])
+        amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, reads          -> [[id:meta.id], reads]}\
+        .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+        .join(PROKKA.out.faa.map{                                                meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+        .join(PROKKA.out.gff.map{                                                meta, gff            -> [[id:meta.id], gff ]},            by: [0])
 
         // Run AMRFinder
         AMRFINDERPLUS_RUN (
@@ -429,6 +440,7 @@ workflow PHOENIX_EXQC {
         GRIPHIN(
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
         )
+        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         // Collecting the software versions
         CUSTOM_DUMPSOFTWAREVERSIONS (
@@ -454,7 +466,7 @@ workflow PHOENIX_EXQC {
         multiqc_report = MULTIQC.out.report.toList()
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
 
-      emit:
+    emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
         paired_trmd_json = FASTP_TRIMD.out.json

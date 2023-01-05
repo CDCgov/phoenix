@@ -24,10 +24,10 @@ workflow KRAKEN2_WF {
     type     // val: trimd, asmbld or wtasmbld 
     qc_stats //GATHERING_READ_QC_STATS.out.fastp_total_qc
     quast    //QUAST.out.report_tsv --> only for wtasmbld and asmbld
+    kraken2db_path
 
     main:
     ch_versions     = Channel.empty() // Used to collect the software versions
-    kraken2db_path = channel.fromPath(params.kraken2db, relative: true) // creating variable so pipeline can handle relative inputs for the kraken database
 
     if(type =="trimd") {
 
