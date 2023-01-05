@@ -28,7 +28,7 @@ task phoenix {
     mkdir ~{samplename}
     cd ~{samplename}
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.1 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
