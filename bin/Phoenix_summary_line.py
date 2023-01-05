@@ -77,7 +77,7 @@ def MLST_Scheme(MLST_file):
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
                         print("Adding to", Scheme_list[0][i], i)
-                        if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
+                        if Scheme != "-" and "Novel" not in Scheme: #if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
                             Scheme_list[1][i].append("ST"+str(Scheme))
                         else:
                             Scheme_list[1][i].append(Scheme)
