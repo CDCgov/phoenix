@@ -46,11 +46,13 @@ process PROKKA {
     gunzip -f \${NFNAME}
     
     sed 's/${prefix}/NODE/g' \${NFNAME_U} > \${FNAME}
+
     prokka \\
         $args \\
         --cpus $task.cpus \\
         --prefix $prefix \\
         \$FNAME
+
     sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.gff > ./${prefix}.gff
     sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.gbk > ./${prefix}.gbk
     sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.fna > ./${prefix}.fna
@@ -64,6 +66,7 @@ process PROKKA {
     sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.txt > ./${prefix}.txt
     sed 's/NODE/${prefix}/g' ${prefix}/${prefix}.tsv > ./${prefix}.tsv
     #mv ${prefix}/* .
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         prokka: \$(echo \$(prokka --version 2>&1) | sed 's/^.*prokka //')

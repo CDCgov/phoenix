@@ -38,19 +38,17 @@ process SRST2_AR {
         --output ${prefix} \\
         ${database} \\
         $args
-    cat <<-END_VERSIONS > versions.yml
 
-     # create an empty fullgenes file if nothing was found, otherwise the pre-summary join fails silently
+    # create an empty fullgenes file if nothing was found, otherwise the pre-summary join fails silently
     short_DB=\$(basename ${db} .fasta)
     if [[ ! -f ${prefix}__fullgenes__\${short_DB}__results.txt ]]; then
         touch ${prefix}__fullgenes__\${short_DB}__results.txt
     fi
 
-#    cat <<-END_VERSIONS > versions.yml
-    echo "\"${task.process}\":" > versions.yml
-    srst2_ver=\$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
-    echo "    srst2: \${srst2_ver}" >> versions.yml
-    echo "    AMR Combined Database: $db" >> versions.yml
-#    END_VERSIONS
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
+        AMR Combined Database: $db
+    END_VERSIONS
     """
 }

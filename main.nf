@@ -4,7 +4,7 @@
     CDCgov/phoenix
 ========================================================================================
     Github : https://github.com/CDCgov/phoenix
-    Slack  : https://staph-b-dev.slack.com/channels/phoenix-h-dev
+    Slack  : https://staph-b-dev.slack.com/channels/phoenix-dev
 ----------------------------------------------------------------------------------------
 */
 
