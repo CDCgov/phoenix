@@ -20,19 +20,25 @@ from Bio import SeqIO
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
-    parser.add_argument('-s', '--samplesheet', required=True, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
+    parser.add_argument('-s', '--samplesheet', default=None, required=False, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
+    parser.add_argument('-d', '--directory', default=None, required=False, dest='directory', help='If a directory is given rather than samplesheet GRiPhin will create one for all samples in the directory.')
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
     parser.add_argument('-o', '--output', default="GRiPhin_Report", required=False, dest='output', help='Name of output file.')
-    parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
+
+#set colors for warnings so they are seen
+CRED = '\033[91m'+'\nWarning: '
+CEND = '\033[0m'
 
 def Get_Parent_Folder(directory):
     '''getting project and platform info from the paths'''
     #Project - parent folder (first folder that is in the outdir)
     #relative/submission - rest of the path
+    #first make sure we have an absolute path
+    directory = os.path.abspath(directory)
     #handing if trailing backslash isn't in there.
-    if directory[-1] != "/":
+    if directory[-1] != "/": 
         directory = directory + "/"
     # get project from directory path
     project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
@@ -174,6 +180,19 @@ def Checking_auto_pass_fail(coverage, length, assembly_stdev, asmbld_ratio):
         QC_reason = ""
     return QC_result, QC_reason
 
+def duplicate_column_clean(df):
+    if len([x for x in list(df.columns) if list(df.columns).count(x) > 1]) > 0:
+        #get column names that are duplicates
+        dups = set([x for x in list(df.columns) if list(df.columns).count(x) > 1])
+        # get dataframe for duplicate columns
+        for dup in dups:
+            new_col = df[dup].agg(';'.join, axis=1).astype(str).values[0]
+            #drop old frame(s)
+            df = df.drop(dup, axis=1)
+            #add in new frame
+            df[dup] = new_col
+    return df
+
 def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_ar_file, sep='\t', header=0)
@@ -215,6 +234,8 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
         df["AR_Database"] = DB
         df["No_AR_Genes_Found"] = ""
         df.index = [sample_name]
+    # Check for duplicate column names
+    df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_df
 
@@ -240,6 +261,8 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
         df["HV_Database"] = DB
         df["No_HVGs_Found"] = ""
         df.index = [sample_name]
+    # Check for duplicate column names
+    df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_df
 
@@ -284,6 +307,8 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
         df["Plasmid_Replicon_Database"] = DB
         df['No_Plasmid_Markers'] = ""
         df.index = [sample_name]
+    # Check for duplicate column names
+    df = duplicate_column_clean(df)
     pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return pf_df
 
@@ -604,6 +629,7 @@ def add_srst2(ar_df, srst2_ar_df):
         if col != "WGS_ID":
             ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
             ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
+            ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
         else:
             ar_combined_df[col] = srst2_ar_df[col]
     # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
@@ -623,13 +649,15 @@ def add_srst2(ar_df, srst2_ar_df):
         # since drug names have cross over with names we need to do some clean up
         if drug == "phenicol":
             column_list = [drug for drug in column_list if "quinolone" not in drug]
+        elif drug == "aminoglycoside":
+            column_list = [drug for drug in column_list if "quinolone" not in drug]
         elif drug == "quinolone":
             column_list = [drug for drug in column_list if "phenicol" not in drug]
             column_list = [drug for drug in column_list if "fluoroquinolone" not in drug]
+            column_list = [drug for drug in column_list if "aminoglycoside" not in drug]
         else:
             pass
         ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[column_list]], axis=1, sort=False) # setting column's order by combining dataframes
-    # Cleaning things up if there are 
     return ar_combined_ordered_df
 
 def big5_check(final_ar_df):
@@ -695,7 +723,7 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     # Setting columns to float so its more huamn readable
     number_dec_format = workbook.add_format({'num_format': '0.000'})
     worksheet.set_column('M:N', None, number_dec_format)
-    # getting values to set column widths automatically 
+    # getting values to set column widths automatically
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
         max_len = max((
@@ -718,11 +746,11 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     yellow_format = workbook.add_format({'bg_color': '#FFEB9C', 'font_color': '#000000'}) # Light yellow fill with black text.
     red_format = workbook.add_format({'bg_color': '#F5B7B1', 'font_color': '#000000'}) # red fill with black text.
     orange_format = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000'})
-    # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column.
-    worksheet.conditional_format('J3:J' + str(max_row), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
-    worksheet.conditional_format('J3:J' + str(max_row), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
+    # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column. adding 2 to max row to account for headers
+    worksheet.conditional_format('J3:J' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
+    worksheet.conditional_format('J3:J' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.
-    worksheet.conditional_format('D3:D' + str(max_row), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
+    worksheet.conditional_format('D3:D' + str(max_row + 2), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
     # conditional formating to highlight big 5 genes
     # Start iterating through the columns and the rows to apply the format
     column_count = 0
@@ -738,20 +766,19 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
                         worksheet.write(cell, cell_value, orange_format)
         column_count = column_count + 1
     # Creating footers
-    worksheet.merge_range('A' + str(max_row + 4) + ':E' + str(max_row + 4),'Cells in YELLOW denote isolates outside of 30-100X coverage', yellow_format)
-    worksheet.merge_range('A' + str(max_row + 5) + ':N' + str(max_row + 5),'Rows in ORANGE denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format)
+    worksheet.merge_range('A' + str(max_row + 4) + ':E' + str(max_row + 4),'Cells in YELLOW denote isolates outside of 40-100X coverage', yellow_format)
+    worksheet.merge_range('A' + str(max_row + 5) + ':P' + str(max_row + 5),'Rows in ORANGE denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format)
     worksheet.merge_range('A' + str(max_row + 6) + ':H' + str(max_row + 6),'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, stdev > 2.58, assembly length < 1Mbps)', red_format)
     # More footers - Disclaimer etc.
-    worksheet.merge_range('A' + str(max_row + 7) + ':P' + str(max_row + 7),"^Using Antibiotic Resistance Gene database ResGANNCBI_20220915 (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.")
+    worksheet.merge_range('A' + str(max_row + 7) + ':Q' + str(max_row + 7),"^Using Antibiotic Resistance Gene database ResGANNCBI_20220915 (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.")
     worksheet.merge_range('A' + str(max_row + 8) + ':P' + str(max_row + 8),"^^Using the plasmid incompatibility replicons plasmidFinder database (PF-Replicons_20220916) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].")
     worksheet.merge_range('A' + str(max_row + 9) + ':P' + str(max_row + 9),"^^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database (Hyper_Virulence_20220414); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].")
-    worksheet.merge_range('A' + str(max_row + 10) + ':P' + str(max_row + 10),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.")
+    worksheet.merge_range('A' + str(max_row + 10) + ':Q' + str(max_row + 10),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.")
     #adding review and date info
     worksheet.write('A' + str(max_row + 12), "Reviewed by:")
     worksheet.write('D' + str(max_row + 12), "Date:")
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
-
 
 def blind_samples(final_df, control_file):
     """If you passed a file to -c this will swap out sample names to 'blind' the WGS_IDs in the final excel file."""
@@ -765,6 +792,22 @@ def blind_samples(final_df, control_file):
     # create new csv file
     return final_df
 
+def create_samplesheet(directory):
+    """Function will create a samplesheet from samples in a directory if -d argument passed."""
+    directory = os.path.abspath(directory) # make sure we have an absolute path to start with
+    with open("samplesheet.csv", "w") as samplesheet:
+        samplesheet.write('sample,directory\n')
+    dirs = os.listdir(directory)
+    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPhin_Report.xlsx", "multiqc", "samplesheet_converted.csv"]
+    for sample in dirs:
+        if sample not in skip_list:
+            with open("samplesheet.csv", "a") as samplesheet:
+                if directory[-1] != "/": # if directory doesn't have trailing / add one
+                    directory = directory + "/"
+                samplesheet.write(sample + "," + directory + sample + '\n')
+    samplesheet = "samplesheet.csv"
+    return samplesheet
+
 def main():
     args = parseArgs()
     # create empty lists to append to later
@@ -776,13 +819,23 @@ def main():
     srst2_ar_df = pd.DataFrame()
     # Since srst2 currently doesn't handle () in the gene names we will make a quick detour to fix this... first making a dictionary
     ar_dic = make_ar_dictionary(args.ar_db)
+    # check if a directory or samplesheet was given
+    if (args.samplesheet == None) and (args.directory == None): # if no directory give AND no sample sheet given exit
+        sys.exit(CRED + "You MUST pass EITHER a samplesheet or a top directory of PHoeNIx output to create one.\n" + CEND)
+    # If a directory is given then create a samplesheet from it if not use the samplesheet passed
+    if args.directory !=None:
+        samplesheet = create_samplesheet(args.directory)
+    else:
+        samplesheet = args.samplesheet
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
-    with open(args.samplesheet) as csv_file:
+    with open(samplesheet) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
+            print(directory)
+            exit()
             project, platform = Get_Parent_Folder(directory)
             trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
