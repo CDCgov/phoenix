@@ -500,7 +500,7 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
         hv_df = pd.concat([hv_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
-    except FileNotFoundError: 
+    except (FileNotFoundError, pd.errors.EmptyDataError) : # second one for an empty dataframe - srst2 module creates a blank file 
         print("Warning: " + sample_name + "__fullgenes__ResGANNCBI__*_srst2__results.txt not found")
         df = pd.DataFrame({'WGS_ID':[sample_name]})
         df.index = [sample_name]
@@ -834,8 +834,6 @@ def main():
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
-            print(directory)
-            exit()
             project, platform = Get_Parent_Folder(directory)
             trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
