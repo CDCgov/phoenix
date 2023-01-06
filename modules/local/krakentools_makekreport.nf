@@ -10,8 +10,7 @@ process KRAKENTOOLS_MAKEKREPORT {
         'quay.io/biocontainers/python:3.8.3' }"*/
 
     input:
-    tuple val(meta), path(kraken_output)
-    path(kraken2db_path)
+    tuple val(meta), path(kraken_output), path(kraken2db_path)
 
     output:
     tuple val(meta), path('*_wtasmbld.report.txt'), emit: kraken_weighted_report

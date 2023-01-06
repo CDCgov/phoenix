@@ -10,6 +10,7 @@ process GRIPHIN {
     output:
     path("GRiPhin_Report.xlsx"),       emit: griphin_report
     path("samplesheet_converted.csv"), emit: converted_samplesheet
+    path("versions.yml")             , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     """
@@ -24,7 +25,7 @@ process GRIPHIN {
         fi
     done < ${original_samplesheet}
 
-    GRiPhin.py -s samplesheet_converted.csv -a $db
+    GRiPHin.py -s samplesheet_converted.csv -a $db
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

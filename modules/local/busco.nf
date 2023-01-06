@@ -8,10 +8,9 @@ process BUSCO {
         'quay.io/biocontainers/busco:5.4.3--pyhdfd78af_0' }"
         
     input:
-    tuple val(meta), path('tmp_input/*')
-    each lineage                          // Required:    lineage to check against, "auto" enables --auto-lineage instead
-    path busco_lineages_path              // Recommended: path to busco lineages - downloads if not set
-    path config_file                      // Optional:    busco configuration file
+    tuple val(meta), path('tmp_input/*'), path(busco_lineages_path) // path to busco lineages - downloads if not set
+    each(lineage)                          // Required:    lineage to check against, "auto" enables --auto-lineage instead
+    path(config_file)                      // Optional:    busco configuration file
 
     output:
     tuple val(meta), path("*-busco.batch_summary.txt")    , emit: batch_summary

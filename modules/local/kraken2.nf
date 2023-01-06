@@ -4,8 +4,7 @@ process KRAKEN2_KRAKEN2 {
     container 'staphb/kraken2:2.1.2-no-db'
 
     input:
-    tuple val(meta), path(reads)
-    path(db)
+    tuple val(meta), path(reads), path(db)
     val(kraken_type) //weighted, trimmmed or assembled
     val(save_output_fastqs)
     val(save_reads_assignment)
