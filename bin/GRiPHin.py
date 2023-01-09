@@ -15,16 +15,16 @@ import csv
 from Bio import SeqIO
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
-##Usage: >python GRiPhin.py -s ./samplesheet.csv -a ../PHX/phoenix/assets/databases/ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output
+##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ../PHX/phoenix/assets/databases/ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
     parser.add_argument('-s', '--samplesheet', default=None, required=False, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
-    parser.add_argument('-d', '--directory', default=None, required=False, dest='directory', help='If a directory is given rather than samplesheet GRiPhin will create one for all samples in the directory.')
+    parser.add_argument('-d', '--directory', default=None, required=False, dest='directory', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
-    parser.add_argument('-o', '--output', default="GRiPhin_Report", required=False, dest='output', help='Name of output file.')
+    parser.add_argument('-o', '--output', default="GRiPHin_Report", required=False, dest='output', help='Name of output file.')
     return parser.parse_args()
 
 #set colors for warnings so they are seen
@@ -795,17 +795,17 @@ def blind_samples(final_df, control_file):
 def create_samplesheet(directory):
     """Function will create a samplesheet from samples in a directory if -d argument passed."""
     directory = os.path.abspath(directory) # make sure we have an absolute path to start with
-    with open("samplesheet.csv", "w") as samplesheet:
+    with open("GRiPHin_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
     dirs = os.listdir(directory)
     skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPhin_Report.xlsx", "multiqc", "samplesheet_converted.csv"]
     for sample in dirs:
         if sample not in skip_list:
-            with open("samplesheet.csv", "a") as samplesheet:
+            with open("GRiPHin_samplesheet.csv", "a") as samplesheet:
                 if directory[-1] != "/": # if directory doesn't have trailing / add one
                     directory = directory + "/"
                 samplesheet.write(sample + "," + directory + sample + '\n')
-    samplesheet = "samplesheet.csv"
+    samplesheet = "GRiPHin_samplesheet.csv"
     return samplesheet
 
 def main():
