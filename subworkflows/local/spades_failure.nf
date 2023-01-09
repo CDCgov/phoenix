@@ -21,7 +21,8 @@ workflow SPADES_WF {
         extended_qc
 
     main:
-        ch_versions     = Channel.empty() // Used to collect the software versions
+        ch_versions = Channel.empty() // Used to collect the software versions
+        outdir_path = Channel.fromPath(params.outdir, relative: true) // Allow relative paths for krakendb argument
 
         // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
         passing_reads_ch = paired_reads.map{ meta, reads          -> [[id:meta.id],reads]}\
@@ -31,6 +32,9 @@ workflow SPADES_WF {
         .join(fastp_total_qc.map{            meta, fastp_total_qc -> [[id:meta.id],fastp_total_qc]}, by: [0])\
         .join(report.map{                    meta, report         -> [[id:meta.id],report]},         by: [0])\
         .join(krona_html.map{                meta, krona_html     -> [[id:meta.id],krona_html]},     by: [0])
+
+        // Add in full path to outdir into the channel so each sample has a the path to go with it. If you don't do this then only one sample goes through pipeline
+        passing_reads_ch = passing_reads_ch.combine(outdir_path)
 
         // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
         SPADES (

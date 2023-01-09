@@ -249,8 +249,9 @@ workflow PHOENIX_EXQC {
 
         if (params.busco_db_path != null) {
             // Allow relative paths for krakendb argument
-            busco_db_path = Channel.fromPath(params.busco_db_path, relative: true) 
-            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(busco_db_path) // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it. 
+            busco_db_path = Channel.fromPath(params.busco_db_path, relative: true)
+            // Add in busco into the scaffolds channel so each scaffolds file has a busco to go with it. 
+            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(busco_db_path)
 
             // Checking single copy genes for assembly completeness
             BUSCO (

@@ -11,7 +11,8 @@ process SPADES {
     path(fastp_raw_qc), \
     path(fastp_total_qc), \
     path(kraken2_trimd_report), \
-    path(krona_trimd)
+    path(krona_trimd), \
+    path(full_outdir)
 
     output:
     tuple val(meta), path('*.scaffolds.fa.gz')    , optional:true, emit: scaffolds
@@ -30,10 +31,9 @@ process SPADES {
     def input_reads = "-1 ${reads[0]} -2 ${reads[1]}"
     def single_reads = "-s $unpaired_reads"
     def phred_offset = params.phred
-    
     """
     bash ${baseDir}/bin/pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
-    sh ${baseDir}/bin/beforeSpades.sh -k ${k2_bh_summary} -n ${meta.id} -d ${params.outdir}
+    sh ${baseDir}/bin/beforeSpades.sh -k ${k2_bh_summary} -n ${meta.id} -d ${full_outdir}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
