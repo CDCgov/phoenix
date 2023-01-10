@@ -469,6 +469,10 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 				if original_scheme[3] > 1:
 					original_scheme[2] = "Novel_profile"
 				check = True
+			elif current_type == "failed":
+				if original_scheme[3] > 1:
+					original_scheme[2] = "Failed"
+				check=False
 			else:
 				current_type = int(current_type)
 				#print("Current MLST type:", current_type)
