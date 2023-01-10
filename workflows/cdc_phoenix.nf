@@ -29,7 +29,7 @@ if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!'
 def multiqc_report = []
 def count = 0 // this keeps the pipeline exit and reminder statement from being printed multiple times. See "COMPLETION EMAIL AND SUMMARY" section
 //def create_relative_paths(input) {
-if(params.input.equals("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/delete_me/srst2/samplesheet.csv")) {
+/*if(params.input.equals("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/delete_me/srst2/samplesheet.csv")) {
     kraken2db_path = Channel.fromPath(params.kraken2db, relative: true)
     if(params.busco_db_path!=null) {
         busco_db_path = Channel.fromPath(params.busco_db_path, relative: true)
@@ -49,7 +49,7 @@ if(params.input.equals("https://raw.githubusercontent.com/nf-core/test-datasets/
     }else{
         busco_db_path = params.busco_db_path
     }
-}
+}*/
 
 /*
 ========================================================================================
@@ -135,6 +135,8 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 workflow PHOENIX_EXQC {
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
+        // Allow outdir to be relative
+        outdir_path = Channel.fromPath(params.outdir, relative: true)
 
         //
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
@@ -249,25 +251,18 @@ workflow PHOENIX_EXQC {
 
         if (params.busco_db_path != null) {
             // Allow relative paths for krakendb argument
-            busco_db_path = Channel.fromPath(params.busco_db_path, relative: true)
-            // Add in busco into the scaffolds channel so each scaffolds file has a busco to go with it. 
-            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(busco_db_path)
-
-            // Checking single copy genes for assembly completeness
-            BUSCO (
-                busco_ch, 'auto', []
-            )
-            ch_versions = ch_versions.mix(BUSCO.out.versions)
-
+            busco_db_path = Channel.fromPath(params.busco_db_path, relative: true) 
+            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(busco_db_path) // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it. 
         } else {
-
-            // Checking single copy genes for assembly completeness
-            BUSCO (
-                BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', []
-            )
-            ch_versions = ch_versions.mix(BUSCO.out.versions)
-
+            // passing empty channel for busco db to align with expected inputs for the module
+            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, scaffolds -> [ [id:meta.id, single_end:meta.single_end], scaffolds, []]}
         }
+
+        // Checking single copy genes for assembly completeness
+        BUSCO (
+            busco_ch, 'auto', []
+        )
+        ch_versions = ch_versions.mix(BUSCO.out.versions)
 
         // Checking for Contamination in assembly creating krona plots and best hit files
         KRAKEN2_ASMBLD (
@@ -445,7 +440,7 @@ workflow PHOENIX_EXQC {
 
         // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
         FETCH_FAILED_SUMMARIES (
-            params.outdir, failed_summaries_ch, summaries_ch
+            outdir_path, failed_summaries_ch, summaries_ch
         )
 
         // combine all line summaries into one channel
@@ -454,12 +449,12 @@ workflow PHOENIX_EXQC {
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            all_summaries_ch, true
+            all_summaries_ch, outdir_path, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         GRIPHIN(
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

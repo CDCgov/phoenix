@@ -6,26 +6,31 @@ process GRIPHIN {
     path(summary_line_files)
     path(original_samplesheet)
     path(db)
+    path(outdir)
 
     output:
-    path("GRiPhin_Report.xlsx"),       emit: griphin_report
-    path("samplesheet_converted.csv"), emit: converted_samplesheet
-    path("versions.yml")             , emit: versions
+    path("GRiPHin_Report.xlsx"),     emit: griphin_report
+    path("GRiPHin_samplesheet.csv"), emit: converted_samplesheet
+    path("versions.yml"),            emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     """
+    #create a samplesheet to be passed to GRiPHin.py
     while IFS="" read -r line;
     do
         sample_name=\$(echo \$line | cut -d ',' -f 1)
         echo 
         if [[ "\$sample_name" == "sample" ]]; then
-            echo "sample,directory" > samplesheet_converted.csv
+            echo "sample,directory" > GRiPHin_samplesheet.csv
         else
-            echo \$sample_name,${params.outdir}/\$sample_name >> samplesheet_converted.csv
+            #get the full path for the samples rather than the working directory
+            full_path=\$(readlink -f ${outdir}/Phoenix_Output_Report.tsv)
+            full_dir=\$(echo \$full_path | sed 's/\\/Phoenix_Output_Report.tsv//')
+            echo \$sample_name,\$full_dir/\$sample_name >> GRiPHin_samplesheet.csv
         fi
     done < ${original_samplesheet}
 
-    GRiPHin.py -s samplesheet_converted.csv -a $db
+    GRiPHin.py -s GRiPHin_samplesheet.csv -a $db
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

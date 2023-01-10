@@ -107,6 +107,8 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 workflow PHOENIX_EXTERNAL {
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
+        // Allow outdir to be relative
+        outdir_path = Channel.fromPath(params.outdir, relative: true)
 
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
         INPUT_CHECK (
@@ -355,7 +357,7 @@ workflow PHOENIX_EXTERNAL {
 
         // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
         FETCH_FAILED_SUMMARIES (
-            params.outdir, failed_summaries_ch, summaries_ch
+            outdir_path, failed_summaries_ch, summaries_ch
         )
 
         // combine all line summaries into one channel
@@ -364,7 +366,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            all_summaries_ch, false
+            all_summaries_ch, outdir_path, false
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

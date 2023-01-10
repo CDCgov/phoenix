@@ -116,6 +116,8 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 workflow SRA_PHOENIX {
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
+        // Allow outdir to be relative
+        outdir_path = Channel.fromPath(params.outdir, relative: true)
 
         //fetch sra files, their associated fastq files, format fastq names, and create samplesheet for sra samples
         GET_SRA (
@@ -234,22 +236,16 @@ workflow SRA_PHOENIX {
             // Allow relative paths for krakendb argument
             busco_db_path = Channel.fromPath(params.busco_db_path, relative: true) 
             busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(busco_db_path) // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it. 
-
-            // Checking single copy genes for assembly completeness
-            BUSCO (
-                busco_ch, 'auto', []
-            )
-            ch_versions = ch_versions.mix(BUSCO.out.versions)
-
         } else {
-
-            // Checking single copy genes for assembly completeness
-            BUSCO (
-                BBMAP_REFORMAT.out.filtered_scaffolds, 'auto', []
-            )
-            ch_versions = ch_versions.mix(BUSCO.out.versions)
-
+            // passing empty channel for busco db to align with expected inputs for the module
+            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, scaffolds -> [ [id:meta.id, single_end:meta.single_end], scaffolds, []]}
         }
+
+        // Checking single copy genes for assembly completeness
+        BUSCO (
+            busco_ch, 'auto', []
+        )
+        ch_versions = ch_versions.mix(BUSCO.out.versions)
 
         // Checking for Contamination in assembly creating krona plots and best hit files
         KRAKEN2_ASMBLD (
@@ -439,7 +435,7 @@ workflow SRA_PHOENIX {
 
         // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
         FETCH_FAILED_SUMMARIES (
-            params.outdir, failed_summaries_ch, summaries_ch
+            outdir_path, failed_summaries_ch, summaries_ch
         )
 
         // combine all line summaries into one channel
@@ -448,12 +444,12 @@ workflow SRA_PHOENIX {
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            all_summaries_ch, true
+            all_summaries_ch, outdir_path, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         GRIPHIN(
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

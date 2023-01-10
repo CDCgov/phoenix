@@ -33,7 +33,7 @@ process SPADES {
     def phred_offset = params.phred
     """
     bash ${baseDir}/bin/pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
-    sh ${baseDir}/bin/beforeSpades.sh -k ${k2_bh_summary} -n ${meta.id} -d ${full_outdir}
+    sh ${baseDir}/bin/beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -56,7 +56,7 @@ process SPADES {
     spades_complete=run_completed
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
 
-    rm ${params.outdir}/${meta.id}/${meta.id}_summaryline_failure.tsv
-    rm ${params.outdir}/${meta.id}/${meta.id}.synopsis
+    rm ${full_outdir}/${prefix}/${prefix}_summaryline_failure.tsv
+    rm ${full_outdir}/${prefix}/${prefix}.synopsis
     """
 }
