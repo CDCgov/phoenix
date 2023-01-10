@@ -6,7 +6,7 @@ task phoenix {
     File   read2
     String samplename
     String kraken2db = "null"
-    String docker = "quay.io/jvhagey/phoenix:1.0.0"
+    String docker = "quay.io/jvhagey/phoenix:1.1.0"
     Int    memory = 64
     Int    cpu = 8
     Int    disk_size = 100
