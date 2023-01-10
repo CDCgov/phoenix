@@ -137,7 +137,7 @@ def download_MLST_files(tax_to_download):
 		if info != None:
 			found_species.append(info)
 	if len(found_species) == 0:
-		print ("No species matched your query.")
+		print("No species matched your query.")
 		exit(1)
 
 	#print(len(found_species))
@@ -320,7 +320,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 
 			#allele_list=[['1'], ['3'], ['189','3'], ['2'], ['2'], ['96','107'], ['3']]
 			elif MLST_filetype == "srst2":
-				print original_items,len(original_items)
+				print(original_items,len(original_items))
 				sample=original_items[0]
 				pubmlst_db_name=original_items[1]
 				db_name=convert_mlst_to_pubMLST.back_2_MLST(pubmlst_db_name)
@@ -378,7 +378,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 	print("Schemes found:", len(original_schemes))
 	catted_scheme_list=[]
 	for oscheme in original_schemes:
-		print oscheme
+		print(oscheme)
 		for profile in oscheme:
 			#print profile
 			catted_scheme_list.append(profile)
@@ -397,36 +397,36 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			if collections.Counter(catted_scheme_list[i][5]) == collections.Counter(catted_scheme_list[j][5]):
 				print("SAME!!!!", i, j)
 				if catted_scheme_list[min(i,j)][6] != catted_scheme_list[max(i,j)][6]:
-					print "a"
+					print("a")
 					if catted_scheme_list[min(i,j)][6] == "standard":
-						print "b"
+						print("b")
 						if catted_scheme_list[max(i,j)][6] == "srst2":
-							print "c"
+							print("c")
 							#catted_scheme_list[min(i,j)][4] = catted_scheme_list[max(i,j)][4]
 							catted_scheme_list[min(i,j)][6] = "standard/srst2"
 							dupes.append(max(i,j))
 						elif catted_scheme_list[max(i,j)][6] == "standard/srst2":
-							print "d"
+							print("d")
 							dupes.append(min(i,j))
 					elif catted_scheme_list[min(i,j)][6] == "srst2":
-						print "e"
+						print("e")
 						if catted_scheme_list[max(i,j)][6] == "standard":
-							print "f"
+							print("f")
 							#catted_scheme_list[max(i,j)][4] = catted_scheme_list[min(i,j)][4]
 							catted_scheme_list[max(i,j)][6] = "standard/srst2"
 							dupes.append(min(i,j))
 						elif catted_scheme_list[max(i,j)][6] == "standard/srst2":
-							print "g"
+							print("g")
 							dupes.append(min(i,j))
 					elif catted_scheme_list[min(i,j)][6] == "standard/srst2":
-						print "h"
+						print("h")
 						dupes.append(max(i,j))
 					else:
-						print "i"
+						print("i")
 						print("Should never have something that is not standard, srst2, or standard/srst2")
 				else:
 					if max(i,j) not in dupes:
-						print "j"
+						print("j")
 						dupes.append(max(i,j))
 					else:
 						print("Index already Found")
@@ -434,14 +434,14 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			else:
 	#			print(catted_scheme_list[i][5], "does not equal", catted_scheme_list[i][5])
 				continue
-	print "k"
+	print("k")
 	print(dupes)
 	dedupped_dupes=list(set(dupes))
 	dedupped_dupes.sort(reverse=True)
 	print(dedupped_dupes)
 	print(catted_scheme_list)
 	for k in dedupped_dupes:
-		print k
+		print(k)
 		catted_scheme_list.pop(k)
 
 	print("Trimmed catted: ", catted_scheme_list)
