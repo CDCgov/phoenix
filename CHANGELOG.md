@@ -32,8 +32,12 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed issue where `cp` error was thrown when relative path was given for output directory [#0c0ca55](https://github.com/CDCgov/phoenix/commit/0c0ca554861b7da28567694adc0920a6d8046d5b) and [#d938a64](https://github.com/CDCgov/phoenix/commit/d938a6437f3e192dbe8af648c4400011fa0744e4).  
 
 **Database Updates:**  
-- There was no changes to the databases since initial release. There is no need to download the kraken2 db again. 
+- AMRFinderPlus database is now static and included in the database folder [#](). We removed the automatic updating for more control of the pipeline and lockdown to prepare for possible CLIA requirements. 
 
 **Container Updates:**  
 - Description of containers that were updated [#](links to new version) 
+- AMRFinderPlus was updated from 3.10.40 to 3.11.2. Necessary because new amrfinder database could not be downloaded without it >v3.11.
+- For folks running PHoeNIx on Terra the container for that add the following additions
+    - anaconda::urllib2
+    - 
 - Scripts the utilize the phoenix_base container were updated to `quay.io/jvhagey/phoenix:base_v1.1.0` which had the python library `xlsxwriter` added to it for [`GRiPHin.py`](https://github.com/CDCgov/phoenix/blob/v1.0.1/bin/GRiPHin.py).
