@@ -2,8 +2,7 @@ process SPADES {
     tag "$meta.id"
     label 'process_high_memory'
     container 'staphb/spades:3.15.5'
-    //beforeScript 'ulimit -Ss unlimited'
-    afterScript "sh ${baseDir}/bin/afterSpades.sh" // Handles file zipping, renaming with prefix and checks that files were created
+    afterScript "sh ${baseDir}/bin/afterSpades.sh"
     // Create a summaryline file that will be deleted later if spades is successful if not this line shows up in the final Phoenix_output_summary file
 
     input:
