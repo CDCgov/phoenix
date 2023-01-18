@@ -548,11 +548,11 @@ def Get_Files(directory, sample_name):
         srst2_file = directory + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
     return trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
-def Append_Lists(project, platform, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, \
+def Append_Lists(data_location, platform, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, \
             Scaffold_Count, busco_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, \
-            Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+            Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L):
-        Projects.append(project)
+        Data_Locations.append(data_location)
         Platforms.append(platform)
         Sample_Names.append(str(sample_name))
         Q30_R1_per_L.append(Q30_R1_per)
@@ -581,31 +581,32 @@ def Append_Lists(project, platform, sample_name, Q30_R1_per, Q30_R2_per, Total_S
         MLST_type_2_L.append(MLST_type_2)
         MLST_alleles_1_L.append(MLST_alleles_1)
         MLST_alleles_2_L.append(MLST_alleles_2)
-        return Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+        return Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
         Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L
 
-def Create_df(Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L,
+def Create_df(Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L,
 Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L):
     #combine all metrics into a dataframe
     data = {'WGS_ID'                 : Sample_Names,
         'Platform'                   : Platforms,
-        'Project'                    : Projects,
+        'Data_Location'              : Data_Locations,
         'Auto_PassFail'              : QC_result_L,
         'PassFail_Reason'            : QC_reason_L,
         'Q30_R1_[%]'                 : Q30_R1_per_L,
         'Q30_R2_[%]'                 : Q30_R2_per_L,
         'Total_Sequenced_[bp]'       : Total_Seq_bp_L,
         'Total_Sequenced_[reads]'    : Total_Seq_reads_L,
-        'Estimated_Coverage'         : Coverage_L,
+        'Estimated_Trimmed_Coverage' : Coverage_L,
         'Scaffolds'                  : Scaffold_Count_L,
         'Assembly_Length'            : Assembly_Length_L,
         'Assembly_Ratio'             : assembly_ratio_L,
         'Assembly_StDev'             : assembly_stdev_L,
+        #'Assembly_StDev'
         'Taxa_Source'                : tax_method_L,
         'BUSCO_Lineage'              : busco_lineage_L,
         'BUSCO_%Match'               : percent_busco_L,
-        'Kraken_ID_Raw_Reads'        : Trim_kraken_L,
-        'Kraken_ID_WtAssembly'       : Asmbld_kraken_L,
+        'Kraken_ID_Raw_Reads_%'      : Trim_kraken_L,
+        'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
         'FastANI_Organism'           : fastani_organism_L, 
         'FastANI_%ID'                : fastani_ID_L, 
         'FastANI_%Coverage'          : fastani_coverage_L,
@@ -703,8 +704,8 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
     columns_to_highlight = big5_check(final_ar_df)
     # combining all dataframes
     final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
-    final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
+    final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
     return final_df, ar_max_col, columns_to_highlight, final_ar_df
 
 def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df):
@@ -716,13 +717,20 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     workbook = writer.book
     (max_row, max_col) = df.shape # Get the dimensions of the dataframe.
     worksheet = writer.sheets['Sheet1']
-    # Setting columns to numbers so you can have commas that make it more huamn readable
+    # Setting columns to numbers so you can have commas that make it more human readable
     number_comma_format = workbook.add_format({'num_format': '#,##0'})
+    number_comma_format.set_align('left')
     worksheet.set_column('H:I', None, number_comma_format)
     worksheet.set_column('K:L', None, number_comma_format)
-    # Setting columns to float so its more huamn readable
-    number_dec_format = workbook.add_format({'num_format': '0.000'})
-    worksheet.set_column('M:N', None, number_dec_format)
+    # Setting columns to float so its more human readable
+    #number_dec_format = workbook.add_format({'num_format': '0.000'})
+    #number_dec_format.set_align('left')
+    number_dec_2_format = workbook.add_format({'num_format': '0.00'})
+    number_dec_2_format.set_align('left')
+    worksheet.set_column('J:J', None, number_dec_2_format) # Estimated_Trimmed_Coverage
+    worksheet.set_column('F:G', None, number_dec_2_format) # Q30%s
+    worksheet.set_column('M:N', None, number_dec_2_format) # Assembly Ratio and StDev
+    worksheet.set_column('U:V', None, number_dec_2_format) # FastANI ID and Coverage
     # getting values to set column widths automatically
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
@@ -732,7 +740,7 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
             )) + 1  # adding a little extra space
         worksheet.set_column(idx, idx, max_len)  # set column width
     # Setting colors for headers
-    cell_format_light_blue = workbook.add_format({'bg_color': '#33BEFF', 'font_color': '#000000', 'bold': True})
+    cell_format_light_blue = workbook.add_format({'bg_color': '#ADD8E6', 'font_color': '#000000', 'bold': True})
     cell_format_lightgrey = workbook.add_format({'bg_color': '#D5D8DC', 'font_color': '#000000', 'bold': True})
     cell_format_grey = workbook.add_format({'bg_color': '#AEB6BF', 'font_color': '#000000', 'bold': True})
     cell_format_darkgrey = workbook.add_format({'bg_color': '#808B96', 'font_color': '#000000', 'bold': True})
@@ -740,12 +748,17 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
     worksheet.merge_range('D1:V1', "QC Metrics", cell_format_lightgrey)
     worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
-    worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count - 1), "Plasmid Incompatibility Replicons^^", cell_format_grey)
-    worksheet.merge_range(0, (qc_max_col + ar_gene_count + pf_gene_count), 0 ,(qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^^", cell_format_darkgrey)
+    worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
+    worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+    # making WGS IDs bold
+    bold = workbook.add_format({'bold': True})
+    worksheet.set_column('A3:A' + str(max_row + 2), None, bold)
     # Setting colors for footers and conditional formating
     yellow_format = workbook.add_format({'bg_color': '#FFEB9C', 'font_color': '#000000'}) # Light yellow fill with black text.
     red_format = workbook.add_format({'bg_color': '#F5B7B1', 'font_color': '#000000'}) # red fill with black text.
-    orange_format = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000'})
+    orange_format = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': True})
+    orange_format.set_border(1) # add back border so it matches the rest of the column names
+    orange_format_nb = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': False})
     # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column. adding 2 to max row to account for headers
     worksheet.conditional_format('J3:J' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
     worksheet.conditional_format('J3:J' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
@@ -757,25 +770,32 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     for column in ar_df.columns:
         for gene in columns_to_highlight:
             if column == gene: # if the column is one of the big 5 genes to highlight
-                for row in range(ar_df.shape[0]):
-                    col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
-                    row_adjustment = row + 2
-                    cell = xl_rowcol_to_cell(row_adjustment, col_adjustment)   # Gets the excel location like A1
-                    cell_value = ar_df.iloc[row, column_count] # get the value in that cell
-                    if cell_value != "":
-                        worksheet.write(cell, cell_value, orange_format)
+                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+                cell = xl_rowcol_to_cell(1, col_adjustment)   # Gets the excel location like A1
+                #cell_value = ar_df.iloc[2, column_count] # get the value in that cell
+                worksheet.write(cell, column, orange_format)
         column_count = column_count + 1
+    ##            for row in range(ar_df.shape[0]):
+    ##                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+    ##                row_adjustment = row + 2
+    ##                cell = xl_rowcol_to_cell(row_adjustment, col_adjustment)   # Gets the excel location like A1
+    ##                cell_value = ar_df.iloc[row, column_count] # get the value in that cell
+    ##                if cell_value != "":
+    ##                    worksheet.write(cell, cell_value, orange_format)
+    ##    column_count = column_count + 1
     # Creating footers
-    worksheet.merge_range('A' + str(max_row + 4) + ':E' + str(max_row + 4),'Cells in YELLOW denote isolates outside of 40-100X coverage', yellow_format)
-    worksheet.merge_range('A' + str(max_row + 5) + ':P' + str(max_row + 5),'Rows in ORANGE denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format)
-    worksheet.merge_range('A' + str(max_row + 6) + ':H' + str(max_row + 6),'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, stdev > 2.58, assembly length < 1Mbps)', red_format)
+    worksheet.write('A' + str(max_row + 4), 'Cells in YELLOW denote isolates outside of 40-100X coverage', yellow_format)
+    worksheet.write('A' + str(max_row + 5), 'Rows in ORANGE denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
+    worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, stdev > 2.58, assembly length < 1Mbps)', red_format)
     # More footers - Disclaimer etc.
-    worksheet.merge_range('A' + str(max_row + 7) + ':Q' + str(max_row + 7),"^Using Antibiotic Resistance Gene database ResGANNCBI_20220915 (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.")
-    worksheet.merge_range('A' + str(max_row + 8) + ':P' + str(max_row + 8),"^^Using the plasmid incompatibility replicons plasmidFinder database (PF-Replicons_20220916) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].")
-    worksheet.merge_range('A' + str(max_row + 9) + ':P' + str(max_row + 9),"^^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database (Hyper_Virulence_20220414); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].")
-    worksheet.merge_range('A' + str(max_row + 10) + ':Q' + str(max_row + 10),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.")
+    # unbold
+    no_bold = workbook.add_format({'bold': False})
+    worksheet.write('A' + str(max_row + 7),"^Using Antibiotic Resistance Gene database ResGANNCBI_20220915 (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
+    worksheet.write('A' + str(max_row + 8),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database (Hyper_Virulence_20220414); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
+    worksheet.write('A' + str(max_row + 9),"^^^Using the plasmid incompatibility replicons plasmidFinder database (PF-Replicons_20220916) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
+    worksheet.write('A' + str(max_row + 10),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.", bold)
     #adding review and date info
-    worksheet.write('A' + str(max_row + 12), "Reviewed by:")
+    worksheet.write('A' + str(max_row + 12), "Reviewed by:", no_bold)
     worksheet.write('D' + str(max_row + 12), "Date:")
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
@@ -798,7 +818,7 @@ def create_samplesheet(directory):
     with open("GRiPHin_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
     dirs = os.listdir(directory)
-    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPhin_Report.xlsx", "multiqc", "samplesheet_converted.csv"]
+    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
     for sample in dirs:
         if sample not in skip_list:
             with open("GRiPHin_samplesheet.csv", "a") as samplesheet:
@@ -811,7 +831,7 @@ def create_samplesheet(directory):
 def main():
     args = parseArgs()
     # create empty lists to append to later
-    Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+    Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
     busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L = ([] for i in range(29))
     ar_df = pd.DataFrame() #create empty dataframe to fill later for AR genes
     pf_df = pd.DataFrame() #create another empty dataframe to fill later for Plasmid markers
@@ -834,20 +854,20 @@ def main():
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
-            project, platform = Get_Parent_Folder(directory)
+            data_location, platform = Get_Parent_Folder(directory)
             trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, Scaffold_Count, busco_metrics, assembly_ratio_metrics, QC_result, \
             QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2 = Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)
             #Collect this mess of variables into appeneded lists
-            Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
-            Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L = Append_Lists(project, \
+            Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L = Append_Lists(data_location, \
             platform, sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, Scaffold_Count, busco_metrics, \
             assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, \
-            Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+            Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L)
     # combine all lists into a dataframe
-    df = Create_df(Projects, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
+    df = Create_df(Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L )
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
