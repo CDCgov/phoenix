@@ -113,5 +113,8 @@ workflow phoenix_workflow {
     File amrfinder_organism       = phoenix.amrfinder_organism      # all_mutations.tsv
     File amr_taxa_match           = phoenix.amr_taxa_match          # AMRFinder_Organism.csv
     File amr_hits                 = phoenix.amr_hits                # amr_hits.tsv
+    #run files
+    File versions_file            = phoenix.versions_file           # software_versions.yml"
+    File multiqc_report           = phoenix.multiqc_report          # multiqc_report.html"
   }
 }

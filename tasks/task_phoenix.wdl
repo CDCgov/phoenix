@@ -162,6 +162,8 @@ task phoenix {
     File amr_hits                 = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results
     File full_results             = "~{samplename}.tar.gz"
+    File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
+    File multiqc_report           = "~{samplename}/results/multiqc/multiqc_report.html"
   }
   runtime {
     docker: "~{docker}"
