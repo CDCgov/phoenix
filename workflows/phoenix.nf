@@ -62,7 +62,6 @@ include { FORMAT_ANI                     } from '../modules/local/format_ANI_bes
 include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
 include { PROKKA                         } from '../modules/local/prokka'
-//include { AMRFINDERPLUS_UPDATE           } from '../modules/local/update_amrfinder_db'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'

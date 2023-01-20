@@ -28,28 +28,6 @@ if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!'
 // Info required for completion email and summary
 def multiqc_report = []
 def count = 0 // this keeps the pipeline exit and reminder statement from being printed multiple times. See "COMPLETION EMAIL AND SUMMARY" section
-//def create_relative_paths(input) {
-/*if(params.input.equals("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/delete_me/srst2/samplesheet.csv")) {
-    kraken2db_path = Channel.fromPath(params.kraken2db, relative: true)
-    if(params.busco_db_path!=null) {
-        busco_db_path = Channel.fromPath(params.busco_db_path, relative: true)
-    }else{
-        busco_db_path = params.busco_db_path
-    }
-}else{
-    def kraken_db_list = []
-    def sample_count = (new File(params.input).readLines().size())-1 // Get the number of samples from the input file.
-    for(int val=0;val<sample_count;val++) { kraken_db_list.add(params.kraken2db); } // Add KrakenDB to list the one for each sample
-    kraken2db_path  = Channel.fromPath(kraken_db_list, relative: true) // Make paths in list full paths now and put in channel
-    // Doing the same for busco path
-    if(params.busco_db_path!=null) {
-        def busco_db_list = []
-        for(int val=0;val<sample_count;val++) { busco_db_list.add(params.busco_db_path); } // Add KrakenDB to list the one for each sample
-        busco_db_path = Channel.fromPath(busco_db_list, relative: true)
-    }else{
-        busco_db_path = params.busco_db_path
-    }
-}*/
 
 /*
 ========================================================================================
