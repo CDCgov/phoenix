@@ -8,8 +8,8 @@ process CHECK_MLST {
     //    'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
     //    'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
 
-    //container "quay.io/jvhagey/phoenix:base_v1.0.1"
-    container "quay.io/biocontainers/python:2.7--1"
+    container "quay.io/jvhagey/phoenix:base_v1.0.1"
+    //container "quay.io/biocontainers/python:2.7--1"
 
     input:
     tuple val(meta), path(mlst_file), path(srst2_file), path(taxonomy_file)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 # Description: Script to go through an isolates MLST output and check and reformat any instances of partial or multiple profiles found. SUB for profile or allele means that there is
@@ -17,6 +17,8 @@
 #from asyncio.windows_events import NULL
 from locale import currency
 import sys
+#disable cache usage in the Python so __pycache__ isn't formed. If you don't do this using 'nextflow run cdcgov/phoenix...' a second time will causes and error
+sys.dont_write_bytecode = True
 import os
 import glob
 import math
@@ -27,9 +29,10 @@ import itertools as it
 #from pathlib import Path
 import convert_mlst_to_pubMLST
 import xml.dom.minidom as xml
-import urllib2 as url
+import urllib as url
 import re
-from urlparse import urlparse
+#from urlparse import urlparse # this is for python2 line below is updated package for python3, Python3 needed for terra
+import urllib.parse
 import ssl
 from datetime import datetime
 from os import path
