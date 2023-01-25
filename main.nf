@@ -33,6 +33,7 @@ WorkflowMain.initialise(workflow, params, log)
 */
 
 include { PHOENIX_EXTERNAL       } from './workflows/phoenix'
+include { PHOENIX_QC_EXTERNAL    } from './workflows/phoenix_qc'
 include { PHOENIX_EXQC           } from './workflows/cdc_phoenix'
 include { SRA_PHOENIX            } from './workflows/sra_phoenix'
 include { SCAFFOLD_EXTERNAL      } from './workflows/scaffolds'
@@ -49,6 +50,14 @@ workflow PHOENIX {
         mlst             = PHOENIX_EXTERNAL.out.mlst
         amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
         gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
+}
+
+//
+// WORKFLOW: Run QC steps from main cdcgov/phoenix analysis pipeline
+//
+workflow PHOENIX_QC {
+    main:
+        PHOENIX_QC_EXTERNAL ()
 }
 
 //
