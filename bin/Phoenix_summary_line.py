@@ -77,7 +77,7 @@ def MLST_Scheme(MLST_file):
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
                         print("Adding to", Scheme_list[0][i], i)
-                        if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
+                        if Scheme != "-" and "Novel" not in Scheme: #if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
                             Scheme_list[1][i].append("ST"+str(Scheme))
                         else:
                             Scheme_list[1][i].append(Scheme)
@@ -432,7 +432,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
                 #MLST_alleles_2 = ",".join(Scheme[2][1])
             else:
                 MLST_scheme_1 = Scheme[0][1]
-                print("1,2-before sort", Sceme[1][1])
+                print("1,2-before sort", Scheme[1][1])
                 mlst_types_1=sorted(Scheme[1][1])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 print("1,2-after sort", MLST_type_1)
@@ -490,15 +490,20 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         read_match = "Unknown"
     if busco_file is None:
         Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        busco = False
     elif busco_file is not None:
         Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
-    return Line
+        busco = True
+    return Line, busco
 
 def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations, pf_file):
-    Line = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file)
-    Out = open(out_file, 'w')
-    Out.write(Line)
-    Out.close()
+    with open(out_file, 'w') as f:
+        Line, busco = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file)
+        if busco == True:
+            f.write('ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tBUSCO\tBUSCO_DB\tSpecies\tTaxa_Confidence\tTaxa_Source\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
+        else:
+            f.write('ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tSpecies\tTaxa_Confidence\tTaxa_Source\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
+        f.write(Line)
 
 def main():
     args = parseArgs()
