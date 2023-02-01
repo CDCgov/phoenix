@@ -32,10 +32,12 @@ import xml.dom.minidom as xml
 import urllib as url
 import re
 #from urlparse import urlparse # this is for python2 line below is updated package for python3, Python3 needed for terra
-import urllib.parse
+from urllib.parse import urlparse
+import urllib.request
 import ssl
 from datetime import datetime
 from os import path
+import subprocess
 
 
 db_lookup = {}
@@ -45,6 +47,7 @@ def parseArgs(args=None):
 	parser.add_argument('-i', '--input', required=False, help='input mlst filename')
 	parser.add_argument('-s', '--srst2', required=False, help='srst2 input file')
 	parser.add_argument('-t', '--taxonomy', required=True, help='Location of taxonomy file to pull right scheme')
+	parser.add_argument('-d', '--docfile', dest="docfile", required=True, help='dbases.xml file')
 	return parser.parse_args()
 
 # test if a node is an Element and that it has a specific tag name
@@ -81,11 +84,8 @@ class LocusInfo(object):
 # retrieve the interesting information for a given sample element
 def getSpeciesInfo(species_node, species, exact):
 	this_name2 = getText(species_node)
-	this_name = getText(species_node).encode('utf-8')
+	this_name = getText(species_node) #.encode('utf-8') Jill's edit
 	store = False
-	#print(this_name, species, exact)
-	#print(this_name2, species, exact)
-
 	# if this_name == species:
 	# 	print "Match"
 	# else:
@@ -126,9 +126,9 @@ def getSpeciesInfo(species_node, species, exact):
 	else:
 		return None
 
-def download_MLST_files(tax_to_download):
+def download_MLST_files(tax_to_download, docFile):
 	ssl._create_default_https_context = ssl._create_unverified_context
-	docFile = url.urlopen("http://pubmlst.org/data/dbases.xml")
+	#docFile = urllib.request.urlopen("http://pubmlst.org/data/dbases.xml")
 	force=False
 	if tax_to_download == "Streptococus thermophilus":
 		force=True
@@ -153,21 +153,17 @@ def download_MLST_files(tax_to_download):
 	# output information for the single matching species
 	#species_all_fasta_filename = work_dir+species_name_underscores + '.fasta'
 	#species_all_fasta_file = open(species_all_fasta_filename, 'w')
-	#print(type(work_dir), work_dir)
 	log_filename = "mlst_data_download_{}_{}.log".format(species_name_underscores, species_info.retrieved)
 	log_file = open(log_filename, "w")
-	profile_path = urlparse(species_info.profiles_url).path.encode('utf-8')
-	#print(type(work_dir), work_dir)
-	#print(type(profile_path), profile_path)
+	profile_path = urlparse(species_info.profiles_url).path.decode()
 	profile_filename = species_name_underscores+"_"+profile_path.split('/')[-1].replace("profiles_csv", "profiles.csv")
+	print(profile_filename)
 	#log_file.write("definitions: {}\n".format(profile_filename))
 	log_file.write("{} profiles\n".format(species_info.profiles_count))
 	#log_file.write("sourced from: {}\n\n".format(species_info.profiles_url))
-	profile_doc = url.urlopen(species_info.profiles_url)
-	profile_file = open(profile_filename, 'w')
-	profile_file.write(profile_doc.read())
-	profile_file.close()
-	profile_doc.close()
+	#profile_doc = urllib.request.urlopen(species_info.profiles_url.decode())
+	with open(profile_filename, 'w') as profile_file:
+		subprocess.run(["wget", "--secure-protocol=TLSv1_3", species_info.profiles_url.decode() ], stdout=profile_file)
 	# for locus in species_info.loci:
 	# 	locus_path = urlparse(locus.url).path
 	# 	locus_filename = work_dir+locus_path.split('/')[-1]
@@ -213,13 +209,10 @@ def download_MLST_files(tax_to_download):
 		with open(species_name_underscores+"_pull_dates.txt",'w') as pull_file:
 			print("pull dates file does not exist, creating and appending today")
 			pull_file.write(today)
-
-
-
 	return profile_filename
 
 # main function that looks if all MLST types are defined for an outptu mlst file
-def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
+def do_MLST_check(input_MLST_line_tuples, taxonomy_file, docfile):
 	location="/".join(taxonomy_file.split("/")[0:-1])+"/mlst"
 	#print taxonomy_file
 	isolate_name = taxonomy_file.split(".")[:-1]
@@ -437,16 +430,10 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 			else:
 	#			print(catted_scheme_list[i][5], "does not equal", catted_scheme_list[i][5])
 				continue
-	print("k")
-	print(dupes)
 	dedupped_dupes=list(set(dupes))
 	dedupped_dupes.sort(reverse=True)
-	print(dedupped_dupes)
-	print(catted_scheme_list)
 	for k in dedupped_dupes:
-		print(k)
 		catted_scheme_list.pop(k)
-
 	print("Trimmed catted: ", catted_scheme_list)
 
 	### Begin checking list for completeness/errors
@@ -519,7 +506,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 					new_db_name=convert_mlst_to_pubMLST.convert(db_name)
 					#unicode_name_for_lookup=bytestring.decode(new_db_name)
 					print("Downloading profile file for:", new_db_name)
-					profile_file = download_MLST_files(new_db_name)
+					profile_file = download_MLST_files(new_db_name, docfile)
 					print("Looking up:", current_alleles, "in", profile_file)
 					db_file = open(profile_file,'r')
 					db_line=db_file.readline().strip()
@@ -594,41 +581,44 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file):
 				writer.write(isolate_name+"	"+i[6]+"	"+i[7]+"	"+i[1]+"	"+i[2]+"	"+allele_section)
 
 
+def main():
+	print("Parsing MLST file ...")
+	args = parseArgs()
+	profile_lines=[]
+	if args.input is not None:
+		if os.stat(args.input).st_size > 0:
+			#input_files=[[args.input , "standard"]]
+			reg_file = open(args.input, 'r')
+			### No headers complicate the difference between reg and srst2
+			counter = 0
+			for line in reg_file:
+				print("reg:"+str(counter), line.replace("\n", ""))
+				if counter > 0:
+					print("appending -", line.replace("\n",""))
+					profile_lines.append([line.replace("\n", ""), "mlst", args.input])
+				counter+=1
+		else:
+			print("Input mlst file is empty")
+	else:
+		print("No srst2 input file provided")
+	if args.srst2 is not None:
+		if os.stat(args.srst2).st_size > 0:
+			srst2_file = open(args.srst2, 'r')
+			counter = 0
+			for line in srst2_file:
+				print("srst2:"+str(counter), line.replace("\n", ""))
+				if counter > 0:
+					print("appending -", line.replace("\n",""))
+					profile_lines.append([line.replace("\n", ""), "srst2", args.srst2])
+				counter+=1
+		else:
+			print("Input SRST2 mlst file is empty")
+	else:
+		print("No srst2 input file provided")
+	if len(profile_lines) > 0 and args.taxonomy is not None:
+		do_MLST_check(profile_lines, args.taxonomy, args.docfile)
+	else:
+		print("No mlst files to check and fix")
 
-print("Parsing MLST file ...")
-args = parseArgs()
-profile_lines=[]
-if args.input is not None:
-	if os.stat(args.input).st_size > 0:
-		#input_files=[[args.input , "standard"]]
-		reg_file = open(args.input, 'r')
-		### No headers complicate the difference between reg and srst2
-		counter = 0
-		for line in reg_file:
-			print("reg:"+str(counter), line.replace("\n", ""))
-			if counter > 0:
-				print("appending -", line.replace("\n",""))
-				profile_lines.append([line.replace("\n", ""), "mlst", args.input])
-			counter+=1
-	else:
-		print("Input mlst file is empty")
-else:
-	print("No srst2 input file provided")
-if args.srst2 is not None:
-	if os.stat(args.srst2).st_size > 0:
-		srst2_file = open(args.srst2, 'r')
-		counter = 0
-		for line in srst2_file:
-			print("srst2:"+str(counter), line.replace("\n", ""))
-			if counter > 0:
-				print("appending -", line.replace("\n",""))
-				profile_lines.append([line.replace("\n", ""), "srst2", args.srst2])
-			counter+=1
-	else:
-		print("Input SRST2 mlst file is empty")
-else:
-	print("No srst2 input file provided")
-if len(profile_lines) > 0 and args.taxonomy is not None:
-	do_MLST_check(profile_lines, args.taxonomy)
-else:
-	print("No mlst files to check and fix")
+if __name__ == '__main__':
+	main()
