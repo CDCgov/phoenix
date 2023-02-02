@@ -23,7 +23,9 @@ process CHECK_MLST {
 
     script:
     """
-    check_and_fix_MLST2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file
+    wget $terra --secure-protocol=TLSv1_3 "https://pubmlst.org/data/dbases.xml" 
+
+    check_and_fix_MLST2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file --docfile dbases.xml
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
