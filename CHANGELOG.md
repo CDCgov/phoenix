@@ -13,13 +13,15 @@ Below are the list of changes to phx since is initial release. As fixes can take
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/main...v1.0.1)
 
 **Implemented Enhancements:**  
-- Anticipate updates from Erin and Robert [#](link to PR) (thanks to @user)  
+- Anticipate updates from @erinyoung [#](link to PR) and Robert  (thanks to @user)  
 - Added emits to allow linking of workflows to close [#42](https://github.com/CDCgov/phoenix/issues/42) [#e32132d](https://github.com/CDCgov/phoenix/commit/e32132dffc656214a9977ab6c0b22efb86f72f6f).  
 - Nick to add information on MLST check and fix changes for both PHOENIX and CDC_PHOENIX (also note file names changes)  
-- Maria to add information on -entry SCAFFOLDS  
 - Addition of 🔥🐎🐦🔥 [GRiPhin: General Report Pipeline from PHoeNIx](https://github.com/DHQP/griphin) output to `-entry CDC_PHOENIX` [#6291e9c](https://github.com/CDCgov/phoenix/commit/6291e9c6a90d28a61fb45e708536a9588a3d47a3). This was implemented to replace common report generated internally, which is why it is only in the `-entry CDC_PHOENIX`.  
 - Changes to allow relative paths for kraken2 and BUSCO database to be passed rather than it requiring it to be a full path [#ecb3618](https://github.com/CDCgov/phoenix/commit/ecb3618a71e6b06a94f6282ee7220b88912d80e7) and [#d938a64](https://github.com/CDCgov/phoenix/commit/d938a6437f3e192dbe8af648c4400011fa0744e4).  
 - Added headers to `phoenix_line_summary.tsv`
+- `Phoenix_Output_Report.tsv` now has antibiotic genes and plasmid markers filtered to ensure quality  
+   - Plasmid markers require >=60% length and >=98% identity to be reported  
+   - Antibiotic Genes require >=90% length and >=98% identity to be reported  
 
 **Output File Changes:**  
 - Removed spaces in header of *_all_genes.tsv file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#fd048d1](https://github.com/CDCgov/phoenix/commit/fd048d1a54ca262617eeef32d85cd4f47650af23).  

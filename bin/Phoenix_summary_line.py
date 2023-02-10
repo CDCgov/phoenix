@@ -30,6 +30,10 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--out', required=True, help='output file name')
     return parser.parse_args()
 
+#set colors for warnings so they are seen
+CRED = '\033[91m'
+CEND = '\033[0m'
+
 # def MLST_Info_Only(MLST_file):
 #     """Pulls MLST info from *_Scheme.mlst file"""
 #     f = open(MLST_file, 'r')
@@ -59,13 +63,11 @@ def MLST_Scheme(MLST_file):
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
         lines.pop(0)
-        print(len(lines), lines)
+        #print(len(lines), lines)
         for rawline in lines:
-            print(lines)
             line=rawline.strip()
-            print(line)
             split_line = line.split("\t")
-            print("\n".join(split_line))
+            #print("\n".join(split_line))
             source = split_line[1]
             date = split_line[2]
             DB_ID = split_line[3]
@@ -202,41 +204,51 @@ def Trim_Coverage(trimmed_counts_file, ratio_file):
     return Coverage
 
 def Bla_Genes(input_gamma):
-    f = open(input_gamma, 'r')
-    Bla = []
-    String1 = f.readline()
-    for line in f:
-        List1 = line.split()
-        Cat = List1[0].split('__')[4]
-        Gene = List1[0].split('__')[2]
-        if ('LACTAM' in Cat.upper()):
-            Bla.append(Gene)
-    f.close()
+    with open(input_gamma, 'r') as f:
+        header=next(f) # just use to skip first line
+        Bla = []
+        String1 = f.readline()
+        for line in f:
+            Cat = line.split('\t')[0].split('__')[4] # Drug category
+            Gene = line.split('\t')[0].split('__')[2] # Gene Name
+            Percent_Length = float(line.split('\t')[11])*100
+            Codon_Percent = float(line.split('\t')[9])*100
+            if ('LACTAM' in Cat.upper()):
+                # Minimum 90% length required to be included in report, otherwise not reported
+                if int(round(Percent_Length)) >= 90:
+                    # Minimum 98% identity required to be included in report, otherwise not reported
+                    if int(round(Codon_Percent)) >= 98:
+                        Bla.append(Gene)
     Bla.sort()
     return Bla
 
 def Non_Bla_Genes(input_gamma):
-    f = open(input_gamma, 'r')
-    Non_Bla = []
-    String1 = f.readline()
-    for line in f:
-        List1 = line.split()
-        Cat = List1[0].split('__')[4]
-        Gene = List1[0].split('__')[2]
-        if ('LACTAM' in Cat.upper()) == False:
-            Non_Bla.append(Gene)
-    f.close()
+    with open(input_gamma, 'r') as f:
+        header=next(f) # just use to skip first line
+        Non_Bla = []
+        String1 = f.readline()
+        for line in f:
+            Cat = line.split('\t')[0].split('__')[4] # Drug category
+            Gene = line.split('\t')[0].split('__')[2] # Gene Name
+            Percent_Length = float(line.split('\t')[11])*100
+            Codon_Percent = float(line.split('\t')[9])*100
+            if ('LACTAM' in Cat.upper()) == False:
+                # Minimum 90% length required to be included in report, otherwise not reported
+                if int(round(Percent_Length)) >= 90:
+                    # Minimum 98% identity required to be included in report, otherwise not reported
+                    if int(round(Codon_Percent)) >= 98:
+                        Non_Bla.append(Gene)
     Non_Bla.sort()
     return Non_Bla
 
 def HV_Genes(input_gamma):
-    f = open(input_gamma, 'r')
-    HV = []
-    String1 = f.readline()
-    for line in f:
-        Gene = line.split()[0]
-        HV.append(Gene)
-    f.close()
+    with open(input_gamma, 'r') as f:
+        header=next(f) # just use to skip first line
+        HV = []
+        String1 = f.readline()
+        for line in f:
+            Gene = line.split('\t')[0]
+            HV.append(Gene)
     HV.sort()
     num_lines = sum(1 for line in open(input_gamma))
     if num_lines==1:
@@ -337,8 +349,14 @@ def Get_Plasmids(pf_file):
     with open(pf_file, 'r') as f:
         header=next(f) # just use to skip first line
         for line in f:
-            Gene = line.split()[0]
-            plasmid_marker_list.append(Gene)
+            Gene = line.split('\t')[0]
+            Percent_Length = float(line.split('\t')[14])*100
+            Match_Percent = float(line.split('\t')[13])*100
+            # Minimum 60% length required to be included in report, otherwise not reported
+            if int(round(Percent_Length)) >= 60:
+                # Minimum 98% identity required to be included in report, otherwise not reported
+                if int(round(Match_Percent)) >= 98:
+                    plasmid_marker_list.append(Gene)
     if len(plasmid_marker_list) == 0:
         plasmid_marker_list = ""
     else:
@@ -419,37 +437,37 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         if len(Scheme[0]) > 1:
             if Scheme[0][0].lower() < Scheme[0][1].lower():
                 MLST_scheme_1 = Scheme[0][0]
-                print("1,1-before sort", Scheme[1][0])
+                #print("1,1-before sort", Scheme[1][0])
                 mlst_types_1=sorted(Scheme[1][0])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 if Scheme[3][0] == "srst2":
                     MLST_type_1 += '^'
-                print("1,1-after sort", MLST_type_1)
+                #print("1,1-after sort", MLST_type_1)
                 #MLST_alleles_1 = ",".join(Scheme[2][0])
                 MLST_scheme_2 = Scheme[0][1]
-                print("2,1-before sort", Scheme[1][1])
+                #print("2,1-before sort", Scheme[1][1])
                 mlst_types_2=sorted(Scheme[1][1])[::-1]
                 MLST_type_2 = ",".join(mlst_types_2)
                 if Scheme[3][1] == "srst2":
                     MLST_type_2 += '^'
-                print("2,1-after sort", MLST_type_2)
+                #print("2,1-after sort", MLST_type_2)
                 #MLST_alleles_2 = ",".join(Scheme[2][1])
             else:
                 MLST_scheme_1 = Scheme[0][1]
-                print("1,2-before sort", Scheme[1][1])
+                #print("1,2-before sort", Scheme[1][1])
                 mlst_types_1=sorted(Scheme[1][1])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 if Scheme[3][1] == "srst2":
                     MLST_type_1 += '^'
-                print("1,2-after sort", MLST_type_1)
+                #print("1,2-after sort", MLST_type_1)
                 #MLST_alleles_1 = ",".join(Scheme[2][1])
                 MLST_scheme_2 = Scheme[0][0]
-                print("2,2-before sort", Scheme[1][0])
+                #print("2,2-before sort", Scheme[1][0])
                 mlst_types_2=sorted(Scheme[1][0])[::-1]
                 MLST_type_2 = ",".join(mlst_types_2)
                 if Scheme[3][0] == "srst2":
                     MLST_type_2 += '^'
-                print("2,2-after sort", MLST_type_2)
+                #print("2,2-after sort", MLST_type_2)
                 #MLST_alleles_2 = ",".join(Scheme[2][0])
         else:
             MLST_scheme_1 = Scheme[0][0]
@@ -491,6 +509,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         QC_Outcome, Reason, warning_count = QC_Pass(stats)
     except:
         QC_Outcome = 'Unknown'
+        warning_count = 'Unknown'
         Reason = ""
     try:
         read_match = Get_Kraken_reads(stats, trimd_kraken)
