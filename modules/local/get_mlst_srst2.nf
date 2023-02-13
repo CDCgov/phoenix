@@ -12,7 +12,7 @@ process GET_MLST_SRST2 {
     container "quay.io/biocontainers/python:2.7--1"
 
     input:
-    tuple val(meta),  path(taxonomy)
+    tuple val(meta),  path(taxonomy), val(status)
 
     output:
     tuple val(meta), path("*_getMLST_out.txt")                                                , emit: getMLSTs
@@ -22,10 +22,11 @@ process GET_MLST_SRST2 {
     path "versions.yml"                                                                       , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    (task.ext.when == null || task.ext.when) && "${status[0]}" == "False"
 
     script:
     """
+    echo "STATUS-IN  ${status}"
     genus="empty"
     species="empty"
     today=\$(date '+%Y-%m-%d')
