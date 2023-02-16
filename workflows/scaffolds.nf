@@ -74,6 +74,7 @@ include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local
 include { SCAFFOLDS_KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/scaffolds_kraken2krona'
 include { SCAFFOLDS_KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/scaffolds_kraken2krona'
 include { SCAFFOLDS_KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/scaffolds_kraken2krona'
+include { DO_MLST                                  } from '../subworkflows/local/do_mlst'
 
 /*
 ========================================================================================
