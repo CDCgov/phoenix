@@ -681,7 +681,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, docFile):
 					allele_section.strip()
 					allele_section=allele_section+"\n"
 				# Checks if current ST is either a number, has '-PARALOG' in it and that all previous ST types have completed
-				if (i[2].isnumeric() or "-PARALOG" in i[2]) and i[2] != "-" and all_Types_are_complete != "False":
+				if (i[2].isnumeric() or "-PARALOG" in i[2] or "Novel_profile" in i[2]) and i[2] != "-" and all_Types_are_complete != "False":
 					#print(i[2], "= good")
 					all_Types_are_complete = "True"
 				else:
