@@ -66,7 +66,7 @@ include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { CHECK_MLST                     } from '../modules/local/check_mlst'
+//include { CHECK_MLST                     } from '../modules/local/check_mlst'
 
 /*
 ========================================================================================
@@ -179,12 +179,6 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
-        // Getting MLST scheme for taxa
-        MLST (
-            BBMAP_REFORMAT.out.filtered_scaffolds
-        )
-        ch_versions = ch_versions.mix(MLST.out.versions)
-
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
             BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
@@ -256,12 +250,12 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
-        combined_mlst_ch = MLST.out.tsv.map{     meta, tsv      -> [[id:meta.id], tsv]}\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0])
-
-        // Combining and adding flare to all MLST outputs
-        CHECK_MLST (
-            combined_mlst_ch
+        // Perform MLST steps on isolates (with srst2 on internal samples)
+        DO_MLST (
+            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            FASTP_TRIMD.out.reads, \
+            DETERMINE_TAXA_ID.out.taxonomy, \
+            false
         )
 
         // get gff and protein files for amrfinder+
@@ -311,7 +305,7 @@ workflow PHOENIX_EXTERNAL {
             KRAKEN2_TRIMD.out.k2_bh_summary, \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
-            MLST.out.tsv, \
+            DO_MLST.out.checked_MLSTs, \
             GAMMA_HV.out.gamma, \
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
@@ -331,7 +325,7 @@ workflow PHOENIX_EXTERNAL {
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
         //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
-        .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
+        .join(DO_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
