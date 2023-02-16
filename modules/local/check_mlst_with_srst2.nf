@@ -1,6 +1,6 @@
 def VERSION = '1.1' // Version information not provided by tool on CLI
 
-process CHECK_MLST {
+process CHECK_MLST_WITH_SRST2 {
     tag "$meta.id"
     label 'process_low'
 
@@ -13,7 +13,7 @@ process CHECK_MLST {
     //container "quay.io/jvhagey/phoenix:base_v1.0.0" // This script uses python3. Python 3 is necessary to work in Terra
 
     input:
-    tuple val(meta), path(mlst_file), path(taxonomy_file)
+    tuple val(meta), path(mlst_file), path(srst2_file), path(taxonomy_file), val(status)
 
     output:
     tuple val(meta), path("*_combined.tsv")                                                   , emit: checked_MLSTs
@@ -36,7 +36,13 @@ process CHECK_MLST {
     """
     wget $terra --secure-protocol=TLSv1_3 "https://pubmlst.org/data/dbases.xml"
 
-    check_and_fix_MLST2_new2.py --input $mlst_file --taxonomy $taxonomy_file --docfile dbases.xml
+    if [[ "${status[0]}" == "True" ]]; then
+        check_and_fix_MLST2_new2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file --docfile dbases.xml
+    elif [[ "${status[0]}" == "False" ]]; then
+        check_and_fix_MLST2_new2.py --input $mlst_file --taxonomy $taxonomy_file --docfile dbases.xml
+    else 
+        echo "Shouldnt be able to get here, but checking just in case"
+    fi
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

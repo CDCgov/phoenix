@@ -7,7 +7,7 @@
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
 // Validate input parameters
-WorkflowPhoenix.initialise(params, log)
+//WorkflowPhoenix.initialise(params, log)
 
 // Check input path parameters to see if they exist
 def checkPathParamList = [ params.input, params.multiqc_config ] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
@@ -71,9 +71,9 @@ include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summar
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
-include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
-include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
-include { CHECK_MLST                     } from '../modules/local/check_mlst_external'
+//include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
+//include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
+//include { CHECK_MLST_WITH_SRST2          } from '../modules/local/check_mlst_external'
 include { GRIPHIN                        } from '../modules/local/griphin'
 
 /*

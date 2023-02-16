@@ -42,6 +42,11 @@ process SRST2_MLST {
           # Pulls suggested command info from the getmlst script
           mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
           mlst_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
+          # because this is so messed up and cant pass things through nextflow easily
+          #mlst_db="\${mlst_db//.fasta/temp.fasta}"
+          #mlst_defs="\${mlst_defs//_profiles.csv/_profiles_temp.csv}"
+          mv "\${mlst_db}_temp.fasta" "\${mlst_db}.fasta"
+          mv "\${mlst_defs//_profiles.csv/_profiles_temp.csv}" "\${mlst_defs}"
           mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
           #mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2)
 
@@ -115,8 +120,8 @@ process SRST2_MLST {
         srst2_ran="True"
       done
     else
-      //Create a temp file to allow downstream join to complete
-      echo "" > ${prefix}_srst2_temp.mlst
+      #Create a temp file to allow downstream join to complete
+      echo "DONT USE" > ${prefix}_srst2_temp.mlst
     fi
 
     echo "\${srst2_ran}" > "${prefix}_srst2_status.txt"

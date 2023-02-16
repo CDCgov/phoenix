@@ -376,6 +376,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     column_name = ["{}({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}]S".format(percent_BP_ID, percent_length) for percent_BP_ID, percent_length in zip(percent_BP_IDs, percent_lengths)]
+    print(coverage)
     # Minimum % length required to be included in report, otherwise removed from list
     if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 90]): 
         index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < 90 ] # get index for value removed to remove from other lists (values less than 90)
@@ -395,10 +396,17 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
             del percent_lengths[index]
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
+    print(df)
     df.columns = column_name # add column names
     df["WGS_ID"] = sample_name
-    df.index = [sample_name]
-    final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+    df.to_string()
+    print("Exo:", sample_name)
+    if df.size != 0:
+        df.index = [sample_name]
+    else:
+        print(final_srst2_df)
+        final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+    print()
     return final_srst2_df
 
 def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
