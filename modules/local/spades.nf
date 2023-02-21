@@ -14,8 +14,8 @@ process SPADES {
     path(full_outdir)
 
     output:
-    tuple val(meta), path('*.scaffolds.fa.gz')    , optional:true, emit: scaffolds
-    tuple val(meta), path('*.contigs.fa.gz')      ,                emit: contigs
+    tuple val(meta), path('*.scaffolds.fa.gz')    , optional:true, emit: scaffolds // possible that contigs could be created, but not scaffolds
+    tuple val(meta), path('*.contigs.fa.gz')      ,                emit: contigs // minimum to complete sucessfully
     tuple val(meta), path('*.assembly.gfa.gz')    , optional:true, emit: gfa
     tuple val(meta), path('*.log')                ,                emit: log
     tuple val(meta), path('*_summaryline.tsv')    , optional:true, emit: line_summary
@@ -31,7 +31,7 @@ process SPADES {
     def single_reads = "-s $unpaired_reads"
     def phred_offset = params.phred
     """
-    # preemptively create _summary_line.csv and .synopsis file incase spades fails we can still collect upstream stats.
+    # preemptively create _summary_line.csv and .synopsis file incase spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
     pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
     beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir}
 
