@@ -230,6 +230,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     df = pd.DataFrame(coverage).T
     if df.empty:
         df = pd.DataFrame({'WGS_ID':[sample_name], 'AR_Database':[DB], 'No_AR_Genes_Found':['[-/-]'] })
+        df.index = [sample_name]
     else:
         df.columns = column_name # add column names
         df["WGS_ID"] = sample_name
@@ -257,6 +258,7 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
     df = pd.DataFrame(coverage).T
     if df.empty:
         df = pd.DataFrame({'WGS_ID':[sample_name], 'HV_Database':[DB], 'No_HVGs_Found':['[-/-]'] })
+        df.index = [sample_name]
     else:
         df.columns = hv_column_name # add column names
         df["WGS_ID"] = sample_name
@@ -303,6 +305,7 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     df = pd.DataFrame(pf_coverage).T
     if df.empty:
         df = pd.DataFrame({'WGS_ID':[sample_name], 'Plasmid_Replicon_Database':[DB], 'No_Plasmid_Markers':['[-/-]'] })
+        df.index = [sample_name]
     else:
         df.columns = pf_column_name # add column 'HV_Database':[DB], names
         df["WGS_ID"] = sample_name
@@ -395,9 +398,13 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
             del percent_lengths[index]
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
-    df.columns = column_name # add column names
-    df["WGS_ID"] = sample_name
-    df.index = [sample_name]
+    if df.empty: #check if its empty - which would be when nothing is found and/or no hits passed the filter
+        df = pd.DataFrame({'WGS_ID':[sample_name]})
+        df.index = [sample_name]
+    else:
+        df.columns = column_name # add column names
+        df["WGS_ID"] = sample_name
+        df.index = [sample_name]
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_srst2_df
 
