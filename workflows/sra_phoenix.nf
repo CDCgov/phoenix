@@ -48,7 +48,7 @@ include { RENAME_FASTA_HEADERS                              } from '../modules/l
 include { GAMMA_S as GAMMA_PF                               } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR                                 } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV                                 } from '../modules/local/gamma'
-include { MLST                                              } from '../modules/local/mlst'
+//include { MLST                                              } from '../modules/local/mlst'
 include { BBMAP_REFORMAT                                    } from '../modules/local/contig_less500'
 include { QUAST                                             } from '../modules/local/quast'
 include { MASH_DIST                                         } from '../modules/local/mash_distance'
@@ -64,7 +64,7 @@ include { CALCULATE_ASSEMBLY_RATIO                          } from '../modules/l
 include { CREATE_SUMMARY_LINE                               } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES                            } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES                              } from '../modules/local/phoenix_summary'
-include { CHECK_MLST                                        } from '../modules/local/check_mlst'
+//include { CHECK_MLST                                        } from '../modules/local/check_mlst'
 
 /*
 ========================================================================================
@@ -83,6 +83,7 @@ include { GET_SRA                                           } from '../subworkfl
 include { KRAKEN2_WF as KRAKEN2_TRIMD                       } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD                      } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkflows/local/kraken2krona'
+include { DO_MLST                                           } from '../subworkflows/local/do_mlst'
 
 /*
 ========================================================================================
@@ -189,12 +190,6 @@ workflow SRA_PHOENIX {
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
-        // Getting MLST scheme for taxa
-        MLST (
-            BBMAP_REFORMAT.out.filtered_scaffolds
-        )
-        ch_versions = ch_versions.mix(MLST.out.versions)
-
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
             BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
@@ -265,13 +260,12 @@ workflow SRA_PHOENIX {
             best_hit_ch, params.taxa
         )
 
-        combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
-        .join(params.placeholder)\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
-
-        // Combining and adding flare to all MLST outputs
-        CHECK_MLST (
-            combined_mlst_ch
+        // Perform MLST steps on isolates (with srst2 on internal samples)
+        DO_MLST (
+            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            FASTP_TRIMD.out.reads, \
+            DETERMINE_TAXA_ID.out.taxonomy, \
+            false
         )
 
         // get gff and protein files for amrfinder+

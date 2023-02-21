@@ -67,9 +67,9 @@ include { CREATE_SUMMARY_LINE      } from '../modules/local/phoenix_summary_line
 include { FETCH_FAILED_SUMMARIES   } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES     } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS  } from '../modules/local/generate_pipeline_stats'
-include { SRST2_MLST               } from '../modules/local/srst2_mlst'
-include { GET_MLST_SRST2           } from '../modules/local/get_mlst_srst2'
-include { CHECK_MLST               } from '../modules/local/check_mlst'
+//include { SRST2_MLST               } from '../modules/local/srst2_mlst'
+//include { GET_MLST_SRST2           } from '../modules/local/get_mlst_srst2'
+//include { CHECK_MLST               } from '../modules/local/check_mlst'
 include { GRIPHIN                  } from '../modules/local/griphin'
 
 /*
@@ -103,6 +103,7 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD                    } from '../subworkfl
 include { FASTQC as FASTQCTRIMD                                   } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { DO_MLST                                                 } from '../subworkflows/local/do_mlst'
 
 /*
 ========================================================================================
@@ -200,12 +201,6 @@ workflow SRA_PHOENIX {
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
-        // Getting MLST scheme for taxa
-        MLST (
-            BBMAP_REFORMAT.out.filtered_scaffolds
-        )
-        ch_versions = ch_versions.mix(MLST.out.versions)
-
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
             BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
@@ -297,46 +292,13 @@ workflow SRA_PHOENIX {
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
-        // get gff and protein files for amrfinder+
-        PROKKA (
-            BBMAP_REFORMAT.out.filtered_scaffolds, [], []
+        // Perform MLST steps on isolates (with srst2 on internal samples)
+        DO_MLST (
+            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            FASTP_TRIMD.out.reads, \
+            DETERMINE_TAXA_ID.out.taxonomy, \
+            true
         )
-        ch_versions = ch_versions.mix(PROKKA.out.versions)
-
-        // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
-        GET_MLST_SRST2 (
-            DETERMINE_TAXA_ID.out.taxonomy
-        )
-        ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
-
-        // Combining weighted kraken report with the FastANI hit based on meta.id
-        mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads    -> [[id:meta.id], reads]}\
-        .join(GET_MLST_SRST2.out.getMLSTs.map{   meta, getMLSTs -> [[id:meta.id], getMLSTs]},  by: [0])\
-        .join(GET_MLST_SRST2.out.fastas.map{     meta, fastas   -> [[id:meta.id], fastas]},    by: [0])\
-        .join(GET_MLST_SRST2.out.profiles.map{   meta, profiles -> [[id:meta.id], profiles]},  by: [0])
-
-        // Idenitifying mlst genes in trimmed reads
-        SRST2_MLST (
-            mid_srst2_ch
-        )
-        ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
-
-        // Identifying mlst genes in trimmed reads
-        SRST2_MLST (
-        mid_srst2_ch
-        )
-        ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
-
-        combined_mlst_ch = MLST.out.tsv.map{meta, tsv           -> [[id:meta.id], tsv]}\
-        .join(SRST2_MLST.out.mlst_results.map{    meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{  meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
-        // Combining and adding flare to all MLST outputs
-
-        // Chcks MLST files for correct types, improved info on imperfect matches, and identifying paralog types
-        CHECK_MLST (
-        combined_mlst_ch
-        )
-        ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
         // get gff and protein files for amrfinder+
         PROKKA (
@@ -382,7 +344,7 @@ workflow SRA_PHOENIX {
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             //MLST.out.tsv, \
-            CHECK_MLST.out.checked_MLSTs, \
+            DO_MLST.out.checked_MLSTs, \
             GAMMA_HV.out.gamma, \
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
@@ -405,7 +367,7 @@ workflow SRA_PHOENIX {
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
         //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
-        .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
+        .join(DO_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
