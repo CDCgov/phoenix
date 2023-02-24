@@ -90,7 +90,7 @@ workflow DO_MLST {
         }
 
     emit:
-        checked_mlsts               = checked_mlst_ch
-        versions                    = ch_versions // channel: [ versions.yml ]
+        checked_MLSTs = checked_mlst_ch
+        versions      = ch_versions // channel: [ versions.yml ]
 }
 
