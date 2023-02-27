@@ -15,7 +15,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Implemented Enhancements:**  
 - Anticipate updates from @erinyoung [#](link to PR) and Robert  (thanks to @user)  
 - Added emits to allow linking of workflows to close [#42](https://github.com/CDCgov/phoenix/issues/42) [#e32132d](https://github.com/CDCgov/phoenix/commit/e32132dffc656214a9977ab6c0b22efb86f72f6f).  
-- Nick to add information on MLST check and fix changes for both PHOENIX and CDC_PHOENIX (also note file names changes)  
+- Nick to add information on MLST check and fix changes for both PHOENIX and CDC_PHOENIX (also note file names changes)
+- MLST output is now scanned for completeness of profiles by consolidating any allele tags to the ST column for easier scanning as well as known paralog alleles are marked for easier identification. In CDC_PHOENIX workflow ST types are consolidated, if applicable, to show concordance bewteen tools
 - Addition of 🔥🐎🐦🔥 [GRiPhin: General Report Pipeline from PHoeNIx](https://github.com/DHQP/griphin) output to `-entry CDC_PHOENIX` [#6291e9c](https://github.com/CDCgov/phoenix/commit/6291e9c6a90d28a61fb45e708536a9588a3d47a3). This was implemented to replace common report generated internally, which is why it is only in the `-entry CDC_PHOENIX`.  
 - Changes to allow relative paths for kraken2 and BUSCO database to be passed rather than it requiring it to be a full path [#ecb3618](https://github.com/CDCgov/phoenix/commit/ecb3618a71e6b06a94f6282ee7220b88912d80e7) and [#d938a64](https://github.com/CDCgov/phoenix/commit/d938a6437f3e192dbe8af648c4400011fa0744e4).  
 - Added headers to `phoenix_line_summary.tsv`
@@ -26,7 +27,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Output File Changes:**  
 - Removed spaces in header of *_all_genes.tsv file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#fd048d1](https://github.com/CDCgov/phoenix/commit/fd048d1a54ca262617eeef32d85cd4f47650af23).  
 - Fixed error causing PROKKA output to not be in Annotation folder [#d014aa0](https://github.com/CDCgov/phoenix/commit/d014aa00b27c1fa9e2d1b1151bc7f6c44d8a82b3).  
-- Nick to add files that had headers added
+- Added headers to 2 files: *.fastANI.txt and *.wtasmbld_summary.txt
+- MLST final output that includes different headers and organization was renamed to *_combined.tsv which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags
 
 **Fixed Bugs:**  
 - Edit to allow nf-tower to work [#b21d61f](https://github.com/CDCgov/phoenix/commit/b21d61f269212311737dffecd54664d7c8019f09)  
