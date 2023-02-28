@@ -57,7 +57,7 @@ process AMRFINDERPLUS_RUN {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         amrfinderplus: \$(amrfinder --version)
-        amrfinderplus_db_version: \$(head amrfinderdb/latest/version.txt)
+        amrfinderplus_db_version: \$(head amrfinderdb/version.txt)
     END_VERSIONS
     """
 }
