@@ -104,7 +104,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 
 workflow PHOENIX_EXTERNAL {
     main:
-        ch_versions     = Channel.empty() // Used to collect the software versions
+        ch_versions = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
 
@@ -339,7 +339,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE(
-            line_summary_ch
+            line_summary_ch, outdir_path
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 

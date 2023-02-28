@@ -3,12 +3,6 @@ def VERSION = '1.0' // Version information not provided by tool on CLI
 process GET_MLST_SRST2 {
     tag "${meta.id}"
     label 'process_low'
-
-    //container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-    //    'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
-    //    'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
-
-    //container "quay.io/jvhagey/phoenix:base_v1.0.1"
     container "quay.io/biocontainers/python:2.7--1"
 
     input:
@@ -46,11 +40,7 @@ process GET_MLST_SRST2 {
         echo "-\$test_title-"
       fi
       echo "\${genus}___\${species}"
-      python -V
-      which python
-      echo "here we go"
       convert_taxonomy_with_complexes_to_pubMLST.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
-      echo "there we went"
 
       dbline=\$(tail -n1 DB_defs.txt)
       echo "\$dbline"

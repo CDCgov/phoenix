@@ -1065,7 +1065,7 @@ if [[ -s "${formatted_fastANI}" ]]; then
     printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No assembly file to work with"  >> "${sample_name}.synopsis"
   else
     if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}-%ID ${coverage_match}%cov  tax=${organism}  ref=${reference}"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}%ID ${coverage_match}%cov  tax=${organism}  ref=${reference}"  >> "${sample_name}.synopsis"
     else
       if [[ "${percent_match}" -lt 95 ]]; then
         if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then

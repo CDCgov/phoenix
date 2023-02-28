@@ -2,8 +2,6 @@ process SPADES {
     tag "$meta.id"
     label 'process_high_memory'
     container 'staphb/spades:3.15.5'
-    //afterScript "${baseDir}/bin/afterSpades.sh"
-    // Create a summaryline file that will be deleted later if spades is successful if not this line shows up in the final Phoenix_output_summary file
 
     input:
     tuple val(meta), path(reads), path(unpaired_reads), path(k2_bh_summary), \
@@ -64,6 +62,7 @@ process SPADES {
     rm ${full_outdir}/${prefix}/${prefix}_summaryline_failure.tsv
     rm ${full_outdir}/${prefix}/${prefix}.synopsis
 
+    #Create a summaryline file that will be deleted later if spades is successful if not this line shows up in the final Phoenix_output_summary file
     #create file '*_spades_outcome.csv' to state if spades fails, if contigs or scaffolds are created. See spades_failure.nf subworkflow
     #This file will determine if downstream process GENERATE_PIPELINE_STATS_FAILURE and CREATE_SUMMARY_LINE_FAILURE will run (if spades creates contigs, but not scaffolds).
     afterSpades.sh

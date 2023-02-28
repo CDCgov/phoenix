@@ -49,6 +49,7 @@ process AMRFINDERPLUS_RUN {
 
     sed -i '1s/ /_/g' ${prefix}_all_genes.tsv
 
+    # if file does not exist then touch and create a blank file
     if [ ! -f ${prefix}_all_mutations.tsv ]; then
         touch ${prefix}_all_mutations.tsv
     fi

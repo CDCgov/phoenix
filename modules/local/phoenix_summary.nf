@@ -1,11 +1,6 @@
 process GATHER_SUMMARY_LINES {
     label 'process_low'
-    afterScript "rm ${outdir_path}/*_summaryline.tsv"
-    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
-
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"*/
+    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     path(summary_line_files)

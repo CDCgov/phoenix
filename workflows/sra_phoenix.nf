@@ -344,7 +344,7 @@ workflow SRA_PHOENIX {
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE(
-            line_summary_ch
+            line_summary_ch, outdir_path
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 

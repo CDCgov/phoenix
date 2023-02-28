@@ -1,7 +1,7 @@
 process BBMAP_REFORMAT {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/bbtools:38.96'
+    container 'staphb/bbtools:39.01'
 
     input:
     tuple val(meta), path(reads)

@@ -1,6 +1,6 @@
 process FETCH_FAILED_SUMMARIES {
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     path(directory)
