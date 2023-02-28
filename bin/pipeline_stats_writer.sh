@@ -1056,7 +1056,8 @@ if [[ -s "${formatted_fastANI}" ]]; then
   fastANI_date=$(echo "${formatted_fastANI}" | rev | cut -d'_' -f1 | rev | cut -d'.' -f2)
   fastANI_info=$(head -n2 "${formatted_fastANI}" | tail -n1)
   percent_match=$(echo "${fastANI_info}" | cut -d'.' -f1)
-  coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  #coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  coverage_match=$(echo "${fastANI_info}" | cut -d$'\t' -f2 | cut -d'.' -f1)
   organism=$(echo "${fastANI_info}" | cut -d$'\t' -f3)
   reference=$(echo "${fastANI_info}" | cut -d$'\t' -f4)
 
