@@ -23,7 +23,7 @@ process FAIRY {
 
     if grep -Fxq "error" ${prefix}_R1_FAIry.txt 
         then echo ${prefix} "_R1_FAIry.txt is corrupted." >> ${prefix}_FAIry_synopsis.txt
-        else echo ${prefix} "is not corrupted." >> ${prefix}_FAIry_synopsis.txt
+        else echo ${prefix} "_R1_FAIry.txt is not corrupted." >> ${prefix}_FAIry_synopsis.txt
     fi
 
     if grep -Fxq "error" ${prefix}_R2_FAIry.txt 
