@@ -111,7 +111,6 @@ workflow phoenix_workflow {
     File best_taxa_id             = phoenix.best_taxa_id           # tax
     #phoenix AMRFinder
     File amrfinder_organism       = phoenix.amrfinder_organism      # all_mutations.tsv
-    File amr_taxa_match           = phoenix.amr_taxa_match          # AMRFinder_Organism.csv
     File amr_hits                 = phoenix.amr_hits                # amr_hits.tsv
     #run files
     File versions_file            = phoenix.versions_file           # software_versions.yml"
