@@ -21,6 +21,6 @@ process DETERMINE_TOP_TAXA {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
-    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -d ./ $terra
+    sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists $terra
     """
 }
