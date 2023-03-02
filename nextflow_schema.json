@@ -26,7 +26,7 @@
                 },
                 "kraken2db": {
                     "type": "string",
-                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files. Its needs a trailing / in path name.",
+                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
                     "default": "null"
                 }
             }
