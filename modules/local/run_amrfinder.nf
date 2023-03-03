@@ -3,8 +3,8 @@ process AMRFINDERPLUS_RUN {
     label 'process_medium'
     //container 'staphb/ncbi-amrfinderplus:3.10.36'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/ncbi-amrfinderplus%3A3.11.2--h6e70893_0':
-        'quay.io/biocontainers/ncbi-amrfinderplus:3.11.2--h6e70893_0' }"
+        'https://depot.galaxyproject.org/singularity/ncbi-amrfinderplus%3A3.10.45--h6e70893_0':
+        'quay.io/biocontainers/ncbi-amrfinderplus:3.10.45--h6e70893_0' }"
 
     input:
     tuple val(meta), path(nuc_fasta), val(organism_param), path(pro_fasta), path(gff)
@@ -26,6 +26,8 @@ process AMRFINDERPLUS_RUN {
     } else {
         organism = ""
     }
+    //get name of amrfinder database file
+    db_name = db.toString() - '.tar.gz'
     """
     if [[ $nuc_fasta = *.gz ]]; then
         NUC_FNAME=\$(basename ${nuc_fasta} .gz)
@@ -34,8 +36,8 @@ process AMRFINDERPLUS_RUN {
         NUC_FNAME = $nuc_fasta
     fi
 
-    mkdir amrfinderdb
-    tar xzvf $db -C amrfinderdb
+    # decompress the amrfinder database
+    tar xzvf $db
 
     amrfinder \\
         --nucleotide \$NUC_FNAME \\
@@ -45,7 +47,7 @@ process AMRFINDERPLUS_RUN {
         --mutation_all ${prefix}_all_mutations.tsv \\
         $organism \\
         --plus \\
-        --database amrfinderdb \\
+        --database $db_name \\
         --threads $task.cpus > ${prefix}_all_genes.tsv
 
     sed -i '1s/ /_/g' ${prefix}_all_genes.tsv
@@ -53,7 +55,7 @@ process AMRFINDERPLUS_RUN {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         amrfinderplus: \$(amrfinder --version)
-        amrfinderplus_db_version: \$(head amrfinderdb/version.txt)
+        amrfinderplus_db_version: \$(head $db_name/version.txt)
     END_VERSIONS
     """
 }

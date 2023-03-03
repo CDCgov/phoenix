@@ -9,6 +9,7 @@ process DETERMINE_TOP_TAXA {
     output:
     tuple val(meta), path('*_best_MASH_hits.txt'), emit: top_taxa_list
     tuple val(meta), path('*_genomic.fna.gz'),     emit: reference_files
+    path("versions.yml"),                          emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -22,5 +23,10 @@ process DETERMINE_TOP_TAXA {
     }
     """
     sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists $terra
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        Date of RefSeq Pull: \$(date +"%d-%m-%y")
+    END_VERSIONS
     """
 }

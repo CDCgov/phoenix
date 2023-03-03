@@ -233,6 +233,7 @@ workflow SRA_PHOENIX {
         DETERMINE_TOP_TAXA (
             top_taxa_ch
         )
+        ch_versions = ch_versions.mix(DETERMINE_TOP_TAXA.out.versions)
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, reads           -> [[id:meta.id], reads]}\

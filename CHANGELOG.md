@@ -8,7 +8,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/1.0.0-dev...v1.0.0)
 
-## [v1.1.0](add link) (03/XX/2023)
+## [v1.1.0](https://github.com/CDCgov/phoenix/releases/tag/v1.1.0) (03/03/2023)
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/main...v1.0.1)
 
@@ -21,12 +21,12 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - `Phoenix_Output_Report.tsv` now has antibiotic genes and plasmid markers filtered to ensure quality [#d0fa32c](https://github.com/CDCgov/phoenix/commit/d0fa32c511a21b21366651b28dfb1539f800e262).  
    - Plasmid markers require >=60% length and >=98% identity to be reported  
    - Antibiotic Genes require >=90% length and >=98% identity to be reported  
-- AMRFinder+ point mutation are now included in `Phoenix_Output_Report.tsv` under the column `AMRFinder_Point_Mutations`.
+- AMRFinder+ point mutation are now included in `Phoenix_Output_Report.tsv` under the column `AMRFinder_Point_Mutations`.  
 
 **Output File Changes:**  
 - Removed spaces in header of `*_all_genes.tsv` file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#fd048d1](https://github.com/CDCgov/phoenix/commit/fd048d1a54ca262617eeef32d85cd4f47650af23).  
 - Fixed error causing PROKKA output to not be in Annotation folder [#d014aa0](https://github.com/CDCgov/phoenix/commit/d014aa00b27c1fa9e2d1b1151bc7f6c44d8a82b3).  
-- Added headers to 2 files: `*.fastANI.txt` and `*.wtasmbld_summary.txt`.
+- Added headers to 2 files: `*.fastANI.txt` and `*.wtasmbld_summary.txt`.  
 - Also, added headers to `phoenix_line_summary.tsv` see [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#sample-specific-files) for details.  
 - MLST final output that includes different headers and organization was renamed to `*_combined.tsv` which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags.  
 
@@ -37,10 +37,18 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed issue where `cp` error was thrown when relative path was given for output directory [#0c0ca55](https://github.com/CDCgov/phoenix/commit/0c0ca554861b7da28567694adc0920a6d8046d5b) and [#d938a64](https://github.com/CDCgov/phoenix/commit/d938a6437f3e192dbe8af648c4400011fa0744e4).  
 
 **Database Updates:**  
-- AMRFinder+ database is now static and included in the database folder [#a5d2d03](https://github.com/CDCgov/phoenix/commit/a5d2d03be4876c73b0d116d2a641c7319bf44df0). We removed the automatic updating for more control of the pipeline and lockdown to prepare for possible CLIA requirements. 
+- AMRFinder+ database is now static and included in the database folder [#a5d2d03](https://github.com/CDCgov/phoenix/commit/a5d2d03be4876c73b0d116d2a641c7319bf44df0). We removed the automatic updating for more control of the pipeline and lockdown to prepare for possible CLIA requirements.  
+   - Version [2022-08-09.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.10/) currently used to be the same as the one in the curated db.  
+- Curated AR gene database was updated on 2022-09-15 (yyyy-mm-dd) which includes:
+   - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
+      - Version [2022-08-09.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.10/)  
+   - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta)  
+      - Latest version [NT v6 July 2019](https://www.mediterranee-infection.com/acces-ressources/base-de-donnees/arg-annot-2/)  
+   - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)  
+      - Includes until 2022-08-08 [commit 39f4b26](https://bitbucket.org/genomicepidemiology/resfinder_db/commits/branch/master)  
 
 **Container Updates:**  
 - MLST updated from 2.22.1 to [2.23.0](https://github.com/tseemann/mlst/releases/tag/v2.23.0).  
 - BBTools updated from 38.96 to [39.01](https://sourceforge.net/projects/bbmap/).  
-- AMRFinder+ was updated from 3.10.40 to [3.11.2](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.11.2). Necessary because new amrfinder database could not be downloaded without it >v3.11.
+- AMRFinder+ was updated from 3.10.40 to [3.10.45](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.10.45).  
 - Scripts the utilize the phoenix_base container were updated to `quay.io/jvhagey/phoenix:base_v1.1.0` which had the python library `xlsxwriter` added to it for [`GRiPHin.py`](https://github.com/CDCgov/phoenix/blob/v1.0.1/bin/GRiPHin.py).  
