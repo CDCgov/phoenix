@@ -8,7 +8,7 @@ task phoenix {
     String kraken2db = "null"
     String docker = "quay.io/jvhagey/phoenix:1.1.0"
     Int    memory = 64
-    Int    cpu = 16
+    Int    cpu = 8
     Int    disk_size = 100
   }
   command <<<
