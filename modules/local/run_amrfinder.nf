@@ -11,9 +11,9 @@ process AMRFINDERPLUS_RUN {
     path(db)
 
     output:
-    tuple val(meta), path("${meta.id}_all_genes.tsv")                       , emit: report
-    tuple val(meta), path("${meta.id}_all_mutations.tsv"),   optional: true , emit: mutation_report
-    path("versions.yml")                                                    , emit: versions
+    tuple val(meta), path("${meta.id}_all_genes.tsv"),                    emit: report
+    tuple val(meta), path("${meta.id}_all_mutations.tsv"), optional:true, emit: mutation_report
+    path("versions.yml")                                 ,                emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -22,7 +22,7 @@ process AMRFINDERPLUS_RUN {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     if ( "${organism_param[0]}" != "No Match Found") {
-        organism = "--organism ${organism_param[0]} --mutation_all ${prefix}_all_mutations.tsv"
+        organism = "--organism ${organism_param[0]}"
     } else {
         organism = ""
     }
@@ -42,17 +42,13 @@ process AMRFINDERPLUS_RUN {
         --protein $pro_fasta \\
         --gff $gff \\
         --annotation_format prokka \\
+        --mutation_all ${prefix}_all_mutations.tsv \\
         $organism \\
         --plus \\
         --database amrfinderdb \\
         --threads $task.cpus > ${prefix}_all_genes.tsv
 
     sed -i '1s/ /_/g' ${prefix}_all_genes.tsv
-
-    # if file does not exist then touch and create a blank file
-    if [ ! -f ${prefix}_all_mutations.tsv ]; then
-        touch ${prefix}_all_mutations.tsv
-    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

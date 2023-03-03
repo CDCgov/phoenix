@@ -8,7 +8,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/1.0.0-dev...v1.0.0)
 
-## [v1.1.0](add link) (02/XX/2023)
+## [v1.1.0](add link) (03/XX/2023)
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/main...v1.0.1)
 
@@ -28,7 +28,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed error causing PROKKA output to not be in Annotation folder [#d014aa0](https://github.com/CDCgov/phoenix/commit/d014aa00b27c1fa9e2d1b1151bc7f6c44d8a82b3).  
 - Added headers to 2 files: `*.fastANI.txt` and `*.wtasmbld_summary.txt`.
 - Also, added headers to `phoenix_line_summary.tsv` see [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#sample-specific-files) for details.  
-- MLST final output that includes different headers and organization was renamed to *_combined.tsv which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags
+- MLST final output that includes different headers and organization was renamed to `*_combined.tsv` which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags.  
 
 **Fixed Bugs:**  
 - Edit to allow nf-tower to work [#b21d61f](https://github.com/CDCgov/phoenix/commit/b21d61f269212311737dffecd54664d7c8019f09)  
@@ -43,6 +43,4 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - MLST updated from 2.22.1 to [2.23.0](https://github.com/tseemann/mlst/releases/tag/v2.23.0).  
 - BBTools updated from 38.96 to [39.01](https://sourceforge.net/projects/bbmap/).  
 - AMRFinder+ was updated from 3.10.40 to [3.11.2](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.11.2). Necessary because new amrfinder database could not be downloaded without it >v3.11.
-- For folks running PHoeNIx on Terra the terra container had the following additions
-    - anaconda::urllib2
 - Scripts the utilize the phoenix_base container were updated to `quay.io/jvhagey/phoenix:base_v1.1.0` which had the python library `xlsxwriter` added to it for [`GRiPHin.py`](https://github.com/CDCgov/phoenix/blob/v1.0.1/bin/GRiPHin.py).  

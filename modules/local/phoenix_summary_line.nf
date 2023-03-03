@@ -14,8 +14,7 @@ process CREATE_SUMMARY_LINE {
     path(synopsis), \
     path(taxonomy_file), \
     path(trimd_ksummary), \
-    path(amr_mutation_file)
-    path(full_outdir)
+    path(amr_report)
 
     output:
     path '*_summaryline.tsv'           , emit: line_summary
@@ -32,15 +31,12 @@ process CREATE_SUMMARY_LINE {
         -p $pf_gamma_file \\
         -r $ratio_file \\
         -m $mlst_file \\
-        -u $amr_mutation_file \\
+        -u $amr_report \\
         -n ${prefix} \\
         -s $synopsis \\
         -x $taxonomy_file \\
         -k $trimd_ksummary \\
         -o ${prefix}_summaryline.tsv
-
-    # Just a bit of clean up, if the amrfinder mutation file exists and is empty just delete it.
-    if [ -s '${full_outdir}/${meta.id}/AMRFinder/${amr_mutation_file}' ]; then rm ${full_outdir}/${meta.id}/AMRFinder/${amr_mutation_file}; fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

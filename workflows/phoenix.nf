@@ -318,7 +318,7 @@ workflow PHOENIX_EXTERNAL {
             DETERMINE_TAXA_ID.out.taxonomy, \
             FORMAT_ANI.out.ani_best_hit, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
-            AMRFINDERPLUS_RUN.out.report, \
+            AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
             false
         )
@@ -335,11 +335,11 @@ workflow PHOENIX_EXTERNAL {
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
         .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
         .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
-        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]}, by: [0])
+        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE(
-            line_summary_ch, outdir_path
+            line_summary_ch
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 

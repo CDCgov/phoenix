@@ -8,7 +8,7 @@ task phoenix {
     String kraken2db = "null"
     String docker = "quay.io/jvhagey/phoenix:1.1.0"
     Int    memory = 64
-    Int    cpu = 8
+    Int    cpu = 16
     Int    disk_size = 100
   }
   command <<<
@@ -157,8 +157,9 @@ task phoenix {
     File synopsis                 = "~{samplename}/results/~{samplename}/~{samplename}.synopsis"
     File best_taxa_id             = "~{samplename}/results/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File amrfinder_organism       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
-    File amr_hits                 = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    File amrfinder_mutations       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
+    File? amrfinder_taxa_match     = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
+    File amrfinder_hits            = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results
     File full_results             = "~{samplename}.tar.gz"
     File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"

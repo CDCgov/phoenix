@@ -358,7 +358,7 @@ workflow PHOENIX_EXQC {
             DETERMINE_TAXA_ID.out.taxonomy, \
             FORMAT_ANI.out.ani_best_hit, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
-            AMRFINDERPLUS_RUN.out.report, \
+            AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
             true
         )
@@ -379,7 +379,7 @@ workflow PHOENIX_EXQC {
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE(
-            line_summary_ch, outdir_path
+            line_summary_ch
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
