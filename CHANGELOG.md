@@ -8,7 +8,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/1.0.0-dev...v1.0.0)
 
-## [v1.1.0](https://github.com/CDCgov/phoenix/releases/tag/v1.1.0) (03/03/2023)
+## [v1.1.0](https://github.com/CDCgov/phoenix/releases/tag/v1.1.0) (03/06/2023)
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/main...v1.0.1)
 
