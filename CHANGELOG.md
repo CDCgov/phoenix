@@ -10,7 +10,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 ## [v1.1.0](https://github.com/CDCgov/phoenix/releases/tag/v1.1.0) (03/06/2023)
 
-[Full Changelog](https://github.com/CDCgov/phoenix/compare/main...v1.0.1)
+[Full Changelog](https://github.com/CDCgov/phoenix/compare/v1.0.0...v1.1.0)
 
 **Implemented Enhancements:**  
 - Default branch set to main thanks @erinyoung [#84](https://github.com/CDCgov/phoenix/pull/84).  
