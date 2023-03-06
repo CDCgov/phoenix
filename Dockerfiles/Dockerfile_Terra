@@ -25,7 +25,7 @@ RUN micromamba create -n phoenix -y \
     bioconda::gamma==2.2 \
     bioconda::fastani==1.33 \
     conda-forge::python \
-    bioconda::ncbi-amrfinderplus==3.11.2 \
+    bioconda::ncbi-amrfinderplus==3.10.45 \
     bioconda::kraken2==2.1.2 \
     bioconda::quast==5.0.2 \
     bioconda::spades==3.15.5 \
