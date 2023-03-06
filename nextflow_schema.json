@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/cdcgov/phoenix/main/nextflow_schema.json",
     "title": "cdcgov/phoenix pipeline parameters",
-    "description": "TBD",
+    "description": "A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens.",
     "type": "object",
     "definitions": {
         "input_output_options": {
@@ -26,7 +26,7 @@
                 },
                 "kraken2db": {
                     "type": "string",
-                    "description": "FULL PATH for where kraken2_db files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files. Its needs a trailing / in path name.",
+                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
                     "default": "null"
                 }
             }
@@ -42,7 +42,7 @@
             "properties": {
                 "outdir": {
                     "type": "string",
-                    "description": "Path to the output directory where the results will be saved. MUST BE A FULL PATH.",
+                    "description": "Path to the output directory where the results will be saved. Can be a full or relative path.",
                     "default": "${PWD}/results",
                     "fa_icon": "fas fa-folder-open"
                 },
@@ -60,7 +60,7 @@
                 },
                 "busco_db_path": {
                     "type": "string",
-                    "description": "Path for where BUSCO files are if you want to run in offline mode. Use only with -entry CDC_PHOENIX",
+                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. Use only with -entry CDC_PHOENIX",
                     "default": "Not to run in offline mode."
                 },
                 "publish_dir_mode": {

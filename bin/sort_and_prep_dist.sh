@@ -38,13 +38,6 @@ while getopts ":h?x:d:a:t:" option; do
 			echo "Option -a triggered, argument = ${OPTARG}"
 			assembly_file=${OPTARG}
 			;;
-		d)
-			echo "Option -d triggered, argument = ${OPTARG}"
-			database=${OPTARG}
-			database_basename=$(basename -- "${database}")
-			database_and_version=$(echo ${database_basename##*/} | cut -d'_' -f1,2)
-			REFSEQ_date=$(echo ${database_basename##*/} | cut -d'_' -f2)
-			;;
 		t)
 			echo "Option -t triggered"
 			terra=${OPTARG}
@@ -62,10 +55,6 @@ if [[ "${options_found}" -eq 0 ]]; then
 	echo "No argument supplied to best_hit_from_kraken_noconfig.sh, exiting"
 	show_help
 	exit 1
-fi
-
-if [[ "${database}" = "./" ]]; then
-	database="."
 fi
 
 # set the correct path for bc/wget - needed for terra
@@ -105,8 +94,8 @@ while IFS= read -r var; do
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
 		if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 0 ]); then
-		if [[ -f "${database}/${source}.gz" ]]; then
-			echo "${database}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
+		if [[ -f "${source}.gz" ]]; then
+			echo "${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 #		if [[ -f "${GCF_name}.gz" ]]; then
 #			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
 			matches=$(( matches + 1))
@@ -119,12 +108,12 @@ while IFS= read -r var; do
 				beta=${filename:7:3}
 				charlie=${filename:10:3}
 				echo "Copying - ${filename}"
-				echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${database}/${source}.gz"
-				$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${database}/${source}.gz
+				echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${source}.gz"
+				$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${source}.gz
 	#			echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz"
 	#			wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz
 				#curl --remote-name --remote-time "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz"
-				echo "${database}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
+				echo "${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 	#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
 				matches=$(( matches + 1))
 			else

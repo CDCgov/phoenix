@@ -1,11 +1,7 @@
 process CREATE_SUMMARY_LINE_FAILURE {
     tag "${meta.id}"
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
-
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"*/
+    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     tuple val(meta), path(synopsis), \
@@ -13,7 +9,7 @@ process CREATE_SUMMARY_LINE_FAILURE {
     path(trimd_ksummary), \
     path(taxonomy_file), \
     val(spades_outcome)
-    
+
     output:
     path('*_summaryline.tsv') , emit: line_summary
     path "versions.yml"       , emit: versions

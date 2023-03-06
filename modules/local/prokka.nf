@@ -3,10 +3,6 @@ process PROKKA {
     label 'process_high'
     container 'staphb/prokka:1.14.5'
 
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/prokka:1.14.6--pl526_0' :
-        'quay.io/biocontainers/prokka:1.14.6--pl526_0' }"*/
-
     input:
     tuple val(meta), path(fasta)
     path proteins

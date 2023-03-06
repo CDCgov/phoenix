@@ -3,11 +3,7 @@ def VERSION = '1.2' // Version information not provided by tool on CLI
 process KRAKENTOOLS_MAKEKREPORT {
     tag "$meta.id"
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
-
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"*/
+    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     tuple val(meta), path(kraken_output), path(kraken2db_path)

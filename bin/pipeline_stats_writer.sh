@@ -1056,7 +1056,8 @@ if [[ -s "${formatted_fastANI}" ]]; then
   fastANI_date=$(echo "${formatted_fastANI}" | rev | cut -d'_' -f1 | rev | cut -d'.' -f2)
   fastANI_info=$(head -n2 "${formatted_fastANI}" | tail -n1)
   percent_match=$(echo "${fastANI_info}" | cut -d'.' -f1)
-  coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  #coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  coverage_match=$(echo "${fastANI_info}" | cut -d$'\t' -f2 | cut -d'.' -f1)
   organism=$(echo "${fastANI_info}" | cut -d$'\t' -f3)
   reference=$(echo "${fastANI_info}" | cut -d$'\t' -f4)
 
@@ -1065,7 +1066,7 @@ if [[ -s "${formatted_fastANI}" ]]; then
     printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No assembly file to work with"  >> "${sample_name}.synopsis"
   else
     if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}-%ID ${coverage_match}%cov  tax=${organism}  ref=${reference}"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}%ID ${coverage_match}%cov  tax=${organism}  ref=${reference}"  >> "${sample_name}.synopsis"
     else
       if [[ "${percent_match}" -lt 95 ]]; then
         if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then

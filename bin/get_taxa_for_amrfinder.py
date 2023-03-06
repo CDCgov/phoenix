@@ -31,10 +31,13 @@ def get_taxa(taxa_file):
 
 def taxa_check(genus_match, species_match, gen_sp):
     # species and genus lists
+    #species = ['Enterococcus_faecalis','Enterococcus_faecium','Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 'Streptococcus_pyogenes', \
+    #'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis'] # for update
     species = ['Enterococcus_faecalis','Enterococcus_faecium','Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 'Streptococcus_pyogenes', \
-    'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis']
+    'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae']
     genus = ['Salmonella']
-    complex_genera = ['Acinetobacter', 'Neisseria', 'Escherichia', 'Klebsiella','Campylobacter', 'Shigella', 'Streptococcus']
+    #complex_genera = ['Acinetobacter', 'Neisseria', 'Escherichia', 'Klebsiella','Campylobacter', 'Shigella', 'Streptococcus'] # for update
+    complex_genera = ['Acinetobacter', 'Neisseria', 'Escherichia', 'Klebsiella','Campylobacter', 'Neisseria', 'Shigella', 'Streptococcus']
     if gen_sp in species:
         taxa=gen_sp
     elif genus_match in genus:
@@ -50,6 +53,7 @@ def complicated_genus(gen_sp, genus_match):
     Escherichia = ["Escherichia", "Shigella"]
     # Genus_species lists
     Klebsiella = ["Klebsiella_pneumoniae", "Klebsiella_aerogenes", "Klebsiella_oxytoca"]
+    Neisseria = ['Neisseria_gonorrhea', 'Neisseria_meningitidis']  # remove for update
     Campylobacter = ['Campylobacter_coli','Campylobacter_jejuni']
     Streptococcus_pneumoniae = ['Streptococcus_pneumoniae', 'Streptococcus_mitis']
     Acinetobacter = ['Acinetobacter_baumannii','Acinetobacter_calcoaceticus', 'Acinetobacter_lactucae', 'Acinetobacter_nosocomialis', 'Acinetobacter_pittii', 'Acinetobacter_seifertii']
@@ -67,12 +71,13 @@ def complicated_genus(gen_sp, genus_match):
     if genus_match in Escherichia:
         taxa=str("Escherichia")
     elif gen_sp in Klebsiella:
-        if gen_sp == "Klebsiella_pneumoniae":
-            taxa=str("Klebsiella_pneumoniae")
-        elif gen_sp == "Klebsiella_aerogenes":
-            taxa=str("Klebsiella_oxytoca")
-        elif gen_sp == "Klebsiella_oxytoca":
-            taxa=str("Klebsiella_oxytoca")
+        taxa=str("Klebsiella")
+#        if gen_sp == "Klebsiella_pneumoniae": # for update
+#            taxa=str("Klebsiella_pneumoniae")
+#        elif gen_sp == "Klebsiella_aerogenes":
+#            taxa=str("Klebsiella_oxytoca")
+#        elif gen_sp == "Klebsiella_oxytoca":
+#            taxa=str("Klebsiella_oxytoca")
     elif gen_sp in Streptococcus_pneumoniae:
         taxa=str("Streptococcus_pneumoniae")
     elif gen_sp in Campylobacter:
@@ -81,6 +86,8 @@ def complicated_genus(gen_sp, genus_match):
         taxa=str("Acinetobacter_baumannii")
     elif gen_sp in AB_complex_sp:
         taxa=str("Acinetobacter_baumannii")
+    elif gen_sp in Neisseria: #remove for update
+        taxa=str("Neisseria") #remove for update
     else:
         taxa="No Match Found"
     return taxa

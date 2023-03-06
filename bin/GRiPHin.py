@@ -25,13 +25,14 @@ def parseArgs(args=None):
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
     parser.add_argument('-o', '--output', default="GRiPHin_Report", required=False, dest='output', help='Name of output file.')
+    parser.add_argument('-p', '--platform', default=None, required=False, dest='platform', help='String for the sequencing platform used.')
     return parser.parse_args()
 
 #set colors for warnings so they are seen
 CRED = '\033[91m'+'\nWarning: '
 CEND = '\033[0m'
 
-def Get_Parent_Folder(directory):
+def Get_Parent_Folder(directory, platform):
     '''getting project and platform info from the paths'''
     #Project - parent folder (first folder that is in the outdir)
     #relative/submission - rest of the path
@@ -44,7 +45,8 @@ def Get_Parent_Folder(directory):
     project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
     # get everything after CEMB
     cemb_path = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
-    platform = cemb_path.split("CEMB",1)[1].lstrip("/") # remove backslash on left side to make it clean
+    if platform == None:
+        platform = os.path.split(cemb_path)[1].lstrip("/") # remove backslash on left side to make it clean
     return project, platform
 
 def make_ar_dictionary(ar_db):
@@ -228,6 +230,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     df = pd.DataFrame(coverage).T
     if df.empty:
         df = pd.DataFrame({'WGS_ID':[sample_name], 'AR_Database':[DB], 'No_AR_Genes_Found':['[-/-]'] })
+        df.index = [sample_name]
     else:
         df.columns = column_name # add column names
         df["WGS_ID"] = sample_name
@@ -255,6 +258,7 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
     df = pd.DataFrame(coverage).T
     if df.empty:
         df = pd.DataFrame({'WGS_ID':[sample_name], 'HV_Database':[DB], 'No_HVGs_Found':['[-/-]'] })
+        df.index = [sample_name]
     else:
         df.columns = hv_column_name # add column names
         df["WGS_ID"] = sample_name
@@ -301,6 +305,7 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     df = pd.DataFrame(pf_coverage).T
     if df.empty:
         df = pd.DataFrame({'WGS_ID':[sample_name], 'Plasmid_Replicon_Database':[DB], 'No_Plasmid_Markers':['[-/-]'] })
+        df.index = [sample_name]
     else:
         df.columns = pf_column_name # add column 'HV_Database':[DB], names
         df["WGS_ID"] = sample_name
@@ -374,6 +379,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     column_name = ["{}({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}]S".format(percent_BP_ID, percent_length) for percent_BP_ID, percent_length in zip(percent_BP_IDs, percent_lengths)]
+    print(coverage)
     # Minimum % length required to be included in report, otherwise removed from list
     if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 90]): 
         index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < 90 ] # get index for value removed to remove from other lists (values less than 90)
@@ -393,9 +399,13 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
             del percent_lengths[index]
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
-    df.columns = column_name # add column names
-    df["WGS_ID"] = sample_name
-    df.index = [sample_name]
+    if df.empty: #check if its empty - which would be when nothing is found and/or no hits passed the filter
+        df = pd.DataFrame({'WGS_ID':[sample_name]})
+        df.index = [sample_name]
+    else:
+        df.columns = column_name # add column names
+        df["WGS_ID"] = sample_name
+        df.index = [sample_name]
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_srst2_df
 
@@ -854,7 +864,7 @@ def main():
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
-            data_location, platform = Get_Parent_Folder(directory)
+            data_location, platform = Get_Parent_Folder(directory, args.platform)
             trim_stats, kraken_trim, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, Scaffold_Count, busco_metrics, assembly_ratio_metrics, QC_result, \

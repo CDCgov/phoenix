@@ -7,8 +7,6 @@
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
 // Validate input parameters
-WorkflowPhoenix.initialise(params, log)
-
 
 // Check input path parameters to see if they exist
 def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
@@ -62,14 +60,13 @@ include { FORMAT_ANI                     } from '../modules/local/format_ANI_bes
 include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
 include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
 include { PROKKA                         } from '../modules/local/prokka'
-//include { AMRFINDERPLUS_UPDATE           } from '../modules/local/update_amrfinder_db'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { CHECK_MLST                     } from '../modules/local/check_mlst'
+//include { CHECK_MLST                     } from '../modules/local/check_mlst'
 
 /*
 ========================================================================================
@@ -83,6 +80,7 @@ include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_
 include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
+include { DO_MLST                        } from '../subworkflows/local/do_mlst'
 
 /*
 ========================================================================================
@@ -106,7 +104,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 
 workflow PHOENIX_EXTERNAL {
     main:
-        ch_versions     = Channel.empty() // Used to collect the software versions
+        ch_versions = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
 
@@ -182,12 +180,6 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
-        // Getting MLST scheme for taxa
-        MLST (
-            BBMAP_REFORMAT.out.filtered_scaffolds
-        )
-        ch_versions = ch_versions.mix(MLST.out.versions)
-
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
             BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
@@ -231,6 +223,7 @@ workflow PHOENIX_EXTERNAL {
         DETERMINE_TOP_TAXA (
             top_taxa_ch
         )
+        ch_versions = ch_versions.mix(DETERMINE_TOP_TAXA.out.versions)
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads           -> [[id:meta.id], reads]}\
@@ -259,12 +252,12 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
-        combined_mlst_ch = MLST.out.tsv.map{     meta, tsv      -> [[id:meta.id], tsv]}\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0])
-
-        // Combining and adding flare to all MLST outputs
-        CHECK_MLST (
-            combined_mlst_ch
+        // Perform MLST steps on isolates (with srst2 on internal samples)
+        DO_MLST (
+            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            FASTP_TRIMD.out.reads, \
+            DETERMINE_TAXA_ID.out.taxonomy, \
+            false
         )
 
         // get gff and protein files for amrfinder+
@@ -314,7 +307,7 @@ workflow PHOENIX_EXTERNAL {
             KRAKEN2_TRIMD.out.k2_bh_summary, \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
-            MLST.out.tsv, \
+            DO_MLST.out.checked_MLSTs, \
             GAMMA_HV.out.gamma, \
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
@@ -326,7 +319,7 @@ workflow PHOENIX_EXTERNAL {
             DETERMINE_TAXA_ID.out.taxonomy, \
             FORMAT_ANI.out.ani_best_hit, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
-            AMRFINDERPLUS_RUN.out.report, \
+            AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
             false
         )
@@ -334,7 +327,7 @@ workflow PHOENIX_EXTERNAL {
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
         //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
-        .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
+        .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -343,7 +336,7 @@ workflow PHOENIX_EXTERNAL {
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
         .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
         .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
-        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]}, by: [0])
+        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE(
@@ -397,7 +390,7 @@ workflow PHOENIX_EXTERNAL {
     emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
-        mlst             = MLST.out.tsv
+        mlst             = DO_MLST.out.checked_MLSTs
         amrfinder_report = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
     

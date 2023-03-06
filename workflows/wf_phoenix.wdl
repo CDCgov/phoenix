@@ -110,9 +110,9 @@ workflow phoenix_workflow {
     File synopsis                 = phoenix.synopsis               # synopsis
     File best_taxa_id             = phoenix.best_taxa_id           # tax
     #phoenix AMRFinder
-    File amrfinder_organism       = phoenix.amrfinder_organism      # all_mutations.tsv
-    File amr_taxa_match           = phoenix.amr_taxa_match          # AMRFinder_Organism.csv
-    File amr_hits                 = phoenix.amr_hits                # amr_hits.tsv
+    File amrfinder_mutations      = phoenix.amrfinder_mutations      # all_mutations.tsv
+    File? amrfinder_taxa_match    = phoenix.amrfinder_taxa_match     # AMRFinder_Organism.csv
+    File amrfinder_hits           = phoenix.amrfinder_hits           # all_genes.tsv
     #run files
     File versions_file            = phoenix.versions_file           # software_versions.yml"
     File multiqc_report           = phoenix.multiqc_report          # multiqc_report.html"

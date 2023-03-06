@@ -7,7 +7,7 @@
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
 // Validate input parameters
-WorkflowPhoenix.initialise(params, log)
+//WorkflowPhoenix.initialise(params, log)
 
 // Check input path parameters to see if they exist
 def checkPathParamList = [ params.input, params.multiqc_config ] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
@@ -28,28 +28,6 @@ if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!'
 // Info required for completion email and summary
 def multiqc_report = []
 def count = 0 // this keeps the pipeline exit and reminder statement from being printed multiple times. See "COMPLETION EMAIL AND SUMMARY" section
-//def create_relative_paths(input) {
-/*if(params.input.equals("https://raw.githubusercontent.com/nf-core/test-datasets/modules/data/delete_me/srst2/samplesheet.csv")) {
-    kraken2db_path = Channel.fromPath(params.kraken2db, relative: true)
-    if(params.busco_db_path!=null) {
-        busco_db_path = Channel.fromPath(params.busco_db_path, relative: true)
-    }else{
-        busco_db_path = params.busco_db_path
-    }
-}else{
-    def kraken_db_list = []
-    def sample_count = (new File(params.input).readLines().size())-1 // Get the number of samples from the input file.
-    for(int val=0;val<sample_count;val++) { kraken_db_list.add(params.kraken2db); } // Add KrakenDB to list the one for each sample
-    kraken2db_path  = Channel.fromPath(kraken_db_list, relative: true) // Make paths in list full paths now and put in channel
-    // Doing the same for busco path
-    if(params.busco_db_path!=null) {
-        def busco_db_list = []
-        for(int val=0;val<sample_count;val++) { busco_db_list.add(params.busco_db_path); } // Add KrakenDB to list the one for each sample
-        busco_db_path = Channel.fromPath(busco_db_list, relative: true)
-    }else{
-        busco_db_path = params.busco_db_path
-    }
-}*/
 
 /*
 ========================================================================================
@@ -93,9 +71,9 @@ include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summar
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
-include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
-include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
-include { CHECK_MLST                     } from '../modules/local/check_mlst_external'
+//include { SRST2_MLST                     } from '../modules/local/srst2_mlst'
+//include { GET_MLST_SRST2                 } from '../modules/local/get_mlst_srst2'
+//include { CHECK_MLST_WITH_SRST2          } from '../modules/local/check_mlst_external'
 include { GRIPHIN                        } from '../modules/local/griphin'
 
 /*
@@ -110,6 +88,7 @@ include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_
 include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
+include { DO_MLST                        } from '../subworkflows/local/do_mlst'
 
 /*
 ========================================================================================
@@ -219,12 +198,6 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
-        // Getting MLST scheme for taxa
-        MLST (
-            BBMAP_REFORMAT.out.filtered_scaffolds
-        )
-        ch_versions = ch_versions.mix(MLST.out.versions)
-
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
             BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
@@ -289,6 +262,7 @@ workflow PHOENIX_EXQC {
         DETERMINE_TOP_TAXA (
             top_taxa_ch
         )
+        ch_versions = ch_versions.mix(DETERMINE_TOP_TAXA.out.versions)
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads           -> [[id:meta.id], reads]}\
@@ -317,33 +291,14 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
-        // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
-        GET_MLST_SRST2 (
-            DETERMINE_TAXA_ID.out.taxonomy
+        // Perform MLST steps on isolates (with srst2 on internal samples)
+        DO_MLST (
+            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            FASTP_TRIMD.out.reads, \
+            DETERMINE_TAXA_ID.out.taxonomy, \
+            true
         )
-        ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
-
-        // Combining weighted kraken report with the FastANI hit based on meta.id
-        mid_srst2_ch = FASTP_TRIMD.out.reads.map{meta, reads    -> [[id:meta.id], reads]}\
-        .join(GET_MLST_SRST2.out.getMLSTs.map{   meta, getMLSTs -> [[id:meta.id], getMLSTs]},  by: [0])\
-        .join(GET_MLST_SRST2.out.fastas.map{     meta, fastas   -> [[id:meta.id], fastas]},    by: [0])\
-        .join(GET_MLST_SRST2.out.profiles.map{   meta, profiles -> [[id:meta.id], profiles]},  by: [0])
-
-        // Identifying mlst genes in trimmed reads
-        SRST2_MLST (
-            mid_srst2_ch
-        )
-        ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
-
-        combined_mlst_ch = MLST.out.tsv.map{     meta, tsv           -> [[id:meta.id], tsv]}\
-        .join(SRST2_MLST.out.mlst_results.map{   meta, mlst_results  -> [[id:meta.id], mlst_results]}, by: [0])\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy      -> [[id:meta.id], taxonomy]},     by: [0])
-
-        // Combining and adding flare to all MLST outputs
-        CHECK_MLST (
-            combined_mlst_ch
-        )
-        ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
+        ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
         // get gff and protein files for amrfinder+
         PROKKA (
@@ -389,7 +344,7 @@ workflow PHOENIX_EXQC {
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             //MLST.out.tsv, \
-            CHECK_MLST.out.checked_MLSTs, \
+            DO_MLST.out.checked_MLSTs, \
             GAMMA_HV.out.gamma, \
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
@@ -404,7 +359,7 @@ workflow PHOENIX_EXQC {
             DETERMINE_TAXA_ID.out.taxonomy, \
             FORMAT_ANI.out.ani_best_hit, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
-            AMRFINDERPLUS_RUN.out.report, \
+            AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
             true
         )
@@ -412,7 +367,7 @@ workflow PHOENIX_EXQC {
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GATHERING_READ_QC_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
         //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
-        .join(CHECK_MLST.out.checked_MLSTs.map{                          meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
+        .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -509,3 +464,4 @@ workflow.onComplete {
     THE END
 ========================================================================================
 */
+

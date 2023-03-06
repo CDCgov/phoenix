@@ -1,7 +1,7 @@
 process MLST {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/mlst:2.22.1' // version 2.22.1 produces add
+    container 'staphb/mlst:2.22.1'
 
     input:
     tuple val(meta), path(fasta)

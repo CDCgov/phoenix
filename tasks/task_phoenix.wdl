@@ -28,7 +28,7 @@ task phoenix {
     mkdir ~{samplename}
     cd ~{samplename}
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.1 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.1.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -157,9 +157,9 @@ task phoenix {
     File synopsis                 = "~{samplename}/results/~{samplename}/~{samplename}.synopsis"
     File best_taxa_id             = "~{samplename}/results/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File amrfinder_organism       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
-    File amr_taxa_match           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
-    File amr_hits                 = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    File amrfinder_mutations       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
+    File? amrfinder_taxa_match     = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
+    File amrfinder_hits            = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results
     File full_results             = "~{samplename}.tar.gz"
     File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
