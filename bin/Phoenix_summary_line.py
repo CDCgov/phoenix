@@ -30,35 +30,80 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--out', required=True, help='output file name')
     return parser.parse_args()
 
-def MLST_Info_Only(MLST_file):
-    """Pulls MLST info from *_Scheme.mlst file"""
-    f = open(MLST_file, 'r')
-    String1 = f.readline()
-    ST = String1.split()[2]
-    Scheme = String1.split()[1]
-    Out = ST + ' (' + Scheme + ')'
-    return Out
+#set colors for warnings so they are seen
+CRED = '\033[91m'
+CEND = '\033[0m'
 
-def MLST_ST(MLST_file):
-    """Pulls MLST info from *_Scheme.mlst file"""
-    ST_list = []
-    with open(MLST_file, 'r') as f:
-        lines = f.readlines()
-        for line in lines:
-            ST = "ST" + line.split()[2]
-            ST_list.append(ST)
-        if "ST-" in ST_list:
-            ST_list = [re.sub("ST-", "-", i) for i in ST_list]
-    return ST_list
+# def MLST_Info_Only(MLST_file):
+#     """Pulls MLST info from *_Scheme.mlst file"""
+#     f = open(MLST_file, 'r')
+#     f.readline()
+#     String1 = f.readline()
+#     ST = String1.split()[2]
+#     Scheme = String1.split()[1]
+#     Out = ST + ' (' + Scheme + ')'
+#     return Out
+
+# def MLST_ST(MLST_file):
+#     """Pulls MLST info from *_Scheme.mlst file"""
+#     ST_list = []
+#     with open(MLST_file, 'r') as f:
+#         lines = f.readlines()
+#         lines.pop(0)
+#         for line in lines:
+#             ST = "ST" + line.split()[2]
+#             ST_list.append(ST)
+#         if "ST-" in ST_list:
+#             ST_list = [re.sub("ST-", "-", i) for i in ST_list]
+#     return ST_list
 
 def MLST_Scheme(MLST_file):
     """Pulls MLST info from *_Scheme.mlst file"""
-    Scheme_list = []
+    Scheme_list = [[],[],[],[],[]]
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
-        for line in lines:
-            Scheme = line.split()[1]
-            Scheme_list.append(Scheme)
+        lines.pop(0)
+        #print(len(lines), lines)
+        for rawline in lines:
+            line=rawline.strip()
+            split_line = line.split("\t")
+            #print("\n".join(split_line))
+            source = split_line[1]
+            date = split_line[2]
+            DB_ID = split_line[3]
+            Scheme = str(split_line[4])
+            alleles = "-".join(split_line[5:])
+            if DB_ID in Scheme_list[0]:
+                print("In Scheme_list[0]")
+                print(Scheme_list[0])
+                for i in range(0,len(Scheme_list[0])):
+                    if DB_ID == Scheme_list[0][i]:
+                        print("Adding to", Scheme_list[0][i], i)
+                        if Scheme != "-" and "Novel" not in Scheme: #if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
+                            Scheme_list[1][i].append("ST"+str(Scheme))
+                        else:
+                            Scheme_list[1][i].append(Scheme)
+                        Scheme_list[2][i].append(alleles)
+                        Scheme_list[3][i].append(source)
+                        Scheme_list[4][i].append(date)
+                        print(Scheme_list)
+            else:
+                print("NOT in Scheme_list[0]")
+                print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
+                Scheme_list[0].append(DB_ID)
+                if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
+                    Scheme_list[1].append(["ST"+Scheme])
+                else:
+                    Scheme_list[1].append([Scheme])
+                Scheme_list[2].append([alleles])
+                Scheme_list[3].append([source])
+                Scheme_list[4].append([date])
+                print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
+            print("Yay")
+            for i in Scheme_list:
+                for j in i:
+                    print(j)
+            #print("\n".join(Scheme_list))
     return Scheme_list
 
 def Contig_Count(input_quast):
@@ -159,41 +204,51 @@ def Trim_Coverage(trimmed_counts_file, ratio_file):
     return Coverage
 
 def Bla_Genes(input_gamma):
-    f = open(input_gamma, 'r')
-    Bla = []
-    String1 = f.readline()
-    for line in f:
-        List1 = line.split()
-        Cat = List1[0].split('__')[4]
-        Gene = List1[0].split('__')[2]
-        if ('LACTAM' in Cat.upper()):
-            Bla.append(Gene)
-    f.close()
+    with open(input_gamma, 'r') as f:
+        header=next(f) # just use to skip first line
+        Bla = []
+        String1 = f.readline()
+        for line in f:
+            Cat = line.split('\t')[0].split('__')[4] # Drug category
+            Gene = line.split('\t')[0].split('__')[2] # Gene Name
+            Percent_Length = float(line.split('\t')[11])*100
+            Codon_Percent = float(line.split('\t')[9])*100
+            if ('LACTAM' in Cat.upper()):
+                # Minimum 90% length required to be included in report, otherwise not reported
+                if int(round(Percent_Length)) >= 90:
+                    # Minimum 98% identity required to be included in report, otherwise not reported
+                    if int(round(Codon_Percent)) >= 98:
+                        Bla.append(Gene)
     Bla.sort()
     return Bla
 
 def Non_Bla_Genes(input_gamma):
-    f = open(input_gamma, 'r')
-    Non_Bla = []
-    String1 = f.readline()
-    for line in f:
-        List1 = line.split()
-        Cat = List1[0].split('__')[4]
-        Gene = List1[0].split('__')[2]
-        if ('LACTAM' in Cat.upper()) == False:
-            Non_Bla.append(Gene)
-    f.close()
+    with open(input_gamma, 'r') as f:
+        header=next(f) # just use to skip first line
+        Non_Bla = []
+        String1 = f.readline()
+        for line in f:
+            Cat = line.split('\t')[0].split('__')[4] # Drug category
+            Gene = line.split('\t')[0].split('__')[2] # Gene Name
+            Percent_Length = float(line.split('\t')[11])*100
+            Codon_Percent = float(line.split('\t')[9])*100
+            if ('LACTAM' in Cat.upper()) == False:
+                # Minimum 90% length required to be included in report, otherwise not reported
+                if int(round(Percent_Length)) >= 90:
+                    # Minimum 98% identity required to be included in report, otherwise not reported
+                    if int(round(Codon_Percent)) >= 98:
+                        Non_Bla.append(Gene)
     Non_Bla.sort()
     return Non_Bla
 
 def HV_Genes(input_gamma):
-    f = open(input_gamma, 'r')
-    HV = []
-    String1 = f.readline()
-    for line in f:
-        Gene = line.split()[0]
-        HV.append(Gene)
-    f.close()
+    with open(input_gamma, 'r') as f:
+        header=next(f) # just use to skip first line
+        HV = []
+        String1 = f.readline()
+        for line in f:
+            Gene = line.split('\t')[0]
+            HV.append(Gene)
     HV.sort()
     num_lines = sum(1 for line in open(input_gamma))
     if num_lines==1:
@@ -255,19 +310,22 @@ def Get_Kraken_reads(stats, trimd_kraken):
 def Get_Taxa_Source(taxa_file):
     with open(taxa_file, 'r') as f:
         first_line = f.readline()
-        taxa_source = re.findall(r'\(.*?\)', first_line)[0]
-        taxa_source = re.sub( "\(|\)", '', taxa_source)
+        fline=first_line.strip().split("\t")
+        #taxa_source = re.findall(r'\(.*?\)', first_line)[0]
+        #taxa_source = re.sub( "\(|\)", '', taxa_source)
+        taxa_source=fline[0]
+        percent_match=fline[1]
         if (taxa_source == "ANI_REFSEQ"):
-            percent_match = re.findall(r'-.*?%ID', first_line)[0]
-            percent_match = re.sub( "-|ID", '', percent_match)
+            #percent_match = re.findall(r'-.*?%ID', first_line)[0]
+            #percent_match = re.sub( "-|ID", '', percent_match)
             percent_match = percent_match + " ANI_match"
         if (taxa_source == "kraken2_trimmed"):
-            percent_match = re.findall(r'-.*?-', first_line)[0]
-            percent_match = re.sub( "-", '', percent_match)
+            #percent_match = re.findall(r'-.*?-', first_line)[0]
+            #percent_match = re.sub( "-", '', percent_match)
             percent_match = percent_match + "% Reads_assigned"
         if (taxa_source == "kraken2_wtasmbld"):
-            percent_match = re.findall(r'-.*?-', first_line)[0]
-            percent_match = re.sub( "-", '', percent_match)
+            #percent_match = re.findall(r'-.*?-', first_line)[0]
+            #percent_match = re.sub( "-", '', percent_match)
             percent_match = percent_match + "% Scaffolds_assigned"
     return taxa_source, percent_match
 
@@ -278,7 +336,7 @@ def Get_Mutations(amr_file):
         lines = f.readlines()[1:]
         for line in lines:
             if "POINT" in line:
-                point_mutations = line.split("	")[5]
+                point_mutations = line.split("\t")[5]
                 point_mutations_list.append(point_mutations)
         if len(point_mutations_list) == 0:
             point_mutations_list = ""
@@ -291,8 +349,14 @@ def Get_Plasmids(pf_file):
     with open(pf_file, 'r') as f:
         header=next(f) # just use to skip first line
         for line in f:
-            Gene = line.split()[0]
-            plasmid_marker_list.append(Gene)
+            Gene = line.split('\t')[0]
+            Percent_Length = float(line.split('\t')[14])*100
+            Match_Percent = float(line.split('\t')[13])*100
+            # Minimum 60% length required to be included in report, otherwise not reported
+            if int(round(Percent_Length)) >= 60:
+                # Minimum 98% identity required to be included in report, otherwise not reported
+                if int(round(Match_Percent)) >= 98:
+                    plasmid_marker_list.append(Gene)
     if len(plasmid_marker_list) == 0:
         plasmid_marker_list = ""
     else:
@@ -302,10 +366,13 @@ def Get_Plasmids(pf_file):
 def Get_BUSCO_Gene_Count(stats):
     with open(stats, 'r') as f:
         matched_line = [line for line in f if "BUSCO" in line]
-        split_list = matched_line[0].split('  ')
-        lineage = re.sub( "BUSCO_", '', split_list[0])
-        percent = split_list[2].split(' ')[1]
-        ratio = split_list[2].split(' ')[9].rstrip('\n')
+        split_list = matched_line[0].split(':')
+        #lineage = re.sub( "BUSCO_", '', split_list[0])
+        #percent = split_list[2].split(' ')[1]
+        #ratio = split_list[2].split(' ')[9].rstrip('\n')
+        lineage="_".join(split_list[0].split("_")[-2:]).strip()
+        percent=str(split_list[2].split("%")[0].strip())+"%"
+        ratio="("+str(split_list[2].split("(")[1].strip())
         busco_line = percent + ' ' + ratio
     busco_file = True
     return busco_line, lineage, busco_file
@@ -354,28 +421,68 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         Species = Assembly_Ratio_Species(ratio_file)
     except:
         Species = 'Unknown'
-    try:
-        ST = MLST_ST(MLST_file)
-        if len(ST) > 1:
-            ST_1 = ST[0]
-            ST_2 = ST[1]
-        else:
-            ST_1 = ST[0]
-            ST_2 = "-"
-    except:
-        ST_1 = 'Unknown'
-        ST_2 = 'Unknown'
+    # try:
+    #     ST = MLST_ST(MLST_file)
+    #     if len(ST) > 1:
+    #         ST_1 = ST[0]
+    #         ST_2 = ST[1]
+    #     else:
+    #         ST_1 = ST[0]
+    #         ST_2 = "-"
+    # except:
+    #     ST_1 = 'Unknown'
+    #     ST_2 = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
-        if len(Scheme) > 1:
-            Scheme_1 = Scheme[0]
-            Scheme_2 = Scheme[1]
+        if len(Scheme[0]) > 1:
+            if Scheme[0][0].lower() < Scheme[0][1].lower():
+                MLST_scheme_1 = Scheme[0][0]
+                #print("1,1-before sort", Scheme[1][0])
+                mlst_types_1=sorted(Scheme[1][0])[::-1]
+                MLST_type_1 = ",".join(mlst_types_1)
+                if Scheme[3][0] == "srst2":
+                    MLST_type_1 += '^'
+                #print("1,1-after sort", MLST_type_1)
+                #MLST_alleles_1 = ",".join(Scheme[2][0])
+                MLST_scheme_2 = Scheme[0][1]
+                #print("2,1-before sort", Scheme[1][1])
+                mlst_types_2=sorted(Scheme[1][1])[::-1]
+                MLST_type_2 = ",".join(mlst_types_2)
+                if Scheme[3][1] == "srst2":
+                    MLST_type_2 += '^'
+                #print("2,1-after sort", MLST_type_2)
+                #MLST_alleles_2 = ",".join(Scheme[2][1])
+            else:
+                MLST_scheme_1 = Scheme[0][1]
+                #print("1,2-before sort", Scheme[1][1])
+                mlst_types_1=sorted(Scheme[1][1])[::-1]
+                MLST_type_1 = ",".join(mlst_types_1)
+                if Scheme[3][1] == "srst2":
+                    MLST_type_1 += '^'
+                #print("1,2-after sort", MLST_type_1)
+                #MLST_alleles_1 = ",".join(Scheme[2][1])
+                MLST_scheme_2 = Scheme[0][0]
+                #print("2,2-before sort", Scheme[1][0])
+                mlst_types_2=sorted(Scheme[1][0])[::-1]
+                MLST_type_2 = ",".join(mlst_types_2)
+                if Scheme[3][0] == "srst2":
+                    MLST_type_2 += '^'
+                #print("2,2-after sort", MLST_type_2)
+                #MLST_alleles_2 = ",".join(Scheme[2][0])
         else:
-            Scheme_1 = Scheme[0]
-            Scheme_2 = "-"
+            MLST_scheme_1 = Scheme[0][0]
+            MLST_type_1 = ",".join(Scheme[1][0])
+            #MLST_alleles_1 = ",".join(Scheme[2][0])
+            MLST_scheme_2 = "-"
+            MLST_type_2 = "-"
+            #MLST_alleles_2 = "-"
     except:
-        Scheme_1 = 'Unknown'
-        Scheme_2 = 'Unknown'
+        MLST_scheme_1 = 'Unknown'
+        MLST_scheme_2 = 'Unknown'
+        MLST_type_1 = 'Unknown'
+        MLST_type_2 = 'Unknown'
+        #MLST_alleles_1 = 'Unknown'
+        #MLST_alleles_2 = 'Unknown'
     try:
         Bla = Bla_Genes(gamma_ar)
         Bla = ','.join(Bla)
@@ -402,22 +509,28 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         QC_Outcome, Reason, warning_count = QC_Pass(stats)
     except:
         QC_Outcome = 'Unknown'
+        warning_count = 'Unknown'
         Reason = ""
     try:
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
     if busco_file is None:
-        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        busco = False
     elif busco_file is not None:
-        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + Scheme_1 + '\t' + ST_1 + '\t' + Scheme_2 + '\t' + ST_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
-    return Line
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + Species + '\t' + percent_match + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        busco = True
+    return Line, busco
 
 def Isolate_Line_File(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations, pf_file):
-    Line = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file)
-    Out = open(out_file, 'w')
-    Out.write(Line)
-    Out.close()
+    with open(out_file, 'w') as f:
+        Line, busco = Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file)
+        if busco == True:
+            f.write('ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tBUSCO\tBUSCO_DB\tSpecies\tTaxa_Confidence\tTaxa_Source\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
+        else:
+            f.write('ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tSpecies\tTaxa_Confidence\tTaxa_Source\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
+        f.write(Line)
 
 def main():
     args = parseArgs()

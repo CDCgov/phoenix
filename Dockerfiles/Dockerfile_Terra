@@ -1,0 +1,47 @@
+FROM mambaorg/micromamba:0.27.0
+#USER root
+
+# for easy upgrade later. ARG variables only persist during image build time
+ARG PHOENIX_VER="1.1.0"
+
+# metadata
+LABEL base.image="mambaorg/micromamba:0.27.0"
+LABEL dockerfile.version="1"
+LABEL software="phoenix"
+LABEL software.version="1.1.0"
+LABEL description="PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens"
+LABEL website="https://github.com/cdcgov/phoenix/"
+LABEL license="https://github.com/CDCgov/phoenix/blob/main/LICENSE"
+LABEL maintainer="Jill Hagey"
+LABEL maintainer.email="jvhagey@gmail.com"
+
+RUN micromamba create -n phoenix -y \
+    bioconda::bbmap==39.01 \
+    bioconda::multiqc==1.11 \
+    bioconda::fastp==0.23.2 \
+    bioconda::mash==2.3 \
+    bioconda::mlst==2.23.0 \
+    bioconda::fastqc==0.11.9 \
+    bioconda::gamma==2.2 \
+    bioconda::fastani==1.33 \
+    conda-forge::python \
+    bioconda::ncbi-amrfinderplus==3.10.45 \
+    bioconda::kraken2==2.1.2 \
+    bioconda::quast==5.0.2 \
+    bioconda::spades==3.15.5 \
+    bioconda::krona==2.8.1 \
+    bioconda::prokka==1.14.5 \
+    conda-forge::biopython \
+    conda-forge::rsync \
+    conda-forge::bc \
+    conda-forge::wget \
+    conda-forge::ca-certificates \
+    conda-forge::procps-ng \
+    conda-forge::coreutils \
+    bioconda::nf-core \
+    anaconda::graphviz \
+    conda-forge::gsutil \
+    bioconda::nextflow==22.04.5 && \
+    micromamba clean -a -y
+
+ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

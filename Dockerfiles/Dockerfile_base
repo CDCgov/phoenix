@@ -1,0 +1,49 @@
+# base image
+FROM ubuntu:kinetic
+
+# for easy upgrade later. ARG variables only persist during image build time
+ARG PHX_VER="1.1.0"
+
+# metadata
+LABEL base.image="ubuntu:kinetic"
+LABEL dockerfile.version="2"
+LABEL software="PhoeNIx"
+LABEL software.version="v1.1.0"
+LABEL description="Basic Linux for Running PHoeNIx bash scripts"
+LABEL website="https://github.com/cdcgov/phoenix"
+LABEL license="Apache 2.0"
+LABEL maintainer="Jill Hagey"
+LABEL maintainer.email="qpk9@cdc.gov"
+
+# install dependencies (pigz needed for nf-core modules, bc and rsync needed for post gamma steps in PHoeNIx)
+RUN apt-get update && apt-get -y --no-install-recommends install \
+    python3.10 \
+    python3-pip \
+    python3-dev \
+    python-is-python3 \
+    build-essential \
+    bc \
+    pigz \
+    rsync \
+    unzip \
+    tar \
+    gzip \
+    curl \
+    wget && \
+    apt-get autoclean && \
+    rm -rf /var/lib/apt/lists/*
+
+#install biopython
+RUN pip3 install biopython \
+    glob2 \
+    argparse \
+    unidecode \
+    pandas \
+    numpy \
+    regex \
+    times \
+    xlsxwriter \
+    cryptography==36.0.2 \
+    pytest-shutil
+
+ENV PATH=${PATH}:/usr/bin/python3

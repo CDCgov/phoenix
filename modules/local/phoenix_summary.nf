@@ -1,14 +1,10 @@
 process GATHER_SUMMARY_LINES {
     label 'process_low'
-    afterScript "rm ${params.outdir}/*_summaryline.tsv"
-    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
-
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"*/
+    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     path(summary_line_files)
+    path(outdir_path)
     val(busco_val)
 
     output:
@@ -18,6 +14,7 @@ process GATHER_SUMMARY_LINES {
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def busco_parameter = busco_val ? "--busco" : ""
     """
+    #check if the empty summaryline file exists - comes from fetch_failed_summaries.nf module
     if [ -f "empty_summaryline.tsv" ]; then
         rm empty_summaryline.tsv
         new_summary_line_files=\$(echo $summary_line_files | sed 's/empty_summaryline.tsv //')

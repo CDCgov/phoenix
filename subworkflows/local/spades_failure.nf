@@ -21,7 +21,8 @@ workflow SPADES_WF {
         extended_qc
 
     main:
-        ch_versions     = Channel.empty() // Used to collect the software versions
+        ch_versions = Channel.empty() // Used to collect the software versions
+        outdir_path = Channel.fromPath(params.outdir, relative: true) // Allow relative paths for krakendb argument
 
         // Combining paired end reads and unpaired reads that pass QC filters, both get passed to Spades
         passing_reads_ch = paired_reads.map{ meta, reads          -> [[id:meta.id],reads]}\
@@ -31,6 +32,9 @@ workflow SPADES_WF {
         .join(fastp_total_qc.map{            meta, fastp_total_qc -> [[id:meta.id],fastp_total_qc]}, by: [0])\
         .join(report.map{                    meta, report         -> [[id:meta.id],report]},         by: [0])\
         .join(krona_html.map{                meta, krona_html     -> [[id:meta.id],krona_html]},     by: [0])
+
+        // Add in full path to outdir into the channel so each sample has a the path to go with it. If you don't do this then only one sample goes through pipeline
+        passing_reads_ch = passing_reads_ch.combine(outdir_path)
 
         // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
         SPADES (
@@ -57,10 +61,10 @@ workflow SPADES_WF {
             .join(krona_html.map{                            meta, html             -> [[id:meta.id],html]},             by: [0])\
             .join(k2_bh_summary.map{                         meta, ksummary         -> [[id:meta.id],ksummary]},         by: [0])\
             .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{meta, taxonomy         -> [[id:meta.id],taxonomy]},         by: [0])
-            
+
             // Adding the outcome of spades (scaffolds created or not) to the channel
             pipeline_stats_ch = pipeline_stats_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
-            
+
             // Generate pipeline stats for case when spades fails to create scaffolds
             GENERATE_PIPELINE_STATS_FAILURE_EXQC (
                 pipeline_stats_ch
@@ -72,7 +76,7 @@ workflow SPADES_WF {
             .join(k2_bh_summary.map{                                                       meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])\
             .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{meta, taxonomy -> [[id:meta.id],taxonomy]},         by: [0])\
 
-            // Adding the outcome of spades (scaffolds created or not) to the channel 
+            // Adding the outcome of spades (scaffolds created or not) to the channel
             line_summary_ch = line_summary_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
 
         } else {
@@ -123,6 +127,7 @@ workflow SPADES_WF {
     emit:
         spades_ch                   = spades_ch
         spades_outcome              = SPADES.out.spades_outcome
+
         line_summary                = CREATE_SUMMARY_LINE_FAILURE.out.line_summary
         versions                    = ch_versions // channel: [ versions.yml ]
 }

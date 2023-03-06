@@ -467,12 +467,25 @@ if [[ "${run_type}" == "all" ]]; then
 	#Check extraction and unclassified value
 	if [[ -s "${kraken2_trimd_summary}" ]]; then
 		# Extracts many elements of the summary file to report unclassified and species classified reads and percentages
-		unclass=$(head -n 1 "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
-		#true_unclass=$(head -n 1 "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
-		domain=$(sed -n '2p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
-		genuspre=$(sed -n '7p' "${kraken2_trimd_summary}" | cut -d' ' -f3 | xargs echo)
-		speciespre=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f3- | xargs echo)
-		speciesprepercent=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+		unclass=$(sed -n '2p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+		domain=$(sed -n '3p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+		genuspre=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f3 | xargs echo)
+		speciespre=$(sed -n '9p' "${kraken2_trimd_summary}" | cut -d' ' -f3- | xargs echo)
+		speciesprepercent=$(sed -n '9p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+        genusprepercent=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+
+    ### Prepping for header addition
+    #unclass=$(sed -n '2p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+		#domain=$(sed -n '3p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+		#genuspre=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f3 | xargs echo)
+		#speciespre=$(sed -n '9p' "${kraken2_trimd_summary}" | cut -d' ' -f3- | xargs echo)
+		#speciesprepercent=$(sed -n '10p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+
+
+
+
+
+
     if [[ "${unclass}" = "UNK" ]]; then
       unclass=0
       unclass_string="UNKNOWN"
@@ -481,7 +494,7 @@ if [[ "${run_type}" == "all" ]]; then
     fi
 		#true_speciespercent=$(sed -n '8p' "${OUTDATADIR}/kraken/preAssembly/${sample_name}_kraken_summary_paired.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
 		# If there are no reads at the domain level, then report no classified reads
-    
+
     #if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
 		if (( $(echo "${domain} <= 0" | $bc_path -l) )); then
       if [[ "${kraken2_pre_success}" = true ]]; then
@@ -616,13 +629,22 @@ if [[ "${internal_phoenix}" == "true" ]]; then
 	#Check extraction and unclassified values for kraken2 post assembly
 	if [[ -s "${kraken2_asmbled_summary}" ]]; then
 		# Extracts many elements of the summary file to report unclassified and species classified reads and percentages
-		unclass=$(head -n 1 "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
-		#true_unclass=$(head -n 1 "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
-		domain=$(sed -n '2p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
-		genuspost=$(sed -n '7p' "${kraken2_asmbled_summary}" | cut -d' ' -f3 | xargs echo)
-		speciespost=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f3- | xargs echo)
-		speciespostpercent=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
-		genuspostpercent=$(sed -n '7p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		unclass=$(sed -n '2p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		domain=$(sed -n '3p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		genuspost=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f3 | xargs echo)
+		speciespost=$(sed -n '9p' "${kraken2_asmbled_summary}" | cut -d' ' -f3- | xargs echo)
+		speciespostpercent=$(sed -n '9p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		genuspostpercent=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+
+    #unclass=$(sed -n '2p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		#domain=$(sed -n '3p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		#genuspost=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f3 | xargs echo)
+		#speciespost=$(sed -n '9p' "${kraken2_asmbled_summary}" | cut -d' ' -f3- | xargs echo)
+		#speciespostpercent=$(sed -n '9p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+		#genuspostpercent=$(sed -n '8p' "${kraken2_asmbled_summary}" | cut -d' ' -f2 | xargs echo)
+
+
+
 		if [[ "${unclass}" = "UNK" ]]; then
 			unclass=0
 			unclass_string="UNKNOWN"
@@ -727,13 +749,21 @@ fi
 #Check extraction and unclassified values for weighted kraken2 post assembly
 if [[ -s "${kraken2_weighted_summary}" ]]; then
 	# Extracts many elements of the summary file to report unclassified and species classified reads and percentages
-	unclass=$(head -n 1 "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
-	#true_unclass=$(head -n 1 "${OUTDATADIR}/kraken2/postAssembly/${sample_name}_kraken_summary_assembled_BP.txt" | cut -d' ' -f3 | sed -r 's/[)]+/%)/g')
-	domain=$(sed -n '2p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
-	genusweighted=$(sed -n '7p' "${kraken2_weighted_summary}" | cut -d' ' -f3 | xargs echo)
-	speciesweighted=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f3- | xargs echo)
-	speciesweightedpercent=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
-	genusweightedpercent=$(sed -n '7p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	unclass=$(sed -n '2p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	domain=$(sed -n '3p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	genusweighted=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f3 | xargs echo)
+	speciesweighted=$(sed -n '9p' "${kraken2_weighted_summary}" | cut -d' ' -f3- | xargs echo)
+	speciesweightedpercent=$(sed -n '9p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	genusweightedpercent=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+
+
+  #unclass=$(sed -n '2p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	#domain=$(sed -n '3p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	#genusweighted=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f3 | xargs echo)
+	#speciesweighted=$(sed -n '9p' "${kraken2_weighted_summary}" | cut -d' ' -f3- | xargs echo)
+	#speciesweightedpercent=$(sed -n '9p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+	#genusweightedpercent=$(sed -n '8p' "${kraken2_weighted_summary}" | cut -d' ' -f2 | xargs echo)
+
 	if [[ "${unclass}" = "UNK" ]]; then
 		unclass=0
 		unclass_string="UNKNOWN"
@@ -744,7 +774,7 @@ if [[ -s "${kraken2_weighted_summary}" ]]; then
 	# If there are no reads at the domain level, then report no classified reads
 	#if (( $(echo $domain 0 | awk '{if ($1 <= $2) print 1;}') )); then
 	if (( $(echo "${domain} <= 0" | $bc_path -l) )); then
-		if [[ "${kraken2_unweighted_success}" = true ]]; then
+		if [[ "${kraken2_weighted_success}" = true ]]; then
 			printf "%-30s: %-8s : %s\\n" "KRAKEN2_CLASSIFY_WEIGHTED" "FAILED" "There are no classified reads"	>> "${sample_name}.synopsis"
 			status="FAILED"
 		else
@@ -798,7 +828,7 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
       #echo "${arrLine[0]} - ${total_percent} - ${percent} - ${percent_integer} - ${kraken2_contamination_threshold} - ${classification}"
       if [[ "${classification}" == "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
         number_of_genera=$(( number_of_genera + 1 ))
-        echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
+        #echo "adding ${classification} at ${percent_integer} (above ${kraken2_contamination_threshold})"
       fi
     fi
 	done < "${kraken2_weighted_report}"
@@ -882,20 +912,10 @@ fi
 if [[ -s "${taxID_file}" ]]; then
 	source_call=$(head -n1 "${taxID_file}")
 	tax_source="UNK"
-	while IFS= read -r line; do
-		# Grab first letter of line (indicating taxonomic level)
-		first=${line:0:1}
-		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken, 3rd-true % of total reads, 4th-identifier)
-		if [ "${first}" = "s" ]; then
-			dec_species=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "G" ]; then
-			dec_genus=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "F" ]; then
-			dec_family=$(echo "${line}" | awk -F ' ' '{print $2}')
-		elif [ "${first}" = "(" ]; then
-			tax_source=$(echo "${line}" | cut -d')' -f1 | cut -d'(' -f2)
-		fi
-	done < "${taxID_file}"
+  tax_source=$(echo "${source_call}" | cut -d$'\t' -f1)
+  dec_family=$(grep "F:" "${taxID_file}" | cut -d$'\t' -f2)
+  dec_genus=$(grep "G:" "${taxID_file}" | cut -d$'\t' -f2)
+  dec_species=$(grep "s:" "${taxID_file}" | cut -d$'\t' -f2)
 
 	if [[ "$dec_genus" != "Not_assigned" ]] && [[ "$dec_species" != "Not_assigned" ]]; then
 		printf "%-30s: %-8s : %s\\n" "TAXA-${tax_source}" "SUCCESS" "${dec_genus} ${dec_species}"  >> "${sample_name}.synopsis"
@@ -1027,15 +1047,26 @@ fi
 
 #Check fastANI REFSEQ
 if [[ -s "${formatted_fastANI}" ]]; then
+  #fastANI_date=$(echo "${formatted_fastANI}" | rev | cut -d'_' -f1 | rev | cut -d'.' -f2)
+  #fastANI_info=$(head -n2 "${formatted_fastANI}" | tail -n1)
+  #percent_match=$(echo "${fastANI_info}" | cut -d'.' -f1)
+  #coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+
+  ### In anticipation of cleaned up output
   fastANI_date=$(echo "${formatted_fastANI}" | rev | cut -d'_' -f1 | rev | cut -d'.' -f2)
-  fastANI_info=$(head -n1 "${formatted_fastANI}")
+  fastANI_info=$(head -n2 "${formatted_fastANI}" | tail -n1)
   percent_match=$(echo "${fastANI_info}" | cut -d'.' -f1)
-  coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  #coverage_match=$(echo "${fastANI_info}" | cut -d'-' -f2 | cut -d'.' -f1)
+  coverage_match=$(echo "${fastANI_info}" | cut -d$'\t' -f2 | cut -d'.' -f1)
+  organism=$(echo "${fastANI_info}" | cut -d$'\t' -f3)
+  reference=$(echo "${fastANI_info}" | cut -d$'\t' -f4)
+
+
   if [[ "${percent_match}" = "0."* ]]; then
     printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No assembly file to work with"  >> "${sample_name}.synopsis"
   else
     if [[ "${percent_match}" -ge 95 ]] && [[ "${coverage_match}" -ge ${ani_coverage_threshold} ]]; then
-      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${fastANI_info}"  >> "${sample_name}.synopsis"
+      printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "SUCCESS" "${percent_match}%ID ${coverage_match}%cov  tax=${organism}  ref=${reference}"  >> "${sample_name}.synopsis"
     else
       if [[ "${percent_match}" -lt 95 ]]; then
         if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
@@ -1055,41 +1086,34 @@ fi
 
 # check MLST minimus
 if [[ -s "${mlst_file}" ]]; then
-  if [[ $(wc -l <${mlst_file}) > 1 ]]; then #if there are two mlst schemes
-    mlst_db=$(head -n1 ${mlst_file} | cut -d$'\t' -f2)
-    mlst_type=$(head -n1 ${mlst_file} | cut -d$'\t' -f3)
-    mlst_db_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
-    mlst_type_2=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
-    #printing output
-    if [[ "${mlst_db}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-    elif [[ "${mlst_type}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
-    else
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
-    fi
-    if [[ "${mlst_db_2}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-    elif [[ "${mlst_type_2}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db_2^^}" "FAILED" "No type identified, but scheme is ${mlst_db_2}"  >> "${sample_name}.synopsis"
-    else
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db_2^^}" "SUCCESS" "ST${mlst_type_2}"  >> "${sample_name}.synopsis"
-    fi
-  elif [[ $(wc -l <${mlst_file}) == 1 ]]; then #if there is only one mlst scheme
-    info=$(tail -n1 ${mlst_file})
-    mlst_db=$(tail -n1 ${mlst_file} | cut -d$'\t' -f2)
-    mlst_type=$(tail -n1 ${mlst_file} | cut -d$'\t' -f3)
-    #printing output
-    if [[ "${mlst_db}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
-    elif [[ "${mlst_type}" = '-' ]]; then
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db}"  >> "${sample_name}.synopsis"
-    else
-      printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type}"  >> "${sample_name}.synopsis"
-    fi
+  line_count=$(wc -l "${mlst_file}" | cut -d' ' -f1)
+  echo "${line_count}"
+  current_index=1
+  if [[ ${line_count} -ge 2 ]]; then
+      while read mlst_line; do
+          if [[ "${current_index}" -ge 2 ]]; then
+              echo "${mlst_line}"
+              mlst_db=$(echo "${mlst_line}" | cut -d$'\t' -f4)
+              mlst_type=$(echo "${mlst_line}" | cut -d$'\t' -f5)
+              mlst_source=$(echo "${mlst_line}" | cut -d$'\t' -f2)
+              if [[ "${mlst_db}" = '-' ]]; then
+                printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No scheme identified"  >> "${sample_name}.synopsis"
+              elif [[ "${mlst_type}" = '-' ]]; then
+                printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "FAILED" "No type identified, but scheme is ${mlst_db} via ${mlst_source}"  >> "${sample_name}.synopsis"
+              else
+                printf "%-30s: %-8s : %s\\n" "MLST-${mlst_db^^}" "SUCCESS" "ST${mlst_type} via ${mlst_source}"  >> "${sample_name}.synopsis"
+              fi
+          fi
+          current_index=$(( current_index + 1 ))
+      done < "${mlst_file}"
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
+    main_line=$(head -n1 ${mlst_file})
+    if [[ "${main_line}" = "Sample  Source"* ]]; then
+        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No MLST entries in ${sample_name}.tsv"  >> "${sample_name}.synopsis"
+    else
+        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
+    fi
   status="FAILED"
 fi
 

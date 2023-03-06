@@ -1,13 +1,7 @@
 process CREATE_SUMMARY_LINE {
     tag "${meta.id}"
     label 'process_low'
-    afterScript "if [ -s '${params.outdir}/${meta.id}/AMRFinder/${mutation_file}' ]; then rm ${params.outdir}/${meta.id}/AMRFinder/${mutation_file}; fi"
-    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
-
-    /*conda (params.enable_conda ? "conda-forge::python=3.8.3" : null)
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.8.3' :
-        'quay.io/biocontainers/python:3.8.3' }"*/
+    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     tuple val(meta), path(trimmed_qc_data_file), \
@@ -20,7 +14,7 @@ process CREATE_SUMMARY_LINE {
     path(synopsis), \
     path(taxonomy_file), \
     path(trimd_ksummary), \
-    path(amr_file)
+    path(amr_report)
 
     output:
     path '*_summaryline.tsv'           , emit: line_summary
@@ -37,7 +31,7 @@ process CREATE_SUMMARY_LINE {
         -p $pf_gamma_file \\
         -r $ratio_file \\
         -m $mlst_file \\
-        -u $amr_file \\
+        -u $amr_report \\
         -n ${prefix} \\
         -s $synopsis \\
         -x $taxonomy_file \\

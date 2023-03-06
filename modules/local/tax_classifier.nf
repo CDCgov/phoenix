@@ -1,7 +1,7 @@
 process DETERMINE_TAXA_ID {
     tag "$meta.id"
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     tuple val(meta), path(kraken_weighted), path(formatted_ani_file), path(k2_bh_summary)

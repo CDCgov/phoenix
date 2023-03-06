@@ -6,7 +6,7 @@ task phoenix {
     File   read2
     String samplename
     String kraken2db = "null"
-    String docker = "quay.io/jvhagey/phoenix:1.0.0"
+    String docker = "quay.io/jvhagey/phoenix:1.1.0"
     Int    memory = 64
     Int    cpu = 8
     Int    disk_size = 100
@@ -18,7 +18,7 @@ task phoenix {
     # Make sample form
     echo "sample,fastq_1,fastq_2" > sample.csv
     echo "~{samplename},~{read1},~{read2}" >> sample.csv
-    
+
     # Debug
     export TMP_DIR=$TMPDIR
     export TMP=$TMPDIR
@@ -28,12 +28,12 @@ task phoenix {
     mkdir ~{samplename}
     cd ~{samplename}
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.0.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.1.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
       cd ..
-      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz 
+      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz
     else
       # Run failed
       tar -cf - work/ | gzip -n --best > work.tar.gz
@@ -43,7 +43,7 @@ task phoenix {
       find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
       exit 1
     fi
-    
+
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f3 | tee WARNING_COUNT
@@ -142,7 +142,7 @@ task phoenix {
     File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}.txt"
     #phoenix quast and mlst
     File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
-    File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}.tsv"
+    File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
     #phoenix gamma
     File gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20220915_srst2.gamma"
     File blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20220915_srst2.psl"
@@ -157,11 +157,13 @@ task phoenix {
     File synopsis                 = "~{samplename}/results/~{samplename}/~{samplename}.synopsis"
     File best_taxa_id             = "~{samplename}/results/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File amrfinder_organism       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
-    File amr_taxa_match           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
-    File amr_hits                 = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    File amrfinder_mutations       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
+    File? amrfinder_taxa_match     = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
+    File amrfinder_hits            = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results
     File full_results             = "~{samplename}.tar.gz"
+    File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
+    File multiqc_report           = "~{samplename}/results/multiqc/multiqc_report.html"
   }
   runtime {
     docker: "~{docker}"
