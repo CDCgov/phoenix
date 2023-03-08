@@ -52,3 +52,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - BBTools updated from 38.96 to [39.01](https://sourceforge.net/projects/bbmap/).  
 - AMRFinder+ was updated from 3.10.40 to [3.10.45](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.10.45).  
 - Scripts the utilize the phoenix_base container were updated to `quay.io/jvhagey/phoenix:base_v1.1.0` which had the python library `xlsxwriter` added to it for [`GRiPHin.py`](https://github.com/CDCgov/phoenix/blob/v1.0.1/bin/GRiPHin.py).  
+
+## [v1.2.0-dev](https://github.com/CDCgov/phoenix/releases/tag/v1.2.0-dev) (03/08/2023)
+
+**Implemented Enhancements:**
+- `-entry CDC_PHOENIX` workflow checks all FASTQ files for corruption and creates a list of the checked files usng the FAIry (FASTQ file Assesment of Integrity) tool. This is a required internal QC check.
