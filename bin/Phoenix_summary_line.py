@@ -205,9 +205,8 @@ def Trim_Coverage(trimmed_counts_file, ratio_file):
 
 def Bla_Genes(input_gamma):
     with open(input_gamma, 'r') as f:
-        header=next(f) # just use to skip first line
+        next(f) # just use to skip first line
         Bla = []
-        String1 = f.readline()
         for line in f:
             Cat = line.split('\t')[0].split('__')[4] # Drug category
             Gene = line.split('\t')[0].split('__')[2] # Gene Name
@@ -224,9 +223,8 @@ def Bla_Genes(input_gamma):
 
 def Non_Bla_Genes(input_gamma):
     with open(input_gamma, 'r') as f:
-        header=next(f) # just use to skip first line
+        next(f) # just use to skip first line
         Non_Bla = []
-        String1 = f.readline()
         for line in f:
             Cat = line.split('\t')[0].split('__')[4] # Drug category
             Gene = line.split('\t')[0].split('__')[2] # Gene Name
@@ -243,9 +241,8 @@ def Non_Bla_Genes(input_gamma):
 
 def HV_Genes(input_gamma):
     with open(input_gamma, 'r') as f:
-        header=next(f) # just use to skip first line
+        next(f) # just use to skip first line
         HV = []
-        String1 = f.readline()
         for line in f:
             Gene = line.split('\t')[0]
             HV.append(Gene)
@@ -347,7 +344,7 @@ def Get_Mutations(amr_file):
 def Get_Plasmids(pf_file):
     plasmid_marker_list = []
     with open(pf_file, 'r') as f:
-        header=next(f) # just use to skip first line
+        next(f) # just use to skip first line
         for line in f:
             Gene = line.split('\t')[0]
             Percent_Length = float(line.split('\t')[14])*100
