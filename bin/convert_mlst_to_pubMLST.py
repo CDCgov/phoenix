@@ -353,41 +353,41 @@ def gs_to_pubmlst(genus, species):
                 'Candida tropicalis': 'Candida tropicalis',
                 'Candidatus Liberibacter': 'Candidatus Liberibacter solanacearun',
                 'Carnobacterium maltaromaticum': 'Carnobacterium maltaromaticum',
-                'Citrobacter braakii' :  'Citrobacter freundii'
-                'Citrobacter freundii' :  'Citrobacter freundii'
-                'Citrobacter gillenii' :  'Citrobacter freundii'
-                'Citrobacter murliniae' :  'Citrobacter freundii'
-                'Citrobacter portucalensis' :  'Citrobacter freundii'
-                'Citrobacter sedlakii' :  'Citrobacter freundii'
-                'Citrobacter werkmanii' :  'Citrobacter freundii'
-                'Citrobacter youngae' :  'Citrobacter freundii'
-                'Citrobacter sp.A121' :  'Citrobacter freundii'
-                'Citrobacter sp.A154' :  'Citrobacter freundii'
-                'Citrobacter sp.A17' :  'Citrobacter freundii'
-                'Citrobacter sp.A293' :  'Citrobacter freundii'
-                'Citrobacter sp.A304' :  'Citrobacter freundii'
-                'Citrobacter sp.A316' :  'Citrobacter freundii'
-                'Citrobacter sp.AATXQ' :  'Citrobacter freundii'
-                'Citrobacter sp.AATXR' :  'Citrobacter freundii'
-                'Citrobacter sp.ABFQG' :  'Citrobacter freundii'
-                'Citrobacter sp.BIDMC107' :  'Citrobacter freundii'
-                'Citrobacter sp.BIDMC108' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH100' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH103' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH104' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH105' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH106' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH109' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH110' :  'Citrobacter freundii'
-                'Citrobacter sp.MGH99' :  'Citrobacter freundii'
-                'Citrobacter sp.S30-28' :  'Citrobacter freundii'
-                'Citrobacter sp.TR10-13' :  'Citrobacter freundii'
-                'Citrobacter sp.TR10_13' :  'Citrobacter freundii'
-                'Citrobacter sp.TR21-24' :  'Citrobacter freundii'
-                'Citrobacter sp.TR21_24' :  'Citrobacter freundii'
-                'Citrobacter sp.TR52-21' :  'Citrobacter freundii'
-                'Citrobacter sp.TR52_19' :  'Citrobacter freundii'
-                'Citrobacter sp.TR52_21' :  'Citrobacter freundii'
+                'Citrobacter braakii' :  'Citrobacter freundii'.
+                'Citrobacter freundii' :  'Citrobacter freundii'.
+                'Citrobacter gillenii' :  'Citrobacter freundii'.
+                'Citrobacter murliniae' :  'Citrobacter freundii'.
+                'Citrobacter portucalensis' :  'Citrobacter freundii'.
+                'Citrobacter sedlakii' :  'Citrobacter freundii'.
+                'Citrobacter werkmanii' :  'Citrobacter freundii'.
+                'Citrobacter youngae' :  'Citrobacter freundii'.
+                'Citrobacter sp.A121' :  'Citrobacter freundii'.
+                'Citrobacter sp.A154' :  'Citrobacter freundii'.
+                'Citrobacter sp.A17' :  'Citrobacter freundii'.
+                'Citrobacter sp.A293' :  'Citrobacter freundii'.
+                'Citrobacter sp.A304' :  'Citrobacter freundii'.
+                'Citrobacter sp.A316' :  'Citrobacter freundii'.
+                'Citrobacter sp.AATXQ' :  'Citrobacter freundii'.
+                'Citrobacter sp.AATXR' :  'Citrobacter freundii'.
+                'Citrobacter sp.ABFQG' :  'Citrobacter freundii'.
+                'Citrobacter sp.BIDMC107' :  'Citrobacter freundii'.
+                'Citrobacter sp.BIDMC108' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH100' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH103' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH104' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH105' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH106' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH109' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH110' :  'Citrobacter freundii'.
+                'Citrobacter sp.MGH99' :  'Citrobacter freundii'.
+                'Citrobacter sp.S30-28' :  'Citrobacter freundii'.
+                'Citrobacter sp.TR10-13' :  'Citrobacter freundii'.
+                'Citrobacter sp.TR10_13' :  'Citrobacter freundii'.
+                'Citrobacter sp.TR21-24' :  'Citrobacter freundii'.
+                'Citrobacter sp.TR21_24' :  'Citrobacter freundii'.
+                'Citrobacter sp.TR52-21' :  'Citrobacter freundii'.
+                'Citrobacter sp.TR52_19' :  'Citrobacter freundii'.
+                'Citrobacter sp.TR52_21' :  'Citrobacter freundii'.
                 'Clonorchis sinensis': 'Clonorchis sinensis',
                 'Clostridioides difficile': 'Clostridioides difficile',
                 'Clostridium botulinum': 'Clostridium botulinum',
