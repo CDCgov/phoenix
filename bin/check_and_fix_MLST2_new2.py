@@ -324,6 +324,8 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, docFile):
                                 sample=original_items[0]
                                 pubmlst_db_name=original_items[1]
                                 db_name=convert_mlst_to_pubMLST.back_2_MLST(pubmlst_db_name)
+                                if db_name == "No match found":
+                                        continue
                                 original_type=original_items[2]
                                 if len(original_items) > 7:
                                         print("Has # items:", len(original_items))
