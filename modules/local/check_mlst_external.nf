@@ -33,7 +33,7 @@ process CHECK_MLST {
     }
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    check_and_fix_MLST2_new.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file
+    check_and_fix_MLST2_new2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
