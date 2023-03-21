@@ -354,7 +354,7 @@ def gs_to_pubmlst(genus, species):
                 'Candidatus Liberibacter': 'Candidatus Liberibacter solanacearun',
                 'Carnobacterium maltaromaticum': 'Carnobacterium maltaromaticum',
                 'Citrobacter braakii': 'Citrobacter freundii',
-                'Citrobacter freundii': 'Citrobacter freundii'
+                'Citrobacter freundii': 'Citrobacter freundii',
                 'Citrobacter gillenii': 'Citrobacter freundii',
                 'Citrobacter murliniae': 'Citrobacter freundii',
                 'Citrobacter portucalensis': 'Citrobacter freundii',
