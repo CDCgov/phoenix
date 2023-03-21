@@ -24,7 +24,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?d:n:k:s:" option; do
+while getopts ":h?d:n:k:s:c" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -44,6 +44,9 @@ while getopts ":h?d:n:k:s:" option; do
 		s)
 			echo "Option -s triggered, argument = ${OPTARG}"
 			synopsis=${OPTARG};;
+		c)
+			echo "Option -c triggered"
+			cdc_extended_qc="true";;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -64,10 +67,19 @@ species_col=$(echo "${genus} ${species}")
 #get the number of warnings in the synopsis file
 warning_count=$(grep ": WARNING  :" $synopsis | wc -l)
 
-#header
-echo "ID	Auto_QC_Outcome	tWarning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${sample_name}_summaryline_failure.tsv
-#file contents
-echo "${sample_name}	FAIL	${warning_count}	Unknown	Unknown	Unknown	Unknown	Unknown	${species_col}	Unknown	kraken2_trimmed	${name}	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	SPAdes_Failure" | tr -d '\n' >> ${sample_name}_summaryline_failure.tsv
+if [[ "${cdc_extended_qc}" == "true" ]]; then
+	#for cdc_phoenix or cdc_scaffolds entry
+	echo "ID	Auto_QC_Outcome	tWarning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${sample_name}_summaryline_failure.tsv
+	#file contents
+	echo "${sample_name}	FAIL	${warning_count}	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	${species_col}	${spercent}% Reads_assigned	kraken2_trimmed	${name}	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	SPAdes_Failure" | tr -d '\n' >> ${sample_name}_summaryline_failure.tsv
+else
+	#for phoenix or scaffolds entry
+	#header
+	echo "ID	Auto_QC_Outcome	tWarning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${sample_name}_summaryline_failure.tsv
+	#file contents
+	echo "${sample_name}	FAIL	${warning_count}	Unknown	Unknown	Unknown	Unknown	Unknown	${species_col}	${spercent}% Reads_assigned	kraken2_trimmed	${name}	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	SPAdes_Failure" | tr -d '\n' >> ${sample_name}_summaryline_failure.tsv
+fi
+
 cp ${sample_name}_summaryline_failure.tsv ${output_path}/${sample_name}/
 # copy the synopsis file
 cp ${sample_name}.synopsis ${output_path}/${sample_name}

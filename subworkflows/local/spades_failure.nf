@@ -38,11 +38,11 @@ workflow SPADES_WF {
 
         // Assemblying into scaffolds by passing filtered paired in reads and unpaired reads
         SPADES (
-            passing_reads_ch
+            passing_reads_ch, extended_qc
         )
         ch_versions = ch_versions.mix(SPADES.out.versions)
 
-        if (extended_qc == true) { // Run this if there extra stats are requested via --extended_qc
+        if (extended_qc == true) { // Run this if CDC verion of PHoeNIx is run
 
             // Combining weighted kraken report with the FastANI hit based on meta.id
             best_hit_ch = k2_bh_summary.map{                         meta, ksummary       -> [[id:meta.id], ksummary]}\
@@ -118,7 +118,7 @@ workflow SPADES_WF {
 
         // Create one line summary for case when spades fails to create scaffolds
         CREATE_SUMMARY_LINE_FAILURE (
-            line_summary_ch
+            line_summary_ch, extended_qc
         )
 
         // Defining out channel
