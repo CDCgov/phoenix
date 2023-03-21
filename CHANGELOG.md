@@ -65,5 +65,5 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fix [commit 651aafe](https://github.com/CDCgov/phoenix/commit/1111df8628ffb560ce3ef569e9e846c408c93cda) for issue [#91](https://github.com/CDCgov/phoenix/issues/91)
 - Fix for issue [#99](https://github.com/CDCgov/phoenix/issues/99) where first gene in ar, plasmid and hypervirulence genes didn't end up in the `*_summaryline.tsv`. This same error was in `Phoenix_summary_line.py` that caused the first sample to not be include in the final report.
 - Fixed tabulation error into *_combined.mlst output files that in some cases would show in GRiPHin_output as a long singular line as MLST type
-- Fix for issue [#91]https://github.com/CDCgov/phoenix/issues/91 where Klebsiella MLST lookup would not properly match to the correct lookup database
+- Fix for issue [#91](https://github.com/CDCgov/phoenix/issues/91) where Klebsiella MLST lookup would not properly match to the correct lookup database
  
