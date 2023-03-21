@@ -177,18 +177,6 @@ def Assembly_Ratio_Length(ratio_file):
     Out = int(Length)
     return Out
 
-def Assembly_Ratio_Species(ratio_file):
-    f = open(ratio_file, 'r')
-    String1 = f.readline()
-    Species = 'Unknown'
-    while String1 != '':
-        if ('Tax:' in String1):
-            Species = String1.split()[1:]
-            Species = ' '.join(Species)
-        String1 = f.readline()
-    f.close()
-    return Species
-
 def Trimmed_BP(trimmed_counts_file):
     f = open(trimmed_counts_file, 'r')
     String1 = f.readline()
@@ -324,7 +312,14 @@ def Get_Taxa_Source(taxa_file):
             #percent_match = re.findall(r'-.*?-', first_line)[0]
             #percent_match = re.sub( "-", '', percent_match)
             percent_match = percent_match + "% Scaffolds_assigned"
-    return taxa_source, percent_match
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith("G:"):
+                genus = line.replace("G:	","").strip('\n')
+            if line.startswith("s:"):
+                species = line.replace("s:	","").strip('\n')
+        Species = genus + " " + species
+    return taxa_source, percent_match, Species
 
 def Get_Mutations(amr_file):
     point_mutations_list = []
@@ -383,11 +378,12 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         point_mutations_list = Get_Mutations(amr_file)
     except:
         point_mutations_list = 'Unknown'
-    try:
-        taxa_source, percent_match = Get_Taxa_Source(Taxa)
-    except:
-        taxa_source = 'Unknown'
-        percent_match = 'Unknown'
+    #try:
+    taxa_source, percent_match, Species = Get_Taxa_Source(Taxa)
+    #except:
+    #    taxa_source = 'Unknown'
+    #    percent_match = 'Unknown'
+    #    Species = 'Unknown'
     try:
         Coverage = Trim_Coverage(trimmed_counts, ratio_file)
     except:
@@ -414,10 +410,7 @@ def Isolate_Line(Taxa, ID, trimmed_counts, ratio_file, MLST_file, quast_file, ga
         GC = GC_Content(quast_file)
     except:
         GC = 'Unknown'
-    try:
-        Species = Assembly_Ratio_Species(ratio_file)
-    except:
-        Species = 'Unknown'
+    # Check the taxa_source to determine where to get Species from
     # try:
     #     ST = MLST_ST(MLST_file)
     #     if len(ST) > 1:
