@@ -59,11 +59,10 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Implemented Enhancements:**
 - `-entry CDC_PHOENIX` workflow checks all FASTQ files for corruption and creates a list of the checked files usng the FAIry (FASTQ file Assesment of Integrity) tool [commit 1111df8](https://github.com/CDCgov/phoenix/commit/651aafe6a9459e5471ce4e4efc164587170fee62). This is a required internal QC check.  
-- Expanded MLST lookup of Citrobacter complex species 
+- Expanded MLST lookup of *Citrobacter* species complex  [commit 43ea24d](https://github.com/CDCgov/phoenix/commit/43ea24d0206946eb9fc90e8303fc46353e6b719b) lists the new species.
 
 **Fixed Bugs:**  
-- Fix [commit 651aafe](https://github.com/CDCgov/phoenix/commit/1111df8628ffb560ce3ef569e9e846c408c93cda) for issue [#91](https://github.com/CDCgov/phoenix/issues/91)
-- Fix for issue [#99](https://github.com/CDCgov/phoenix/issues/99) where first gene in ar, plasmid and hypervirulence genes didn't end up in the `*_summaryline.tsv`. This same error was in `Phoenix_summary_line.py` that caused the first sample to not be include in the final report.
-- Fixed tabulation error into *_combined.mlst output files that in some cases would show in GRiPHin_output as a long singular line as MLST type
-- Fix for issue [#91](https://github.com/CDCgov/phoenix/issues/91) where Klebsiella MLST lookup would not properly match to the correct lookup database
+- Fix for issue [#99](https://github.com/CDCgov/phoenix/issues/99) where first gene in ar, plasmid and hypervirulence genes didn't end up in the `*_summaryline.tsv`. This same error was in `Phoenix_summary_line.py` that caused the first sample to not be include in the final report.  
+- Fixed tabulation error into `*_combined.tsv` output files that in some cases would show in `GRiPHin_Report.xlsx` output as a long singular line as the MLST type.  
+- Fix for issue [#91](https://github.com/CDCgov/phoenix/issues/91) where Klebsiella MLST lookup would not properly match to the correct lookup database.  
  
