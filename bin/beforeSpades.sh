@@ -65,9 +65,9 @@ species_col=$(echo "${genus} ${species}")
 warning_count=$(grep ": WARNING  :" $synopsis | wc -l)
 
 #header
-echo "ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tSpecies\tTaxa_Confidence\tTaxa_Source\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason" > ${sample_name}_summaryline_failure.tsv
+echo "ID	Auto_QC_Outcome	tWarning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${sample_name}_summaryline_failure.tsv
 #file contents
-echo "${sample_name}\tFAIL\t${warning_count}\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\t${species_col}\tUnknown\tkraken2_trimmed\t${name}\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tUnknown\tSPAdes_Failure" | tr -d '\n' >> ${sample_name}_summaryline_failure.tsv
+echo "${sample_name}	FAIL	${warning_count}	Unknown	Unknown	Unknown	Unknown	Unknown	${species_col}	Unknown	kraken2_trimmed	${name}	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	SPAdes_Failure" | tr -d '\n' >> ${sample_name}_summaryline_failure.tsv
 cp ${sample_name}_summaryline_failure.tsv ${output_path}/${sample_name}/
 # copy the synopsis file
 cp ${sample_name}.synopsis ${output_path}/${sample_name}
