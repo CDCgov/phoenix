@@ -661,10 +661,10 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, docFile):
         outfile=isolate_name+"_combined.tsv"
         print(outfile)
         with open(outfile,'w') as writer:
-                writer.write("Sample    Source  Pulled on       Database        ST      locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 locus_9 locus_10\n")
+                writer.write("Sample\tSource\tPulled on\tDatabase\tST\tlocus_1\tlocus_2\tlocus_3\tlocus_4\tlocus_5\tlocus_6\tlocus_7\tlocus_8\tlocus_9\tlocus_10\n")
                 if len(checked_and_deduped_schemes) == 0:
                         print("No schemes found")
-                        writer.write(isolate_name+"     None-"+genus+" "+species+"      -")
+                        writer.write(isolate_name+"\tNone-"+genus+" "+species+"\t-")
                         all_Types_are_complete="False"
                 else:
                         for i in checked_and_deduped_schemes:
@@ -688,7 +688,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, docFile):
                                 else:
                                         #print(i[2], "= bad")
                                         all_Types_are_complete = "False"
-                                writer.write(isolate_name+"     "+i[6]+"        "+i[7]+"        "+i[1]+"        "+i[2]+"        "+allele_section)
+                                writer.write(isolate_name+"\t"+i[6]+"\t"+i[7]+"\t"+i[1]+"\t"+i[2]+"\t"+allele_section)
         status_file=isolate_name+"_status.txt"
         with open(status_file,'w') as writer:
                 writer.write(all_Types_are_complete+"\n")
