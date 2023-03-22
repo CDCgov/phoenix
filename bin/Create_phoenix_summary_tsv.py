@@ -30,7 +30,7 @@ def List_TSV(output_file, input_list, busco):
             input_list_sorted=sorted(input_list)
         for entry in input_list_sorted:
             with open(entry, "r") as f2:
-                header = next(f2) # skip the first line of the samplesheet
+                next(f2) # skip the first line of the samplesheet
                 for line in f2:
                     f.write(line + '\n')
 

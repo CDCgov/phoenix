@@ -52,3 +52,19 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - BBTools updated from 38.96 to [39.01](https://sourceforge.net/projects/bbmap/).  
 - AMRFinder+ was updated from 3.10.40 to [3.10.45](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.10.45).  
 - Scripts the utilize the phoenix_base container were updated to `quay.io/jvhagey/phoenix:base_v1.1.0` which had the python library `xlsxwriter` added to it for [`GRiPHin.py`](https://github.com/CDCgov/phoenix/blob/v1.0.1/bin/GRiPHin.py).  
+
+## [v1.1.1](https://github.com/CDCgov/phoenix/releases/tag/v1.1.1) (03/21/2023)
+
+[Full Changelog](https://github.com/CDCgov/phoenix/compare/v1.1.0...v1.1.1)
+
+**Implemented Enhancements:**
+- `-entry CDC_PHOENIX` workflow checks all FASTQ files for corruption and creates a list of the checked files usng the FAIry (FASTQ file Assesment of Integrity) tool [commit 1111df8](https://github.com/CDCgov/phoenix/commit/651aafe6a9459e5471ce4e4efc164587170fee62). This is a required internal QC check.  
+- Expanded MLST lookup of *Citrobacter* species complex [commit 43ea24d](https://github.com/CDCgov/phoenix/commit/43ea24d0206946eb9fc90e8303fc46353e6b719b) lists the new species.  
+- Increased SPAdes CPUs to 8 and memory to 16GB in `base.config`.  
+
+**Fixed Bugs:**  
+- Fix for issue [#99](https://github.com/CDCgov/phoenix/issues/99) where first gene in ar, plasmid and hypervirulence genes didn't end up in the `*_summaryline.tsv`. This same error was in `Phoenix_summary_line.py` that caused the first sample to not be include in the final report.  
+- Fixed tabulation error into `*_combined.tsv` output files that in some cases would show in `GRiPHin_Report.xlsx` output as a long singular line as the MLST type.  
+- Fix for issue [#91](https://github.com/CDCgov/phoenix/issues/91) where Klebsiella MLST lookup would not properly match to the correct lookup database.  
+- Fixed problem where samples that didn't create scaffolds, but created contigs didn't have species printed out in `Phoenix_Output_Report.tsv` details in [commit c7f7ea5](https://github.com/CDCgov/phoenix/commit/c7f7ea5bd42a0e2010e0b15e4b4f7e9119d394a2).  
+- Fixed problem in `-entry CDC_PHOENIX` where samples that didn't create scaffolds, but created contigs or samples that failed spades completely didn't have correct columns lining up in `Phoenix_Output_Report.tsv` details in [commit d17bdda](https://github.com/CDCgov/phoenix/commit/d17bdda89cf4d89aebe02a53082e5bb72c33582f).  

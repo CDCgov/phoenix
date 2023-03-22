@@ -9,6 +9,7 @@ process CREATE_SUMMARY_LINE_FAILURE {
     path(trimd_ksummary), \
     path(taxonomy_file), \
     val(spades_outcome)
+    val(extended_qc)
 
     output:
     path('*_summaryline.tsv') , emit: line_summary
@@ -19,6 +20,7 @@ process CREATE_SUMMARY_LINE_FAILURE {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def extended_qc_arg = extended_qc ? "--extended_qc" : ""
     """
     Phoenix_summary_line.py \\
         -n ${prefix} \\
@@ -26,7 +28,8 @@ process CREATE_SUMMARY_LINE_FAILURE {
         -t $fastp_total_qc \\
         -s $synopsis \\
         -x $taxonomy_file \\
-        -o ${prefix}_summaryline.tsv
+        -o ${prefix}_summaryline.tsv \\
+        $extended_qc_arg
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

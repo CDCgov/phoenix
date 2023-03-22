@@ -45,6 +45,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
+include { FAIRY                          } from '../modules/local/fairy'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
@@ -125,6 +126,11 @@ workflow PHOENIX_EXQC {
             ch_input
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+
+        //check for FASTQ file corruption
+        FAIRY (
+            INPUT_CHECK.out.reads
+        ) 
 
         //unzip any zipped databases
         ASSET_CHECK (
