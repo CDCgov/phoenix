@@ -53,8 +53,7 @@ workflow SPADES_WF {
                     best_hit_ch, params.taxa
             )
 
-            pipeline_stats_ch = paired_reads.map{            meta, reads            -> [[id:meta.id],reads]}\
-            .join(fastp_raw_qc.map{                          meta, fastp_raw_qc     -> [[id:meta.id],fastp_raw_qc]},     by: [0])\
+            pipeline_stats_ch = fastp_raw_qc.map{            meta, fastp_raw_qc    -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{                        meta, fastp_total_qc   -> [[id:meta.id],fastp_total_qc]},   by: [0])\
             .join(fullgene_results.map{                      meta, fullgene_results -> [[id:meta.id],fullgene_results]}, by: [0])\
             .join(report.map{                                meta, report           -> [[id:meta.id],report]},           by: [0])\
@@ -90,8 +89,7 @@ workflow SPADES_WF {
                 best_hit_ch, params.taxa
             )
 
-            pipeline_stats_ch = paired_reads.map{            meta, reads           -> [[id:meta.id],reads]}\
-            .join(fastp_raw_qc.map{                          meta, fastp_raw_qc    -> [[id:meta.id],fastp_raw_qc]},     by: [0])\
+            pipeline_stats_ch = fastp_raw_qc.map{            meta, fastp_raw_qc     -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{                        meta, fastp_total_qc  -> [[id:meta.id],fastp_total_qc]},   by: [0])\
             .join(report.map{                                meta, report          -> [[id:meta.id],report]},           by: [0])\
             .join(krona_html.map{                            meta, html            -> [[id:meta.id],html]},             by: [0])\
@@ -109,8 +107,8 @@ workflow SPADES_WF {
             // Adding in trimmed reads info into channel
             line_summary_ch = GENERATE_PIPELINE_STATS_FAILURE.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id],pipeline_stats]}\
             .join(fastp_total_qc.map{                                                 meta, fastp_total_qc  -> [[id:meta.id],fastp_total_qc]}, by: [0])\
-            .join(k2_bh_summary.map{                                                  meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])
-            .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{meta, taxonomy -> [[id:meta.id],taxonomy]},         by: [0])\
+            .join(k2_bh_summary.map{                                                  meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])\
+            .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{                         meta, taxonomy        -> [[id:meta.id],taxonomy]},       by: [0])\
 
             // Adding the outcome of spades (scaffolds created or not) to the channel
             line_summary_ch = line_summary_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})

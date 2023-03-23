@@ -6,18 +6,6 @@
 
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
-// Validate input parameters
-
-// Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
-for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-
-// Check mandatory parameters
-
-//input on command line
-if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
-if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
-
 /*
 ========================================================================================
     SETUP
@@ -103,6 +91,9 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 */
 
 workflow PHOENIX_EXTERNAL {
+    take:
+        ch_input
+
     main:
         ch_versions = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
@@ -298,7 +289,6 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         GENERATE_PIPELINE_STATS_WF (
-            FASTP_TRIMD.out.reads, \
             GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
             GATHERING_READ_QC_STATS.out.fastp_total_qc, \
             [], \
@@ -393,6 +383,7 @@ workflow PHOENIX_EXTERNAL {
         mlst             = DO_MLST.out.checked_MLSTs
         amrfinder_report = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
+        summary_report   = GATHER_SUMMARY_LINES.out.summary_report
     
 }
 

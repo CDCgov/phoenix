@@ -6,16 +6,6 @@
 
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
-// Validate input parameters
-
-// Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config ]
-for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-
-//input on command line
-if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
-if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
-
 /*
 ========================================================================================
     SETUP

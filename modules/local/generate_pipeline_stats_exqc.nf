@@ -4,8 +4,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
-    tuple val(meta), path(trimmed_reads), \
-    path(fastp_raw_qc), \
+    tuple val(meta), path(fastp_raw_qc), \
     path(fastp_total_qc), \
     path(srst_fullgenes_file), \
     path(kraken2_trimd_report), \
@@ -40,8 +39,8 @@ process GENERATE_PIPELINE_STATS_EXQC {
     pipeline_stats_writer.sh \\
         -a $fastp_raw_qc \\
         -b $fastp_total_qc \\
-        -c ${trimmed_reads[0]} \\
-        -d ${trimmed_reads[1]} \\
+        -c $gc_content \\
+        -d ${prefix} \\
         -e $kraken2_trimd_report \\
         -f $kraken2_trimd_summary \\
         -g $krona_trimd \\
@@ -63,8 +62,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -w $gamma_HV \\
         -x $srst_fullgenes_file \\
         -y $mlst_file \\
-        -2 $amr_file \\
-        -4 $gc_content \\
+        -1 $amr_file \\
         -3
     """
 }

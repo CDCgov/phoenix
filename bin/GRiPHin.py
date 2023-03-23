@@ -419,7 +419,10 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
     # Try and except are in the get_kraken_info function to allow for cases where trimming was completed, but not assembly
     Trim_kraken, Asmbld_kraken = get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name)
     try:
-        Coverage, Assembly_Length = Calculate_Trim_Coverage(Total_Seq_bp, quast_report)
+        if Total_Seq_bp != "Unknown": # for -entry CDC_SCAFFOLDS where no reads are present to calculate. 
+            Coverage, Assembly_Length = Calculate_Trim_Coverage(Total_Seq_bp, quast_report)
+        else:
+            Coverage = Assembly_Length = 'Unknown'
     except FileNotFoundError:
         print("Warning: " + sample_name + "_report.tsv not found")
         Coverage = Assembly_Length = 'Unknown'

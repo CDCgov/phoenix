@@ -10,9 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "input"
-            ],
+            "required": [],
             "properties": {
                 "input": {
                     "type": "string",
@@ -31,14 +29,32 @@
                 }
             }
         },
+        "Optional_scaffold_options": {
+            "title": "Options for -entry SCAFFOLDS and CDC_SCAFFOLDS",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input scaffolds.",
+            "properties": {
+                "indir": {
+                    "type": "string",
+                    "description": "Path to a input directory to search for assemblies. It is assumed this input directory has a PHoeNIx style directory structure. Thus, the pipeline uses a default `*/*/*.scaffolds.fa.gz` regrex to search the input directory. Files with the extention '*.filtered.scaffolds.fa.gz' and '*.renamed.scaffolds.fa.gz' will be ignored. Can be a full or relative path.",
+                    "default": "null",
+                    "hidden": false,
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "scaffold_regrex": {
+                    "type": "string",
+                    "description": "String that is a regrex to search the input directory. Regrex based on the input directory location (i.e. If you need to go into other folders inside the --indir use '*/*.my_extension.scaffolds.fa.gz'). Assemblies must end in '.fa.gz' or '.fasta.gz'.",
+                    "hidden": false,
+                    "default": "*/*/*.scaffolds.fa.gz"
+                }
+            }
+        },
         "Optional_options": {
             "title": "Optional options",
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "input"
-            ],
             "properties": {
                 "outdir": {
                     "type": "string",

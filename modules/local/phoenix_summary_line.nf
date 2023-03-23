@@ -22,10 +22,13 @@ process CREATE_SUMMARY_LINE {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
+    def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
+    def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
     """
     Phoenix_summary_line.py \\
         -q $quast_report \\
-        -t $trimmed_qc_data_file \\
+        $trimmed_qc_data \\
         -a $ar_gamma_file \\
         -v $hypervirulence_gamma_file \\
         -p $pf_gamma_file \\
@@ -35,7 +38,7 @@ process CREATE_SUMMARY_LINE {
         -n ${prefix} \\
         -s $synopsis \\
         -x $taxonomy_file \\
-        -k $trimd_ksummary \\
+        $trim_ksummary \\
         -o ${prefix}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml

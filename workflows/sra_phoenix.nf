@@ -6,16 +6,6 @@
 
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
-// Validate input parameters
-
-// Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config ]
-for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-
-//input on command line
-if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
-if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
-
 /*
 ========================================================================================
     SETUP
@@ -107,6 +97,9 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 
 
 workflow SRA_PHOENIX {
+    take:
+        ch_input
+
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
@@ -303,7 +296,6 @@ workflow SRA_PHOENIX {
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         GENERATE_PIPELINE_STATS_WF (
-            FASTP_TRIMD.out.reads, \
             GATHERING_READ_QC_STATS.out.fastp_raw_qc, \
             GATHERING_READ_QC_STATS.out.fastp_total_qc, \
             [], \

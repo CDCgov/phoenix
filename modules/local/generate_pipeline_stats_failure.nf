@@ -4,8 +4,7 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
-    tuple val(meta), path(trimmed_reads), \
-    path(fastp_raw_qc), \
+    tuple val(meta), path(fastp_raw_qc), \
     path(fastp_total_qc), \
     path(kraken2_trimd_report), \
     path(krona_trimd), \
@@ -21,14 +20,23 @@ process GENERATE_PIPELINE_STATS_FAILURE {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // terra=true sets paths for bc/wget for terra container paths
+    if (params.terra==false) {
+        terra = ""
+    } else if (params.terra==true) {
+        terra = "-2 terra"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
     pipeline_stats_writer.sh \\
         -a $fastp_raw_qc \\
         -b $fastp_total_qc \\
-        -c ${trimmed_reads[0]} \\
-        -d ${trimmed_reads[1]} \\
+        -d ${prefix} \\
         -e $kraken2_trimd_report \\
         -f $kraken2_trimd_summary \\
-        -g $krona_trimd
+        -g $krona_trimd \\
+        -q $taxID \\
+        $terra
     """
 }

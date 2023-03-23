@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-# Description: Checks sample output folders for correct fiels and tests the thresholds for passability. Edited for use in P
+# Description: Checks sample output folders for correct fiels and tests the thresholds for passability. Edited for use in PHoeNIx
 #
 # Usage: ./pipeline_stats_writer.sh -e explicit_path_to_isolate_folder
 #
@@ -8,9 +8,9 @@
 #
 # Modules required: None
 #
-# v1.0 (05/25/2022)
+# v1.1 (03/22/2023)
 #
-# Created by Nick Vlachos (nvx4@cdc.gov)
+# Created by Nick Vlachos (nvx4@cdc.gov), edits by Jill Hagey (qpk9@cdc.gov)
 #
 
 #  Function to print out help blurb
@@ -18,8 +18,8 @@ show_help () {
   echo "Usage: pipeline_stats_writer.sh args(* are required)
     -a raw_read_counts.txt
     -b total_read_counts.txt
-    -c removed_adapter_R1.fastq.gz
-    -d removed_adapter_R2.fastq.gz
+    -c gc_content_file
+    -d sample_name
     -e kraken2_trimd_report
     -f kraken2_trimd_summary
     -g krona_trimd.html
@@ -42,9 +42,8 @@ show_help () {
     -x srst_fullgenes_file
     -y* MLST_file (or more)
     -z* assembly_only_sample (true or false)
-    -2* amr_tsv_file
+    -1* amr_tsv_file
     -3
-    -4 gc_content_file
     "
 }
 
@@ -54,7 +53,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:5:3" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:1:2:3" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -70,10 +69,10 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:5:3" o
       total_read_counts=${OPTARG};;
     c)
       #echo "Option -c triggered, argument = ${OPTARG}"
-      removed_adapter_R1=${OPTARG};;
+      gc_content_file=${OPTARG};;
     d)
       #echo "Option -d triggered, argument = ${OPTARG}"
-      removed_adapter_R2=${OPTARG};;
+      sample_name=${OPTARG};;
     e)
       #echo "Option -e triggered, argument = ${OPTARG}"
       kraken2_trimd_report=${OPTARG};;
@@ -140,14 +139,11 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:5:3" o
     z)
       #echo "Option -z triggered, argument = ${OPTARG}"
       assembly_only="true";;
-    2)
-      #echo "Option -2 triggered, argument = ${OPTARG}"
+    1)
+      #echo "Option -1 triggered, argument = ${OPTARG}"
       amr_file=${OPTARG};;
-    4)
-      #echo "Option -4 triggered, argument = ${OPTARG}"
-      gc_content_file=${OPTARG};;
-		5)
-			echo "Option -t triggered"
+		2)
+			echo "Option -2 triggered"
 			terra=${OPTARG};;
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
@@ -179,7 +175,7 @@ fi
 
 #OUTDATADIR="${epath}"
 #project=$(echo "${epath}" | rev | cut -d'/' -f2 | rev)
-sample_name=$(basename "${raw_read_counts}" _raw_read_counts.txt)
+#sample_name=$(basename "${raw_read_counts}" _raw_read_counts.txt) # don't need this anymore as we are passing with -1
 
 
 # Creates and prints header info for the sample being processed
@@ -325,7 +321,7 @@ if [[ "${run_type}" == "all" ]]; then
 
   total_trimmed_reads=-3
 
-  if [[ "${total_exists}" ]]; then
+  if [[ "${total_exists}" = true ]]; then
     total_trimmed_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f23)
     orphaned_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f6)
     trimmed_reads=$(( total_trimmed_reads - orphaned_reads))
@@ -374,72 +370,6 @@ if [[ "${run_type}" == "all" ]]; then
     status="FAILED"
   fi
 
-
-	# #Checking fastP output folder
-	# remAdapt_length_R1=-1
-	# if [[ -s "${removed_adapter_R1}" ]]; then
-  #   remAdapt_length_R1=$(zcat ${removed_adapter_R1} | paste - - - - | cut -f2 | tr -d '\n' | wc -c)
-	# 	remAdapt_R1_diff=$(( raw_length_R1 - remAdapt_length_R1 ))
-	# 	if [[ ${raw_length_R1} -gt 0 ]]; then
-	# 		if [[ "${remAdapt_length_R1}" -gt 0 ]]; then
- 	# 			R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${raw_length_R1} ))
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "SUCCESS" "R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)"  >> "${sample_name}.synopsis"
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "WARNING" "R1 FASTQ has no remaining bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	else
-	# 		if [[ "${remAdapt_length_R1}" -gt 0 ]]; then
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "ALERT" "No raw FASTQs availble. R1: ${remAdapt_length_R1}bps (UNK% loss)"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="ALERT"
-	# 			fi
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "WARNING" "No raw FASTQs available. BBDUK FASTQ R1 has no bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	fi
-	# else
-	# 	printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "FAILED" "No BBDUK R1 FASTQ file found"  >> "${sample_name}.synopsis"
-	# fi
-  #
-  # remAdapt_length_R2=-1
-  # if [[ -s "${removed_adapter_R2}" ]]; then
-	# 	remAdapt_length_R2=$(zcat ${removed_adapter_R2} | paste - - - - | cut -f2 | tr -d '\n' | wc -c)
-	# 	remAdapt_R2_diff=$(( raw_length_R2 - remAdapt_length_R2 ))
-	# 	if [[ ${raw_length_R2} -gt 0 ]]; then
-	# 		if [[ "${remAdapt_length_R2}" -gt 0 ]]; then
- 	# 			R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${raw_length_R2} ))
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "SUCCESS" "R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"  >> "${sample_name}.synopsis"
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "WARNING" "R2 FASTQ has no remaining bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	else
-	# 		if [[ "${remAdapt_length_R2}" -gt 0 ]]; then
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "ALERT" "No raw FASTQs availble. R2: ${remAdapt_length_R1}bps (UNK% loss)"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="ALERT"
-	# 			fi
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "WARNING" "No raw FASTQs available. BBDUK FASTQ R2 has no bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	fi
-	# else
-	# 	printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "FAILED" "No BBDUK R2 FASTQ file found"  >> "${sample_name}.synopsis"
-	# fi
-
-
-
 	#Check kraken2 on preAssembly
 	kraken2_pre_success="false"
 	if [[ -s "${kraken2_trimd_report}" ]]; then
@@ -480,11 +410,6 @@ if [[ "${run_type}" == "all" ]]; then
 		#genuspre=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f3 | xargs echo)
 		#speciespre=$(sed -n '9p' "${kraken2_trimd_summary}" | cut -d' ' -f3- | xargs echo)
 		#speciesprepercent=$(sed -n '10p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
-
-
-
-
-
 
     if [[ "${unclass}" = "UNK" ]]; then
       unclass=0
@@ -977,9 +902,9 @@ if [[ -f "${assembly_ratio_file}" ]]; then
   reads_min=30
 	reads_low=40
 	reads_high=150
-  if [[ -s "${total_read_counts}" ]]; then
-	bps_post_all=$(tail -n1 "${total_read_counts}" | cut -d'	' -f22)
-  # IFS='	' read -r -a qcs <<< "${line}"
+	if [[ -s "${total_read_counts}" ]]; then
+		bps_post_all=$(tail -n1 "${total_read_counts}" | cut -d'	' -f22)
+	# IFS='	' read -r -a qcs <<< "${line}"
 	# read_qc_info=${qcs[@]:1}
 	# # Extract q30 reads from qcCounts to calculate average coverage as q30_reads/assembly_length
 	# q30_reads=$(echo "${read_qc_info}" | awk -F ' ' '{print $2}')

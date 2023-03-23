@@ -5,9 +5,15 @@
 include { GENERATE_PIPELINE_STATS      } from '../../modules/local/generate_pipeline_stats'
 include { GENERATE_PIPELINE_STATS_EXQC } from '../../modules/local/generate_pipeline_stats_exqc'
 
+// Groovy funtion to make [ meta.id, [] ] - just an empty channel
+def create_empty_ch(input_for_meta) { // We need meta.id associated with the empty list which is why .ifempty([]) won't work
+    meta_id = input_for_meta[0]
+    output_array = [ meta_id, [] ]
+    return output_array
+}
+
 workflow GENERATE_PIPELINE_STATS_WF {
     take:
-        paired_reads           // channel: tuple val(meta), path(reads), path(paired_reads):FASTP_TRIMD.out.reads.map
         fastp_raw_qc           // channel: tuple (meta) path(fastp_raw_qc): GATHERING_READ_QC_STATS.out.fastp_raw_qc
         fastp_total_qc         // channel: tuple (meta) path(fastp_total_qc): GATHERING_READ_QC_STATS.out.fastp_total_qc
         fullgene_results       // channel: tuple (meta) path(fullgene_results): SRST2_TRIMD_AR.out.fullgene_results
@@ -38,10 +44,18 @@ workflow GENERATE_PIPELINE_STATS_WF {
     main:
         ch_versions     = Channel.empty() // Used to collect the software versions
 
+        if (fastp_raw_qc == []) {
+            // just grabbing the meta.id from the incoming file to create [ meta.id, [] ]
+            fastp_raw_qc = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fastp_total_qc = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
+        }
+
         if (extended_qc == true) {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
-            pipeline_stats_ch = paired_reads.map{ meta, paired_reads           -> [[id:meta.id],paired_reads]}\
-            .join(fastp_raw_qc.map{               meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]},           by: [0])\
+            pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id],fastp_total_qc]},         by: [0])\
             .join(fullgene_results.map{           meta, fullgene_results       -> [[id:meta.id],fullgene_results]},       by: [0])\
             .join(trimd_report.map{               meta, report                 -> [[id:meta.id],report]},                 by: [0])\
@@ -75,8 +89,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
 
         } else {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
-            pipeline_stats_ch = paired_reads.map{ meta, paired_reads           -> [[id:meta.id],paired_reads]}\
-            .join(fastp_raw_qc.map{               meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]},           by: [0])\
+            pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id],fastp_total_qc]},         by: [0])\
             .join(trimd_report.map{               meta, report                 -> [[id:meta.id],report]},                 by: [0])\
             .join(trimd_krona_html.map{           meta, trimd_krona_html       -> [[id:meta.id],trimd_krona_html]},       by: [0])\

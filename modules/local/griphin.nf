@@ -16,21 +16,21 @@ process GRIPHIN {
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     """
     #create a samplesheet to be passed to GRiPHin.py
-    while IFS="" read -r line;
-    do
-        sample_name=\$(echo \$line | cut -d ',' -f 1)
-        echo 
-        if [[ "\$sample_name" == "sample" ]]; then
-            echo "sample,directory" > GRiPHin_samplesheet.csv
-        else
-            #get the full path for the samples rather than the working directory
-            full_path=\$(readlink -f ${outdir}/Phoenix_Output_Report.tsv)
-            full_dir=\$(echo \$full_path | sed 's/\\/Phoenix_Output_Report.tsv//')
-            echo \$sample_name,\$full_dir/\$sample_name >> GRiPHin_samplesheet.csv
-        fi
-    done < ${original_samplesheet}
+    #while IFS="" read -r line;
+    #do
+    #    sample_name=\$(echo \$line | cut -d ',' -f 1)
+     #   echo 
+    #    if [[ "\$sample_name" == "sample" ]]; then
+    #        echo "sample,directory" > GRiPHin_samplesheet.csv
+    #    else
+    #        #get the full path for the samples rather than the working directory
+    #        full_path=\$(readlink -f ${outdir}/Phoenix_Output_Report.tsv)
+    #        full_dir=\$(echo \$full_path | sed 's/\\/Phoenix_Output_Report.tsv//')
+    #        echo \$sample_name,\$full_dir/\$sample_name >> GRiPHin_samplesheet.csv
+    #    fi
+    #done < ${original_samplesheet}
 
-    GRiPHin.py -s GRiPHin_samplesheet.csv -a $db
+    GRiPHin.py -d ${outdir} -a $db
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
