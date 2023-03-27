@@ -165,14 +165,12 @@ workflow SCAFFOLDS {
     // Validate input parameters
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
-        // allow input to be relative
-        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
             exit 1, 'You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = [] //keep input directory null if not passed
+            ch_input_indir = null //keep input directory null if not passed
             // get full path for input and make channel
             if (params.input) { ch_input = file(params.input) }
         }
@@ -215,7 +213,7 @@ workflow CDC_SCAFFOLDS {
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = [] //keep input directory null if not passed
+            ch_input_indir = null //keep input directory null if not passed
             // get full path for input and make channel
             if (params.input) { ch_input = file(params.input) }
         }
