@@ -26,9 +26,9 @@ WorkflowMain.initialise(workflow, params, log)
 
 include { PHOENIX_EXTERNAL       } from './workflows/phoenix'
 include { PHOENIX_EXQC           } from './workflows/cdc_phoenix'
-include { SRA_PHOENIX            } from './workflows/sra_phoenix'
 include { SCAFFOLDS_EXTERNAL     } from './workflows/scaffolds'
 include { SCAFFOLDS_EXQC         } from './workflows/cdc_scaffolds'
+include { SRA_PREP               } from './workflows/sra_prep'
 
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
@@ -42,11 +42,12 @@ workflow PHOENIX {
     // Check mandatory parameters
 
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
     if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
-    
+    ch_versions = Channel.empty() // Used to collect the software versions
+
     main:
-        PHOENIX_EXTERNAL ( ch_input )
+        PHOENIX_EXTERNAL ( ch_input, ch_versions )
     emit:
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
@@ -62,17 +63,19 @@ workflow PHOENIX {
 workflow CDC_PHOENIX {
     // Validate input parameters
     // Check input path parameters to see if they exist
-    def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
+    def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
     // Check mandatory parameters
 
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
     if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+    ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        PHOENIX_EXQC ( ch_input )
+        PHOENIX_EXQC ( ch_input, ch_versions )
+
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
@@ -89,30 +92,64 @@ workflow CDC_PHOENIX {
 */
 
 //
-// WORKFLOW: Execute a single named workflow for the pipeline
+// WORKFLOW: Run internal version of phx based on sample SRA names, these will be pulled from NCBI for you. 
 //
-workflow SRA_LIST {
+workflow SRA {
     // Validate input parameters
     // Check input path parameters to see if they exist
-    def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
+    def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db ]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
     // Check mandatory parameters
 
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet/list not specified!' }
+    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
     if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     
     main:
         // pull data and create samplesheet for it.
-        SRA_PHOENIX ( ch_input )
+        SRA_PREP ( ch_input )
         // pass samplesheet to PHOENIX
-        //PHOENIX_EXTERNAL ( SRA_PHOENIX.out.samplesheet )
+        PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions )
 
     emit:
-        scaffolds        = SRA_PHOENIX.out.scaffolds
-        trimmed_reads    = SRA_PHOENIX.out.trimmed_reads
-        amrfinder_report = SRA_PHOENIX.out.amrfinder_report
+        scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
+        trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
+        mlst             = PHOENIX_EXTERNAL.out.mlst
+        amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
+        gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
+        summary_report   = PHOENIX_EXTERNAL.out.summary_report
+}
+
+//
+// WORKFLOW: Run cdc version of phx based on sample SRA names, the fastq will be pulled from NCBI for you. 
+//
+
+workflow CDC_SRA {
+    // Validate input parameters
+    // Check input path parameters to see if they exist
+    def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db]
+    for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+
+    // Check mandatory parameters
+
+    //input on command line
+    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+
+    main:
+        // pull data and create samplesheet for it.
+        SRA_PREP ( ch_input )
+        // pass samplesheet to PHOENIX
+        PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions )
+
+    emit:
+        scaffolds        = PHOENIX_EXQC.out.scaffolds
+        trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
+        mlst             = PHOENIX_EXQC.out.mlst
+        amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
+        gamma_ar         = PHOENIX_EXQC.out.gamma_ar
+        summary_report   = PHOENIX_EXQC.out.summary_report
 }
 
 /*
@@ -135,6 +172,7 @@ workflow SCAFFOLDS {
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            ch_input_indir = [] //keep input directory null if not passed
             // get full path for input and make channel
             if (params.input) { ch_input = file(params.input) }
         }
@@ -177,6 +215,7 @@ workflow CDC_SCAFFOLDS {
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            ch_input_indir = [] //keep input directory null if not passed
             // get full path for input and make channel
             if (params.input) { ch_input = file(params.input) }
         }
