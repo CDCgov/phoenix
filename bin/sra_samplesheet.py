@@ -3,32 +3,42 @@
 #
 # Adds filepaths for SRA FastQs automatically downloaded by Phoenix
 # Auto mapping of filepath for user 
-# ##Usage: >python sra_samplesheet.py <FILENAME>
-# Written by Maria Diaz (lex0@cdc.gov)
+# ##Usage: >python sra_samplesheet.py -d <directory where fastq files are found>
+# Written by Maria Diaz (lex0@cdc.gov) and Jill Hagey (qpk9@cdc.gov)
 
-import os 
 import argparse
 import pandas as pd
+import glob
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a complete PhoeNix paired reads samplesheet')
-    parser.add_argument('file', nargs=argparse.REMAINDER)
+    parser.add_argument('-d', '--directory', required=True, dest='directory', help='Will create a samplesheet for all samples in the directory.')
     return parser.parse_args()
 
-cwd = os.getcwd()
-fastqLoc = "results/fastq_files/"
-suffA = "_R1_001.fastq.gz"
-suffB = "_R2_001.fastq.gz"
+def write_samplesheet(directory, metadata_df):
+    suff_R1 = "_R1_001.fastq.gz"
+    suff_R2 = "_R2_001.fastq.gz"
+    if directory[-1] != "/": # if directory doesn't have trailing / add one
+        directory = directory + "/"
+    with open("samplesheet.csv", "w") as samplesheet:
+        samplesheet.write('sample' + ',' + 'fastq_1' + ',' + 'fastq_2' + ',' + 'sra_number\n')
+        for index, row in metadata_df.iterrows(): #loop over each row
+            sample = row['LibraryName']
+            sra_number = row['Run']
+            samplesheet.write(sample + "," + directory + sra_number + suff_R1 + "," + directory + sra_number + suff_R2 + "," + sra_number + '\n')
 
-def formatFilesSamplesheet(partialCsv):
-    
-    df = pd.read_csv(partialCsv[0], names= ['sample','fastq_1','fastq_2'])
-    
-    df['fastq_1'] = fastqLoc + df['sample'] + suffA
-    
-    df['fastq_2'] = fastqLoc + df['sample'] + suffB
+def get_metadata():
+    metadata_df = pd.DataFrame()
+    for filename in glob.glob('*_sra_metadata.csv'):
+        df = pd.read_csv(filename, header=0)
+        df_less = df[['Run','LibraryName']]
+        metadata_df = pd.concat([metadata_df, df_less], axis=0, ignore_index=True)
+    return metadata_df
 
-    df = df.to_csv(cwd + "/samplesheet.csv", index=False, header=True)
+def main():
+    args = parseArgs()
+    metadata_df = get_metadata()
+    write_samplesheet(args.directory, metadata_df)
 
-args = parseArgs()
-formatFilesSamplesheet(args.file)
+if __name__ == '__main__':
+    main()

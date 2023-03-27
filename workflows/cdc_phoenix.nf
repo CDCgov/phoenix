@@ -98,9 +98,9 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 workflow PHOENIX_EXQC {
     take:
         ch_input
+        ch_versions
 
     main:
-        ch_versions     = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
 

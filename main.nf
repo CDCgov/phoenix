@@ -28,7 +28,7 @@ include { PHOENIX_EXTERNAL       } from './workflows/phoenix'
 include { PHOENIX_EXQC           } from './workflows/cdc_phoenix'
 include { SCAFFOLDS_EXTERNAL     } from './workflows/scaffolds'
 include { SCAFFOLDS_EXQC         } from './workflows/cdc_scaffolds'
-//include { SRA_PREP               } from './workflows/sra_prep'
+include { SRA_PREP               } from './workflows/sra_prep'
 
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
@@ -94,7 +94,7 @@ workflow CDC_PHOENIX {
 //
 // WORKFLOW: Run internal version of phx based on sample SRA names, these will be pulled from NCBI for you. 
 //
-/*workflow SRA {
+workflow SRA {
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db ]
@@ -150,7 +150,7 @@ workflow CDC_SRA {
         amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
         gamma_ar         = PHOENIX_EXQC.out.gamma_ar
         summary_report   = PHOENIX_EXQC.out.summary_report
-}*/
+}
 
 /*
 ========================================================================================

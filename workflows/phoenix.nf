@@ -54,7 +54,6 @@ include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-//include { CHECK_MLST                     } from '../modules/local/check_mlst'
 
 /*
 ========================================================================================
@@ -93,9 +92,9 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 workflow PHOENIX_EXTERNAL {
     take:
         ch_input
+        ch_versions
 
     main:
-        ch_versions = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
 

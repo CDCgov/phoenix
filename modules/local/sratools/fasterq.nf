@@ -1,18 +1,17 @@
 process SRATOOLS_FASTERQDUMP {
-    tag "$sra"
+    tag "${sra_folder}"
     label 'process_medium'
 
-    conda (params.enable_conda ? 'bioconda::sra-tools=2.11.0 conda-forge::pigz=2.6' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/mulled-v2-5f89fe0cd045cb1d615630b9261a1d17943a9b6a:6a9ff0e76ec016c3d0d27e0c0d362339f2d787e6-0' :
         'quay.io/biocontainers/mulled-v2-5f89fe0cd045cb1d615630b9261a1d17943a9b6a:6a9ff0e76ec016c3d0d27e0c0d362339f2d787e6-0' }"
 
     input:
-    path(sra)
+    path(sra_folder)
 
     output:
-    path "*.fastq.gz"                 , emit: reads
-    path "versions.yml"            , emit: versions
+    path("*_*.fastq.gz"), emit: reads // we don't want the SRR.fastq just the forward and reverse
+    path("versions.yml"), emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -20,16 +19,11 @@ process SRATOOLS_FASTERQDUMP {
     script:
     def args = task.ext.args ?: ''
     def args2 = task.ext.args2 ?: ''
-
     """
-    for SRAFILE in $sra
-    do
-        INPUT=\$(echo "\$SRAFILE")
-        fasterq-dump \\
-            $args \\
-            --threads $task.cpus \\
-            --split-files \$INPUT 
-    done
+    fasterq-dump \\
+        $args \\
+        --threads $task.cpus \\
+        --split-files ${sra_folder}
 
     pigz \\
         $args2 \\

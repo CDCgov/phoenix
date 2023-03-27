@@ -1,31 +1,26 @@
 process SRATOOLS_PREFETCH {
-    tag "$id"
-    label 'process_low'
+    tag "$sra_samples"
+    label 'process_medium'
 
-    conda (params.enable_conda ? 'bioconda::sra-tools=2.11.0' : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/sra-tools:2.11.0--pl5321ha49a11a_3' :
         'quay.io/biocontainers/sra-tools:2.11.0--pl5321ha49a11a_3' }"
 
     input:
-    path(id)
-    
+    path(sra_samples)
 
     output:
-    path 'tmp_inputs/*'             , emit: sra
-    path 'sra_samples.csv'          , emit: samplesheet
-    path 'versions.yml'             , emit: versions
+    path('SRR*')             , emit: sra_folder
+    path('sra_samples.csv')  , emit: samplesheet
+    path('versions.yml')     , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     """
-    TMP_INPUTS=tmp_inputs
-    mkdir "\$TMP_INPUTS"
-
     # fetch sras
-    prefetch --option-file $id --output-directory "\$TMP_INPUTS"
+    prefetch --option-file $sra_samples
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

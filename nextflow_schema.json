@@ -19,7 +19,7 @@
                     "pattern": "^\\S+\\.csv$",
                     "schema": "assets/schema_input.json",
                     "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/quaisar/usage#samplesheet-input).",
+                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/quaisar/usage#samplesheet-input). You use this with entries PHOENIX, CDC_PHOENIX, SCAFFOLDS, and CDC_SCAFFOLDS.",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "kraken2db": {
@@ -39,14 +39,26 @@
                     "type": "string",
                     "description": "Path to a input directory to search for assemblies. It is assumed this input directory has a PHoeNIx style directory structure. Thus, the pipeline uses a default `*/*/*.scaffolds.fa.gz` regrex to search the input directory. Files with the extention '*.filtered.scaffolds.fa.gz' and '*.renamed.scaffolds.fa.gz' will be ignored. Can be a full or relative path.",
                     "default": "null",
-                    "hidden": false,
                     "fa_icon": "fas fa-folder-open"
                 },
-                "scaffold_regrex": {
+                "scaffold_ext": {
                     "type": "string",
-                    "description": "String that is a regrex to search the input directory. Regrex based on the input directory location (i.e. If you need to go into other folders inside the --indir use '*/*.my_extension.scaffolds.fa.gz'). Assemblies must end in '.fa.gz' or '.fasta.gz'.",
-                    "hidden": false,
+                    "description": "String that is the FULL extention of the scaffolds files you wish to input. A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used. Regrex based on the input directory location (i.e. If you need to go into other folders inside the --indir use '*/*.my_extension.scaffolds.fa.gz'). Assemblies must end in '.fa.gz' or '.fasta.gz'.",
                     "default": "*/*/*.scaffolds.fa.gz"
+                }
+            }
+        },
+        "Required_sra_options": {
+            "title": "Options for -entry SRA and CDC_SRA",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input scaffolds.",
+            "properties": {
+                "input_sra": {
+                    "type": "string",
+                    "description": "Path to a csv file that has one SRR number of each line.",
+                    "default": "null",
+                    "fa_icon": "fas fa-folder-open"
                 }
             }
         },
