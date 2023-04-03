@@ -203,7 +203,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     percent_codon_IDs = round(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
     percent_lengths = round(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
     conferred_resistances = gamma_df["Gene"].str.split("__").str[4] #parse "Gene" column in gamma file to get conferred resistance out of gene name
-    contig_numbers = gamma_df["Contig"].str.split("_").str[1] #Parse "Contig" column in gamma file
+    contig_numbers = gamma_df["Contig"].str.replace(sample_name, "").str.split("_").str[1] #Parse "Contig" column in gamma file
     genes = gamma_df["Gene"].str.split("__").str[2] #Parse "Gene" column in gamma file to get gene name and accession
     # loop through list of genes to combine with conferred resistance and make back into a pandas series
     column_name = ["{}({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
@@ -250,7 +250,7 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
     percent_codon_IDs = round(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
     percent_lengths = round(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
     conferred_resistances = gamma_df["Gene"].str.split("__").str[4] #parse "Gene" column in gamma file to get conferred resistance out of gene name
-    contig_numbers = gamma_df["Contig"].str.split("_").str[1] #Parse "Contig" column in gamma file
+    contig_numbers = gamma_df["Contig"].str.replace(sample_name, "").str.split("_").str[1] #Parse "Contig" column in gamma file
     hv_column_name = gamma_df["Gene"] #Parse "Gene" column in gamma file to get gene name and accession
     # loop through list of gamma info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}AA/{:.0f}:#{}]G".format(percent_BP_ID, percent_codon_ID, percent_length, contig_number) for percent_BP_ID, percent_codon_ID, percent_length, contig_number in zip(percent_BP_IDs, percent_codon_IDs, percent_lengths, contig_numbers)]
@@ -278,7 +278,7 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
         DB ="Unknown"
     percent_NT_IDs = round(gamma_df["Match_Percent"]*100).tolist() # round % to whole number
     percent_lengths = round(gamma_df["Length_Percent"]*100).tolist() # round % to whole number - this is the coverage
-    contig_numbers = gamma_df["Contig"].str.split("_").str[1] #Parse "Contig" column in gamma file
+    contig_numbers = gamma_df["Contig"].str.replace(sample_name, "").str.split("_").str[1] #Parse "Contig" column in gamma file
     pf_column_name = gamma_df["Gene"] #Parse "Gene" column in gamma file to get gene name and accession
     # loop through list of gamma info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     pf_coverage = ["[{:.0f}NT/{:.0f}:#{}]G".format(percent_NT_ID, percent_length, contig_number) for percent_NT_ID, percent_length, contig_number in zip(percent_NT_IDs, percent_lengths, contig_numbers)]
