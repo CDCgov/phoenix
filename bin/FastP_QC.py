@@ -120,7 +120,7 @@ def FastP_QC_after(input_trimmed_json, input_singles_json, output_file, name):
 def FastP_QC_All(input_paired_json, input_singles_json, name):
     """Makes a pre- and post-filtering output of trimmed info"""
     raw_output= name + "_raw_read_counts.txt"
-    FastP_QC_before(input_paired_json, raw_output, name)
+    #FastP_QC_before(input_paired_json, raw_output, name)
     trimmed_output= name + "_trimmed_read_counts.txt"
     FastP_QC_after(input_paired_json, input_singles_json, trimmed_output, name)
 

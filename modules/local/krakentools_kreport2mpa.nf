@@ -2,7 +2,7 @@ def VERSION = '1.2' // Version information not provided by tool on CLI
 
 process KRAKENTOOLS_KREPORT2MPA {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:

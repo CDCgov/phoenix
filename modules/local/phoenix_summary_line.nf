@@ -1,6 +1,6 @@
 process CREATE_SUMMARY_LINE {
     tag "${meta.id}"
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
@@ -17,14 +17,15 @@ process CREATE_SUMMARY_LINE {
     path(amr_report)
 
     output:
-    path '*_summaryline.tsv'           , emit: line_summary
-    path "versions.yml"                , emit: versions
+    path('*_summaryline.tsv'), emit: line_summary
+    path("versions.yml")     , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
     def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
     def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     Phoenix_summary_line.py \\
         -q $quast_report \\
@@ -43,7 +44,7 @@ process CREATE_SUMMARY_LINE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

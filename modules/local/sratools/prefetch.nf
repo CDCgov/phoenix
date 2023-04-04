@@ -1,6 +1,6 @@
 process SRATOOLS_PREFETCH {
     tag "$sra_samples"
-    label 'process_medium'
+    label 'process_single'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/sra-tools:2.11.0--pl5321ha49a11a_3' :

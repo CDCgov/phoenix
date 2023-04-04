@@ -42,7 +42,7 @@ include { MASH_DIST                      } from '../modules/local/mash_distance'
 include { FASTANI                        } from '../modules/local/fastani'
 include { DETERMINE_TOP_TAXA             } from '../modules/local/determine_top_taxa'
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
-include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
+include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
@@ -120,6 +120,7 @@ workflow SCAFFOLDS_EXQC {
         ASSET_CHECK (
             params.zipped_sketch
         )
+        ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
@@ -214,6 +215,7 @@ workflow SCAFFOLDS_EXQC {
         FORMAT_ANI (
             FASTANI.out.ani
         )
+        ch_versions = ch_versions.mix(FORMAT_ANI.out.versions)
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
         best_hit_ch = KRAKEN2_WTASMBLD.out.report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
@@ -232,6 +234,7 @@ workflow SCAFFOLDS_EXQC {
             DETERMINE_TAXA_ID.out.taxonomy, \
             false
         )
+        ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
         // get gff and protein files for amrfinder+
         PROKKA (
@@ -247,6 +250,7 @@ workflow SCAFFOLDS_EXQC {
         GET_TAXA_FOR_AMRFINDER (
             DETERMINE_TAXA_ID.out.taxonomy
         )
+        ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
         // Combining taxa and scaffolds to run amrfinder and get the point mutations.
         amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, reads          -> [[id:meta.id], reads]}\
@@ -295,6 +299,7 @@ workflow SCAFFOLDS_EXQC {
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
             false
         )
+        ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
         // Creating empty channel that has the form [ meta.id, [] ] that can be passed as a blank below
         empty_ch = RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ it -> create_empty_ch(it) }

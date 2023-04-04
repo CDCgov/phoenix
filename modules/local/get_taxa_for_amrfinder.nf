@@ -1,6 +1,6 @@
 process GET_TAXA_FOR_AMRFINDER {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
@@ -8,6 +8,7 @@ process GET_TAXA_FOR_AMRFINDER {
 
     output:
     tuple val(meta), path("*_AMRFinder_Organism.csv"), emit: amrfinder_taxa
+    path("versions.yml"),                           emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"

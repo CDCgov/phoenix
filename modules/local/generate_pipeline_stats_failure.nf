@@ -1,10 +1,10 @@
 process GENERATE_PIPELINE_STATS_FAILURE {
     tag "${meta.id}"
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
-    tuple val(meta), path(fastp_raw_qc), \
+    tuple val(meta), path(raw_qc), \
     path(fastp_total_qc), \
     path(kraken2_trimd_report), \
     path(krona_trimd), \
@@ -14,6 +14,7 @@ process GENERATE_PIPELINE_STATS_FAILURE {
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
+    path("versions.yml")               , emit: versions
 
     when:
     "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"
@@ -28,9 +29,10 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     pipeline_stats_writer.sh \\
-        -a $fastp_raw_qc \\
+        -a $raw_qc \\
         -b $fastp_total_qc \\
         -d ${prefix} \\
         -e $kraken2_trimd_report \\
@@ -38,5 +40,10 @@ process GENERATE_PIPELINE_STATS_FAILURE {
         -g $krona_trimd \\
         -q $taxID \\
         $terra
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }

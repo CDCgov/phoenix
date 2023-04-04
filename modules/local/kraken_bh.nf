@@ -20,9 +20,15 @@ process KRAKEN_BEST_HIT {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     kraken2_best_hit.sh -i $kraken_report -q $count_file -n ${prefix} $terra
 
     mv ${prefix}.summary.txt ${prefix}.${kraken_type}_summary.txt
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }

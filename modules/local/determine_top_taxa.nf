@@ -21,12 +21,14 @@ process DETERMINE_TOP_TAXA {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists $terra
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         Date of RefSeq Pull: \$(date +"%d-%m-%y")
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

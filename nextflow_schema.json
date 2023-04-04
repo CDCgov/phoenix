@@ -37,14 +37,14 @@
             "properties": {
                 "indir": {
                     "type": "string",
-                    "description": "Path to a input directory to search for assemblies. It is assumed this input directory has a PHoeNIx style directory structure. Thus, the pipeline uses a default `*/*/*.scaffolds.fa.gz` regrex to search the input directory. Files with the extention '*.filtered.scaffolds.fa.gz' and '*.renamed.scaffolds.fa.gz' will be ignored. Can be a full or relative path.",
+                    "description": "Path to a input directory to search for assemblies. Files with the extention '*.filtered.scaffolds.fa.gz' and '*.renamed.scaffolds.fa.gz' will be ignored. Can be a full or relative path.",
                     "default": "null",
                     "fa_icon": "fas fa-folder-open"
                 },
                 "scaffold_ext": {
                     "type": "string",
-                    "description": "String that is the FULL extention of the scaffolds files you wish to input. A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used. Regrex based on the input directory location (i.e. If you need to go into other folders inside the --indir use '*/*.my_extension.scaffolds.fa.gz'). Assemblies must end in '.fa.gz' or '.fasta.gz'.",
-                    "default": "*/*/*.scaffolds.fa.gz"
+                    "description": "String that is the FULL extention of the scaffolds files you wish to input. A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used. Assemblies must end in '.fa.gz' or '.fasta.gz'.",
+                    "default": ".scaffolds.fa.gz"
                 }
             }
         },
@@ -56,7 +56,7 @@
             "properties": {
                 "input_sra": {
                     "type": "string",
-                    "description": "Path to a csv file that has one SRR number of each line.",
+                    "description": "Path to a csv file that has one SRR number per line.",
                     "default": "null",
                     "fa_icon": "fas fa-folder-open"
                 }

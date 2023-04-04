@@ -67,6 +67,7 @@ workflow SRA_PREP {
         // Create tuple with sample name in it for the tag in RENAME_SRA_FASTA
         SRATOOLS_FASTERQDUMP.out.reads.map{ it -> add_seq_name(it) }
     )
+    ch_versions = ch_versions.mix(RENAME_SRA_FASTA.out.versions)
 
     // Gather fastqs and metadata to be sent to results folder
     CREATE_SRA_SAMPLESHEET (

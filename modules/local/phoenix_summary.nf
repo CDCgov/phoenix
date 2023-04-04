@@ -1,5 +1,5 @@
 process GATHER_SUMMARY_LINES {
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
@@ -8,11 +8,12 @@ process GATHER_SUMMARY_LINES {
     val(busco_val)
 
     output:
-    path 'Phoenix_Output_Report.tsv'  , emit: summary_report
-    path "versions.yml"               , emit: versions
+    path('Phoenix_Output_Report.tsv'), emit: summary_report
+    path("versions.yml")             , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def busco_parameter = busco_val ? "--busco" : ""
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     #check if the empty summaryline file exists - comes from fetch_failed_summaries.nf module
     if [ -f "empty_summaryline.tsv" ]; then
@@ -40,7 +41,7 @@ process GATHER_SUMMARY_LINES {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

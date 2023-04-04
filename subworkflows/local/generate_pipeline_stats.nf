@@ -42,7 +42,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
         extended_qc            // true for internal phoenix and false otherwise
 
     main:
-        ch_versions     = Channel.empty() // Used to collect the software versions
+        ch_versions = Channel.empty() // Used to collect the software versions
 
         if (fastp_raw_qc == []) {
             // just grabbing the meta.id from the incoming file to create [ meta.id, [] ]
@@ -84,6 +84,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
             GENERATE_PIPELINE_STATS_EXQC (
                 pipeline_stats_ch
             )
+            ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_EXQC.out.versions)
 
             pipeline_stats = GENERATE_PIPELINE_STATS_EXQC.out.pipeline_stats
 
@@ -113,6 +114,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
             GENERATE_PIPELINE_STATS (
                 pipeline_stats_ch
             )
+            ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS.out.versions)
 
             pipeline_stats = GENERATE_PIPELINE_STATS.out.pipeline_stats
         }

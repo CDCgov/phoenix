@@ -2,7 +2,7 @@ def VERSION = '1.1' // Version information not provided by tool on CLI
 
 process CHECK_MLST {
     tag "${meta.id}"
-    label 'process_low'
+    label 'process_single'
 
     //container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
     //    'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
@@ -37,6 +37,7 @@ process CHECK_MLST {
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
         check_mlst: $VERSION
     END_VERSIONS
     """

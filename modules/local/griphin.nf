@@ -30,7 +30,9 @@ process GRIPHIN {
     #    fi
     #done < ${original_samplesheet}
 
-    GRiPHin.py -d ${outdir} -a $db
+    full_path=\$(readlink -f ${outdir})
+
+    GRiPHin.py -d \$full_path -a $db
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

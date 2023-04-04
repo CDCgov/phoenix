@@ -42,7 +42,7 @@ workflow PHOENIX {
     // Check mandatory parameters
 
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX: Input samplesheet not specified!' }
     if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
@@ -69,7 +69,7 @@ workflow CDC_PHOENIX {
     // Check mandatory parameters
 
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry CDC_PHOENIX: Input samplesheet not specified!' }
     if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
@@ -103,7 +103,7 @@ workflow SRA {
     // Check mandatory parameters
 
     //input on command line
-    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
+    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'For -entry SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
     if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     
     main:
@@ -134,7 +134,7 @@ workflow CDC_SRA {
     // Check mandatory parameters
 
     //input on command line
-    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
+    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'For -entry CDC_SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
     if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
 
     main:
@@ -166,7 +166,7 @@ workflow SCAFFOLDS {
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'You need EITHER an input samplesheet or a directory! Just pick one.' 
+            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -181,7 +181,7 @@ workflow SCAFFOLDS {
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true)
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
@@ -209,7 +209,7 @@ workflow CDC_SCAFFOLDS {
         // allow input to be relative
         //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'You need EITHER an input samplesheet or a directory! Just pick one.' 
+            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -224,7 +224,7 @@ workflow CDC_SCAFFOLDS {
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true)
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
         }
     }
 

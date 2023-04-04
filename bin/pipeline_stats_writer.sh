@@ -233,10 +233,10 @@ if [[ "${run_type}" == "all" ]]; then
   if [[ "${raw_exists}" = "true" ]]; then
     raw_reads=$(tail -n1  "${raw_read_counts}" | cut -d$'\t' -f17)
     raw_pairs=$((raw_reads/2))
-    raw_Q30_R1=$(tail -n1 "${raw_read_counts}" | cut -d'	' -f14)
+    raw_Q30_R1=$(tail -n1 "${raw_read_counts}" | cut -d$'\t' -f14)
     raw_Q30_R1_rounded=$(echo "${raw_Q30_R1}"  | cut -d'.' -f2)
     raw_Q30_R1_rounded=$(echo "${raw_Q30_R1_rounded::2}")
-    raw_Q30_R2=$(tail -n1 "${raw_read_counts}" | cut -d'	' -f15)
+    raw_Q30_R2=$(tail -n1 "${raw_read_counts}" | cut -d$'\t' -f15)
     raw_Q30_R2_rounded=$(echo "${raw_Q30_R2}"  | cut -d'.' -f2)
     raw_Q30_R2_rounded=$(echo "${raw_Q30_R2_rounded::2}")
   if [[ "${raw_reads}" -le 1000000 ]] && [[ "${raw_reads}" -ge 1 ]]; then

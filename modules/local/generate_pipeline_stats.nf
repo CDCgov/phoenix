@@ -1,10 +1,10 @@
 process GENERATE_PIPELINE_STATS {
     tag "${meta.id}"
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
-    tuple val(meta), path(fastp_raw_qc), \
+    tuple val(meta), path(raw_qc), \
     path(fastp_total_qc), \
     path(kraken2_trimd_report), \
     path(krona_trimd), \
@@ -27,6 +27,7 @@ process GENERATE_PIPELINE_STATS {
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
+    path("versions.yml")               , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -38,14 +39,15 @@ process GENERATE_PIPELINE_STATS {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
-    def fastp_raw       = fastp_raw_qc ? "-a $fastp_raw_qc" : ""
+    def raw             = raw_qc ? "-a $raw_qc" : ""
     def fastp_total     = fastp_total_qc ? "-b $fastp_total_qc" : ""
     def k2_trim_report  = kraken2_trimd_report ? "-e $kraken2_trimd_report" : ""
     def k2_trim_summary = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
     def krona_trim      = krona_trimd ? "-g $krona_trimd" : ""
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     pipeline_stats_writer.sh \\
-        $fastp_raw \\
+        $raw \\
         $fastp_total \\
         $k2_trim_report \\
         $k2_trim_summary \\
@@ -67,5 +69,10 @@ process GENERATE_PIPELINE_STATS {
         -y $mlst_file \\
         -1 $amr_file \\
         $terra
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }

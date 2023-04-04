@@ -1,10 +1,10 @@
 process GENERATE_PIPELINE_STATS_EXQC {
     tag "${meta.id}"
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
-    tuple val(meta), path(fastp_raw_qc), \
+    tuple val(meta), path(raw_qc), \
     path(fastp_total_qc), \
     path(srst_fullgenes_file), \
     path(kraken2_trimd_report), \
@@ -32,12 +32,14 @@ process GENERATE_PIPELINE_STATS_EXQC {
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
+    path("versions.yml")               , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     pipeline_stats_writer.sh \\
-        -a $fastp_raw_qc \\
+        -a $raw_qc \\
         -b $fastp_total_qc \\
         -c $gc_content \\
         -d ${prefix} \\
@@ -64,5 +66,10 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -y $mlst_file \\
         -1 $amr_file \\
         -3
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }
