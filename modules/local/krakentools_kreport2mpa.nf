@@ -10,7 +10,7 @@ process KRAKENTOOLS_KREPORT2MPA {
 
     output:
     tuple val(meta), path('*.mpa'), emit: mpa
-    path "versions.yml"           , emit: versions
+    path("versions.yml")          , emit: versions
 
     script: // This script is bundled with the pipeline, in phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"

@@ -9,9 +9,9 @@ process CHECK_MLST_WITH_SRST2 {
     tuple val(meta), path(mlst_file), path(srst2_file), path(taxonomy_file), val(status)
 
     output:
-    tuple val(meta), path("*_combined.tsv")                                                   , emit: checked_MLSTs
-    tuple val(meta), path("*_status.txt")                                                     , emit: status
-    path "versions.yml"                                                                       , emit: versions
+    tuple val(meta), path("*_combined.tsv"), emit: checked_MLSTs
+    tuple val(meta), path("*_status.txt"),   emit: status
+    path("versions.yml"),                    emit: versions
 
     when:
     task.ext.when == null || task.ext.when

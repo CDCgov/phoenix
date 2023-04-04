@@ -1,6 +1,6 @@
 process KRONA_KTIMPORTTEXT {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_single'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/krona:2.8.1--pl5321hdfd78af_1':
@@ -11,8 +11,8 @@ process KRONA_KTIMPORTTEXT {
     val(type) //weighted, trimmmed or assembled
 
     output:
-    tuple val(meta), path('*.html') , emit: html
-    path("versions.yml")             , emit: versions
+    tuple val(meta), path('*.html'), emit: html
+    path("versions.yml")           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

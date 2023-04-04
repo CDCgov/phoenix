@@ -63,6 +63,7 @@ workflow KRAKEN2_WF {
         KREPORT2KRONA_TRIMD (
             KRAKEN2_TRIMD.out.report, "trimd"
         )
+        ch_versions = ch_versions.mix(KREPORT2KRONA_TRIMD.out.versions)
 
         // Create krona plot from kraken report
         KRONA_KTIMPORTTEXT_TRIMD (
@@ -78,7 +79,8 @@ workflow KRAKEN2_WF {
         KRAKEN2_BH_TRIMD (
             kraken_bh_trimd_ch, "trimd"
         )
-        
+        ch_versions = ch_versions.mix(KRAKEN2_BH_TRIMD.out.versions)
+
         report        = KRAKEN2_TRIMD.out.report
         k2_bh_summary = KRAKEN2_BH_TRIMD.out.ksummary
         krona_html    = KRONA_KTIMPORTTEXT_TRIMD.out.html
@@ -113,6 +115,7 @@ workflow KRAKEN2_WF {
         KREPORT2KRONA_ASMBLD (
             KRAKEN2_ASMBLD.out.report, "asmbld"
         )
+        ch_versions = ch_versions.mix(KREPORT2KRONA_ASMBLD.out.versions)
 
         // Create krona plot from kraken report
         KRONA_KTIMPORTTEXT_ASMBLD (
@@ -127,6 +130,7 @@ workflow KRAKEN2_WF {
         KRAKEN2_BH_ASMBLD (
             kraken_bh_asmbld_ch, "asmbld"
         )
+        ch_versions = ch_versions.mix(KRAKEN2_BH_ASMBLD.out.versions)
 
         report        = KRAKEN2_ASMBLD.out.report
         k2_bh_summary = KRAKEN2_BH_ASMBLD.out.ksummary
@@ -166,6 +170,7 @@ workflow KRAKEN2_WF {
         KREPORT2KRONA_WTASMBLD (
             KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report, "wtasmbld"
         )
+        ch_versions = ch_versions.mix(KREPORT2KRONA_WTASMBLD.out.versions)
 
         // Combining kraken report with quast report based on meta.id
         kraken_bh_wtasmbld_ch = KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
@@ -175,6 +180,7 @@ workflow KRAKEN2_WF {
         KRAKEN2_BH_WTASMBLD(
             kraken_bh_wtasmbld_ch, "wtasmbld"
         )
+        ch_versions = ch_versions.mix(KRAKEN2_BH_WTASMBLD.out.versions)
 
         KRONA_KTIMPORTTEXT_WTASMBLD (
             KREPORT2KRONA_WTASMBLD.out.krona, "wtasmbld"
@@ -193,6 +199,6 @@ workflow KRAKEN2_WF {
     report        = report
     k2_bh_summary = k2_bh_summary
     krona_html    = krona_html
-    versions = ch_versions // channel: [ versions.yml ]
+    versions      = ch_versions // channel: [ versions.yml ]
 
 }

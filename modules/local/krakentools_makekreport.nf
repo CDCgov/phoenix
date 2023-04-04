@@ -10,7 +10,7 @@ process KRAKENTOOLS_MAKEKREPORT {
 
     output:
     tuple val(meta), path('*_wtasmbld.report.txt'), emit: kraken_weighted_report
-    path "versions.yml"                           , emit: versions
+    path("versions.yml")                          , emit: versions
 
     script: // This script is bundled with the pipeline, in phoenix/bin/
     // This script has to be run with kraken output that does not use --use-names flag https://github.com/jenniferlu717/KrakenTools/issues/29

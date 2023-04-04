@@ -1,6 +1,6 @@
 process FORMAT_ANI {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_single'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:

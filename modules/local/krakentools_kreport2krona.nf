@@ -11,7 +11,7 @@ process KRAKEN2_KRONA {
 
     output:
     tuple val(meta), path('*.krona'), emit: krona
-    path "versions.yml"             , emit: versions
+    path("versions.yml")            , emit: versions
 
     script: // This script is bundled with the pipeline, in phoenix/bin/ orginally from https://github.com/jenniferlu717/KrakenTools on 6/15/2022
     def prefix = task.ext.prefix ?: "${meta.id}"
