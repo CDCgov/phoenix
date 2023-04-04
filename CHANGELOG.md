@@ -74,13 +74,18 @@ Below are the list of changes to phx since is initial release. As fixes can take
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v1.1.1...v1.2.0)
 
 **Implemented Enhancements:**  
-- entry point for scaffolds added using either `-entry SCAFFOLDS` or `-entry CDC_SCAFFOLDS` that runs everything post SPAdes step. New input parameters `--indir` and `--scaffold_regrex` added for functionality of this entry point [commit ]().
+- entry point for scaffolds added using either `-entry SCAFFOLDS` or `-entry CDC_SCAFFOLDS` that runs everything post SPAdes step. New input parameters `--indir` and `--scaffold_ext` added for functionality of this entry point [commit f12da60](https://github.com/CDCgov/phoenix/commit/f12da60fc4bc18499aa020ef1fb2c13d35361bb1).  
+- entry point for sra added using either `-entry SRA` or `-entry CDC_SRA`. These entry points will pull samples from SRA based on what is passed to `--input_sra`, which is a file with one SRR number per line [commit ]().  
+- Check now performed on input samplesheets to confirm the same sample id, forward read and reverse read aren't used multiple times in the samplesheet [commit fd6127f](https://github.com/CDCgov/phoenix/commit/fd6127ff091d0e455a7d553415f3a5229ab6b2ec).  
+- Changed modules many modules to `process_single` rather than `process_low` to reduce resource requirements for these steps.
 
 **Output File Changes:**  
-
+- The folder `fastqc` was changed to `fastqc_trimd` to clarify it contains results from the trimmed data.  
+- Added version for base container information for `FAIRY`, `ASSET_CHECK`, `FORMAT_ANI`, `FETCH_FAILED_SUMMARIES`, `CREATE_SUMMARY_LINE`, `GATHER_SUMMARY_LINES`, and `GENERATE_PIPELINE_STATS`. This was added to `software_versions.yml`.  
 
 **Fixed Bugs:**  
-
+- Added module `GET_RAW_STATS` to get raw stats, previously this was information was pulled from `FASTP_TRIMD` step, however, the input data here was post `BBDUK` which removes PhiX reads and adapters. Thus, the previous raw count was slightly off.  
+- Fixed python version information not showing up for `GET_TAXA_FOR_AMRFINDER` and `GATHERING_TRIMD_READ_QC_STATS`. This was added to `software_versions.yml`.  
 
 **Database Updates:**  
 
