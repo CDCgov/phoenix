@@ -13,8 +13,8 @@ process SRST2_AR {
     tuple val(meta), path("*_genes_*_results.txt")               , optional:true, emit: gene_results
     tuple val(meta), path("*_fullgenes_*_results.txt")           , optional:true, emit: fullgene_results
     tuple val(meta), path("*_mlst_*_results.txt")                , optional:true, emit: mlst_results
-    tuple val(meta), path("*.pileup")                            ,                emit: pileup
-    tuple val(meta), path("*.sorted.bam")                        ,                emit: sorted_bam
+    tuple val(meta), path("*.pileup")                            , optional:true, emit: pileup
+    tuple val(meta), path("*.sorted.bam")                        , optional:true, emit: sorted_bam
     path "versions.yml"                                          ,                emit: versions
 
     when:
