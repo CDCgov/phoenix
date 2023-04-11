@@ -21,18 +21,23 @@ process FASTP_SINGLES {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    echo "Debugging: Emptiness of reads[0] and reads[1]" > debug_status.log
     if [[ ! -s ${reads[0]} ]] && [[ ! -s ${reads[1]} ]]; then
+        echo "Both are empty" >> debug_status.log
         # Both are empty, do nothing???
         :
     elif [[ ! -s ${reads[0]} ]]; then
+        echo "reads[0] is empty, but not reads[1], zcatting reads[1](R2)" >> debug_status.log
         # Only R1 is empty, run on R2 only
         zcat ${reads[1]} > ${prefix}.cat_singles.fastq
         gzip ${prefix}.cat_singles.fastq
     elif [[ ! -s ${reads[1]} ]]; then
+        echo "reads[1] is empty, but not reads[0]. zcatting reads[0](R1)" >> debug_status.log
         # Only R2 is empty, run on R1 only
         zcat ${reads[0]} > ${prefix}.cat_singles.fastq
         gzip ${prefix}.cat_singles.fastq
     else
+        echo "Neither is empty" >> debug_status.log
         # Both reads have contents
         zcat ${reads[0]} ${reads[1]} > ${prefix}.cat_singles.fastq
         gzip ${prefix}.cat_singles.fastq
