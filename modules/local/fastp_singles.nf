@@ -21,16 +21,32 @@ process FASTP_SINGLES {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    zcat ${reads[0]} ${reads[1]} > ${prefix}.cat_singles.fastq
-    gzip ${prefix}.cat_singles.fastq
-    fastp \\
-        --in1 ${prefix}.cat_singles.fastq.gz \\
-        --thread $task.cpus \\
-        --json ${prefix}_singles.fastp.json \\
-        --html ${prefix}_singles.fastp.html \\
-        --out1 ${prefix}.singles.fastq.gz \\
-        $args \\
-        2> ${prefix}.fastp.log
+    if [[ ! -s ${reads[0]} ]] && [[ ! -s ${reads[1]} ]]; then
+        # Both are empty, do nothing???
+        :
+    elif [[ ! -s ${reads[0]} ]]; then
+        # Only R1 is empty, run on R2 only
+        zcat ${reads[1]} > ${prefix}.cat_singles.fastq
+        gzip ${prefix}.cat_singles.fastq
+    elif [[ ! -s ${reads[1]} ]]; then
+        # Only R2 is empty, run on R1 only
+        zcat ${reads[0]} > ${prefix}.cat_singles.fastq
+        gzip ${prefix}.cat_singles.fastq
+    else
+        # Both reads have contents
+        zcat ${reads[0]} ${reads[1]} > ${prefix}.cat_singles.fastq
+        gzip ${prefix}.cat_singles.fastq
+    fi
+    # Possibly will need to catch when in1 is empty, dont know how fastp handles it, but right now we need to many of its standard outputs
+        fastp \\
+            --in1 ${prefix}.cat_singles.fastq.gz \\
+            --thread $task.cpus \\
+            --json ${prefix}_singles.fastp.json \\
+            --html ${prefix}_singles.fastp.html \\
+            --out1 ${prefix}.singles.fastq.gz \\
+            $args \\
+            2> ${prefix}.fastp.log
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
