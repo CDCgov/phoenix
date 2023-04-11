@@ -10,8 +10,8 @@ process SRST2_AR {
     tuple val(meta), path(fastq_s), path(db)
 
     output:
-    tuple val(meta), path("*_genes_*_results.txt")               , optional:true, emit: gene_results
-    tuple val(meta), path("*_fullgenes_*_results.txt")           , optional:true, emit: fullgene_results
+    tuple val(meta), path("*_genes_*_results.txt")                              , emit: gene_results
+    tuple val(meta), path("*_fullgenes_*_results.txt")                          , emit: fullgene_results
     tuple val(meta), path("*_mlst_*_results.txt")                , optional:true, emit: mlst_results
     tuple val(meta), path("*.pileup")                            , optional:true, emit: pileup
     tuple val(meta), path("*.sorted.bam")                        , optional:true, emit: sorted_bam
