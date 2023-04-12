@@ -96,8 +96,13 @@ class RowChecker:
         if len(self._seen) != len(self.modified):
             raise AssertionError("The pair of sample name and FASTQ must be unique.")
         seen = Counter()
+        samples_list = []
         for row in self.modified:
             sample = row[self._sample_col]
+            if sample not in samples_list: # check that sample names are unique.
+                samples_list.append(sample)
+            else:
+                raise AssertionError("ERROR: {} is used as a sample name more than once. Samples IDs should be unique.".format(sample))
             seen[sample] += 1
             #row[self._sample_col] = f"{sample}_T{seen[sample]}"
             row[self._sample_col] = f"{sample}"
@@ -113,7 +118,7 @@ def read_head(handle, num_lines=10):
     return "".join(lines)
 
 
-def sniff_format(handle):
+def sniff_format(handle, file_in):
     """
     Detect the tabular format.
 
@@ -131,9 +136,17 @@ def sniff_format(handle):
     peek = read_head(handle)
     handle.seek(0)
     sniffer = csv.Sniffer()
-    if not sniffer.has_header(peek):
-        logger.critical("The given sample sheet does not appear to contain a header.")
-        sys.exit(1)
+    # check to make sure there isn't a fasta file as the first time and to alert the user to add a header.
+    #with open(file_in) as f:
+    #    first_line = f.readline()
+    #if first_line.endswith(".gz") or peek.endswith(".fa") or peek.endswith(".fasta"):
+    #    print("got here")
+    #    logger.critical("The given sample sheet does not appear to contain a header.")
+    #    sys.exit(1)
+    ## this is commented out as it places non-obvious restrictions on allowed sample names. Using the check above instead.
+    #if not sniffer.has_header(peek): 
+    #    logger.critical("The given sample sheet does not appear to contain a header.")
+    #    sys.exit(1)
     dialect = sniffer.sniff(peek)
     return dialect
 
@@ -166,9 +179,8 @@ def check_samplesheet(file_in, file_out):
     required_columns = {"sample", "assembly"}
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
     with file_in.open(newline="") as in_handle:
-        reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle))
+        reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle, file_in))
         # Validate the existence of the expected header columns.
-        print(reader.fieldnames)
         if not required_columns.issubset(reader.fieldnames):
             req_cols = ", ".join(required_columns)
             logger.critical(f"The sample sheet **must** contain these column headers: {req_cols}.")
