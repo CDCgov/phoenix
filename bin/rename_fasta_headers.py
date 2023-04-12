@@ -75,6 +75,18 @@ def skesa_rename(input_file, name, output):
 		sequences.append(record)
 	SeqIO.write(sequences, output, "fasta")
 
+def unicycler_rename(input_file, name, output):
+	"""
+	Typical unicycler output: >1 length=2836348 depth=1.00x circular=tru
+	Convert to: >1921706_1_length_2836348 (Name_contig#_length_length#_depth_depthx)
+	"""
+	sequences = []
+	for record in SeqIO.parse(input_file,"fasta"):
+		record.id = name + "_" + str(record.id) + "_length_" + str(record.description.split(" ")[1].replace("length=", ""))
+		record.description = ""
+		sequences.append(record)
+	SeqIO.write(sequences, output, "fasta")
+
 def detect_assemblier(input_file, name):
 	for record in SeqIO.parse(input_file,"fasta"):
 		if record.id.startswith("contig00001"):
@@ -83,8 +95,11 @@ def detect_assemblier(input_file, name):
 			assemblier = "spades"
 		elif record.id.startswith("Contig_1"):
 			assemblier = "skesa"
+		elif record.id.startswith("1") and record.description.startswith("1 length="):
+			assemblier = "unicycler"
 		elif record.id.startswith(name + "_1_length_"):
 			assemblier = "correct name"
+		break # we only need to do this for the first record
 	return assemblier
 
 def rename_file(input_file, output):
@@ -102,6 +117,8 @@ def main():
 		skesa_rename(args.input, args.name, args.output)
 	elif assemblier == "shovill":
 		shovill_rename(args.input, args.name, args.output)
+	elif assemblier == "unicycler":
+		unicycler_rename(args.input, args.name, args.output)
 	elif assemblier == "correct name": # if the name looks like the correct scheme then just rename and move on
 		rename_file(args.input, args.output)
 	else:
