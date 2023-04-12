@@ -659,8 +659,9 @@ def add_srst2(ar_df, srst2_ar_df):
     #fixing column orders
     ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\((.*)\).*').values.tolist() # get all ar drug names form column names
-    sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
-    sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
+    #sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
+    #sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
+    sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
     # loop over each gene with the same drug its name
     for drug in sorted_drug_names:
         column_list = [col for col in ar_combined_df.columns if drug in col] # get column names filtered for each drug name
@@ -753,7 +754,7 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     # getting values to set column widths automatically
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
-        print(series)  # uncomment this to see what the issue is with the "mad" error
+        #print(series)  # uncomment this to see what the issue is with the "mad" error
         max_len = max((
         series.astype(str).map(len).max(),  # len of largest item
             len(str(series.name))  # len of column name/header
