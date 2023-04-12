@@ -237,9 +237,11 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
         df["AR_Database"] = DB
         df["No_AR_Genes_Found"] = ""
         df.index = [sample_name]
-    # Check for duplicate column names
+    # Check for duplicate column names, multiple hits 
+    #print(df["mph(D)_NC_017312(macrolide_lincosamide_streptogramin)"])
     df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+    #print(final_df["mph(D)_NC_017312(macrolide_lincosamide_streptogramin)"])
     return final_df
 
 def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
@@ -647,7 +649,7 @@ def add_srst2(ar_df, srst2_ar_df):
         else:
             ar_combined_df[col] = srst2_ar_df[col]
     # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
-    #drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
+    # drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
     srst2_ar_df.drop(common_cols, axis = 1, inplace=True)
     ar_df.drop(common_cols, axis = 1, inplace=True)
     # Add cols that are unique to srst2
@@ -657,10 +659,12 @@ def add_srst2(ar_df, srst2_ar_df):
     #fixing column orders
     ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\((.*)\).*').values.tolist() # get all ar drug names form column names
-    sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:]) #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
+    sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
+    sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
+    # loop over each gene with the same drug its name
     for drug in sorted_drug_names:
         column_list = [col for col in ar_combined_df.columns if drug in col] # get column names filtered for each drug name
-        # since drug names have cross over with names we need to do some clean up
+        # name since drug names have cross over with names we need to do some clean up
         if drug == "phenicol":
             column_list = [drug for drug in column_list if "quinolone" not in drug]
         elif drug == "aminoglycoside":
@@ -669,6 +673,8 @@ def add_srst2(ar_df, srst2_ar_df):
             column_list = [drug for drug in column_list if "phenicol" not in drug]
             column_list = [drug for drug in column_list if "fluoroquinolone" not in drug]
             column_list = [drug for drug in column_list if "aminoglycoside" not in drug]
+        elif drug == "macrolide": # if macrolide is in the name remove "macrolide_lincosamide_streptogramin" otherwise we have duplicates...
+            column_list = [drug for drug in column_list if "macrolide_lincosamide_streptogramin" not in drug]
         else:
             pass
         ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[column_list]], axis=1, sort=False) # setting column's order by combining dataframes
@@ -747,6 +753,7 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     # getting values to set column widths automatically
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
+        print(series)  # uncomment this to see what the issue is with the "mad" error
         max_len = max((
         series.astype(str).map(len).max(),  # len of largest item
             len(str(series.name))  # len of column name/header
@@ -885,7 +892,7 @@ def main():
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col, columns_to_highlight, final_ar_df= Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
