@@ -36,16 +36,22 @@ process GENERATE_PIPELINE_STATS_EXQC {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def raw             = raw_qc ? "-a $raw_qc" : "" // if raw_qc is null return "-a $raw_qc" else return ""
+    def fastp_total     = fastp_total_qc ? "-b $fastp_total_qc" : ""
+    def k2_trim_report  = kraken2_trimd_report ? "-e $kraken2_trimd_report" : ""
+    def k2_trim_summary = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
+    def krona_trim      = krona_trimd ? "-g $krona_trimd" : ""
+    def srst_file       = srst_fullgenes_file ? "-x $srst_fullgenes_file" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     pipeline_stats_writer.sh \\
-        -a $raw_qc \\
-        -b $fastp_total_qc \\
+        $raw \\
+        $fastp_total \\
         -c $gc_content \\
         -d ${prefix} \\
-        -e $kraken2_trimd_report \\
-        -f $kraken2_trimd_summary \\
-        -g $krona_trimd \\
+        $k2_trim_report \\
+        $k2_trim_summary \\
+        $krona_trim \\
         -h $assembly_scaffolds \\
         -i $filtered_assembly \\
         -j $kraken2_asmbld_report \\
@@ -62,7 +68,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -u $gamma_AR \\
         -v $gamma_replicon \\
         -w $gamma_HV \\
-        -x $srst_fullgenes_file \\
+        $srst_file \\
         -y $mlst_file \\
         -1 $amr_file \\
         -3

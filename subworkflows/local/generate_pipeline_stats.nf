@@ -44,10 +44,11 @@ workflow GENERATE_PIPELINE_STATS_WF {
     main:
         ch_versions = Channel.empty() // Used to collect the software versions
 
-        if (fastp_raw_qc == []) {
+        if (fastp_raw_qc == []) { // for -entry SCAFFOLDS and CDC_SCAFFOLDS
             // just grabbing the meta.id from the incoming file to create [ meta.id, [] ]
             fastp_raw_qc = wtasmbld_report.map{ it -> create_empty_ch(it) }
             fastp_total_qc = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
             trimd_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
             trimd_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
             trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
@@ -89,6 +90,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
             pipeline_stats = GENERATE_PIPELINE_STATS_EXQC.out.pipeline_stats
 
         } else {
+
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
             pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id],fastp_total_qc]},         by: [0])\

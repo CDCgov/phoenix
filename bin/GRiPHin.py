@@ -106,6 +106,15 @@ def Calculate_Trim_Coverage(Total_Sequenced_bp, quast_report):
     Coverage = float(round(Total_Sequenced_bp / Assembly_Length, 2))
     return Coverage, Assembly_Length
 
+def Get_Assembly_Length(quast_report): #for -entry SCAFFOLDS or CDC_SCAFFOLDS
+    """Taking the the assembly length from quast to get assembly length."""
+    with open(quast_report, 'r') as f:
+        for line in f:
+            if ('Total length' in line):
+                Assembly_Length = int(line.split('\t')[1])
+                break
+    return Assembly_Length
+
 def get_scaffold_count(quast_report):
     scaffolds = '0'
     with open(quast_report, 'r') as f:
@@ -421,8 +430,11 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
     # Try and except are in the get_kraken_info function to allow for cases where trimming was completed, but not assembly
     Trim_kraken, Asmbld_kraken = get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name)
     try:
-        if Total_Seq_bp != "Unknown": # for -entry CDC_SCAFFOLDS where no reads are present to calculate. 
+        if Total_Seq_bp != "Unknown": # for -entry CDC_SCAFFOLDS where no reads are present to calculate. For all other scenerios run this portion
             Coverage, Assembly_Length = Calculate_Trim_Coverage(Total_Seq_bp, quast_report)
+        elif Total_Seq_bp == "Unknown": # for -entry CDC_SCAFFOLDS and -entry SCAFFOLDS
+            Assembly_Length = Get_Assembly_Length(quast_report)
+            Coverage = 'Unknown'
         else:
             Coverage = Assembly_Length = 'Unknown'
     except FileNotFoundError:
@@ -659,9 +671,9 @@ def add_srst2(ar_df, srst2_ar_df):
     #fixing column orders
     ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\((.*)\).*').values.tolist() # get all ar drug names form column names
-    #sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
-    #sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
-    sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
+    sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
+    sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
+    #sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
     # loop over each gene with the same drug its name
     for drug in sorted_drug_names:
         column_list = [col for col in ar_combined_df.columns if drug in col] # get column names filtered for each drug name

@@ -295,7 +295,7 @@ workflow SCAFFOLDS_EXTERNAL {
         .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])
 
         // Generate summary per sample that passed SPAdes
-        CREATE_SUMMARY_LINE(
+        CREATE_SUMMARY_LINE (
             line_summary_ch
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)

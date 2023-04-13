@@ -226,13 +226,13 @@ workflow SCAFFOLDS_EXQC {
             best_hit_ch, params.taxa
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
- 
+
         // Perform MLST steps on isolates (with srst2 on internal samples)
         DO_MLST (
             BBMAP_REFORMAT.out.filtered_scaffolds, \
-            [], \
+            RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ it -> create_empty_ch(it) }, \
             DETERMINE_TAXA_ID.out.taxonomy, \
-            false
+            true
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
@@ -288,7 +288,10 @@ workflow SCAFFOLDS_EXQC {
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
             QUAST.out.report_tsv, \
-            [], [], [], [], \
+            BUSCO.out.short_summaries_specific_txt, \
+            KRAKEN2_ASMBLD.out.report, \
+            KRAKEN2_ASMBLD.out.krona_html, \
+            KRAKEN2_ASMBLD.out.k2_bh_summary, \
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
@@ -297,7 +300,7 @@ workflow SCAFFOLDS_EXQC {
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
-            false
+            true
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
