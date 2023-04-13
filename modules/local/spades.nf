@@ -44,7 +44,8 @@ process SPADES {
     spades_complete=run_failure,no_scaffolds,no_contigs
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
 
-    spades.py \\
+    if [ ! -s $unpaired_reads ]:
+        spades.py \\
         $args \\
         --threads $task.cpus \\
         --memory $maxmem \\
@@ -52,6 +53,17 @@ process SPADES {
         $input_reads \\
         --phred-offset $phred_offset\\
         -o ./
+
+    else:
+        spades.py \\
+            $args \\
+            --threads $task.cpus \\
+            --memory $maxmem \\
+            $single_reads \\
+            $input_reads \\
+            --phred-offset $phred_offset\\
+            -o ./
+    fi
 
     mv spades.log ${prefix}.spades.log
 
