@@ -30,7 +30,7 @@ process FASTP_SINGLES {
         touch ${prefix}.cat_singles.fastq
         gzip ${prefix}.cat_singles.fastq
     else
-        elif [[ ! -s ${reads[0]} ]]; then
+        if [[ ! -s ${reads[0]} ]]; then
             echo "reads[0] is empty, but not reads[1], zcatting reads[1](R2)" >> debug_status.log
             echo "!!!!! - reads[0] is empty, but not reads[1], zcatting reads[1](R2)"
             # Only R1 is empty, run on R2 only
