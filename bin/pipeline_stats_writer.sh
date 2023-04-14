@@ -53,7 +53,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:1:2:3" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:3" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -139,11 +139,11 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:1:2:3" opt
     z)
       #echo "Option -z triggered, argument = ${OPTARG}"
       assembly_only="true";;
-    1)
+    4)
       #echo "Option -1 triggered, argument = ${OPTARG}"
       amr_file=${OPTARG};;
 		2)
-			echo "Option -2 triggered"
+			#echo "Option -2 triggered"
 			terra=${OPTARG};;
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
@@ -808,7 +808,12 @@ if [[ -s "${quast_report}" ]]; then
       devs=$( echo 2.58 \* ${gc_stdev} | $bc_path -l)
       gc_right=$( echo ${gc_mean} + ${devs} | $bc_path -l) # right of the mean
       gc_left=$( echo ${gc_mean} - ${devs} | $bc_path -l) # left of the mean
-      gc_stdev=$( printf "%.5f" ${gc_stdev})
+      # if "Not calculated on species with n<10 references" in stdev 
+      if [[ $gc_stdev == "Not" ]]; then
+        gc_stdev=0
+      else
+        gc_stdev=$( printf "%.5f" ${gc_stdev})
+      fi
       if [[ $GC_con < $gc_left ]]; then
         gc_left=$( echo ${gc_mean} - ${devs} | $bc_path -l | xargs printf "%.5f") # just making it more readable
         gc_stdev=$( printf "%.5f" ${gc_stdev}) # just making it more readable
@@ -947,10 +952,10 @@ if [[ "${internal_phoenix}" == "true" ]]; then
       if [[ "${line}" == *"Complete BUSCOs (C)"* ]]; then
         #echo "C-"${line}
 			  found_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-   	  elif [[ "${line}" == *"Total BUSCO groups searched"* ]]; then
+  	  elif [[ "${line}" == *"Total BUSCO groups searched"* ]]; then
         #echo "T-"${line}
         total_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-   	  elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
+  	  elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
         #echo "L-"${line}
         db=$(echo "${line}" | awk -F ' ' '{print $6}')
       fi
@@ -985,7 +990,6 @@ if [[ -s "${formatted_fastANI}" ]]; then
   coverage_match=$(echo "${fastANI_info}" | cut -d$'\t' -f2 | cut -d'.' -f1)
   organism=$(echo "${fastANI_info}" | cut -d$'\t' -f3)
   reference=$(echo "${fastANI_info}" | cut -d$'\t' -f4)
-
 
   if [[ "${percent_match}" = "0."* ]]; then
     printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No assembly file to work with"  >> "${sample_name}.synopsis"
@@ -1033,12 +1037,12 @@ if [[ -s "${mlst_file}" ]]; then
       done < "${mlst_file}"
   fi
 else
-    main_line=$(head -n1 ${mlst_file})
-    if [[ "${main_line}" = "Sample  Source"* ]]; then
-        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No MLST entries in ${sample_name}.tsv"  >> "${sample_name}.synopsis"
-    else
-        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
-    fi
+  main_line=$(head -n1 ${mlst_file})
+  if [[ "${main_line}" = "Sample  Source"* ]]; then
+    printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No MLST entries in ${sample_name}.tsv"  >> "${sample_name}.synopsis"
+  else
+    printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
+  fi
   status="FAILED"
 fi
 
@@ -1067,9 +1071,12 @@ else
 fi
 
 #Check NCBI AMRFinder Genes
-AMR_genes="NA"
+amr_genes="NA"
+echo "file name"
+echo ${amr_file}
 if [[ -s "${amr_file}" ]]; then
   amr_genes=0
+  echo "Got here"
   while read line_in; do
     if [[ "${line_in}" = *"POINT"* ]]; then
       amr_genes=$(( amr_genes + 1 ))
@@ -1077,15 +1084,15 @@ if [[ -s "${amr_file}" ]]; then
       :
     fi
   done < "${amr_file}"
-  if [[ ${amr_genes} -eq 0 ]]; then
+  if [[ "${amr_genes}" -eq 0 ]]; then
     printf "%-30s: %-8s : %s\\n" "AMRFINDER" "SUCCESS" "No point mutations were found"  >> "${sample_name}.synopsis"
-  elif [[ ${amr_genes} -ge 1 ]]; then
+  elif [[ "${amr_genes}" -ge 1 ]]; then
     printf "%-30s: %-8s : %s\\n" "AMRFINDER" "SUCCESS" "${amr_genes} point mutation(s) found"  >> "${sample_name}.synopsis"
   else
     echo "Should never get here (amr_genes less than 0)"
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "AMRFINDER" "FAILED" "${sample_name}_amr_hits.tsv does not exist"  >> "${sample_name}.synopsis"
+  printf "%-30s: %-8s : %s\\n" "AMRFINDER" "FAILED" "${amr_file} does not exist"  >> "${sample_name}.synopsis"
   status="FAILED"
 fi
 

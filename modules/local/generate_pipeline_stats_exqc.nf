@@ -70,7 +70,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         -w $gamma_HV \\
         $srst_file \\
         -y $mlst_file \\
-        -1 $amr_file \\
+        -4 $amr_file \\
         -3
 
     cat <<-END_VERSIONS > versions.yml

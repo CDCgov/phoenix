@@ -67,7 +67,7 @@ process GENERATE_PIPELINE_STATS {
         -v $gamma_replicon \\
         -w $gamma_HV \\
         -y $mlst_file \\
-        -1 $amr_file \\
+        -4 $amr_file \\
         $terra
 
     cat <<-END_VERSIONS > versions.yml
