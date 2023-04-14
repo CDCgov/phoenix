@@ -44,17 +44,16 @@ process SPADES {
     spades_complete=run_failure,no_scaffolds,no_contigs
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
 
-    if [ ! -s $unpaired_reads ]:
+    if [ ! -s $unpaired_reads ]; then
         spades.py \\
-        $args \\
-        --threads $task.cpus \\
-        --memory $maxmem \\
-        $single_reads \\
-        $input_reads \\
-        --phred-offset $phred_offset\\
-        -o ./
+            $args \\
+            --threads $task.cpus \\
+            --memory $maxmem \\
+            $input_reads \\
+            --phred-offset $phred_offset\\
+            -o ./
 
-    else:
+    else
         spades.py \\
             $args \\
             --threads $task.cpus \\
