@@ -39,7 +39,7 @@ process GENERATE_PIPELINE_STATS {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
-    def raw             = raw_qc ? "-a $raw_qc" : ""
+    def raw             = raw_qc ? "-a $raw_qc" : "" // if raw_qc is null return "-a $raw_qc" else return ""
     def fastp_total     = fastp_total_qc ? "-b $fastp_total_qc" : ""
     def k2_trim_report  = kraken2_trimd_report ? "-e $kraken2_trimd_report" : ""
     def k2_trim_summary = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
@@ -49,11 +49,11 @@ process GENERATE_PIPELINE_STATS {
     pipeline_stats_writer.sh \\
         $raw \\
         $fastp_total \\
+        -c $gc_content \\
+        -d ${prefix} \\
         $k2_trim_report \\
         $k2_trim_summary \\
         $krona_trim \\
-        -c $gc_content \\
-        -d ${prefix} \\
         -h $assembly_scaffolds \\
         -i $filtered_assembly \\
         -m $kraken2_weighted_report \\
