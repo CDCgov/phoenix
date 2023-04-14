@@ -27,6 +27,7 @@ process FASTP_SINGLES {
         echo "!!!!! - Both are empty"
         # Both are empty, do nothing??? Nope we handle now
         touch ${prefix}_singles.fastp.json
+        touch "${prefix}_empty.html"
         touch ${prefix}.singles.fastq
         gzip ${prefix}.singles.fastq
     else
