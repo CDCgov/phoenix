@@ -688,6 +688,9 @@ def add_srst2(ar_df, srst2_ar_df):
             column_list = [drug for drug in column_list if "aminoglycoside" not in drug]
         elif drug == "macrolide": # if macrolide is in the name remove "macrolide_lincosamide_streptogramin" otherwise we have duplicates...
             column_list = [drug for drug in column_list if "macrolide_lincosamide_streptogramin" not in drug]
+            column_list = [drug for drug in column_list if "lincosamide-macrolide-streptogramin" not in drug]
+        elif drug == "macrolide_lincosamide_streptogramin" or drug == "lincosamide-macrolide-streptogramin":
+            column_list = [drug for drug in column_list if "macrolide" not in drug]
         else:
             pass
         ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[column_list]], axis=1, sort=False) # setting column's order by combining dataframes
