@@ -47,7 +47,7 @@ process FASTP_SINGLES {
             echo "!!!!! - Neither is empty"
             # Both reads have contents
             zcat ${reads[0]} ${reads[1]} > ${prefix}.cat_singles.fastq
-            gzip ${prefix}.cat_singles.fastq.gz
+            gzip ${prefix}.cat_singles.fastq
         fi
         # Possibly will need to catch when in1 is empty, dont know how fastp handles it, but right now we need to many of its standard outputs
             fastp \\
