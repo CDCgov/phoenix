@@ -11,8 +11,8 @@ process ENTREZDIRECT_ESEARCH {
     val(database)
 
     output:
-    path("*_sra_metadata.csv")        , emit: metadata_csv
-    path("versions.yml") , emit: versions
+    path("*_sra_metadata.csv"), emit: metadata_csv
+    path("versions.yml"),       emit: versions
 
     when:
     task.ext.when == null || task.ext.when

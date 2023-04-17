@@ -10,9 +10,8 @@ process SRATOOLS_PREFETCH {
     path(sra_samples)
 
     output:
-    path('SRR*')             , emit: sra_folder
-    path('sra_samples.csv')  , emit: samplesheet
-    path('versions.yml')     , emit: versions
+    path('SRR*')        , emit: sra_folder
+    path('versions.yml'), emit: versions
 
     when:
     task.ext.when == null || task.ext.when

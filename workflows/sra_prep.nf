@@ -28,10 +28,11 @@ include { RENAME_SRA_FASTA               } from '../modules/local/rename_sra'
 ========================================================================================
 */
 
-def add_seq_name(input_ch) {
+def add_seq_name(read_1, read_2, metadata_csv) {
     def meta = [:] // create meta array
-    meta.id = input_ch[0].toString().substring(input_ch[0].toString().lastIndexOf("/") + 1) - '_1.fastq.gz'
-    output_array = [ meta, [input_ch[0], input_ch[1]]]
+    meta.id = metadata_csv.readLines().get(1).split(',')[29] // This gives the metadata sample name from the SRA
+    //meta.id = input_ch[0].toString().substring(input_ch[0].toString().lastIndexOf("/") + 1) - '_1.fastq.gz'  // this gives the SRR number
+    output_array = [ meta, [read_1, read_2]]
     return output_array
 }
 
@@ -62,10 +63,14 @@ workflow SRA_PREP {
     )
     ch_versions = ch_versions.mix(ENTREZDIRECT_ESEARCH.out.versions)
 
+    // First, create channel with reads and metadata in it
+    rename_sra_ch = SRATOOLS_FASTERQDUMP.out.reads.combine(ENTREZDIRECT_ESEARCH.out.metadata_csv)
+
     // Rename SRAs to have illumina style extension so PHX doesn't complain during input_check
+    // Also, get sample name from metadata and rename fastq file
     RENAME_SRA_FASTA ( 
         // Create tuple with sample name in it for the tag in RENAME_SRA_FASTA
-        SRATOOLS_FASTERQDUMP.out.reads.map{ it -> add_seq_name(it) }
+        rename_sra_ch.map{read_1, read_2, metadata_csv -> add_seq_name(read_1, read_2, metadata_csv) }
     )
     ch_versions = ch_versions.mix(RENAME_SRA_FASTA.out.versions)
 
