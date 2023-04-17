@@ -78,34 +78,22 @@ def FastP_QC_after(input_trimmed_json, input_singles_json, output_file, name):
     Q20_R2_percent = str(Decimal(Info2['q20_bases']) / Decimal(Info2['total_bases']))
     Q30_R2_bp = str(Info2['q30_bases'])
     Q30_R2_percent = str(Decimal(Info2['q30_bases']) / Decimal(Info2['total_bases']))
-    if os.stat(input_singles_json) == 0:
-        #Incoming singles JSON is an empty file, setting appropriate variables to reflect what would have normally been pulled out of this file
-        singles_total_info = '0'
-        Q20_Total_singles = '0'
-        Q30_Total_singles = '0'
-        Singles_Sequenced_bp = '0'
-        Singles_Sequenced_reads = '0'
-        unpaired_reads = '0'
-        unpaired_bases = '0'
-        Q20_unpaired_bp = '0'
-        Q20_unpaired_percent = '0'
-        Q30_unpaired_bp = '0'
-        Q30_unpaired_percent = '0'
-    else:
-        f = open(input_singles_json)
-        data = json.load(f)
-        f.close()
-        singles_total_info = data['summary']['after_filtering']
-        Q20_Total_singles = str(singles_total_info['q20_bases'])
-        Q30_Total_singles = str(singles_total_info['q30_bases'])
-        Singles_Sequenced_bp = str(singles_total_info['total_bases'])
-        Singles_Sequenced_reads = str(singles_total_info['total_reads'])
-        unpaired_reads = str(singles_total_info['total_reads'])
-        unpaired_bases = str(singles_total_info['total_bases'])
-        Q20_unpaired_bp = str(singles_total_info['q20_bases'])
-        Q20_unpaired_percent = str(Decimal(singles_total_info['q20_bases']) / Decimal(singles_total_info['total_bases']))
-        Q30_unpaired_bp = str(singles_total_info['q30_bases'])
-        Q30_unpaired_percent = str(Decimal(singles_total_info['q30_bases']) / Decimal(singles_total_info['total_bases']))
+    f = open(input_singles_json)
+    data = json.load(f)
+    f.close()
+    singles_total_info = data['summary']['after_filtering']
+    Q20_Total_singles = str(singles_total_info['q20_bases'])
+    Q30_Total_singles = str(singles_total_info['q30_bases'])
+    Singles_Sequenced_bp = str(singles_total_info['total_bases'])
+    Singles_Sequenced_reads = str(singles_total_info['total_reads'])
+    unpaired_reads = str(singles_total_info['total_reads'])
+    unpaired_bases = str(singles_total_info['total_bases'])
+    ## Found these are already calculated in the FASTP output
+    #Q20_unpaired_percent = str(Decimal(singles_total_info['q20_bases']) / Decimal(singles_total_info['total_bases']))
+    #Q30_unpaired_percent = str(Decimal(singles_total_info['q30_bases']) / Decimal(singles_total_info['total_bases']))
+    Q20_unpaired_percent=str(round(singles_total_info['q20_rate'],4))
+    Q30_unpaired_percent=str(round(singles_total_info['q30_rate'],4))
+
 
     Total_Sequenced_bp = str(int(Trimmed_Sequenced_bp) + int(Singles_Sequenced_bp))
     Total_Sequenced_reads = str(int(Trimmed_Sequenced_reads) + int(Singles_Sequenced_reads))
@@ -113,10 +101,7 @@ def FastP_QC_after(input_trimmed_json, input_singles_json, output_file, name):
     Q20_Total = str(int(Q20_Total_trimmed) + int(Q20_Total_singles))
     Q30_Total = str(int(Q30_Total_trimmed) + int(Q30_Total_singles))
 
-    Q20_unpaired_percent = str(Decimal(Q20_unpaired_bp) / Decimal(Singles_Sequenced_bp))
-    Q30_unpaired_percent = str(Decimal(Q30_unpaired_bp) / Decimal(Singles_Sequenced_bp))
-
-    Line = name + '\t' + raw_R1_reads + '\t' + raw_R1_bases + '\t' + raw_R2_reads + '\t' + raw_R2_bases + '\t' + unpaired_reads + '\t' + unpaired_bases + '\t' + Q20_Total + '\t' + Q30_Total + '\t' + Q20_R1_bp + '\t' + Q20_R2_bp + '\t' + Q20_unpaired_bp + '\t' + Q20_R1_percent + '\t' + Q20_R2_percent + '\t' + Q20_unpaired_percent + '\t' + Q30_R1_bp + '\t' + Q30_R2_bp + '\t' + Q30_unpaired_bp + '\t' + Q30_R1_percent + '\t' + Q30_R2_percent + '\t' + Q30_unpaired_percent + '\t' + Total_Sequenced_bp + '\t' + Total_Sequenced_reads
+    Line = name + '\t' + raw_R1_reads + '\t' + raw_R1_bases + '\t' + raw_R2_reads + '\t' + raw_R2_bases + '\t' + unpaired_reads + '\t' + unpaired_bases + '\t' + Q20_Total + '\t' + Q30_Total + '\t' + Q20_R1_bp + '\t' + Q20_R2_bp + '\t' + Q20_Total_singles + '\t' + Q20_R1_percent + '\t' + Q20_R2_percent + '\t' + Q20_unpaired_percent + '\t' + Q30_R1_bp + '\t' + Q30_R2_bp + '\t' + Q30_Total_singles + '\t' + Q30_R1_percent + '\t' + Q30_R2_percent + '\t' + Q30_unpaired_percent + '\t' + Total_Sequenced_bp + '\t' + Total_Sequenced_reads
     Out.write(Line)
     Out.close()
 
