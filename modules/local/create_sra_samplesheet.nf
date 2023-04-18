@@ -13,7 +13,9 @@ process CREATE_SRA_SAMPLESHEET {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     """
-    sra_samplesheet.py -d ${directory}/raw_fastqs
+    full_path=\$(readlink -f ${directory})
+
+    sra_samplesheet.py -d \$full_path
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -23,15 +23,15 @@ def write_samplesheet(directory, metadata_df):
     with open("samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample' + ',' + 'fastq_1' + ',' + 'fastq_2' + ',' + 'sra_number\n')
         for index, row in metadata_df.iterrows(): #loop over each row
-            sample = row['LibraryName']
+            sample = row['SampleName']
             sra_number = row['Run']
-            samplesheet.write(sample + "," + directory + sra_number + suff_R1 + "," + directory + sra_number + suff_R2 + "," + sra_number + '\n')
+            samplesheet.write(sample + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R1 + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R2 + "," + sra_number + '\n')
 
 def get_metadata():
     metadata_df = pd.DataFrame()
     for filename in glob.glob('*_sra_metadata.csv'):
-        df = pd.read_csv(filename, header=0)
-        df_less = df[['Run','LibraryName']]
+        df = pd.read_csv(filename, header=0, dtype='str')
+        df_less = df[['Run','SampleName']]
         metadata_df = pd.concat([metadata_df, df_less], axis=0, ignore_index=True)
     return metadata_df
 
