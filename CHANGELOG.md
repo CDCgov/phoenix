@@ -75,6 +75,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Implemented Enhancements:**  
 - entry point for scaffolds added using either `-entry SCAFFOLDS` or `-entry CDC_SCAFFOLDS` that runs everything post SPAdes step. New input parameters `--indir` and `--scaffold_ext` added for functionality of this entry point [commit f12da60](https://github.com/CDCgov/phoenix/commit/f12da60fc4bc18499aa020ef1fb2c13d35361bb1).  
+    - Supports scaffold files from shovill and spades.
 - entry point for sra added using either `-entry SRA` or `-entry CDC_SRA`. These entry points will pull samples from SRA based on what is passed to `--input_sra`, which is a file with one SRR number per line [commit a86ad3f](https://github.com/CDCgov/phoenix/commit/a86ad3fa92e287fe2be6f9631c40f9d079c5893e).  
 - Check now performed on input samplesheets to confirm the same sample id, forward read and reverse read aren't used multiple times in the samplesheet [commit fd6127f](https://github.com/CDCgov/phoenix/commit/fd6127ff091d0e455a7d553415f3a5229ab6b2ec).  
 - Changed many modules to `process_single` rather than `process_low` to reduce resource requirements for these steps.  
@@ -87,6 +88,9 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Added module `GET_RAW_STATS` to get raw stats, previously this was information was pulled from `FASTP_TRIMD` step, however, the input data here was post `BBDUK` which removes PhiX reads and adapters. Thus, the previous raw count was slightly off.  
 - Fixed python version information not showing up for `GET_TAXA_FOR_AMRFINDER` and `GATHERING_TRIMD_READ_QC_STATS`. This was added to `software_versions.yml`.  
 - Fixed issue where sample names with underscore it in caused incorrect parsing and contig number not showing up in GRiPHin reported genes [commit a0fdff5](https://github.com/CDCgov/phoenix/commit/a0fdff5536d72589535faa9bd790b8cb15f13ef7).  
+- Fixed `AttributeError: 'DataFrame' object has no attribute 'map'` error that came up in GRiPhin step when your set of samples had both a macrolide and macrolide_lincosamide_streptogramin AR gene [commit 460bdbc](https://github.com/CDCgov/phoenix/commit/460bdbc05a7c01f5962289d6bff1ab6eb8de0214).  
+- `Phoenix_Output_Report.tsv` was reporting %Coverage for FastANI in the `Taxa_Confidence` column rather than %ID. Now both reported when FastANI is successful [commit ]().  
+- `GRiPHin_Report.xlsx` was switch from reported rounded numbers for coverage/%similarity to reporting the floor as reporting 100% when 99.5% is the actual number is misleading and doesn't alert the user to SNPs in genes. Now by switching to the floor 99.5% would be reported as 99% [commit ]().  
 
 **Database Updates:**  
 
