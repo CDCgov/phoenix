@@ -1,5 +1,3 @@
-def VERSION = '1.0' // Version information not provided by tool on CLI
-
 process GET_MLST_SRST2 {
     tag "${meta.id}"
     label 'process_low'
@@ -23,6 +21,7 @@ process GET_MLST_SRST2 {
 
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container_version = task.container.toString() - "quay.io/biocontainers/python:"
     """
     if [[ "${status[0]}" == "False" ]]; then
         genus="empty"
@@ -97,7 +96,7 @@ process GET_MLST_SRST2 {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        fastp: \$(fastp --version 2>&1 | sed -e "s/fastp //g")
+        python: ${container_version}
     END_VERSIONS
     """
 }

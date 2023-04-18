@@ -208,9 +208,9 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_ar_file, sep='\t', header=0)
     DB = (gamma_ar_file.rsplit('/', 1)[-1]).rsplit('_')[1] + "_" + (gamma_ar_file.rsplit('/', 1)[-1]).rsplit('_')[2] + "([XNT/98AA/90]G:[98NT/90]S)"
-    percent_BP_IDs = round(gamma_df["BP_Percent"]*100).tolist() # round % to whole number
-    percent_codon_IDs = round(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
-    percent_lengths = round(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
+    percent_BP_IDs = np.floor(gamma_df["BP_Percent"]*100).tolist() # round % to whole number
+    percent_codon_IDs = np.floor(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
+    percent_lengths = np.floor(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
     conferred_resistances = gamma_df["Gene"].str.split("__").str[4] #parse "Gene" column in gamma file to get conferred resistance out of gene name
     contig_numbers = gamma_df["Contig"].str.replace(sample_name, "").str.split("_").str[1] #Parse "Contig" column in gamma file
     genes = gamma_df["Gene"].str.split("__").str[2] #Parse "Gene" column in gamma file to get gene name and accession
@@ -247,7 +247,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
         df["No_AR_Genes_Found"] = ""
         df.index = [sample_name]
     # Check for duplicate column names, multiple hits 
-    #print(df["mph(D)_NC_017312(macrolide_lincosamide_streptogramin)"])
+    #print(df["blaFOX-5_NG_049105.1(beta-lactam)"])
     df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     #print(final_df["mph(D)_NC_017312(macrolide_lincosamide_streptogramin)"])
@@ -257,9 +257,9 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_hv_file, sep='\t', header=0)
     DB = (gamma_hv_file.rsplit('/', 1)[-1]).rsplit('_')[1] + "_" + (gamma_hv_file.rsplit('/', 1)[-1]).rsplit('_')[2].strip(".gamma")
-    percent_BP_IDs = round(gamma_df["BP_Percent"]*100).tolist() # round % to whole number
-    percent_codon_IDs = round(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
-    percent_lengths = round(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
+    percent_BP_IDs = np.floor(gamma_df["BP_Percent"]*100).tolist() # round % to whole number
+    percent_codon_IDs = np.floor(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
+    percent_lengths = np.floor(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
     conferred_resistances = gamma_df["Gene"].str.split("__").str[4] #parse "Gene" column in gamma file to get conferred resistance out of gene name
     contig_numbers = gamma_df["Contig"].str.replace(sample_name, "").str.split("_").str[1] #Parse "Contig" column in gamma file
     hv_column_name = gamma_df["Gene"] #Parse "Gene" column in gamma file to get gene name and accession
@@ -287,8 +287,8 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     DB = (gamma_pf_file.rsplit('/', 1)[-1]).rsplit('_')[1] + "_" + (gamma_pf_file.rsplit('/', 1)[-1]).rsplit('_')[2].strip(".gamma") + "([95NT/60]) "
     if DB == "":
         DB ="Unknown"
-    percent_NT_IDs = round(gamma_df["Match_Percent"]*100).tolist() # round % to whole number
-    percent_lengths = round(gamma_df["Length_Percent"]*100).tolist() # round % to whole number - this is the coverage
+    percent_NT_IDs = np.floor(gamma_df["Match_Percent"]*100).tolist() # round % to whole number
+    percent_lengths = np.floor(gamma_df["Length_Percent"]*100).tolist() # round % to whole number - this is the coverage
     contig_numbers = gamma_df["Contig"].str.replace(sample_name, "").str.split("_").str[1] #Parse "Contig" column in gamma file
     pf_column_name = gamma_df["Gene"] #Parse "Gene" column in gamma file to get gene name and accession
     # loop through list of gamma info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
@@ -379,9 +379,9 @@ def parse_ani(fast_ani_file):
 def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     """Parsing the srst2 file run on the ar gene database."""
     srst2_df = pd.read_csv(srst2_file, sep='\t', header=0)
-    percent_lengths = round(srst2_df["coverage"]).tolist()
+    percent_lengths = np.floor(srst2_df["coverage"]).tolist()
     genes = srst2_df["allele"].tolist()
-    percent_BP_IDs = round(100 - srst2_df["divergence"]).tolist()
+    percent_BP_IDs = np.floor(100 - srst2_df["divergence"]).tolist()
     # Since srst2 currently doesn't handle () in the gene names we will make a quick detour to fix this... now fixing annotations
     #srst2_df.annotation = srst2_df.annotation.fillna(srst2_df.allele.map(ar_dic)) # this only fills in nas
     srst2_df['conferred_resistances'] = srst2_df['allele'].map(ar_dic)
@@ -390,7 +390,6 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     column_name = ["{}({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}]S".format(percent_BP_ID, percent_length) for percent_BP_ID, percent_length in zip(percent_BP_IDs, percent_lengths)]
-    print(coverage)
     # Minimum % length required to be included in report, otherwise removed from list
     if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 90]): 
         index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < 90 ] # get index for value removed to remove from other lists (values less than 90)
@@ -676,7 +675,7 @@ def add_srst2(ar_df, srst2_ar_df):
     #sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
     # loop over each gene with the same drug its name
     for drug in sorted_drug_names:
-        column_list = [col for col in ar_combined_df.columns if drug in col] # get column names filtered for each drug name
+        column_list = sorted([col for col in ar_combined_df.columns if drug in col]) # get column names filtered for each drug name
         # name since drug names have cross over with names we need to do some clean up
         if drug == "phenicol":
             column_list = [drug for drug in column_list if "quinolone" not in drug]

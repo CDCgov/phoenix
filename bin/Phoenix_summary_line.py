@@ -302,17 +302,17 @@ def Get_Taxa_Source(taxa_file, fastani):
         percent_match=fline[1]
         # set fastani as false as default
         if (taxa_source == "ANI_REFSEQ"):
-            with open(fastani, 'r' ) as f:
-                next(f) # just use to skip first line
-                for line in f:
+            with open(fastani, 'r' ) as f2:
+                next(f2) # just use to skip first line
+                for line in f2:
                     fastani_coverage = str(line.split('\t')[1])
                     percent_match = str(line.split('\t')[0]) + " ANI_match"
         if (taxa_source == "kraken2_trimmed"):
             percent_match = percent_match + "% Reads_assigned"
-            fastani_coverage = "N/A"
+            fastani_coverage = "Unknown"
         if (taxa_source == "kraken2_wtasmbld"):
             percent_match = percent_match + "% Scaffolds_assigned"
-            fastani_coverage = "N/A"
+            fastani_coverage = "Unknown"
         lines = f.readlines()
         for line in lines:
             if line.startswith("G:"):

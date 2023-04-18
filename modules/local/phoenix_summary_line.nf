@@ -14,7 +14,8 @@ process CREATE_SUMMARY_LINE {
     path(synopsis), \
     path(taxonomy_file), \
     path(trimd_ksummary), \
-    path(amr_report)
+    path(amr_report), \
+    path(fastani)
 
     output:
     path('*_summaryline.tsv'), emit: line_summary
@@ -25,6 +26,7 @@ process CREATE_SUMMARY_LINE {
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
     def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
     def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
+    def fastani_file    = fastani ? "-f $fastani" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     Phoenix_summary_line.py \\
@@ -39,6 +41,7 @@ process CREATE_SUMMARY_LINE {
         -n ${prefix} \\
         -s $synopsis \\
         -x $taxonomy_file \\
+        $fastani_file \\
         $trim_ksummary \\
         -o ${prefix}_summaryline.tsv
 

@@ -291,8 +291,9 @@ workflow SCAFFOLDS_EXTERNAL {
         .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{            meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
         .join(DETERMINE_TAXA_ID.out.taxonomy.map{                meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
-        .join(empty_ch.map{                                      meta, list            -> [[id:meta.id], list]},   by: [0])\
-        .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])
+        .join(empty_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
+        .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])\
+        .join(FORMAT_ANI.out.ani_best_hit.map{                   meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE (
