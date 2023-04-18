@@ -11,7 +11,7 @@ process FASTP_SINGLES {
     tuple val(meta), path('*.json')              , emit: json
     tuple val(meta), path('*.html')              , emit: html
     tuple val(meta), path('*.log')               , emit: log
-    path "versions.yml"                          , emit: versions
+    path("versions.yml")                         , emit: versions
     tuple val(meta), path('*.merged.fastq.gz')   , optional:true, emit: reads_merged
 
     when:
@@ -27,7 +27,7 @@ process FASTP_SINGLES {
         echo "!!!!! - Both are empty"
         # Both are empty, do nothing??? Nope we handle now
         #Create psuedo file as empty aint cutting it
-        echo -e '{\n\t\"summary\": {\n\t\t\"after_filtering\": {\n\t\t\t\"total_reads\":0,\n\t\t\t\"total_bases\":0,\n\t\t\t\"q20_bases\":0,\n\t\t\t\"q30_bases\":0,\n\t\t\t\"q20_rate\":0,\n\t\t\t\"q30_rate\":0,\n\t\t\t\"read1_mean_length\":0,\n\t\t\t\"gc_content\":0\n\t\t}\n\t}\n}' > ${prefix}_singles.fastp.json
+        create_empty_fastp_json.sh -n ${prefix}
 
         touch "${prefix}_empty.html"
         touch ${prefix}.singles.fastq
@@ -53,16 +53,15 @@ process FASTP_SINGLES {
             gzip ${prefix}.cat_singles.fastq
         fi
         # Possibly will need to catch when in1 is empty, dont know how fastp handles it, but right now we need to many of its standard outputs
-            fastp \\
-                --in1 ${prefix}.cat_singles.fastq.gz \\
-                --thread $task.cpus \\
-                --json ${prefix}_singles.fastp.json \\
-                --html ${prefix}_singles.fastp.html \\
-                --out1 ${prefix}.singles.fastq.gz \\
-                $args \\
-                2> ${prefix}.fastp.log
+        fastp \\
+            --in1 ${prefix}.cat_singles.fastq.gz \\
+            --thread $task.cpus \\
+            --json ${prefix}_singles.fastp.json \\
+            --html ${prefix}_singles.fastp.html \\
+            --out1 ${prefix}.singles.fastq.gz \\
+            $args \\
+            2> ${prefix}.fastp.log
     fi
-
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
