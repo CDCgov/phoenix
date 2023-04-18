@@ -27,7 +27,7 @@ process FASTP_SINGLES {
         echo "!!!!! - Both are empty"
         # Both are empty, do nothing??? Nope we handle now
         #Create psuedo file as empty aint cutting it
-        echo -e "{\n\t\"summary\": {\n\t\t\"after_filtering\": {\n\t\t\t\"total_reads\":0,\n\t\t\t\"total_bases\":0,\n\t\t\t\"q20_bases\":0,\n\t\t\t\"q30_bases\":0,\n\t\t\t\"q20_rate\":0,\n\t\t\t\"q30_rate\":0,\n\t\t\t\"read1_mean_length\":0,\n\t\t\t\"gc_content\":0\n\t\t}\n\t}\n}" > ${prefix}_singles.fastp.json
+        echo -e '{\n\t\"summary\": {\n\t\t\"after_filtering\": {\n\t\t\t\"total_reads\":0,\n\t\t\t\"total_bases\":0,\n\t\t\t\"q20_bases\":0,\n\t\t\t\"q30_bases\":0,\n\t\t\t\"q20_rate\":0,\n\t\t\t\"q30_rate\":0,\n\t\t\t\"read1_mean_length\":0,\n\t\t\t\"gc_content\":0\n\t\t}\n\t}\n}' > ${prefix}_singles.fastp.json
 
         touch "${prefix}_empty.html"
         touch ${prefix}.singles.fastq
