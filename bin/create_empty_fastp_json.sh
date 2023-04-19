@@ -42,8 +42,4 @@ while getopts ":h?n:" option; do
 done
 
 #literally just creating an empty json
-<<<<<<< HEAD
 echo -e '{\n\t"summary": {\n\t\t"after_filtering": {\n\t\t\t"total_reads":0,\n\t\t\t"total_bases":0,\n\t\t\t"q20_bases":0,\n\t\t\t"q30_bases":0,\n\t\t\t"q20_rate":0,\n\t\t\t"q30_rate":0,\n\t\t\t"read1_mean_length":0,\n\t\t\t"gc_content":0\n\t\t}\n\t}\n}' > ${sample_name}_singles.fastp.json
-=======
-echo -e '{\n	"summary": {\n		"after_filtering": {\n			"total_reads":0,\n			"total_bases":0,\n			"q20_bases":0,\n			"q30_bases":0,\n			"q20_rate":0,\n			"q30_rate":0,\n			"read1_mean_length":0,\n			"gc_content":0\n		}\n	}\n}' > ${sample_name}_singles.fastp.json
->>>>>>> 359aa5f22770ac982fba9fef6cecccd074d2ae01
