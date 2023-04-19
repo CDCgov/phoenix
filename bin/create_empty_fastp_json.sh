@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #
-# Description: Script to clean up the output of SPAdes
+# Description: Script to create empty json for single reads info to be used downstream
 #
 # Usage:
 #
@@ -15,12 +15,9 @@
 #
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./beforeSpades.sh -d path_to_output -n report.tsv"
-	echo "required: -d = path to specific sorted database with statistics related to entries from NCBI"
-	echo "required: -n = sample name of file"
-	echo "required: -k = kraken trimmed best hit summary"
-	echo "required: -s = synopsis file"
-}
+	echo "Usage is ./crate_empty_fastp_json.sh  -n sample_name"
+	echo "required: -n = sample name of isolate"
+	}
 
 # Parse command line options
 options_found=0
@@ -45,4 +42,8 @@ while getopts ":h?n:" option; do
 done
 
 #literally just creating an empty json
+<<<<<<< HEAD
 echo -e '{\n\t"summary": {\n\t\t"after_filtering": {\n\t\t\t"total_reads":0,\n\t\t\t"total_bases":0,\n\t\t\t"q20_bases":0,\n\t\t\t"q30_bases":0,\n\t\t\t"q20_rate":0,\n\t\t\t"q30_rate":0,\n\t\t\t"read1_mean_length":0,\n\t\t\t"gc_content":0\n\t\t}\n\t}\n}' > ${sample_name}_singles.fastp.json
+=======
+echo -e '{\n	"summary": {\n		"after_filtering": {\n			"total_reads":0,\n			"total_bases":0,\n			"q20_bases":0,\n			"q30_bases":0,\n			"q20_rate":0,\n			"q30_rate":0,\n			"read1_mean_length":0,\n			"gc_content":0\n		}\n	}\n}' > ${sample_name}_singles.fastp.json
+>>>>>>> 359aa5f22770ac982fba9fef6cecccd074d2ae01
