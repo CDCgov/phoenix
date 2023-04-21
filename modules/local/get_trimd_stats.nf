@@ -7,7 +7,6 @@ process GET_TRIMD_STATS {
     tuple val(meta), path(fastp_trimd_json), path(fastp_singles_json)
 
     output:
-    //tuple val(meta), path('*_raw_read_counts.txt')     , emit: fastp_raw_qc
     tuple val(meta), path('*_trimmed_read_counts.txt'), emit: fastp_total_qc
     path("versions.yml"),                               emit: versions
 

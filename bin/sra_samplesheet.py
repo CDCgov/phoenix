@@ -25,7 +25,7 @@ def write_samplesheet(directory, metadata_df):
         for index, row in metadata_df.iterrows(): #loop over each row
             sample = row['SampleName']
             sra_number = row['Run']
-            samplesheet.write(sample + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R1 + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R2 + "," + sra_number + '\n')
+            samplesheet.write(sample + "," + directory + sample + "/raw_fastqs/" + sample + suff_R1 + "," + directory + sample + "/raw_fastqs/" + sample + suff_R2 + "," + sra_number + '\n')
 
 def get_metadata():
     metadata_df = pd.DataFrame()
