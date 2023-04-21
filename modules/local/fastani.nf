@@ -1,6 +1,7 @@
 process FASTANI {
     tag "$meta.id"
     label 'process_low'
+    beforeScript 'ulimit -Ss unlimited'
     container 'staphb/fastani:1.33'
     /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/fastani:1.33--h0fdf51a_0' :
