@@ -1,6 +1,6 @@
 process FASTANI {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_medium'
     beforeScript 'ulimit -Ss unlimited'
     container 'staphb/fastani:1.33'
     /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
