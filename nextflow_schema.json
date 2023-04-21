@@ -71,7 +71,7 @@
                 "outdir": {
                     "type": "string",
                     "description": "Path to the output directory where the results will be saved. Can be a full or relative path.",
-                    "default": "${PWD}/results",
+                    "default": "${launchDir}/results",
                     "fa_icon": "fas fa-folder-open"
                 },
                 "email": {
