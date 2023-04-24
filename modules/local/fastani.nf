@@ -8,7 +8,7 @@ process FASTANI {
         'quay.io/biocontainers/fastani:1.33--h0fdf51a_0' }"*/
 
     input:
-    tuple val(meta), path(query), path(reference), path(reference_files)
+    tuple val(meta), path(query), path(reference), path(reference_dir)
     
 
     output:

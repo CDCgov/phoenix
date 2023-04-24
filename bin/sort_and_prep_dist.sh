@@ -22,7 +22,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?x:d:a:t:" option; do
+while getopts ":h?x:d:a:o:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -37,6 +37,10 @@ while getopts ":h?x:d:a:t:" option; do
 		a)
 			echo "Option -a triggered, argument = ${OPTARG}"
 			assembly_file=${OPTARG}
+			;;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			outdir=${OPTARG}
 			;;
 		t)
 			echo "Option -t triggered"
@@ -94,8 +98,8 @@ while IFS= read -r var; do
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
 		if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 0 ]); then
-		if [[ -f "${source}.gz" ]]; then
-			echo "${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
+		if [[ -f "${outdir}/${source}.gz" ]]; then
+			echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 #		if [[ -f "${GCF_name}.gz" ]]; then
 #			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
 			matches=$(( matches + 1))
@@ -108,12 +112,12 @@ while IFS= read -r var; do
 				beta=${filename:7:3}
 				charlie=${filename:10:3}
 				echo "Copying - ${filename}"
-				echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${source}.gz"
-				$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${source}.gz
+				echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz"
+				$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz
 	#			echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz"
 	#			wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz
 				#curl --remote-name --remote-time "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz"
-				echo "${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
+				echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 	#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
 				matches=$(( matches + 1))
 			else
