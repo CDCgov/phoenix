@@ -2,7 +2,7 @@ process DETERMINE_TOP_TAXA {
     tag "$meta.id"
     label 'process_low'
     container 'quay.io/jvhagey/phoenix:base_v1.0.0'
-    stageOutMode "copy"
+    //stageOutMode "copy"
 
     input:
     tuple val(meta), path(mash_dists), path(assembly_scaffolds)
