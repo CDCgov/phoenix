@@ -5,10 +5,10 @@ reports:
     display: "PHoeNIx output report"
   "**/*.synopsis":
     display: "Summary of stats for the an individual sample"
-    mimeType: txt
+    mimeType: text
   "**/*.tax":
     display: "Best taxonomy assignment from either Kraken2 or FastANI"
-    mimeType: txt
+    mimeType: text
   "**/**/mlst/*.tsv":
     display: "MLST"
   "**/**/quast/_report.tsv":
@@ -19,10 +19,10 @@ reports:
     display: "Best hit from kraken2 on trimmed reads"
   "**/**/Assembly/*.spades.log":
     display: "Spades log"
-    mimeType: txt
+    mimeType: text
   "**/**/Assembly/*.bbmap_filtered.log":
     display: "BBmap log from filtering <500bp contigs"
-    mimeType: txt
+    mimeType: text
   "**/**/AMRFinder/*_all_genes.tsv":
     display: "AMRFinder Output"
   "**/**/gamma_ar/*_ResGANNCBI_*_srst2.gamma":
@@ -30,7 +30,7 @@ reports:
     mimeType: tsv
   "**/**/gamma_hv/*_HyperVirulence_*.gamma":
     display: "GAMMA Hypervirulence calls"
-    mimeType: tsv
+    mimeType: text/tsv
   "**/**/gamma_pf/*_PF-Replicons_*.gamma":
     display: "GAMMA identified plasmid indicators"
-    mimeType: tsv
+    mimeType: text/tsv
