@@ -20,7 +20,7 @@ process KRAKENTOOLS_MAKEKREPORT {
     make_kreport.py \\
         --input ${kraken_output} \\
         --output ${prefix}.kraken2_wtasmbld.report.txt \\
-        --taxonomy ${kraken2db_path}/ktaxonomy.tsv \\
+        --taxonomy ${kraken2db_path}/ktax_map.k2 \\
         --use-read-len
     
     cat <<-END_VERSIONS > versions.yml
