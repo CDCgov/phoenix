@@ -1,36 +1,36 @@
 reports:
-  "**/multiqc/multiqc_report.html":
+  "multiqc/multiqc_report.html":
     display: "MultiQC HTML report"
-  "**/Phoenix_Output_Report.tsv":
+  "Phoenix_Output_Report.tsv":
     display: "PHoeNIx output report"
-  "**/*.synopsis":
+  "*.synopsis":
     display: "Summary of stats for the an individual sample"
     mimeType: text
-  "**/*.tax":
+  "*.tax":
     display: "Best taxonomy assignment from either Kraken2 or FastANI"
     mimeType: text
-  "**/**/mlst/*.tsv":
+  "**/mlst/*.tsv":
     display: "MLST"
-  "**/**/quast/_report.tsv":
+  "**/quast/*_report.tsv":
     display: "Quast report"
-  "**/**/kraken2_asmbld_weighted/*.wtasmbld_summary.txt":
+  "**/kraken2_asmbld_weighted/*.wtasmbld_summary.txt":
     display: "Best hit from kraken2 on weighted scaffolds"
-  "**/**/kraken2_trimd/*.trimd_summary.txt":
+  "**/kraken2_trimd/*.trimd_summary.txt":
     display: "Best hit from kraken2 on trimmed reads"
-  "**/**/Assembly/*.spades.log":
+  "**/Assembly/*.spades.log":
     display: "Spades log"
     mimeType: text
-  "**/**/Assembly/*.bbmap_filtered.log":
+  "**/Assembly/*.bbmap_filtered.log":
     display: "BBmap log from filtering <500bp contigs"
     mimeType: text
-  "**/**/AMRFinder/*_all_genes.tsv":
+  "**/AMRFinder/*_all_genes.tsv":
     display: "AMRFinder Output"
-  "**/**/gamma_ar/*_ResGANNCBI_*_srst2.gamma":
+  "**/gamma_ar/*_ResGANNCBI_*_srst2.gamma":
     display: "GAMMA AR gene calls"
     mimeType: tsv
-  "**/**/gamma_hv/*_HyperVirulence_*.gamma":
+  "**/gamma_hv/*_HyperVirulence_*.gamma":
     display: "GAMMA Hypervirulence calls"
     mimeType: text/tsv
-  "**/**/gamma_pf/*_PF-Replicons_*.gamma":
+  "**/gamma_pf/*_PF-Replicons_*.gamma":
     display: "GAMMA identified plasmid indicators"
     mimeType: text/tsv
