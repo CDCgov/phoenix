@@ -26,7 +26,7 @@
                     "type": "string",
                     "fa_icon": "fas fa-database",
                     "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
-                    "default": "null"
+                    "default": "kraken-db"
                 }
             }
         },
