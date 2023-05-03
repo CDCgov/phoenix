@@ -5,15 +5,14 @@ reports:
     display: "PHoeNIx output report"
   "*.synopsis":
     display: "Summary of stats for the an individual sample"
-    mimetype: text
+    mimeType: text/plain
   "*.tax":
     display: "Best taxonomy assignment from either Kraken2 or FastANI"
-    mimetype: text
+    mimeType: text/plain
   "**/qc_stats/*_raw_read_counts.txt":
     display: "Raw read stats."
   "**/qc_stats/*.bbduk.log":
     display: "BBDuk log from phiX and adapter removal."
-    mimetype: text
   "**/qc_stats/*.fastp.html":
     display: "Output of fastp run on raw reads."
   "**/qc_stats/*_1_fastqc.html":
@@ -40,10 +39,10 @@ reports:
     display: "AMRFinder Output"
   "**/gamma_ar/*_ResGANNCBI_*_srst2.gamma":
     display: "GAMMA AR gene calls"
-    mimetype: tsv
+    mimeType: text/csv
   "**/gamma_hv/*_HyperVirulence_*.gamma":
     display: "GAMMA Hypervirulence calls"
-    mimetype: text/tsv
+    mimeType: text/csv
   "**/gamma_pf/*_PF-Replicons_*.gamma":
     display: "GAMMA identified plasmid indicators"
-    mimetype: text/tsv
+    mimeType: text/csv
