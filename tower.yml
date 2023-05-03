@@ -5,10 +5,27 @@ reports:
     display: "PHoeNIx output report"
   "*.synopsis":
     display: "Summary of stats for the an individual sample"
-    mimeType: text
+    mimetype: text
   "*.tax":
     display: "Best taxonomy assignment from either Kraken2 or FastANI"
-    mimeType: text
+    mimetype: text
+  "**/qc_stats/*_raw_read_counts.txt":
+    display: "Raw read stats."
+  "**/qc_stats/*.bbduk.log":
+    display: "BBDuk log from phiX and adapter removal."
+    mimetype: text
+  "**/qc_stats/*.fastp.html":
+    display: "Output of fastp run on raw reads."
+  "**/qc_stats/*_1_fastqc.html":
+    display: "FastQC output of R1 trimmed reads."
+  "**/qc_stats/*_2_fastqc.html":
+    display: "FastQC output of R2 trimmed reads."
+  "**/qc_stats/*_trimmed_read_counts.txt":
+    display: "Trimmed and cleaned read stats."
+  "**/assembly/*.spades.log":
+    display: "Spades log"
+  "**/assembly/*.bbmap_filtered.log":
+    display: "BBmap log from filtering <500bp contigs"
   "**/mlst/*.tsv":
     display: "MLST"
   "**/quast/*_report.tsv":
@@ -17,20 +34,16 @@ reports:
     display: "Best hit from kraken2 on weighted scaffolds"
   "**/kraken2_trimd/*.trimd_summary.txt":
     display: "Best hit from kraken2 on trimmed reads"
-  "**/Assembly/*.spades.log":
-    display: "Spades log"
-    mimeType: text
-  "**/Assembly/*.bbmap_filtered.log":
-    display: "BBmap log from filtering <500bp contigs"
-    mimeType: text
+  "**/ANI/*.fastANI.txt":
+    display: "List of matches from FastANI. The top match information is the first line of the file."
   "**/AMRFinder/*_all_genes.tsv":
     display: "AMRFinder Output"
   "**/gamma_ar/*_ResGANNCBI_*_srst2.gamma":
     display: "GAMMA AR gene calls"
-    mimeType: tsv
+    mimetype: tsv
   "**/gamma_hv/*_HyperVirulence_*.gamma":
     display: "GAMMA Hypervirulence calls"
-    mimeType: text/tsv
+    mimetype: text/tsv
   "**/gamma_pf/*_PF-Replicons_*.gamma":
     display: "GAMMA identified plasmid indicators"
-    mimeType: text/tsv
+    mimetype: text/tsv
