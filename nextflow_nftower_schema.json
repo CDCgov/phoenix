@@ -26,7 +26,7 @@
                     "type": "string",
                     "fa_icon": "fas fa-database",
                     "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
-                    "default": "null"
+                    "default": "kraken-db"
                 }
             }
         },
@@ -72,8 +72,8 @@
             "properties": {
                 "outdir": {
                     "type": "string",
-                    "description": "Path to the output directory where the results will be saved. Can be a full or relative path.",
-                    "default": "${launchDir}/results",
+                    "description": "Path to the output directory where the results will be saved. Can be a full or relative path. For nf-tower use ${workDir}/results.",
+                    "default": "${workDir}/results",
                     "fa_icon": "fas fa-folder-open"
                 },
                 "email": {
