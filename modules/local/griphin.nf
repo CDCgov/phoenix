@@ -9,7 +9,7 @@ process GRIPHIN {
     path(outdir)
 
     output:
-    path("GRiPHin_Report.xlsx"),     emit: griphin_report
+    path("*_Report.xlsx"),           emit: griphin_report
     path("GRiPHin_samplesheet.csv"), emit: converted_samplesheet
     path("versions.yml"),            emit: versions
 
@@ -32,7 +32,7 @@ process GRIPHIN {
 
     full_path=\$(readlink -f ${outdir})
 
-    GRiPHin.py -d \$full_path -a $db
+    GRiPHin.py -d \$full_path -a $db --output ${outdir}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
