@@ -137,7 +137,7 @@ workflow KRAKEN2_WF {
         .join(quast.map{                                                               meta, report_tsv             -> [[id:meta.id], report_tsv]}, by: [0])
 
         // Getting Kraken best hit for assembled data
-        KRAKEN2_BH_WTASMBLD(
+        KRAKEN2_BH_WTASMBLD (
             kraken_bh_wtasmbld_ch, "wtasmbld"
         )
         ch_versions = ch_versions.mix(KRAKEN2_BH_WTASMBLD.out.versions)

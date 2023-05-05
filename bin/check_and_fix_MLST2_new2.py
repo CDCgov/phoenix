@@ -678,7 +678,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, docFile):
                                                         gene_id=i[4][j].split("_")[1]
                                                 else:
                                                         gene_id=i[4][j]
-                                                allele_section=allele_section+gene_id+"("+i[5][j]+")    "
+                                                allele_section=allele_section+gene_id+"("+i[5][j]+")\t"
                                         allele_section.strip()
                                         allele_section=allele_section+"\n"
                                 # Checks if current ST is either a number, has '-PARALOG' in it and that all previous ST types have completed
