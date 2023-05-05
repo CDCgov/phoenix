@@ -232,7 +232,7 @@ workflow SCAFFOLDS_EXQC {
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ it -> create_empty_ch(it) }, \
             DETERMINE_TAXA_ID.out.taxonomy, \
-            true
+            false //no reads to run srst2
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
