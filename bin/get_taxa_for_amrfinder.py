@@ -75,7 +75,7 @@ def complicated_genus(gen_sp, genus_match):
     # create Burkholderia sp. names for Burkholderia pesudomallei complex
     Burk_Pseudo_complex_sp = []
     Burk_Pseudo_sp = ["ABCPW 14", "BDU5", "MSMB0265", "MSMB1498", "MSMB1552", "MSMB1588", "MSMB1589WGS", "MSMB2040", "MSMB2041", "MSMB2042", "MSMB617WGS", "MSMB712", "MSMB713", "MSMB714", "TSV86"]
-    for sp in Burk_Pesudo_sp:
+    for sp in Burk_Pseudo_sp:
         name="Burkholderia_sp._" + sp
         Burk_Pseudo_complex_sp.append(name)
     # Look for correct match
