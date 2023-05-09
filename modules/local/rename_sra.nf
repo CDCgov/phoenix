@@ -1,5 +1,5 @@
 process RENAME_SRA_FASTA {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_low'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 

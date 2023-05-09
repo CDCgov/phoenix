@@ -864,7 +864,8 @@ def create_samplesheet(directory):
     with open("GRiPHin_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
     dirs = os.listdir(directory)
-    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
+    # If there are any new files added to the top directory they will need to be added here or you will get an error
+    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
     for sample in dirs:
         if sample not in skip_list:
             with open("GRiPHin_samplesheet.csv", "a") as samplesheet:

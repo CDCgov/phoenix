@@ -20,7 +20,7 @@ def write_samplesheet(directory, metadata_df):
     suff_R2 = "_R2_001.fastq.gz"
     if directory[-1] != "/": # if directory doesn't have trailing / add one
         directory = directory + "/"
-    with open("samplesheet.csv", "w") as samplesheet:
+    with open("sra_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample' + ',' + 'fastq_1' + ',' + 'fastq_2' + ',' + 'sra_number\n')
         for index, row in metadata_df.iterrows(): #loop over each row
             sample = row['SampleName']

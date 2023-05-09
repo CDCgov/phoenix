@@ -54,20 +54,7 @@ def complicated_genus(gen_sp, genus_match):
     Enterococcus_faecium = ['Enterococcus_faecium', 'Enterococcus_hirae']
     Streptococcus_pneumoniae = ['Streptococcus_pneumoniae', 'Streptococcus_mitis']
     # A. baumannii-calcoaceticus species complex
-    Acinetobacter = ['Acinetobacter_baumannii','Acinetobacter_calcoaceticus', 'Acinetobacter_lactucae', 'Acinetobacter_nosocomialis', 'Acinetobacter_pittii', 'Acinetobacter_seifertii']
-    # Burkholderia cepacia complex 
-    Burkholderia_cepacia = ['Burkholderia_aenigmatica', 'Burkholderia_ambifaria', 'Burkholderia_anthina','Burkholderia_arboris', 'Burkholderia_catarinensis', 'Burkholderia_cenocepacia', 'Burkholderia_cepacia',
-    'Burkholderia_cf._cepacia', 'Burkholderia_contaminans', 'Burkholderia_diffusa', 'Burkholderia_dolosa', 'Burkholderia_lata', 'Burkholderia_latens', 'Burkholderia_metallica', 'Burkholderia_multivorans', 
-    'Burkholderia_orbicola', 'Burkholderia_paludis', 'Burkholderia_pseudomultivorans', 'Burkholderia_puraquae', 'Burkholderia_pyrrocinia', 'Burkholderia_semiarida', 'Burkholderia_seminalis', 
-    'Burkholderia_sola', 'Burkholderia_stabilis', 'Burkholderia_stagnalis', 'Burkholderia_territorii', 'Burkholderia_ubonensis', 'Burkholderia_vietnamiensis', 'unclassified_Burkholderia_cepacia_complex' ]
-    # Burkholderia pesudomallei complex 
-    Burhkholderia_pesudomallei = ['Burkholderia_humptydooensis', 'Burkholderia_mallei', 'Burkholderia_mayonis', 'Burkholderia_oklahomensis', 'Burkholderia_pseudomallei', 'Burkholderia_savannae', 'Burkholderia_singularis', 'Burkholderia_thailandensis' ]
-    # create Burkholderia sp. names
-    Burk_complex_sp = []
-    Burk_sp = ["ABCPW 14", "BDU5", "MSMB0265", "MSMB1498", "MSMB1552", "MSMB1588", "MSMB1589WGS", "MSMB2040", "MSMB2041", "MSMB2042", "MSMB617WGS", "MSMB712", "MSMB713", "MSMB714", "TSV86"]
-    for sp in Burk_sp:
-        name="Burkholderia_sp._" + sp
-        Burk_complex_sp.append(name)
+    Acinetobacter_baumannii = ['Acinetobacter_baumannii','Acinetobacter_calcoaceticus', 'Acinetobacter_lactucae', 'Acinetobacter_nosocomialis', 'Acinetobacter_pittii', 'Acinetobacter_seifertii']
     # create Acinetobacter sp. names
     AB_complex_sp = []
     AB_sp = [ '0000-0051-1906','0000-0051-1909','0000-0051-8448','0000-0052-5682','0000-0052-7200','0000-0053-2562','0000-0053-7518','0000-0060-4277','0000-0082-5590','0000-0091-0263',
@@ -78,6 +65,19 @@ def complicated_genus(gen_sp, genus_match):
     for sp in AB_sp:
         name="Acinetobacter_sp._" + sp
         AB_complex_sp.append(name)
+    # Burkholderia cepacia complex 
+    Burkholderia_cepacia = ['Burkholderia_aenigmatica', 'Burkholderia_ambifaria', 'Burkholderia_anthina','Burkholderia_arboris', 'Burkholderia_catarinensis', 'Burkholderia_cenocepacia', 'Burkholderia_cepacia',
+    'Burkholderia_cf._cepacia', 'Burkholderia_contaminans', 'Burkholderia_diffusa', 'Burkholderia_dolosa', 'Burkholderia_lata', 'Burkholderia_latens', 'Burkholderia_metallica', 'Burkholderia_multivorans', 
+    'Burkholderia_orbicola', 'Burkholderia_paludis', 'Burkholderia_pseudomultivorans', 'Burkholderia_puraquae', 'Burkholderia_pyrrocinia', 'Burkholderia_semiarida', 'Burkholderia_seminalis', 
+    'Burkholderia_sola', 'Burkholderia_stabilis', 'Burkholderia_stagnalis', 'Burkholderia_territorii', 'Burkholderia_ubonensis', 'Burkholderia_vietnamiensis', 'unclassified_Burkholderia_cepacia_complex' ]
+    # Burkholderia pesudomallei complex 
+    Burkholderia_pesudomallei = ['Burkholderia_humptydooensis', 'Burkholderia_mallei', 'Burkholderia_mayonis', 'Burkholderia_oklahomensis', 'Burkholderia_pseudomallei', 'Burkholderia_savannae', 'Burkholderia_singularis', 'Burkholderia_thailandensis' ]
+    # create Burkholderia sp. names for Burkholderia pesudomallei complex
+    Burk_Pesudo_complex_sp = []
+    Burk_Pesudo_sp = ["ABCPW 14", "BDU5", "MSMB0265", "MSMB1498", "MSMB1552", "MSMB1588", "MSMB1589WGS", "MSMB2040", "MSMB2041", "MSMB2042", "MSMB617WGS", "MSMB712", "MSMB713", "MSMB714", "TSV86"]
+    for sp in Burk_Pesudo_sp:
+        name="Burkholderia_sp._" + sp
+        Burk_Pesudo_complex_sp.append(name)
     # Look for correct match
     if genus_match in Escherichia:
         taxa=str("Escherichia")
@@ -94,12 +94,16 @@ def complicated_genus(gen_sp, genus_match):
         taxa=str("Enterococcus_faecium")
     elif gen_sp in Campylobacter:
         taxa=str("Campylobacter")
-    elif gen_sp in Acinetobacter:
+    elif gen_sp in Acinetobacter_baumannii:
         taxa=str("Acinetobacter_baumannii")
     elif gen_sp in AB_complex_sp:
         taxa=str("Acinetobacter_baumannii")
-    elif gen_sp in Burk_complex_sp:
-        taxa=str("Burhkholderia_pesudomallei")
+    elif gen_sp in Burkholderia_cepacia:
+        taxa=str("Burkholderia_cepacia")
+    elif gen_sp in Burkholderia_pesudomallei:
+        taxa=str("Burkholderia_pesudomallei")
+    elif gen_sp in Burk_Pesudo_complex_sp:
+        taxa=str("Burkholderia_pesudomallei")
     else:
         taxa="No Match Found"
     return taxa
