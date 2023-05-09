@@ -71,13 +71,13 @@ def complicated_genus(gen_sp, genus_match):
     'Burkholderia_orbicola', 'Burkholderia_paludis', 'Burkholderia_pseudomultivorans', 'Burkholderia_puraquae', 'Burkholderia_pyrrocinia', 'Burkholderia_semiarida', 'Burkholderia_seminalis', 
     'Burkholderia_sola', 'Burkholderia_stabilis', 'Burkholderia_stagnalis', 'Burkholderia_territorii', 'Burkholderia_ubonensis', 'Burkholderia_vietnamiensis', 'unclassified_Burkholderia_cepacia_complex' ]
     # Burkholderia pesudomallei complex 
-    Burkholderia_pesudomallei = ['Burkholderia_humptydooensis', 'Burkholderia_mallei', 'Burkholderia_mayonis', 'Burkholderia_oklahomensis', 'Burkholderia_pseudomallei', 'Burkholderia_savannae', 'Burkholderia_singularis', 'Burkholderia_thailandensis' ]
+    Burkholderia_pseudomallei = ['Burkholderia_humptydooensis', 'Burkholderia_mallei', 'Burkholderia_mayonis', 'Burkholderia_oklahomensis', 'Burkholderia_pseudomallei', 'Burkholderia_savannae', 'Burkholderia_singularis', 'Burkholderia_thailandensis' ]
     # create Burkholderia sp. names for Burkholderia pesudomallei complex
-    Burk_Pesudo_complex_sp = []
-    Burk_Pesudo_sp = ["ABCPW 14", "BDU5", "MSMB0265", "MSMB1498", "MSMB1552", "MSMB1588", "MSMB1589WGS", "MSMB2040", "MSMB2041", "MSMB2042", "MSMB617WGS", "MSMB712", "MSMB713", "MSMB714", "TSV86"]
+    Burk_Pseudo_complex_sp = []
+    Burk_Pseudo_sp = ["ABCPW 14", "BDU5", "MSMB0265", "MSMB1498", "MSMB1552", "MSMB1588", "MSMB1589WGS", "MSMB2040", "MSMB2041", "MSMB2042", "MSMB617WGS", "MSMB712", "MSMB713", "MSMB714", "TSV86"]
     for sp in Burk_Pesudo_sp:
         name="Burkholderia_sp._" + sp
-        Burk_Pesudo_complex_sp.append(name)
+        Burk_Pseudo_complex_sp.append(name)
     # Look for correct match
     if genus_match in Escherichia:
         taxa=str("Escherichia")
@@ -100,10 +100,10 @@ def complicated_genus(gen_sp, genus_match):
         taxa=str("Acinetobacter_baumannii")
     elif gen_sp in Burkholderia_cepacia:
         taxa=str("Burkholderia_cepacia")
-    elif gen_sp in Burkholderia_pesudomallei:
-        taxa=str("Burkholderia_pesudomallei")
-    elif gen_sp in Burk_Pesudo_complex_sp:
-        taxa=str("Burkholderia_pesudomallei")
+    elif gen_sp in Burkholderia_pseudomallei:
+        taxa=str("Burkholderia_pseudomallei")
+    elif gen_sp in Burk_Pseudo_complex_sp:
+        taxa=str("Burkholderia_pseudomallei")
     else:
         taxa="No Match Found"
     return taxa
