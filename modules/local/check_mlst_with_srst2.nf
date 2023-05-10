@@ -17,16 +17,8 @@ process CHECK_MLST_WITH_SRST2 {
     task.ext.when == null || task.ext.when
 
     script:
-    // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) {
-        terra = ""
-    } else if (params.terra==true) {
-        terra = "--no-check-certificate"
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     """
-    wget $terra --secure-protocol=TLSv1_3 "https://pubmlst.org/data/dbases.xml"
+    wget --no-check-certificate --secure-protocol=TLSv1_3 "https://pubmlst.org/data/dbases.xml"
 
     if [[ "${status[0]}" == "True" ]]; then
         check_and_fix_MLST2_new2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file --docfile dbases.xml
