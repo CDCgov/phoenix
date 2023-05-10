@@ -40,9 +40,12 @@ def add_meta(folder) {
     def meta = [:] // create meta array
     meta.id = folder.toString().substring(folder.toString().lastIndexOf("/") + 1) // This gets the metadata sample name from the SRA, the +1 removes the /
     output_array = [ meta, folder]
+    // Brief pause to keep the ncbi requests from hitting a limit
+    sleep(5000) // sleep takes number as millisecond so this will pass for 5 seconds
     return output_array
 }
 
+file_count = 0
 workflow SRA_PREP {
     take:
         sra_samplesheet //params.input_sra
