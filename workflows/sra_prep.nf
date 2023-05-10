@@ -41,7 +41,7 @@ def add_meta(folder) {
     meta.id = folder.toString().substring(folder.toString().lastIndexOf("/") + 1) // This gets the metadata sample name from the SRA, the +1 removes the /
     output_array = [ meta, folder]
     // Brief pause to keep the ncbi requests from hitting a limit
-    sleep(5000) // sleep takes number as millisecond so this will pass for 5 seconds
+    sleep(5000) // sleep takes number as millisecond so this will pause for 5 seconds
     return output_array
 }
 
