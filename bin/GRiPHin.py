@@ -676,11 +676,12 @@ def add_srst2(ar_df, srst2_ar_df):
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
     #sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
     # loop over each gene with the same drug its name
-    for drug in sorted_drug_names:
+        for drug in sorted_drug_names:
         column_list = sorted([col for col in ar_combined_df.columns if drug in col]) # get column names filtered for each drug name
         # name since drug names have cross over with names we need to do some clean up
         if drug == "phenicol":
             column_list = [drug for drug in column_list if "quinolone" not in drug]
+            column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
         elif drug == "aminoglycoside":
             column_list = [drug for drug in column_list if "quinolone" not in drug]
         elif drug == "quinolone":
@@ -690,7 +691,11 @@ def add_srst2(ar_df, srst2_ar_df):
         elif drug == "macrolide": # if macrolide is in the name remove "macrolide_lincosamide_streptogramin" otherwise we have duplicates...
             column_list = [drug for drug in column_list if "macrolide_lincosamide_streptogramin" not in drug]
             column_list = [drug for drug in column_list if "lincosamide-macrolide-streptogramin" not in drug]
+            column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
         elif drug == "macrolide_lincosamide_streptogramin" or drug == "lincosamide-macrolide-streptogramin":
+            column_list = [drug for drug in column_list if "macrolide" not in drug]
+        elif drug == "macrolide-phenicol":
+            column_list = [drug for drug in column_list if "phenicol" not in drug]
             column_list = [drug for drug in column_list if "macrolide" not in drug]
         else:
             pass
