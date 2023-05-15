@@ -39,6 +39,7 @@ process BBDUK {
                 $args \\
                 $contaminants_fa \\
                 &> ${prefix}.bbduk.log
+        fi
     fi
 
     cat <<-END_VERSIONS > versions.yml
