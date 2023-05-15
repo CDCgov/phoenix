@@ -116,9 +116,9 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
         //check for FASTQ file corruption
-        FAIRY (
+        /*FAIRY (
             INPUT_CHECK.out.reads
-        ) 
+        ) */
 
         //unzip any zipped databases
         ASSET_CHECK (
@@ -134,7 +134,7 @@ workflow PHOENIX_EXQC {
 
         // Remove PhiX reads
         BBDUK (
-            INPUT_CHECK.out.reads, params.bbdukdb
+            INPUT_CHECK.out.reads, params.bbdukdb, GET_RAW_STATS.combined_raw_stats
         )
         ch_versions = ch_versions.mix(BBDUK.out.versions)
 
