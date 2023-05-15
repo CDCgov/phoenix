@@ -7,6 +7,7 @@ process CHECK_MLST_WITH_SRST2 {
 
     input:
     tuple val(meta), path(mlst_file), path(srst2_file), path(taxonomy_file), val(status)
+    path(local_dbases)
 
     output:
     tuple val(meta), path("*_combined.tsv"), emit: checked_MLSTs
@@ -26,12 +27,19 @@ process CHECK_MLST_WITH_SRST2 {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
-    wget $terra --secure-protocol=TLSv1_3 "https://pubmlst.org/data/dbases.xml"
+    wget $terra --secure-protocol=TLSv1_3 "https://pubmlst.org/data/dbases.xml" -O dbases2.xml
+
+    if [[ ! -s dbases2.xml ]]; then
+        mv dbases.xml local_dbases.xml
+        mv dbases2.xml dbases.xml
+    else
+        mv dbases2.xml remote_dbases.xml
+    fi
 
     if [[ "${status[0]}" == "True" ]]; then
-        check_and_fix_MLST2_new2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file --docfile dbases.xml
+        fix_MLST2.py --input $mlst_file --srst2 $srst2_file --taxonomy $taxonomy_file --mlst_database $local_dbases
     elif [[ "${status[0]}" == "False" ]]; then
-        check_and_fix_MLST2_new2.py --input $mlst_file --taxonomy $taxonomy_file --docfile dbases.xml
+        fix_MLST2.py --input $mlst_file --taxonomy $taxonomy_file --mlst_database $local_dbases
     else 
         echo "Shouldnt be able to get here, but checking just in case"
     fi

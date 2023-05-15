@@ -5,11 +5,12 @@ process GET_MLST_SRST2 {
 
     input:
     tuple val(meta),  path(taxonomy), val(status)
+    path(local_mlst_db)
 
     output:
-    tuple val(meta), path("*_getMLST_out.txt")                                 , optional:true, emit: getMLSTs
-    tuple val(meta), path("*.fasta")                                           , optional:true, emit: fastas
-    tuple val(meta), path("*_profiles.csv")                                    , optional:true, emit: profiles
+    //tuple val(meta), path("*_getMLST_out.txt")                                 , optional:true, emit: getMLSTs
+    //tuple val(meta), path("*.fasta")                                           , optional:true, emit: fastas
+    //tuple val(meta), path("*_profiles.csv")                                    , optional:true, emit: profiles
     tuple val(meta), path("*_getMLST_out_temp.txt")                            , optional:true, emit: getMLSTs_checker
     tuple val(meta), path("*_temp.fasta")                                      , optional:true, emit: fastas_checker
     tuple val(meta), path("*_profiles_temp.csv")                               , optional:true, emit: profiles_checker
@@ -39,7 +40,9 @@ process GET_MLST_SRST2 {
             echo "-\$test_title-"
         fi
         echo "\${genus}___\${species}"
-        convert_taxonomy_with_complexes_to_pubMLST.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
+        # Old way, now use provided DB with different name format
+        # convert_taxonomy_with_complexes_to_pubMLST.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
+        local_MLST_converter.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
 
         dbline=\$(tail -n1 DB_defs.txt)
         echo "\$dbline"
@@ -59,35 +62,34 @@ process GET_MLST_SRST2 {
                 touch "\${entry_no_spaces}_profiles_temp.csv"
                 echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
                 cp "\${entry_no_spaces}_getMLST_out.txt" "\${entry_no_spaces}_getMLST_out_temp.txt"
+                DBID="\${entry_no_spaces}"
             else
-                if [[ "\${entry}" = "Streptococcus thermophilus" ]]; then
-                    getMLST2_phoenix.py --species "\$entry" --force_scheme_name
-                else
-                    getMLST2_phoenix.py --species "\$entry"
-            fi
-            if [[ ! -f dbases.xml ]]; then
-                touch "\${entry_no_spaces}.fasta"
-                touch "\${entry_no_spaces}_profiles.csv"
-                touch "\${entry_no_spaces}_temp.fasta"
-                touch "\${entry_no_spaces}_profiles_temp.csv"
-                echo "DB:Server down(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
-                cp "\${entry_no_spaces}_getMLST_out.txt" "\${entry_no_spaces}_getMLST_out_temp.txt"
-            else
+                # Have not found any other delimiters other than underscore in all DB folders
+                DBID=\$(local_MLST_converter.py --original "\${entry}" --convert True)
+                echo -e "DB:\${DBID}\tdefs:\${DBID}.txt\tdel:'_'" > "\${DBID}_getMLST_out.txt"
+                cp "\${DBID}_getMLST_out.txt" "\${DBID}_getMLST_out_temp.txt"
+            
                 if [[ "\${entry}" = *"baumannii#1" ]]; then
-                    sed -i -e 's/Oxf_//g' "\${entry_no_spaces}.fasta"
-                    sed -i -e 's/Oxf_//g' "\${entry_no_spaces}_profiles.csv"
+                    sed -i -e 's/Oxf_//g' "\${DBID}.fasta"
+                    sed -i -e 's/Oxf_//g' "\${DBID}_profiles.csv"
                 elif [[ "\${entry}" = *"baumannii#2" ]]; then
-                    sed -i -e 's/Pas_//g' "\${entry_no_spaces}.fasta"
-                    sed -i -e 's/Pas_//g' "\${entry_no_spaces}_profiles.csv"
+                    sed -i -e 's/Pas_//g' "\${DBID}.fasta"
+                    sed -i -e 's/Pas_//g' "\${DBID}_profiles.csv"
                 fi
-                cp "\${entry_no_spaces}.fasta" "\${entry_no_spaces}_temp.fasta"
-                cp "\${entry_no_spaces}_profiles.csv" "\${entry_no_spaces}_profiles_temp.csv"
-                cp "\${entry_no_spaces}_getMLST_out.txt" "\${entry_no_spaces}_getMLST_out_temp.txt"
+                for allele_file in "${local_mlst_db}/pubmlst/\${DBID}/"*".tfa"; do
+                    echo "\${allele_file}"
+                    tail -n +1 "\${allele_file}" >> "\${DBID}_temp.fasta"
+                done
+            
+                #cp "\${DBID}.fasta" "\${DBID}_temp.fasta"
+                cp "${local_mlst_db}/pubmlst/\${DBID}/\${DBID}.txt" "\${DBID}_profiles_temp.csv"
+                #cp "\${DBID}_profiles.csv" "\${DBID}_profiles_temp.csv"
+                #cp "\${DBID}_getMLST_out.txt" "\${DBID}_getMLST_out_temp.txt"
             fi
-            echo "\${today}" > "\${entry_no_spaces}_pull_dates.txt"
-        fi
-        counter=\$(( counter + 1))
-    done
+            new_pull_date=\$(head "${local_mlst_db}/db_version")
+            echo "\${new_pull_date}" >> "\${DBID}_pull_date.txt"
+            counter=\$(( counter + 1))
+        done
     else
         echo "Did not run" > "${prefix}_getMLST_out_temp.txt"
         echo "Did not run" > "${prefix}_temp.fasta"

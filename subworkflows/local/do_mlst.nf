@@ -3,7 +3,7 @@
 //
 
 include { MLST                           } from '../../modules/local/mlst'
-include { SRST2_MLST                     } from '../../modules/local/srst2_mlst'
+include { SRST2_MLST                     } from '../../modules/local/srst2_mlst_local'
 include { GET_MLST_SRST2                 } from '../../modules/local/get_mlst_srst2'
 include { CHECK_MLST                     } from '../../modules/local/check_mlst'
 include { CHECK_MLST_WITH_SRST2          } from '../../modules/local/check_mlst_with_srst2'
@@ -13,6 +13,7 @@ workflow DO_MLST {
         trimmed_assembly  // channel: tuple val(meta), path(assembly)
         paired_reads      // channel: tuple val(meta), path(reads), path(paired_reads):FASTP_TRIMD.out.reads.map
         taxonomy          // channel: tuple val(meta), path(taxonomy): DETERMINE_TAXA_ID.out.taxonomy
+        mlst_db           // MLST DB to use with torstens MLST program
         do_srst2_mlst     //
 
     main:
@@ -21,7 +22,7 @@ workflow DO_MLST {
         mlst_ch = trimmed_assembly.map{meta, fasta    -> [[id:meta.id], fasta]}
 
         MLST (
-            mlst_ch
+            mlst_ch, mlst_db
         )
         ch_versions = ch_versions.mix(MLST.out.versions)
 
@@ -30,7 +31,7 @@ workflow DO_MLST {
 
         // Combining and adding flare to all MLST outputs
         CHECK_MLST (
-            check_main_mlst_ch
+            check_main_mlst_ch, mlst_db
         )
         ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
@@ -41,7 +42,7 @@ workflow DO_MLST {
 
             // Runs the getMLST portion of the srst2 mlst script to find right scheme to compare against
             GET_MLST_SRST2 (
-                pre_GET_MLST_SRST2_ch
+                pre_GET_MLST_SRST2_ch, mlst_db
             )
             ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
 
@@ -65,7 +66,7 @@ workflow DO_MLST {
 
             // Combining and adding flare to all MLST outputs
             CHECK_MLST_WITH_SRST2 (
-                combined_mlst_ch
+                combined_mlst_ch, mlst_db
             )
             ch_versions = ch_versions.mix(CHECK_MLST_WITH_SRST2.out.versions)
 

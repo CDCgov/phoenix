@@ -7,6 +7,7 @@ process CHECK_MLST {
 
     input:
     tuple val(meta), path(mlst_file), path(taxonomy_file)
+    path(local_dbases)
 
     output:
     tuple val(meta), path("*_combined.tsv"), emit: checked_MLSTs
@@ -18,7 +19,7 @@ process CHECK_MLST {
 
     script:
     """
-    check_and_fix_MLST2_new2.py --input $mlst_file --taxonomy $taxonomy_file
+    fix_MLST2.py --input $mlst_file --taxonomy $taxonomy_file --mlst_database ${local_dbases}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

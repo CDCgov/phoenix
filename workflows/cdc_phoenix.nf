@@ -122,7 +122,8 @@ workflow PHOENIX_EXQC {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch
+            params.zipped_sketch, \
+            params.custom_mlstdb
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -269,7 +270,7 @@ workflow PHOENIX_EXQC {
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads           -> [[id:meta.id], reads]}\
         .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{              meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]}, by: [0])\
-        .join(DETERMINE_TOP_TAXA.out.reference_files.map{            meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
+        .join(DETERMINE_TOP_TAXA.out.reference_dir.map{            meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -299,6 +300,7 @@ workflow PHOENIX_EXQC {
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             FASTP_TRIMD.out.reads, \
             DETERMINE_TAXA_ID.out.taxonomy, \
+            ASSET_CHECK.out.mlst_db, \
             true
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)

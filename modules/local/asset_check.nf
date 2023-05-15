@@ -4,10 +4,12 @@ process ASSET_CHECK {
 
     input:
     path(zipped_sketch)
+    path(mlst_db_path)
 
     output:
     path('*.msh'),        emit: mash_sketch
     path("versions.yml"), emit: versions
+    path('db'),           emit: mlst_db
 
     when:
     task.ext.when == null || task.ext.when
@@ -18,6 +20,13 @@ process ASSET_CHECK {
     if [[ ${zipped_sketch} = *.gz ]]
     then
         gunzip --force ${zipped_sketch}
+    else
+        :
+    fi
+
+    if [[ ${mlst_db_path} = *.gz ]]
+    then
+        tar -zvxf ${mlst_db_path}
     else
         :
     fi
