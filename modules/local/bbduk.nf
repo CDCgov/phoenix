@@ -25,7 +25,7 @@ process BBDUK {
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
     """
-    if [[ -f ${combined_raw_stats} && comb_stats_chk.py ${combined_raw_stats} == PASS]]:
+    if [[ -f ${combined_raw_stats} && comb_stats_chk.py ${combined_raw_stats} == PASS]];
     then
         maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
         bbduk.sh \\
