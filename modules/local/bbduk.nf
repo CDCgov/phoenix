@@ -25,17 +25,20 @@ process BBDUK {
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
     """
-    if [[ -f ${combined_raw_stats} && comb_stats_chk.py ${combined_raw_stats} == 'PASS']];
+    if [[ -f ${combined_raw_stats}]];
     then
-        maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
-        bbduk.sh \\
-            -Xmx\$maxmem \\
-            $raw \\
-            $trimmed \\
-            threads=$task.cpus \\
-            $args \\
-            $contaminants_fa \\
-            &> ${prefix}.bbduk.log
+        comb_stats_chk.py ${combined_raw_stats} >> result.txt
+        if grep -Fxq "PASS" result.txt;
+        then
+            maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
+            bbduk.sh \\
+                -Xmx\$maxmem \\
+                $raw \\
+                $trimmed \\
+                threads=$task.cpus \\
+                $args \\
+                $contaminants_fa \\
+                &> ${prefix}.bbduk.log
     fi
 
     cat <<-END_VERSIONS > versions.yml
