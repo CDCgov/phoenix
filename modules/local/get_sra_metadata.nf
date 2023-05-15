@@ -1,5 +1,5 @@
 process ENTREZDIRECT_ESEARCH {
-    tag "${sra_folder}"
+    tag "${meta.id}"
     label 'process_single'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -7,12 +7,12 @@ process ENTREZDIRECT_ESEARCH {
         'quay.io/biocontainers/entrez-direct:16.2--he881be0_1' }"
 
     input:
-    path(sra_folder) // using the folder name to get the srr number
+    tuple val(meta), path(sra_folder) // using the folder name to get the srr number
     val(database)
 
     output:
-    path("*_sra_metadata.csv"), emit: metadata_csv
-    path("versions.yml"),       emit: versions
+    tuple val(meta), path("*_sra_metadata.csv"), emit: metadata_csv
+    path("versions.yml"),                        emit: versions
 
     when:
     task.ext.when == null || task.ext.when

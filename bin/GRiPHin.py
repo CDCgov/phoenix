@@ -207,7 +207,7 @@ def duplicate_column_clean(df):
 def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_ar_file, sep='\t', header=0)
-    DB = (gamma_ar_file.rsplit('/', 1)[-1]).rsplit('_')[1] + "_" + (gamma_ar_file.rsplit('/', 1)[-1]).rsplit('_')[2] + "([XNT/98AA/90]G:[98NT/90]S)"
+    DB = (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2] + "([XNT/98AA/90]G:[98NT/90]S)"
     percent_BP_IDs = np.floor(gamma_df["BP_Percent"]*100).tolist() # round % to whole number
     percent_codon_IDs = np.floor(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
     percent_lengths = np.floor(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
@@ -256,7 +256,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
 def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_hv_file, sep='\t', header=0)
-    DB = (gamma_hv_file.rsplit('/', 1)[-1]).rsplit('_')[1] + "_" + (gamma_hv_file.rsplit('/', 1)[-1]).rsplit('_')[2].strip(".gamma")
+    DB = (gamma_hv_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_hv_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2].strip(".gamma")
     percent_BP_IDs = np.floor(gamma_df["BP_Percent"]*100).tolist() # round % to whole number
     percent_codon_IDs = np.floor(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
     percent_lengths = np.floor(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
@@ -284,7 +284,7 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
 def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     """Parsing the gamma file run on the plasmid marker database."""
     gamma_df = pd.read_csv(gamma_pf_file, sep='\t', header=0)
-    DB = (gamma_pf_file.rsplit('/', 1)[-1]).rsplit('_')[1] + "_" + (gamma_pf_file.rsplit('/', 1)[-1]).rsplit('_')[2].strip(".gamma") + "([95NT/60]) "
+    DB = (gamma_pf_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_pf_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2].strip(".gamma") + "([95NT/60]) "
     if DB == "":
         DB ="Unknown"
     percent_NT_IDs = np.floor(gamma_df["Match_Percent"]*100).tolist() # round % to whole number
@@ -342,6 +342,7 @@ def parse_mlst(mlst_file):
             DB_ID = split_line[3] # scheme name (i.e Pasteur or Oxford etc)
             Scheme = str(split_line[4]) # scheme number
             alleles = "-".join(split_line[5:]) # combine all alleles separated by -
+            print(alleles)
             if DB_ID in Scheme_list[0]: # check if scheme name is already in the scheme list
                 for i in range(0,len(Scheme_list[0])): #loop through list of scheme names
                     if DB_ID == Scheme_list[0][i]: # looking for matching scheme name that was already in the list 
@@ -363,6 +364,7 @@ def parse_mlst(mlst_file):
                 Scheme_list[2].append([alleles])
                 Scheme_list[3].append([source])
                 Scheme_list[4].append([date])
+    print(Scheme_list)
     return Scheme_list
 
 def parse_ani(fast_ani_file):
@@ -464,7 +466,7 @@ def Get_Metrics(srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, kraken_trim, krake
     try:
         FastANI_output_list = parse_ani(fast_ani_file)
     except FileNotFoundError: 
-        print("Warning: " + sample_name + "*.fastANI.txt not found")
+        print("Warning: " + sample_name + ".fastANI.txt not found")
         ani_source_file = fastani_ID = fastani_coverage = fastani_organism = 'Unknown'
         FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
     try:
@@ -539,7 +541,7 @@ def Get_Files(directory, sample_name):
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
     # create file names
-    trim_stats = directory + "/fastp_trimd/" + sample_name + "_trimmed_read_counts.txt"
+    trim_stats = directory + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt"
     kraken_trim = directory + "/kraken2_trimd/" + sample_name + ".trimd_summary.txt"
     kraken_wtasmbld = directory + "/kraken2_asmbld_weighted/" + sample_name + ".wtasmbld_summary.txt"
     quast_report = directory + "/quast/" + sample_name + "_report.tsv"
@@ -566,7 +568,7 @@ def Get_Files(directory, sample_name):
         gamma_hv_file = glob.glob(directory + "/gamma_hv/" + sample_name + "_*.gamma")[0]
     except IndexError:
         gamma_hv_file = directory + "/gamma_hv/" + sample_name + "_blank.gamma"
-    fast_ani_file = directory + "/ANI/fastANI/" + sample_name + ".fastANI.txt"
+    fast_ani_file = directory + "/ANI/" + sample_name + ".fastANI.txt"
     tax_file = directory + "/" + sample_name + ".tax" # this file will tell you if kraken2 wtassembly, kraken2 trimmed (reads) or fastani determined the taxa
     try:
         srst2_file = glob.glob(directory + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")[0]
@@ -674,11 +676,12 @@ def add_srst2(ar_df, srst2_ar_df):
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
     #sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
     # loop over each gene with the same drug its name
-    for drug in sorted_drug_names:
+        for drug in sorted_drug_names:
         column_list = sorted([col for col in ar_combined_df.columns if drug in col]) # get column names filtered for each drug name
         # name since drug names have cross over with names we need to do some clean up
         if drug == "phenicol":
             column_list = [drug for drug in column_list if "quinolone" not in drug]
+            column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
         elif drug == "aminoglycoside":
             column_list = [drug for drug in column_list if "quinolone" not in drug]
         elif drug == "quinolone":
@@ -688,7 +691,11 @@ def add_srst2(ar_df, srst2_ar_df):
         elif drug == "macrolide": # if macrolide is in the name remove "macrolide_lincosamide_streptogramin" otherwise we have duplicates...
             column_list = [drug for drug in column_list if "macrolide_lincosamide_streptogramin" not in drug]
             column_list = [drug for drug in column_list if "lincosamide-macrolide-streptogramin" not in drug]
+            column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
         elif drug == "macrolide_lincosamide_streptogramin" or drug == "lincosamide-macrolide-streptogramin":
+            column_list = [drug for drug in column_list if "macrolide" not in drug]
+        elif drug == "macrolide-phenicol":
+            column_list = [drug for drug in column_list if "phenicol" not in drug]
             column_list = [drug for drug in column_list if "macrolide" not in drug]
         else:
             pass
@@ -740,11 +747,15 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
     final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
-    return final_df, ar_max_col, columns_to_highlight, final_ar_df
+    #get database names
+    ar_db = final_df['AR_Database'].tolist()[0]
+    hv_db = final_df['HV_Database'].tolist()[0]
+    pf_db = final_df['Plasmid_Replicon_Database'].tolist()[0]
+    return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db,
 
-def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df):
+def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
-    writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
+    writer = pd.ExcelWriter((output + '_GRiPHin_Report.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
     df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=1)
     # Get the xlsxwriter workfbook worksheet objects for formating
@@ -776,12 +787,17 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
         worksheet.set_column(idx, idx, max_len)  # set column width
     # Setting colors for headers
     cell_format_light_blue = workbook.add_format({'bg_color': '#ADD8E6', 'font_color': '#000000', 'bold': True})
+    cell_format_grey_blue = workbook.add_format({'bg_color': '#72A0C1', 'font_color': '#000000', 'bold': True})
+    cell_format_green_blue = workbook.add_format({'bg_color': '#A3C1AD', 'font_color': '#000000', 'bold': True})
+    cell_format_green = workbook.add_format({'bg_color': '#ACE1AF', 'font_color': '#000000', 'bold': True})
     cell_format_lightgrey = workbook.add_format({'bg_color': '#D5D8DC', 'font_color': '#000000', 'bold': True})
     cell_format_grey = workbook.add_format({'bg_color': '#AEB6BF', 'font_color': '#000000', 'bold': True})
     cell_format_darkgrey = workbook.add_format({'bg_color': '#808B96', 'font_color': '#000000', 'bold': True})
     # Headers
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
-    worksheet.merge_range('D1:V1', "QC Metrics", cell_format_lightgrey)
+    worksheet.merge_range('D1:N1', "QC Metrics", cell_format_grey_blue)
+    worksheet.merge_range('O1:W1', "Taxonomic Information", cell_format_green)
+    worksheet.merge_range('X1:AC1', "MLST Schemes", cell_format_green_blue)
     worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
@@ -820,14 +836,14 @@ def write_to_excel(output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene
     ##    column_count = column_count + 1
     # Creating footers
     worksheet.write('A' + str(max_row + 4), 'Cells in YELLOW denote isolates outside of 40-100X coverage', yellow_format)
-    worksheet.write('A' + str(max_row + 5), 'Rows in ORANGE denote isolates that do not appear to harbor a “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
+    worksheet.write('A' + str(max_row + 5), 'Cells in ORANGE denote “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaoxa-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
     worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, stdev > 2.58, assembly length < 1Mbps)', red_format)
     # More footers - Disclaimer etc.
     # unbold
     no_bold = workbook.add_format({'bold': False})
-    worksheet.write('A' + str(max_row + 7),"^Using Antibiotic Resistance Gene database ResGANNCBI_20220915 (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
-    worksheet.write('A' + str(max_row + 8),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database (Hyper_Virulence_20220414); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
-    worksheet.write('A' + str(max_row + 9),"^^^Using the plasmid incompatibility replicons plasmidFinder database (PF-Replicons_20220916) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
+    worksheet.write('A' + str(max_row + 7),"^Using Antibiotic Resistance Gene database " + ar_db + " (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
+    worksheet.write('A' + str(max_row + 8),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database ( " + hv_db + " ); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
+    worksheet.write('A' + str(max_row + 9),"^^^Using the plasmid incompatibility replicons plasmidFinder database ( " + pf_db + " ) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
     worksheet.write('A' + str(max_row + 10),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.", bold)
     #adding review and date info
     worksheet.write('A' + str(max_row + 12), "Reviewed by:", no_bold)
@@ -853,7 +869,8 @@ def create_samplesheet(directory):
     with open("GRiPHin_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
     dirs = os.listdir(directory)
-    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
+    # If there are any new files added to the top directory they will need to be added here or you will get an error
+    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
     for sample in dirs:
         if sample not in skip_list:
             with open("GRiPHin_samplesheet.csv", "a") as samplesheet:
@@ -907,13 +924,13 @@ def main():
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col, columns_to_highlight, final_ar_df = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
     else:
         final_df = final_df
-    write_to_excel(args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df)
+    write_to_excel(args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db)
 
 if __name__ == '__main__':
     main()
