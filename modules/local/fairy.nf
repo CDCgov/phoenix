@@ -20,6 +20,8 @@ process FAIRY {
     """
     gzip -t ${reads[0]} 2>> ${fname}.txt
     gzip -t ${reads[1]} 2>> ${fnameB}.txt
+    
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
