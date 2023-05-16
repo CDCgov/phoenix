@@ -26,9 +26,9 @@ while getopts ":h?n:" option; do
 	case "${option}" in
 		\?)
 			echo "Invalid option found: ${OPTARG}"
-      show_help
-      exit 0
-      ;;
+			show_help
+			exit 0
+			;;
 		n)
 			echo "Option -n triggered, argument = ${OPTARG}"
 			sample_name=${OPTARG};;
