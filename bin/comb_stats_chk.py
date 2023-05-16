@@ -30,6 +30,7 @@ def reads_compare(file):
     with open(filename, "w") as tmp:
         tmp.write(outcome)
         tmp.close()
+    return tmp
     
 def main():
     args = parseArgs()
