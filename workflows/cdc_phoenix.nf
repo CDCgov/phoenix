@@ -33,7 +33,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
-include { BBDUK                          } from '../modules/local/gnome'
+include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
 include { SRST2_AR                       } from '../modules/local/srst2_ar'
