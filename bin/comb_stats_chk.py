@@ -14,7 +14,7 @@ def reads_compare(file):
     
     # Confirm number of R1 reads are the same as R2 reads
     if aggr_read_stats["R1[reads]"].equals(aggr_read_stats["R2[reads]"]) is True:
-        return approved
+        print(approved)
     else:
-        return failure
+        print(failure)
     
