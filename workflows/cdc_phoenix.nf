@@ -125,7 +125,7 @@ workflow PHOENIX_EXQC {
         FAIRY (
             INPUT_CHECK.out.reads
         )
-        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
+        ch_versions = ch_versions.mix(FAIRY.out.versions)
 
         // Get stats on raw reads
         GET_RAW_STATS (
