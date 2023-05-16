@@ -26,11 +26,10 @@ def reads_compare(file):
     prefix = file.split("_raw")[0]
 
     #write to .txt file
-    filename = prefix + "_results.txt"
+    filename = prefix + "_result.txt"
     with open(filename, "w") as tmp:
         tmp.write(outcome)
         tmp.close()
-    return tmp
     
 def main():
     args = parseArgs()
