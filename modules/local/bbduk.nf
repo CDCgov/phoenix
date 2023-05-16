@@ -1,13 +1,12 @@
 process BBDUK {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/bbtools:39.01'
+    container 'staphb/bbtools:39.01' //need to add python container
 
     input:
     tuple val(meta), path(reads)
-    path contaminants
-    tuple val(meta), path(combined_raw_stats) //only accept files with reads comparison for paired reads
-    //placeholder for single_end 
+    path contaminants 
+    tuple val(meta), path(outcome)
 
     output:
     tuple val(meta), path('*.fastq.gz'), emit: reads
@@ -25,8 +24,7 @@ process BBDUK {
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
     """
-    comb_stats_chk.py ${combined_raw_stats} >> result.txt
-    if grep -Fxq "PASS" result.txt
+    if grep -Fxq "PASS" ${outcome}
     then
         maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
         bbduk.sh \\

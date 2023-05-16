@@ -10,6 +10,7 @@ process GET_RAW_STATS {
     tuple val(meta), path('*_stats.txt'),           emit: raw_stats
     tuple val(meta), path('*_raw_read_counts.txt'), emit: combined_raw_stats
     path("versions.yml"),                           emit: versions
+    tuple val(meta), path('*_result.txt'),          emit: outcome
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -17,6 +18,8 @@ process GET_RAW_STATS {
     q30.py ${reads[0]} > ${prefix}_R1_stats.txt
     q30.py ${reads[1]} > ${prefix}_R2_stats.txt
     create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
+    comb_stats_chk.py ${prefix}_raw_read_counts.txt >> ${prefix}_result.txt
+    
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
