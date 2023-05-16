@@ -17,5 +17,15 @@ def reads_compare(file):
         outcome = approved
     else:
         outcome = failure
-    print(outcome)
+
+    prefix = file.split("_raw")[0]
+
+    #write to .txt file
+    filename = prefix + "_results.txt"
+    tmp = open(filename, "w")
+    tmp.write(outcome)
+    tmp.close()
+    
+
+
     
