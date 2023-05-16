@@ -1,7 +1,7 @@
 process BBDUK {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/bbtools:39.01' //need to add python container
+    container 'staphb/bbtools:39.01' 
 
     input:
     tuple val(meta), path(reads)
