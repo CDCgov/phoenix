@@ -14,10 +14,12 @@ process FAIRY {
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def fname = "${reads[0]}".minus(".fastq.gz")
+    def fnameB = "${reads[1]}".minus(".fastq.gz")
 
     """
-    gzip -t ${reads[0]} 2>> FAIry_corrupted_files.txt
+    gzip -t ${reads[0]} 2>> ${fname}.txt
+    gzip -t ${reads[1]} 2>> ${fnameB}.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
