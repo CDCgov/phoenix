@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 import pandas as pd
+import argparse
 
 ## Output check for messages indicating read pairs
 ## that do not match
 ## Written by Maria Diaz
 ## v.1.0.0
+def parseArgs(args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--raw_read', required=True)
+    return parser.parse_args()
 
 ## Compare the GET_RAW_STATS module combined reads output
 def reads_compare(file):
@@ -26,6 +31,11 @@ def reads_compare(file):
         tmp.write(outcome)
         tmp.close()
     
+def main():
+    args = parseArgs()
+    reads_compare(args.raw_read)
 
+if __name__ == '__main__':
+    main() 
 
     
