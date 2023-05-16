@@ -9,6 +9,7 @@ import numpy as np
 import argparse
 import json
 import re
+from re import search
 import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
@@ -215,7 +216,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     contig_numbers = gamma_df["Contig"].str.replace(sample_name, "").str.split("_").str[1] #Parse "Contig" column in gamma file
     genes = gamma_df["Gene"].str.split("__").str[2] #Parse "Gene" column in gamma file to get gene name and accession
     # loop through list of genes to combine with conferred resistance and make back into a pandas series
-    column_name = ["{}({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
+    column_name = ["{}_({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of gamma info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}AA/{:.0f}:#{}]G".format(percent_BP_ID, percent_codon_ID, percent_length, contig_number) for percent_BP_ID, percent_codon_ID, percent_length, contig_number in zip(percent_BP_IDs, percent_codon_IDs, percent_lengths, contig_numbers)]
     # Minimum % length required to be included in report, otherwise removed from list
@@ -389,7 +390,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     srst2_df['conferred_resistances'] = srst2_df['allele'].map(ar_dic)
     conferred_resistances = srst2_df['conferred_resistances'].tolist()
     # loop through list of genes to combine with conferred resistance and make back into a pandas series
-    column_name = ["{}({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
+    column_name = ["{}_({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}]S".format(percent_BP_ID, percent_length) for percent_BP_ID, percent_length in zip(percent_BP_IDs, percent_lengths)]
     # Minimum % length required to be included in report, otherwise removed from list
@@ -676,52 +677,61 @@ def add_srst2(ar_df, srst2_ar_df):
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
     #sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
     # loop over each gene with the same drug its name
-        for drug in sorted_drug_names:
+    for drug in sorted_drug_names:
+        drug = "(" + drug + ")"
         column_list = sorted([col for col in ar_combined_df.columns if drug in col]) # get column names filtered for each drug name
         # name since drug names have cross over with names we need to do some clean up
-        if drug == "phenicol":
-            column_list = [drug for drug in column_list if "quinolone" not in drug]
-            column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
-        elif drug == "aminoglycoside":
-            column_list = [drug for drug in column_list if "quinolone" not in drug]
-        elif drug == "quinolone":
-            column_list = [drug for drug in column_list if "phenicol" not in drug]
-            column_list = [drug for drug in column_list if "fluoroquinolone" not in drug]
-            column_list = [drug for drug in column_list if "aminoglycoside" not in drug]
-        elif drug == "macrolide": # if macrolide is in the name remove "macrolide_lincosamide_streptogramin" otherwise we have duplicates...
-            column_list = [drug for drug in column_list if "macrolide_lincosamide_streptogramin" not in drug]
-            column_list = [drug for drug in column_list if "lincosamide-macrolide-streptogramin" not in drug]
-            column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
-        elif drug == "macrolide_lincosamide_streptogramin" or drug == "lincosamide-macrolide-streptogramin":
-            column_list = [drug for drug in column_list if "macrolide" not in drug]
-        elif drug == "macrolide-phenicol":
-            column_list = [drug for drug in column_list if "phenicol" not in drug]
-            column_list = [drug for drug in column_list if "macrolide" not in drug]
-        else:
-            pass
+        #if drug == "phenicol":
+        #    column_list = [drug for drug in column_list if "quinolone" not in drug]
+        #    column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
+        #elif drug == "aminoglycoside":
+        #    column_list = [drug for drug in column_list if "quinolone" not in drug]
+        #elif drug == "quinolone":
+        #    column_list = [drug for drug in column_list if "phenicol" not in drug]
+        #    column_list = [drug for drug in column_list if "fluoroquinolone" not in drug]
+        #    column_list = [drug for drug in column_list if "aminoglycoside" not in drug]
+        #elif drug == "macrolide": # if macrolide is in the name remove "macrolide_lincosamide_streptogramin" otherwise we have duplicates...
+        #    column_list = [drug for drug in column_list if "macrolide_lincosamide_streptogramin" not in drug]
+        #    column_list = [drug for drug in column_list if "lincosamide-macrolide-streptogramin" not in drug]
+        #    column_list = [drug for drug in column_list if "macrolide-phenicol" not in drug]
+        #elif drug == "macrolide_lincosamide_streptogramin" or drug == "lincosamide-macrolide-streptogramin":
+        #    column_list = [drug for drug in column_list if "macrolide" not in drug]
+        #elif drug == "macrolide-phenicol":
+        #    column_list = [drug for drug in column_list if "phenicol" not in drug]
+        #    column_list = [drug for drug in column_list if "macrolide" not in drug]
+        #else:
+        #    pass
         ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[column_list]], axis=1, sort=False) # setting column's order by combining dataframes
     return ar_combined_ordered_df
 
 def big5_check(final_ar_df):
     """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
     columns_to_highlight = []
-    all_genes = final_ar_df.columns
+    final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
+    all_genes = final_ar_df.columns.tolist()
     big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
     blaOXA_48_like = [ "blaOXA-48", "blaOXA-54", "blaOXA-162", "blaOXA-181", "blaOXA-199", "blaOXA-204", "blaOXA-232", "blaOXA-244", "blaOXA-245", "blaOXA-247", "blaOXA-252", "blaOXA-370", "blaOXA-416", "blaOXA-436", \
     "blaOXA-438", "blaOXA-439", "blaOXA-484", "blaOXA-505", "blaOXA-514", "blaOXA-515", "blaOXA-517", "blaOXA-519", "blaOXA-535", "blaOXA-538", "blaOXA-546", "blaOXA-547", "blaOXA-566", "blaOXA-567", "blaOXA-731", \
     "blaOXA-788", "blaOXA-793", "blaOXA-833", "blaOXA-894", "blaOXA-918", "blaOXA-920", "blaOXA-922", "blaOXA-923", "blaOXA-924", "blaOXA-929", "blaOXA-933", "blaOXA-934", "blaOXA-1038", "blaOXA-1039", "blaOXA-1055", "blaOXA-1119", "blaOXA-1146" ]
-    # combine lists
-    big5_keep = big5_keep + blaOXA_48_like
+    # combine lists of all genes we want to highlight
+    #all_big5_keep = big5_keep + blaOXA_48_like
     # remove list of genes that look like big 5 but don't have activity
     big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "blaOXA-163", "blaOXA-405"]
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
-    for gene in all_genes:
-        for keep_gene in big5_keep:
-            if keep_gene in gene:
-                columns_to_highlight.append(gene)
+    for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
+        gene_name = gene.split('_(')[0] # remove drug name for matching genes
+        drug = gene.split('_(')[1] # keep drug name to add back later
+        # make sure we have a complete match for blaOXA-48 and blaOXA-48-like genes
+        if gene_name.startswith("blaOXA"): #check for complete blaOXA match
+            [ columns_to_highlight.append(gene_name + "(" + drug) for big5_keep_gene in blaOXA_48_like if gene_name == big5_keep_gene ]
+        else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
+            for big5 in big5_keep:
+                if search(big5, gene_name): #search for big5 gene substring in the gene name
+                    columns_to_highlight.append(gene_name + "(" + drug)
     #loop through list of genes to drop and removed if they are in the highlight list
-    for drop_gene in big5_drop:
-        columns_to_highlight = [gene for gene in columns_to_highlight if drop_gene not in gene]
+    for bad_gene in big5_drop:
+        #search for big5 gene substring in the gene name and remove if it is
+        [columns_to_highlight.remove(gene) for gene in columns_to_highlight if bad_gene in gene]
     return columns_to_highlight
 
 def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
@@ -870,7 +880,10 @@ def create_samplesheet(directory):
         samplesheet.write('sample,directory\n')
     dirs = os.listdir(directory)
     # If there are any new files added to the top directory they will need to be added here or you will get an error
-    skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
+    skip_list_a = glob.glob(directory + "/*_GRiPHin_Report.xlsx") # for if griphin is run on a folder that already has a report in it
+    skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
+    skip_list_b = ["Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
+    skip_list = skip_list_a + skip_list_b
     for sample in dirs:
         if sample not in skip_list:
             with open("GRiPHin_samplesheet.csv", "a") as samplesheet:
