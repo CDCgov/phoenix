@@ -22,9 +22,9 @@ def reads_compare(file):
 
     #write to .txt file
     filename = prefix + "_results.txt"
-    tmp = open(filename, "w")
-    tmp.write(outcome)
-    tmp.close()
+    with open(filename, "w") as tmp:
+        tmp.write(outcome)
+        tmp.close()
     
 
 
