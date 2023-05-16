@@ -5,6 +5,7 @@ process GET_RAW_STATS {
 
     input:
     tuple val(meta), path(reads)
+    path(versions) //replace w/FAIry output
 
     output:
     tuple val(meta), path('*_stats.txt'),           emit: raw_stats

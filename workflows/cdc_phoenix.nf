@@ -33,6 +33,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
+include { FAIRY                          } from '../modules/local/fairy'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
@@ -120,9 +121,15 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
+        // file corruption check
+        FAIRY (
+            INPUT_CHECK.out.reads
+        )
+        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
+
         // Get stats on raw reads
         GET_RAW_STATS (
-            INPUT_CHECK.out.reads
+            INPUT_CHECK.out.reads, FAIRY.out.versions
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
 
