@@ -128,7 +128,7 @@ workflow PHOENIX_EXQC {
 
         // Remove PhiX reads
         BBDUK (
-            INPUT_CHECK.out.reads, params.bbdukdb, GET_RAW_STATS.out.outcome
+            GET_RAW_STATS.out.reads, params.bbdukdb, GET_RAW_STATS.out.outcome
         )
         ch_versions = ch_versions.mix(BBDUK.out.versions)
 

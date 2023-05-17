@@ -74,6 +74,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v1.1.1...v1.2.0)
 
 **Implemented Enhancements:**  
+- Check performed on GET_RAW_STATS combined reads file to confirm read pair counts are identical before proceeding to BBDUK. Read pairs that do not match will not run through the remainder of the pipeline.
 - entry point for scaffolds added using either `-entry SCAFFOLDS` or `-entry CDC_SCAFFOLDS` that runs everything post SPAdes step. New input parameters `--indir` and `--scaffold_ext` added for functionality of this entry point [commit f12da60](https://github.com/CDCgov/phoenix/commit/f12da60fc4bc18499aa020ef1fb2c13d35361bb1).  
     - Supports scaffold files from shovill, spades and unicycler.
 - entry point for sra added using either `-entry SRA` or `-entry CDC_SRA`. These entry points will pull samples from SRA based on what is passed to `--input_sra`, which is a file with one SRR number per line [commit a86ad3f](https://github.com/CDCgov/phoenix/commit/a86ad3fa92e287fe2be6f9631c40f9d079c5893e).  

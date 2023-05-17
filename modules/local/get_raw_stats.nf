@@ -12,6 +12,7 @@ process GET_RAW_STATS {
     tuple val(meta), path('*_raw_read_counts.txt'), emit: combined_raw_stats
     path("versions.yml"),                           emit: versions
     tuple val(meta), path('*_result.txt'),          emit: outcome
+    tuple val(meta), path('*.fastq.gz'),            emit: reads
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
