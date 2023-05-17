@@ -33,7 +33,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
-include { FAIRY                          } from '../modules/local/fairy'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
@@ -115,11 +114,6 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
-        //check for FASTQ file corruption
-        FAIRY (
-            INPUT_CHECK.out.reads
-        ) 
-
         //unzip any zipped databases
         ASSET_CHECK (
             params.zipped_sketch, \
@@ -135,7 +129,7 @@ workflow PHOENIX_EXQC {
 
         // Remove PhiX reads
         BBDUK (
-            INPUT_CHECK.out.reads, params.bbdukdb
+            INPUT_CHECK.out.reads, params.bbdukdb, GET_RAW_STATS.out.outcome
         )
         ch_versions = ch_versions.mix(BBDUK.out.versions)
 
