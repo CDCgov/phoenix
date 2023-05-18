@@ -12,7 +12,7 @@ process GET_RAW_STATS {
     tuple val(meta), path('*_raw_read_counts.txt'), emit: combined_raw_stats
     path("versions.yml"),                           emit: versions
     tuple val(meta), path('*_result.txt'),          emit: outcome
-    tuple val(meta), path('*1.fastq.gz'),             emit: reads
+    tuple val(meta), path('*.fastq.gz'),             emit: reads
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -27,10 +27,11 @@ process GET_RAW_STATS {
     mv ${num1}C.fastq.gz ${num1}.fastq.gz
 
     q30.py ${reads[1]} > ${prefix}_R2_stats.txt
-
+    mv ${reads[1]} ${num2}C.fastq.gz
     create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
     comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
-    mv ${reads[1]} ${num2}C.fastq.gz
+    
+    mv ${num1}C.fastq.gz ${num1}.fastq.gz
     mv ${num2}C.fastq.gz ${num2}.fastq.gz
 
 
