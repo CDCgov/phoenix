@@ -68,10 +68,10 @@ process GET_MLST_SRST2 {
                 echo -e "DB:\${DBID}\tdefs:\${DBID}.txt\tdel:'_'" > "\${DBID}_getMLST_out.txt"
                 cp "\${DBID}_getMLST_out.txt" "\${DBID}_getMLST_out_temp.txt"
             
-                if [[ "\${entry}" = *"baumannii#1" ]]; then
+                if [[ "\${DBID}" = *"baumannii#1" ]]; then
                     sed -i -e 's/Oxf_//g' "\${DBID}.fasta"
                     sed -i -e 's/Oxf_//g' "\${DBID}_profiles.csv"
-                elif [[ "\${entry}" = *"baumannii#2" ]]; then
+                elif [[ "\${DBID}" = *"baumannii#2" ]]; then
                     sed -i -e 's/Pas_//g' "\${DBID}.fasta"
                     sed -i -e 's/Pas_//g' "\${DBID}_profiles.csv"
                 fi
