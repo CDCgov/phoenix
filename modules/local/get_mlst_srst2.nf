@@ -50,22 +50,21 @@ process GET_MLST_SRST2 {
         echo "\${#db_array[@]}-\${db_array[@]}"
         #num_dbs="\${#db_array[@]}"
         counter=1
-        for entry in "\${db_array[@]}"
+        for DBID in "\${db_array[@]}"
         do
             echo "Entry#\${counter}-\${entry}|"
-            entry_no_spaces="\${entry// /_}"
-            if [[ "\${entry}" = "No match found" ]]; then
-                touch "\${entry_no_spaces}.fasta"
-                touch "\${entry_no_spaces}_profiles.csv"
-                touch "\${entry_no_spaces}_pull_dates.txt"
-                touch "\${entry_no_spaces}_temp.fasta"
-                touch "\${entry_no_spaces}_profiles_temp.csv"
-                echo "DB:No match found(\${genus} \${species})       defs:\${entry_no_spaces}_profiles.csv        del:''" > \${entry_no_spaces}_getMLST_out.txt
-                cp "\${entry_no_spaces}_getMLST_out.txt" "\${entry_no_spaces}_getMLST_out_temp.txt"
-                DBID="\${entry_no_spaces}"
+            if [[ "\${DBID}" = "No match found" ]]; then
+                touch "No_match_found.fasta"
+                touch "No_match_found_profiles.csv"
+                touch "No_match_found_pull_dates.txt"
+                touch "No_match_found_temp.fasta"
+                touch "No_match_found_profiles_temp.csv"
+                echo "DB:No match found(\${genus} \${species})       defs:No_match_found_profiles.csv        del:''" > No_match_found_getMLST_out.txt
+                cp "No_match_found_getMLST_out.txt" "No_match_found_getMLST_out_temp.txt"
+                new_pull_date=\$(head "${local_mlst_db}/db_version")
+                echo "\${new_pull_date}" >> "No_match_found_pull_date.txt"
             else
                 # Have not found any other delimiters other than underscore in all DB folders
-                DBID=\$(local_MLST_converter.py --original "\${entry}" --convert True)
                 echo -e "DB:\${DBID}\tdefs:\${DBID}.txt\tdel:'_'" > "\${DBID}_getMLST_out.txt"
                 cp "\${DBID}_getMLST_out.txt" "\${DBID}_getMLST_out_temp.txt"
             
@@ -80,14 +79,11 @@ process GET_MLST_SRST2 {
                     echo "\${allele_file}"
                     tail -n +1 "\${allele_file}" >> "\${DBID}_temp.fasta"
                 done
-            
-                #cp "\${DBID}.fasta" "\${DBID}_temp.fasta"
+
                 cp "${local_mlst_db}/pubmlst/\${DBID}/\${DBID}.txt" "\${DBID}_profiles_temp.csv"
-                #cp "\${DBID}_profiles.csv" "\${DBID}_profiles_temp.csv"
-                #cp "\${DBID}_getMLST_out.txt" "\${DBID}_getMLST_out_temp.txt"
+                new_pull_date=\$(head "${local_mlst_db}/db_version")
+                echo "\${new_pull_date}" >> "\${DBID}_pull_date.txt"
             fi
-            new_pull_date=\$(head "${local_mlst_db}/db_version")
-            echo "\${new_pull_date}" >> "\${DBID}_pull_date.txt"
             counter=\$(( counter + 1))
         done
     else

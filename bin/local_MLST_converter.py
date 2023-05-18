@@ -12,8 +12,6 @@ def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to convert taxonomy to correctly formatted mlst database name(s) to pull from pubmlst')
     parser.add_argument('-G', '--genus', dest="genus", required=False, help='genus of taxonomy')
     parser.add_argument('-s', '--species', dest="species", required=False, help='species of taxonomy')
-    parser.add_argument('-o', '--original', dest="original", required=False, help='DB name from the original mlst tool, to look up name format for pubmlst downloading')
-    parser.add_argument('-c', '--convert', dest="convert", required=False, default="False", help='flag if needing to convert from standard to srst2 (downloadable) db name')
     return parser.parse_args()
 
 # Function to look up correct tax name for finding correct folder
@@ -782,7 +780,7 @@ def gs_to_lookup_tax(genus, species):
         'Cronobacter' : 'Cronobacter spp.',
         'Edwardsiella' : 'Edwardsiella spp.',
         'Geotrichum' : 'Geotrichum spp.',
-        'Leptospira' : 'Leptospira spp.',
+        'Leptospira' : 'Leptospira spp.,',
         #Taxonomy doesnt come labelled as mycobacteria, changing to mycobactierum
         #'Mycobacteria' : 'Mycobacteria spp.',
         'Mycobacterium' : 'Mycobacteria spp.',
@@ -953,7 +951,7 @@ def convert(to_convert):
         'Tenacibaculum spp.' : 'tenacibaculum',
         'Ureaplasma spp.' : 'ureaplasma',
         'Vibrio spp.' : 'vibrio',
-        'Wolbachia  spp.' : 'wolbachia',
+        'Wolbachia spp.' : 'wolbachia',
     }
     #print("Looking to convert:",to_convert)
     if str(to_convert) in best_tax_to_DBID:
@@ -964,10 +962,4 @@ def convert(to_convert):
         return "No match found"
 
 args = parseArgs()
-if str(args.convert)!="False":
-    #print("Looking to convert:",args.original)
-
-    convert(args.original)
-else:
-    #print("Looking up Genus species:",args.genus,args.species)
-    gs_to_lookup_tax(args.genus,args.species)
+convert(gs_to_lookup_tax(args.genus,args.species))
