@@ -22,13 +22,13 @@ process GET_RAW_STATS {
     """
     q30.py ${reads[0]} > ${prefix}_R1_stats.txt
     
-    mv ${reads[0]} ${num1}C.fastq.gz
-    
-    mv ${num1}C.fastq.gz ${num1}.fastq.gz
-
     q30.py ${reads[1]} > ${prefix}_R2_stats.txt
+
+    mv ${reads[0]} ${num1}C.fastq.gz
     mv ${reads[1]} ${num2}C.fastq.gz
+
     create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
+    
     comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
     
     mv ${num1}C.fastq.gz ${num1}.fastq.gz
