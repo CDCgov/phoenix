@@ -20,6 +20,9 @@ process GET_RAW_STATS {
     def num2 = "${reads[1]}".minus(".fastq.gz")
 
     """
+    echo "FAIL" > ${num1}_result.txt
+    echo "FAIL" > ${num2}_result.txt
+    
     q30.py ${reads[0]} > ${prefix}_R1_stats.txt
     
     q30.py ${reads[1]} > ${prefix}_R2_stats.txt
