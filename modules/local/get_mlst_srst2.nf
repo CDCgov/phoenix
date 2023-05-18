@@ -52,7 +52,7 @@ process GET_MLST_SRST2 {
         counter=1
         for DBID in "\${db_array[@]}"
         do
-            echo "Entry#\${counter}-\${entry}|"
+            echo "Entry#\${counter}-\${DBID}|"
             if [[ "\${DBID}" = "No match found" ]]; then
                 touch "No_match_found.fasta"
                 touch "No_match_found_profiles.csv"

@@ -798,10 +798,12 @@ def gs_to_lookup_tax(genus, species):
     #print("Looking up Genus species:",genus,species)
     if str(genus+" "+species) in specific_dict:
         #f.write(specific_dict[args.genus+" "+args.species]+"\n")
-        print(specific_dict[genus+" "+species])
+        #print(specific_dict[genus+" "+species])
+        return specific_dict[genus+" "+species]
     elif str(genus) in generic_dict:
         #f.write(generic_dict[args.genus]+"\n")
-        print(generic_dict[genus])
+        #print(generic_dict[genus])
+        return generic_dict[genus]
     else:
         #f.write("No Match Found\n")
         print("No match found")
@@ -956,10 +958,10 @@ def convert(to_convert):
     #print("Looking to convert:",to_convert)
     if str(to_convert) in best_tax_to_DBID:
         print(best_tax_to_DBID[to_convert])
-        return best_tax_to_DBID[to_convert]
+        #return best_tax_to_DBID[to_convert]
     else:
-        print(to_convert, "- No match found")
-        return "No match found"
+        print("No match found")
+        #return "No match found"
 
 args = parseArgs()
 convert(gs_to_lookup_tax(args.genus,args.species))
