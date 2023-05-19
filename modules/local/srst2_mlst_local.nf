@@ -39,14 +39,10 @@ process SRST2_MLST {
                 no_match="True"
                 mlst_db="No match found"
             else
-                # because this is so messed up and cant pass things through nextflow easily
-                #mv "\${mlst_db}_temp.fasta" "\${mlst_db}.fasta"
                 mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
-                #mv "\${mlst_defs//_profiles_temp.csv/_profiles.csv}" "\${mlst_defs}"
-                #current_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
                 mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
 
-                echo "Test: \${mlst_db} \${mlst_defs} \${mlst_delimiter}"
+                echo "Test: \${mlst_db} \${mlst_db}_profiles.csv \${mlst_delimiter}"
 
                 srst2 ${read_s} \\
                     --threads $task.cpus \\
