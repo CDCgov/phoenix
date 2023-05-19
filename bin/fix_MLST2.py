@@ -510,7 +510,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 				#print(i)
 				allele_section=""
 				if i[3] == 1:
-					allele_section="-"
+					allele_section="-\n"
 				else:
 					for j in range (0,len(i[4])):
 						if len(i[4][j].split("_")) > 1:
