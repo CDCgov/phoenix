@@ -34,7 +34,6 @@ process SRST2_MLST {
         do
             no_match="False"
             echo "\${getout}"
-            filename_db=\$(echo "\${getout}" | rev | cut -d'_' -f4- | rev)
             line="\$(tail -n1 \${getout})"
             if [[ "\${line}" = "DB:No match found"* ]] || [[ "\${line}" = "DB:Server down"* ]]; then
                 no_match="True"
