@@ -41,7 +41,7 @@ process SRST2_MLST {
             else
                 # because this is so messed up and cant pass things through nextflow easily
                 #mv "\${mlst_db}_temp.fasta" "\${mlst_db}.fasta"
-                current_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
+                mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
                 #mv "\${mlst_defs//_profiles_temp.csv/_profiles.csv}" "\${mlst_defs}"
                 #current_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
                 mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
@@ -51,8 +51,8 @@ process SRST2_MLST {
                 srst2 ${read_s} \\
                     --threads $task.cpus \\
                     --output \${scheme_count}_${prefix} \\
-                    --mlst_db \${current_db}_temp.fasta \\
-                    --mlst_definitions \${current_db}_profiles_temp.csv \\
+                    --mlst_db \${mlst_db}_temp.fasta \\
+                    --mlst_definitions \${mlst_db}_profiles_temp.csv \\
                     --mlst_delimiter \${mlst_delimiter} \\
                     $args
             fi
