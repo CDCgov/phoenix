@@ -65,7 +65,7 @@ process GET_MLST_SRST2 {
                 echo "\${new_pull_date}" >> "No_match_found_pull_date.txt"
             else
                 # Have not found any other delimiters other than underscore in all DB folders
-                echo -e "DB:\${DBID}\tdefs:\${DBID}.txt\tdel:'_'" > "\${DBID}_getMLST_out.txt"
+                echo -e "DB:\${DBID}\tdefs:\${DBID}_profile.csv\tdel:'_'" > "\${DBID}_getMLST_out.txt"
                 cp "\${DBID}_getMLST_out.txt" "\${DBID}_getMLST_out_temp.txt"
             
                 if [[ "\${DBID}" = *"baumannii#1" ]]; then

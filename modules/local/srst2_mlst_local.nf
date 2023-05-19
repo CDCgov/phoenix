@@ -40,17 +40,11 @@ process SRST2_MLST {
                 no_match="True"
                 mlst_db="No match found"
             else
-                # Pulls suggested command info from the getmlst script
-                raw_dbs=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
-                IFS=' ' read -r -a dbs <<< "\${raw_dbs}"
-                raw_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
-                IFS=' ' read -r -a defs <<< "\${raw_defs}"
-                index=0
-                for item in "\${dbs[@]}"; do
-                    if 
                 # because this is so messed up and cant pass things through nextflow easily
                 #mv "\${mlst_db}_temp.fasta" "\${mlst_db}.fasta"
-                #mv "\${mlst_defs//_profiles.csv/_profiles_temp.csv}" "\${mlst_defs}"
+                current_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
+                #mv "\${mlst_defs//_profiles_temp.csv/_profiles.csv}" "\${mlst_defs}"
+                #current_defs=\$(echo "\${line}" | cut -f2 | cut -d':' -f2)
                 mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
 
                 echo "Test: \${mlst_db} \${mlst_defs} \${mlst_delimiter}"
@@ -58,8 +52,8 @@ process SRST2_MLST {
                 srst2 ${read_s} \\
                     --threads $task.cpus \\
                     --output \${scheme_count}_${prefix} \\
-                    --mlst_db \${filename_db}_temp.fasta \\
-                    --mlst_definitions \${filename_db}_profiles_temp.csv \\
+                    --mlst_db \${current_db}_temp.fasta \\
+                    --mlst_definitions \${current_db}_profiles_temp.csv \\
                     --mlst_delimiter \${mlst_delimiter} \\
                     $args
             fi
