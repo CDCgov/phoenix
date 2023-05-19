@@ -231,7 +231,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 				continue
 	#		   print("Checking:", catted_scheme_list[i][5], catted_scheme_list[j][5])
 			#print catted_scheme_list[i],catted_scheme_list[j]
-			if collections.Counter(catted_scheme_list[i][5]) == collections.Counter(catted_scheme_list[j][5]):
+			if collections.Counter(catted_scheme_list[i][5]) == collections.Counter(catted_scheme_list[j][5]) and collections.Counter(catted_scheme_list[i][2]) == collections.Counter(catted_scheme_list[j][2]):
 				print("SAME!!!!", i, j)
 				if catted_scheme_list[min(i,j)][6] != catted_scheme_list[max(i,j)][6]:
 					print("a")
@@ -303,6 +303,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 					original_scheme[2] = "Novel_profile"
 					check = True
 				else:
+					original_scheme[2] = "-"
 					check = False
 			elif current_type == "failed":
 				if original_scheme[3] > 1:
