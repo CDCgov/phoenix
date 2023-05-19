@@ -2,7 +2,7 @@ process MLST {
     tag "$meta.id"
     label 'process_low'
     container 'staphb/mlst:2.22.1'
-    containerOptions '-B ${params.custom_mlstdb}:/mlst-2.22.1/db'
+    containerOptions '-B /scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/new_DBS_20230502/20230504/MLST/db:/mlst-2.22.1/db'
 
     input:
     tuple val(meta), path(fasta)
