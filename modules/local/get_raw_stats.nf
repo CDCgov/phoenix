@@ -25,7 +25,7 @@ process GET_RAW_STATS {
     q30.py ${reads[1]} > ${prefix}_R2_stats.txt
 
     
-    if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ];then
+    if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ]; then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
 
@@ -34,8 +34,7 @@ process GET_RAW_STATS {
     
         mv ${num1}C.fastq.gz ${num1}.fastq.gz
         mv ${num2}C.fastq.gz ${num2}.fastq.gz
-        else
-        "FAIL" > ${prefix}_raw_read_counts.txt
+        else echo "FAIL" > ${prefix}_raw_read_counts.txt
     fi
 
     cat <<-END_VERSIONS > versions.yml
