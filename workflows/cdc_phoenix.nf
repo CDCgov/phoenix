@@ -122,8 +122,7 @@ workflow PHOENIX_EXQC {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, \
-            params.custom_mlstdb
+            params.zipped_sketch, params.custom_mlstdb
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 

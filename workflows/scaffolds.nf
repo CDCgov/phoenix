@@ -116,7 +116,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch
+            params.zipped_sketch, params.custom_mlstdb
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -209,6 +209,7 @@ workflow SCAFFOLDS_EXTERNAL {
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             [], \
             DETERMINE_TAXA_ID.out.taxonomy, \
+            ASSET_CHECK.out.mlst_db, \
             false
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)

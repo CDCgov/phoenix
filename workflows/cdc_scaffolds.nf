@@ -118,7 +118,7 @@ workflow SCAFFOLDS_EXQC {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch
+            params.zipped_sketch, params.custom_mlstdb
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -232,6 +232,7 @@ workflow SCAFFOLDS_EXQC {
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ it -> create_empty_ch(it) }, \
             DETERMINE_TAXA_ID.out.taxonomy, \
+            ASSET_CHECK.out.mlst_db, \
             false //no reads to run srst2
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
