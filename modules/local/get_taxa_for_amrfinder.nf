@@ -17,7 +17,7 @@ process GET_TAXA_FOR_AMRFINDER {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-       python: \$(python --version | sed 's/Python //g')
+        python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
     """
 }
