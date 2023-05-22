@@ -3,15 +3,15 @@ process CREATE_SRA_SAMPLESHEET {
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
-    path(samplesheet) // 
-    path(metadata_csv)
+    path(renamed_reads)
+    path(metadata_csvs)
     path(directory)
 
     output:
-    path('samplesheet.csv'), emit: csv
-    path("versions.yml"),    emit: versions
+    path('sra_samplesheet.csv'), emit: csv
+    path("versions.yml"),        emit: versions
 
-    script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
+    script:
     """
     full_path=\$(readlink -f ${directory})
 

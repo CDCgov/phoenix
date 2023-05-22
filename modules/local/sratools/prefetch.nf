@@ -1,29 +1,26 @@
 process SRATOOLS_PREFETCH {
-    tag "$sra_samples"
+    tag "${sra_accession[0]}"
     label 'process_single'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/sra-tools:2.11.0--pl5321ha49a11a_3' :
-        'quay.io/biocontainers/sra-tools:2.11.0--pl5321ha49a11a_3' }"
+    container "https://depot.galaxyproject.org/singularity/sra-tools%3A3.0.3--h87f3376_0"
 
     input:
-    path(sra_samples)
+    val(sra_accession)
 
     output:
-    path('SRR*')        , emit: sra_folder
+    path("*_Folder")    , emit: sra_folder
     path('versions.yml'), emit: versions
-
-    when:
-    task.ext.when == null || task.ext.when
 
     script:
     """
     # fetch sras
-    prefetch --option-file $sra_samples
+    prefetch --verify yes ${sra_accession[0]}
+
+    #move so we have some common name to collect output, indexing is just to get rid of [] around the SRR number
+    mv ${sra_accession[0]} ${sra_accession[0]}_Folder
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        sratools: \$(prefetch --version 2>&1 | grep -Eo '[0-9.]+')
+        sratools: \$(prefetch --version 2>&1 | sed 's/prefetch : //' | awk 'NF')
     END_VERSIONS
     """
 }

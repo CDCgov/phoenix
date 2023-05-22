@@ -15,7 +15,7 @@ def parseArgs(args=None):
     parser.add_argument('-d', '--directory', required=True, dest='directory', help='Will create a samplesheet for all samples in the directory.')
     return parser.parse_args()
 
-def write_samplesheet(directory, metadata_df):
+def write_samplesheet(directory, metadata_df, duplicates) :
     suff_R1 = "_R1_001.fastq.gz"
     suff_R2 = "_R2_001.fastq.gz"
     if directory[-1] != "/": # if directory doesn't have trailing / add one
@@ -24,21 +24,30 @@ def write_samplesheet(directory, metadata_df):
         samplesheet.write('sample' + ',' + 'fastq_1' + ',' + 'fastq_2' + ',' + 'sra_number\n')
         for index, row in metadata_df.iterrows(): #loop over each row
             sample = row['SampleName']
+            sample = sample.replace(" ", "_").replace("/", "_")
             sra_number = row['Run']
-            samplesheet.write(sample + "," + directory + sample + "/raw_fastqs/" + sample + suff_R1 + "," + directory + sample + "/raw_fastqs/" + sample + suff_R2 + "," + sra_number + '\n')
+            if duplicates == False:
+                samplesheet.write(sample + "," + directory + sample + "/raw_fastqs/" + sample + suff_R1 + "," + directory + sample + "/raw_fastqs/" + sample + suff_R2 + "," + sra_number + '\n')
+            else:
+                samplesheet.write(sra_number + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R1 + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R2 + "," + sample + '\n')
 
 def get_metadata():
-    metadata_df = pd.DataFrame()
+    metadata_df = pd.DataFrame() #make empty dataframe to add too
     for filename in glob.glob('*_sra_metadata.csv'):
+        #get sra number aka the run 
+        sra_number = filename.replace("_sra_metadata.csv","")
         df = pd.read_csv(filename, header=0, dtype='str')
-        df_less = df[['Run','SampleName']]
+        # when there are duplicate samples names this can mean there is multiple runs that show up in the metadata, but we only want the one row
+        df = df.loc[df['Run'] == sra_number]
+        df_less = df[['Run','SampleName']] # reduce dataframe to only the information we need
         metadata_df = pd.concat([metadata_df, df_less], axis=0, ignore_index=True)
-    return metadata_df
+    duplicates = metadata_df['SampleName'].duplicated().any()
+    return metadata_df,duplicates
 
 def main():
     args = parseArgs()
-    metadata_df = get_metadata()
-    write_samplesheet(args.directory, metadata_df)
+    metadata_df,duplicates = get_metadata()
+    write_samplesheet(args.directory, metadata_df, duplicates)
 
 if __name__ == '__main__':
     main()
