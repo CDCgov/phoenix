@@ -53,7 +53,7 @@ process SRST2_MLST {
                     $args
             fi
 
-            lines_in_result_file=$(cat \${scheme_count}_${prefix}__mlst__\${mlst_db}_temp__results.txt | wc -l)
+            lines_in_result_file=\$(cat \${scheme_count}_${prefix}__mlst__\${mlst_db}_temp__results.txt | wc -l)
 
             header="Sample	database	ST	mismatches	uncertainty	depth	maxMAF	locus_1	locus_2	locus_3	locus_4	locus_5	locus_6	locus_7	locus_8	locus_9	locus_10"
             if [[ "\${scheme_count}" -eq 1 ]]; then
