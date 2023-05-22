@@ -262,11 +262,14 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 						print("i")
 						print("Should never have something that is not standard, srst2, or standard/srst2")
 				else:
-					if max(i,j) not in dupes:
-						print("j")
-						dupes.append(max(i,j))
+					if catted_scheme_list[min(i,j)][1] != catted_scheme_list[max(i,j)][1]:
+						print("Different dbs")
 					else:
-						print("Index already Found")
+						if max(i,j) not in dupes:
+							print("j")
+							dupes.append(max(i,j))
+						else:
+							print("Index already Found")
 				print(dupes)
 			else:
 	#			   print(catted_scheme_list[i][5], "does not equal", catted_scheme_list[i][5])
@@ -303,6 +306,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 					original_scheme[2] = "Novel_profile"
 					check = True
 				else:
+					original_scheme[2] = "-"
 					check = False
 			elif current_type == "failed":
 				if original_scheme[3] > 1:
@@ -386,9 +390,10 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 	for i in checked_schemes:
 		#print(i[1], i[5][2])
 		if i[1] == "abaumannii" or i[1] == "abaumannii(Oxford)" or i[1] == "Acinetobacter_baumannii#1":
-			if str(i[5][2]) == "182" or str(i[5][2]) == "189":
-				print("FAKE NEWS!!!")
-				i[2] = str(i[2])+"-PARALOG"
+			if len(i[5]) > 1:
+				if str(i[5][2]) == "182" or str(i[5][2]) == "189":
+					print("FAKE NEWS!!!")
+					i[2] = str(i[2])+"-PARALOG"
 			i[1] = "abaumannii(Oxford)"
 		elif i[1] == "abaumannii_2" or i[1] == "Acinetobacter_baumannii#2":
 			i[1] = "abaumannii(Pasteur)"
@@ -509,7 +514,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 				#print(i)
 				allele_section=""
 				if i[3] == 1:
-					allele_section="-"
+					allele_section="-\n"
 				else:
 					for j in range (0,len(i[4])):
 						if len(i[4][j].split("_")) > 1:
