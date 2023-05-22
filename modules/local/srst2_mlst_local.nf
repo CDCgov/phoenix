@@ -37,7 +37,7 @@ process SRST2_MLST {
             line="\$(tail -n1 \${getout})"
             if [[ "\${line}" = "DB:No match found"* ]] || [[ "\${line}" = "DB:Server down"* ]]; then
                 no_match="True"
-                mlst_db="No match found"
+                mlst_db="No_match_found"
             else
                 mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
                 mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
