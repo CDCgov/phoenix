@@ -27,13 +27,9 @@ def write_samplesheet(directory, metadata_df, duplicates, use_srr) :
             sample = row['SampleName']
             sample = sample.replace(" ", "_").replace("/", "_")
             sra_number = row['Run']
-            print("srr are {}".format(use_srr))
-            print("dups are {}".format(duplicates))
             if duplicates == True or use_srr == True:
-                print("wrong spot")
                 samplesheet.write(sra_number + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R1 + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R2 + "," + sample + '\n')
             else:
-                print("got here")
                 samplesheet.write(sample + "," + directory + sample + "/raw_fastqs/" + sample + suff_R1 + "," + directory + sample + "/raw_fastqs/" + sample + suff_R2 + "," + sra_number + '\n')
 
 def get_metadata():
