@@ -40,6 +40,7 @@ process SRST2_MLST {
                 mlst_db="No_match_found"
             else
                 mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
+                # Put check much closer to where it is needed. Headers and labels dont match due to db inclusion. Removed to make srst2 happy
                 if [[ "\${mlst_db}" = "abaumannii" ]]; then
                     sed -i -e 's/Oxf_//g' "\${mlst_db}_temp.fasta"
                     sed -i -e 's/Oxf_//g' "\${mlst_db}_profiles_temp.csv"
