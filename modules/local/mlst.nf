@@ -61,9 +61,13 @@ process MLST {
     # Add in generic header
     sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 lous_9  locus_10' ${prefix}.tsv
 
+    #getting database version)
+    mlst_db_version=\$(cat ./db/db_version)
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mlst: \$( echo \$(mlst --version 2>&1) | sed 's/mlst //' )
+        mlst_db: \$( date -d '\$mlst_db_version' +%d-%m-%Y )
     END_VERSIONS
     """
 
