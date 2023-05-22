@@ -53,6 +53,8 @@ process SRST2_MLST {
                     $args
             fi
 
+            lines_in_result_file=$(cat \${scheme_count}_${prefix}__mlst__\${mlst_db}_temp__results.txt | wc -l)
+
             header="Sample	database	ST	mismatches	uncertainty	depth	maxMAF	locus_1	locus_2	locus_3	locus_4	locus_5	locus_6	locus_7	locus_8	locus_9	locus_10"
             if [[ "\${scheme_count}" -eq 1 ]]; then
                 echo "\${header}" > ${prefix}_srst2.mlst
@@ -63,6 +65,9 @@ process SRST2_MLST {
             if [[ "\${no_match}" = "True" ]]; then
                 tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
                 echo "${prefix}	No match found for \${tax_with_no_scheme}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
+            elif [[ "\${lines_in_result_file}" -eq 1 ]]; then
+                echo "Not enough was found to even make a guess"
+                echo "${prefix}	No match found for \${mlst_db}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
             else
                 raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
                 raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
