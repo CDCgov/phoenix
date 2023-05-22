@@ -40,6 +40,13 @@ process SRST2_MLST {
                 mlst_db="No_match_found"
             else
                 mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
+                if [[ "\${mlst_db}" = "abaumannii" ]]; then
+                    sed -i -e 's/Oxf_//g' "\${mlst_db}_temp.fasta"
+                    sed -i -e 's/Oxf_//g' "\${mlst_db}_profiles_temp.csv"
+                elif [[ "\$mlst_db}" = "abaumannii_2" ]]; then
+                    sed -i -e 's/Pas_//g' "\${mlst_db}.fasta"
+                    sed -i -e 's/Pas_//g' "\${mlst_db}_profiles.csv"
+                fi
                 mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
 
                 echo "Test: \${mlst_db} \${mlst_db}_profiles.csv \${mlst_delimiter}"
