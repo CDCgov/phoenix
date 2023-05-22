@@ -71,7 +71,7 @@ process GET_MLST_SRST2 {
                 if [[ "\${DBID}" = "abaumannii" ]]; then
                     sed -i -e 's/Oxf_//g' "\${DBID}.fasta"
                     sed -i -e 's/Oxf_//g' "\${DBID}_profiles.csv"
-                elif [[ "\${DBID}" = "abaumannii_2 ]]; then
+                elif [[ "\${DBID}" = "abaumannii_2" ]]; then
                     sed -i -e 's/Pas_//g' "\${DBID}.fasta"
                     sed -i -e 's/Pas_//g' "\${DBID}_profiles.csv"
                 fi
