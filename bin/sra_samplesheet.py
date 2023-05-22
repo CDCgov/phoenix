@@ -13,9 +13,10 @@ import glob
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a complete PhoeNix paired reads samplesheet')
     parser.add_argument('-d', '--directory', required=True, dest='directory', help='Will create a samplesheet for all samples in the directory.')
+    parser.add_argument('-s', '--use_srr', dest='use_srr', default=False, action='store_true', help='Will create a samplesheet for all samples in the directory.')
     return parser.parse_args()
 
-def write_samplesheet(directory, metadata_df, duplicates) :
+def write_samplesheet(directory, metadata_df, duplicates, use_srr) :
     suff_R1 = "_R1_001.fastq.gz"
     suff_R2 = "_R2_001.fastq.gz"
     if directory[-1] != "/": # if directory doesn't have trailing / add one
@@ -26,10 +27,14 @@ def write_samplesheet(directory, metadata_df, duplicates) :
             sample = row['SampleName']
             sample = sample.replace(" ", "_").replace("/", "_")
             sra_number = row['Run']
-            if duplicates == False:
-                samplesheet.write(sample + "," + directory + sample + "/raw_fastqs/" + sample + suff_R1 + "," + directory + sample + "/raw_fastqs/" + sample + suff_R2 + "," + sra_number + '\n')
-            else:
+            print("srr are {}".format(use_srr))
+            print("dups are {}".format(duplicates))
+            if duplicates == True or use_srr == True:
+                print("wrong spot")
                 samplesheet.write(sra_number + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R1 + "," + directory + sra_number + "/raw_fastqs/" + sra_number + suff_R2 + "," + sample + '\n')
+            else:
+                print("got here")
+                samplesheet.write(sample + "," + directory + sample + "/raw_fastqs/" + sample + suff_R1 + "," + directory + sample + "/raw_fastqs/" + sample + suff_R2 + "," + sra_number + '\n')
 
 def get_metadata():
     metadata_df = pd.DataFrame() #make empty dataframe to add too
@@ -46,8 +51,8 @@ def get_metadata():
 
 def main():
     args = parseArgs()
-    metadata_df,duplicates = get_metadata()
-    write_samplesheet(args.directory, metadata_df, duplicates)
+    metadata_df, duplicates = get_metadata()
+    write_samplesheet(args.directory, metadata_df, duplicates, args.use_srr)
 
 if __name__ == '__main__':
     main()
