@@ -9,7 +9,7 @@ process FAIRY {
 
     output:
     
-    //tuple val(meta), path('*.txt')       , emit: results
+    tuple val(meta), path('*_results.txt')       , emit: results
     path "versions.yml"                , emit: versions
 
     when:
@@ -17,6 +17,7 @@ process FAIRY {
 
     script:
     def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
     def fname = "${reads[0]}".minus(".fastq.gz")
     def fnameB = "${reads[1]}".minus(".fastq.gz")
 
@@ -24,6 +25,10 @@ process FAIRY {
     gzip -t ${reads[0]} 2>> ${fname}.txt
     gzip -t ${reads[1]} 2>> ${fnameB}.txt
     
+    if grep -Fxq "error" ${fname}.txt || grep -Fxq "error" ${fnameB}.txt; then
+        echo "FAIL" > ${prefix}_results.txt
+    else
+        echo "PASS" > ${prefix}_results.txt
 
 
     cat <<-END_VERSIONS > versions.yml

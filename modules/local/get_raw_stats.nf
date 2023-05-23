@@ -6,7 +6,7 @@ process GET_RAW_STATS {
 
     input:
     tuple val(meta), path(reads)
-    path(versions)
+    tuple val(meta), path(results)
 
     output:
     tuple val(meta), path('*_stats.txt'),           emit: raw_stats
@@ -21,9 +21,9 @@ process GET_RAW_STATS {
     def num2 = "${reads[1]}".minus(".fastq.gz")
 
     """
-
-    q30.py ${reads[0]} > ${prefix}_R1_stats.txt
-    q30.py ${reads[1]} > ${prefix}_R2_stats.txt
+    if grep -Fxq "PASS" ${results}; then
+        q30.py ${reads[0]} > ${prefix}_R1_stats.txt
+        q30.py ${reads[1]} > ${prefix}_R2_stats.txt
 
     
     if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ]; then
