@@ -72,8 +72,7 @@ workflow SRA_PREP {
 
     // Figuring out if we should use SRR or sample names
     CONFIRM_DUPS (
-        combined_sra_ch,
-        ENTREZDIRECT_ESEARCH.out.metadata_csv
+        combined_sra_ch, ENTREZDIRECT_ESEARCH.out.metadata_csv
     )
 
     // Rename SRAs to have illumina style extension so PHX doesn't complain during input_check
@@ -88,7 +87,8 @@ workflow SRA_PREP {
         RENAME_SRA_FASTA.out.renamed_reads.collect(), \
         //removing the meta information because we are collecting everything so that part doesn't matter
         ENTREZDIRECT_ESEARCH.out.metadata_csv.map{meta, metadata_csv -> metadata_csv }.collect(), \
-        outdir_path
+        outdir_path, \
+        params.use_sra
     )
     ch_versions = ch_versions.mix(CREATE_SRA_SAMPLESHEET.out.versions)
 

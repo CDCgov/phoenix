@@ -61,6 +61,12 @@
                     "description": "Path to a csv file that has one SRR number per line.",
                     "default": "null",
                     "fa_icon": "fas fa-folder-open"
+                },
+                "use_sra": {
+                    "type": "string",
+                    "description": "Pass this argument if you want to keep samples named by SRA number rather than sample name found in NCBI metadata.",
+                    "default": "False",
+                    "fa_icon": "fas fa-keyboard"
                 }
             }
         },
