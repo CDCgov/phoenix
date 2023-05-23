@@ -6,7 +6,7 @@ process GET_RAW_STATS {
 
     input:
     tuple val(meta), path(reads)
-    tuple val(meta), path(results)
+    //tuple val(meta), path(results)
 
     output:
     tuple val(meta), path('*_stats.txt'),           emit: raw_stats
