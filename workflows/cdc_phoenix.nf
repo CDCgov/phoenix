@@ -115,11 +115,11 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
         //unzip any zipped databases
-        ASSET_CHECK (
+        /*ASSET_CHECK (
             params.zipped_sketch
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
-
+        */
         // Get stats on raw reads
         GET_RAW_STATS (
             INPUT_CHECK.out.reads
