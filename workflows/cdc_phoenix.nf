@@ -32,6 +32,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
+include { FAIRY                          } from '../modules/local/fairy'
 include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
