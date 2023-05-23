@@ -246,7 +246,7 @@ workflow PHOENIX_EXQC {
 
         // Running Mash distance to get top 20 matches for fastANI to speed things up
         MASH_DIST (
-            BBMAP_REFORMAT.out.filtered_scaffolds, ASSET_CHECK.out.mash_sketch
+            BBMAP_REFORMAT.out.filtered_scaffolds, busco_ch//ASSET_CHECK.out.mash_sketch
         )
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
