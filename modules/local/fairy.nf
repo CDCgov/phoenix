@@ -25,7 +25,7 @@ process FAIRY {
     gzip -t ${reads[0]} 2>> ${fname}.txt
     gzip -t ${reads[1]} 2>> ${fnameB}.txt
     
-    if grep -Fxq "error" ${fname}.txt || grep -Fxq "error" ${fnameB}.txt; then
+    if grep -Fx "error" ${fname}.txt || grep -Fx "error" ${fnameB}.txt; then
         echo "FAIL" > ${prefix}_results.txt
     else
         echo "PASS" > ${prefix}_results.txt
