@@ -41,13 +41,7 @@ process SRST2_MLST {
             else
                 mlst_db=\$(echo "\${line}" | cut -f1 | cut -d':' -f2)
                 # Put check much closer to where it is needed. Headers and labels dont match due to db inclusion. Removed to make srst2 happy
-                if [[ "\${mlst_db}" = "abaumannii" ]]; then
-                    sed -i -e 's/Oxf_//g' "\${mlst_db}_temp.fasta"
-                    sed -i -e 's/Oxf_//g' "\${mlst_db}_profiles_temp.csv"
-                elif [[ "\$mlst_db}" = "abaumannii_2" ]]; then
-                    sed -i -e 's/Pas_//g' "\${mlst_db}.fasta"
-                    sed -i -e 's/Pas_//g' "\${mlst_db}_profiles.csv"
-                fi
+
                 mlst_delimiter=\$(echo "\${line}" | cut -f3 | cut -d':' -f2 | cut -d"'" -f2)
 
                 echo "Test: \${mlst_db} \${mlst_db}_profiles.csv \${mlst_delimiter}"
@@ -61,7 +55,12 @@ process SRST2_MLST {
                     $args
             fi
 
-            lines_in_result_file=\$(cat \${scheme_count}_${prefix}__mlst__\${mlst_db}_temp__results.txt | wc -l)
+            if [[ -f \${scheme_count}_${prefix}__mlst__\${mlst_db}_temp__results.txt ]]; then
+                lines_in_result_file=\$(cat \${scheme_count}_${prefix}__mlst__\${mlst_db}_temp__results.txt | wc -l)
+            else
+                lines_in_result_file=0
+                echo "No srst2 result file exists"
+            fi
 
             header="Sample	database	ST	mismatches	uncertainty	depth	maxMAF	locus_1	locus_2	locus_3	locus_4	locus_5	locus_6	locus_7	locus_8	locus_9	locus_10"
             if [[ "\${scheme_count}" -eq 1 ]]; then
