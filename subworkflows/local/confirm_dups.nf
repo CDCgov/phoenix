@@ -10,11 +10,14 @@ workflow CONFIRM_DUPS {
 
     main:
 
-    // Check for duplicate names
-    confirmed_duplicates = metadata_csvs.map{meta, metadata_csv -> [ metadata_csv ] }.collect().map{metadata_csvs -> check_for_dups( metadata_csvs ) }
-
-    // Use result of duplicate check to create new channel
-    rename_sra_ch = combined_sra_ch.combine(confirmed_duplicates).map{meta, reads, metadata_csv, dups -> create_deduped_ch(meta, reads, metadata_csv, dups) }
+    if (params.use_sra) { // if --use_srr is passed then this overrides attempts to have samples named by sample names
+        rename_sra_ch = combined_sra_ch.map{meta, reads, metadata_csv-> [ meta, reads] }
+    } else {
+        // Check for duplicate names
+        confirmed_duplicates = metadata_csvs.map{meta, metadata_csv -> [ metadata_csv ] }.collect().map{metadata_csvs -> check_for_dups( metadata_csvs ) }
+        // Use result of duplicate check to create new channel
+        rename_sra_ch = combined_sra_ch.combine(confirmed_duplicates).map{meta, reads, metadata_csv, dups -> create_deduped_ch(meta, reads, metadata_csv, dups) }
+    }
 
     emit:
         rename_sra_out_ch = rename_sra_ch 

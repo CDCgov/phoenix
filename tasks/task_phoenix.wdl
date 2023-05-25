@@ -6,7 +6,8 @@ task phoenix {
     File   read2
     String samplename
     String kraken2db = "null"
-    String docker = "quay.io/jvhagey/phoenix:1.1.0"
+    String entry = "PHOENIX"
+    String docker = "quay.io/jvhagey/phoenix:1.2.0"
     Int    memory = 64
     Int    cpu = 8
     Int    disk_size = 100
@@ -28,7 +29,7 @@ task phoenix {
     mkdir ~{samplename}
     cd ~{samplename}
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0 -entry PHOENIX --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0 -entry ~{entry} --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -96,10 +97,10 @@ task phoenix {
     String plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
     String qc_reason                         = read_string("QC_REASON")
     #phoenix fastqc
-    File raw_read1_html           = "~{samplename}/results/~{samplename}/fastqc/~{samplename}_1_fastqc.html"
-    File raw_read1_zip            = "~{samplename}/results/~{samplename}/fastqc/~{samplename}_1_fastqc.zip"
-    File raw_read2_html           = "~{samplename}/results/~{samplename}/fastqc/~{samplename}_2_fastqc.html"
-    File raw_read2_zip            = "~{samplename}/results/~{samplename}/fastqc/~{samplename}_2_fastqc.zip"
+    File raw_read1_html           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
+    File raw_read1_zip            = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"
+    File raw_read2_html           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.html"
+    File raw_read2_zip            = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
     #phoenix trimmed kraken/krona
     File kraken_trimd_output      = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.classifiedreads.txt"
     File kraken_trimd_report      = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.report.txt"
@@ -118,17 +119,17 @@ task phoenix {
     File trimmed_singles          = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.singles.fastq.gz"
     File trimmed_read1            = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_1.trim.fastq.gz"
     File trimmed_read2            = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_2.trim.fastq.gz"
-    File trimmed_read_counts      = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_trimmed_read_counts.txt"
-    File raw_read_counts          = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_raw_read_counts.txt"
-    File adapter_removal_log      = "~{samplename}/results/~{samplename}/removedAdapters/~{samplename}.bbduk.log"
+    File trimmed_read_counts      = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_trimmed_read_counts.txt"
+    File raw_read_counts          = "~{samplename}/results/~{samplename}/raw_stats/~{samplename}_raw_read_counts.txt"
+    File adapter_removal_log      = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}.bbduk.log"
     #phoenix assembly
-    File assembly_graph           = "~{samplename}/results/~{samplename}/Assembly/~{samplename}.assembly.gfa.gz"
-    File filtered_scaffolds_log   = "~{samplename}/results/~{samplename}/Assembly/~{samplename}.bbmap_filtered.log"
-    File contigs                  = "~{samplename}/results/~{samplename}/Assembly/~{samplename}.contigs.fa.gz"
-    File filtered_scaffolds       = "~{samplename}/results/~{samplename}/Assembly/~{samplename}.filtered.scaffolds.fa.gz"
-    File assembly_with_seq_names  = "~{samplename}/results/~{samplename}/Assembly/~{samplename}.renamed.scaffolds.fa.gz"
-    File assembly                 = "~{samplename}/results/~{samplename}/Assembly/~{samplename}.scaffolds.fa.gz"
-    File spades_log               = "~{samplename}/results/~{samplename}/Assembly/~{samplename}.spades.log"
+    File assembly_graph           = "~{samplename}/results/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
+    File filtered_scaffolds_log   = "~{samplename}/results/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
+    File contigs                  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
+    File filtered_scaffolds       = "~{samplename}/results/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
+    File assembly_with_seq_names  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
+    File assembly                 = "~{samplename}/results/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
+    File spades_log               = "~{samplename}/results/~{samplename}/assembly/~{samplename}.spades.log"
     #phoenix wtasmbld kraken/krona
     File kraken_wtasmbld_output   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
     File kraken_wtasmbld_report   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.report.txt"
@@ -137,7 +138,7 @@ task phoenix {
     File wtasmbld_krona           = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     #phoenix ani
     File fast_ani                 = "~{samplename}/results/~{samplename}/ANI/~{samplename}.ani.txt"
-    File reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/fastANI/~{samplename}.fastANI.txt"
+    File reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/~{samplename}.fastANI.txt"
     File top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_best_MASH_hits.txt"
     File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}.txt"
     #phoenix quast and mlst
