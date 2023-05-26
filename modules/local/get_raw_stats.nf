@@ -47,8 +47,8 @@ process GET_RAW_STATS {
     else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_raw_read_counts.txt
     fi
 
-    ${reads[0]} > ${num1}.fastq.gz
-    ${reads[1]} > ${num2}.fastq.gz
+    echo "${reads[0]}" > ${num1}.fastq.gz
+    echo "${reads[1]}" > ${num2}.fastq.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
