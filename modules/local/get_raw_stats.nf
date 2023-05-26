@@ -1,6 +1,6 @@
 process GET_RAW_STATS {
     tag "$meta.id"
-    label 'process_single'
+    label 'process_medium'
     label 'error_ignore'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
