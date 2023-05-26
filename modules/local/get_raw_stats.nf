@@ -28,6 +28,7 @@ process GET_RAW_STATS {
         echo "FAIL" > ${prefix}_results.txt
     else
         echo "PASS" > ${prefix}_results.txt
+    fi
         
     if grep -Fx "PASS" ${prefix}_results.txt
         then
