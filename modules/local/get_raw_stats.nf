@@ -44,21 +44,14 @@ process GET_RAW_STATS {
         then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
-    fi
-    if grep -Fx "PASS" ${prefix}_result.txt
-        then
-        mv ${reads[0]} ${num1}C.fastq.gz
-        mv ${reads[1]} ${num2}C.fastq.gz
-    
-        mv ${num1}C.fastq.gz ${num1}.fastq.gz
-        mv ${num2}C.fastq.gz ${num2}.fastq.gz
     else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_raw_read_counts.txt
-        mv ${reads[0]} ${num1}C.fastq.gz
-        mv ${reads[1]} ${num2}C.fastq.gz
-    
-        mv ${num1}C.fastq.gz ${num1}.fastq.gz
-        mv ${num2}C.fastq.gz ${num2}.fastq.gz
     fi
+
+    mv ${reads[0]} ${num1}C.fastq.gz
+    mv ${reads[1]} ${num2}C.fastq.gz
+    
+    mv ${num1}C.fastq.gz ${num1}.fastq.gz
+    mv ${num2}C.fastq.gz ${num2}.fastq.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
