@@ -21,20 +21,27 @@ process GET_RAW_STATS {
     def num2 = "${reads[1]}".minus(".fastq.gz")
 
     """
+    # check for file corruption
     gzip -t ${reads[0]} 2>> ${num1}.txt
     gzip -t ${reads[1]} 2>> ${num2}.txt
-    
+    # may be able to bypass
     if grep -Fx "error" ${num1}.txt || grep -Fx "error" ${num2}.txt; then
-        echo "FAIL" > ${prefix}_results.txt
+        echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
     else
         echo "PASS" > ${prefix}_results.txt
     fi
-        
+    
+    # proceed to cumulative read counts if files aren't corrupt
     if grep -Fx "PASS" ${prefix}_results.txt
         then
         q30.py ${reads[0]} > ${prefix}_R1_stats.txt
         q30.py ${reads[1]} > ${prefix}_R2_stats.txt
+    else 
+        mv ${prefix}_results.txt" ${prefix}_raw_read_counts.txt
+    fi
 
+    if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ] 
+        then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
 
@@ -43,14 +50,7 @@ process GET_RAW_STATS {
     
         mv ${num1}C.fastq.gz ${num1}.fastq.gz
         mv ${num2}C.fastq.gz ${num2}.fastq.gz
-    else 
-        echo "FAIL" > ${prefix}_raw_read_counts.txt
-        mv ${reads[0]} ${num1}C.fastq.gz
-        mv ${reads[1]} ${num2}C.fastq.gz
-    
-        mv ${num1}C.fastq.gz ${num1}.fastq.gz
-        mv ${num2}C.fastq.gz ${num2}.fastq.gz
-
+    else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_raw_read_counts.txt
     fi
 
     cat <<-END_VERSIONS > versions.yml
