@@ -43,10 +43,8 @@ def stat(filename):
     print("total bases:", total_base_count)
     print("q20 bases:", q20_count)
     print("q30 bases:", q30_count)
-    #avoid the issue when total_base_count is 0
-    while total_base_count > 0:
-        print("q20 percents:", 100 * float(q20_count)/float(total_base_count))
-        print("q30 percents:", 100 * float(q30_count)/float(total_base_count))
+    print("q20 percents:", 100 * float(q20_count)/float(total_base_count))
+    print("q30 percents:", 100 * float(q30_count)/float(total_base_count))
 
 def main():
     if len(sys.argv) < 2:
