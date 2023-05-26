@@ -21,11 +21,19 @@ process GET_RAW_STATS {
     def num2 = "${reads[1]}".minus(".fastq.gz")
 
     """
-    q30.py ${reads[0]} > ${prefix}_R1_stats.txt
-    q30.py ${reads[1]} > ${prefix}_R2_stats.txt
-
+    gzip -t ${reads[0]} 2>> ${num1}.txt
+    gzip -t ${reads[1]} 2>> ${num2}.txt
     
-    if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ]; then
+    if grep -Fx "error" ${num1}.txt || grep -Fx "error" ${num2}.txt; then
+        echo "FAIL" > ${prefix}_results.txt
+    else
+        echo "PASS" > ${prefix}_results.txt
+        
+    if grep -Fx "PASS" ${prefix}_results.txt
+        then
+        q30.py ${reads[0]} > ${prefix}_R1_stats.txt
+        q30.py ${reads[1]} > ${prefix}_R2_stats.txt
+
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
 
@@ -34,7 +42,14 @@ process GET_RAW_STATS {
     
         mv ${num1}C.fastq.gz ${num1}.fastq.gz
         mv ${num2}C.fastq.gz ${num2}.fastq.gz
-        else echo "FAIL" > ${prefix}_raw_read_counts.txt
+    else 
+        echo "FAIL" > ${prefix}_raw_read_counts.txt
+        mv ${reads[0]} ${num1}C.fastq.gz
+        mv ${reads[1]} ${num2}C.fastq.gz
+    
+        mv ${num1}C.fastq.gz ${num1}.fastq.gz
+        mv ${num2}C.fastq.gz ${num2}.fastq.gz
+
     fi
 
     cat <<-END_VERSIONS > versions.yml
