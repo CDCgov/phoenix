@@ -18,7 +18,8 @@ workflow phoenix_workflow {
       read1          = read1,
       read2          = read2,
       samplename     = samplename,
-      kraken2db      = kraken2db
+      kraken2db      = kraken2db,
+      entry          = entry
   }
   output {
     #phoenix summary output values
