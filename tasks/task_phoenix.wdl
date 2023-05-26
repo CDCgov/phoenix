@@ -144,6 +144,10 @@ task phoenix {
     #phoenix quast and mlst
     File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
     File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
+    # cdc_phoenix busco and srst2
+    File? busco_generic           = "~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt"
+    File? busco_specific          = "~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt"
+    File? srst2                   = "~{samplename}/results/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20210507_srst2__results.txt"
     #phoenix gamma
     File gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20220915_srst2.gamma"
     File blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20220915_srst2.psl"

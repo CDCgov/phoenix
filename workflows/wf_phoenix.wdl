@@ -89,32 +89,35 @@ workflow phoenix_workflow {
     File wtasmbld_html            = phoenix.wtasmbld_html            # wtasmbld.html
     File wtasmbld_krona           = phoenix.wtasmbld_krona           # wtasmbld.krona
     #phoenix ani
-    File fast_ani                 = phoenix.fast_ani                # ani.txt
-    File reformated_fast_ani      = phoenix.reformated_fast_ani     # fastANI.txt
-    File top_20_taxa_matches      = phoenix.top_20_taxa_matches     # best_MASH_hits.txt 
-    File mash_distance            = phoenix.mash_distance           # .txt
+    File fast_ani                 = phoenix.fast_ani                 # ani.txt
+    File reformated_fast_ani      = phoenix.reformated_fast_ani      # fastANI.txt
+    File top_20_taxa_matches      = phoenix.top_20_taxa_matches      # best_MASH_hits.txt 
+    File mash_distance            = phoenix.mash_distance            # .txt
     #phoenix quast and mlst
-    File quast_report             = phoenix.quast_report            # _report.tsv
-    File mlst_tsv                 = phoenix.mlst_tsv                # .tsv
+    File quast_report             = phoenix.quast_report             # _report.tsv
+    File mlst_tsv                 = phoenix.mlst_tsv                 # .tsv
+    File? busco_generic           = phoenix.busco_generic            # short_summary.generic.*.filtered.scaffolds.fa.txt"
+    File? busco_specific          = phoenix.busco_specific           # short_summary.specific.*.filtered.scaffolds.fa.txt"
+    File? srst2                   = phoenix.srst2                    # __fullgenes__ResGANNCBI_20210507_srst2__results.txt"
     #phoenix gamma
-    File gamma_ar_calls           = phoenix.gamma_ar_calls         # ResGANNCBI_20210507_srst2.gamma
-    File blat_ar_calls            = phoenix.blat_ar_calls          # ResGANNCBI_20210507_srst2.psl
-    File gamma_hv_calls           = phoenix.gamma_hv_calls         # HyperVirulence_20220414.gamma
-    File blat_hv_calls            = phoenix.blat_hv_calls          # HyperVirulence_20220414.psl
-    File gamma_pf_calls           = phoenix.gamma_pf_calls         # PF-Replicons_20220414.gamma
-    File blat_pf_calls            = phoenix.blat_pf_calls          # PF-Replicons_20220414.psl
+    File gamma_ar_calls           = phoenix.gamma_ar_calls           # ResGANNCBI_20210507_srst2.gamma
+    File blat_ar_calls            = phoenix.blat_ar_calls            # ResGANNCBI_20210507_srst2.psl
+    File gamma_hv_calls           = phoenix.gamma_hv_calls           # HyperVirulence_20220414.gamma
+    File blat_hv_calls            = phoenix.blat_hv_calls            # HyperVirulence_20220414.psl
+    File gamma_pf_calls           = phoenix.gamma_pf_calls           # PF-Replicons_20220414.gamma
+    File blat_pf_calls            = phoenix.blat_pf_calls            # PF-Replicons_20220414.psl
     #phoenix output
-    File assembly_ratio_file      = phoenix.assembly_ratio_file    # Assembly_ratio_20210819.txt
-    File gc_content_file          = phoenix.gc_content_file        # GC_content_20210819.txt
-    File summary_line             = phoenix.summary_line           # summary_line.tsv
-    File synopsis                 = phoenix.synopsis               # synopsis
-    File best_taxa_id             = phoenix.best_taxa_id           # tax
+    File assembly_ratio_file      = phoenix.assembly_ratio_file      # Assembly_ratio_20210819.txt
+    File gc_content_file          = phoenix.gc_content_file          # GC_content_20210819.txt
+    File summary_line             = phoenix.summary_line             # summary_line.tsv
+    File synopsis                 = phoenix.synopsis                 # synopsis
+    File best_taxa_id             = phoenix.best_taxa_id             # tax
     #phoenix AMRFinder
     File amrfinder_mutations      = phoenix.amrfinder_mutations      # all_mutations.tsv
     File? amrfinder_taxa_match    = phoenix.amrfinder_taxa_match     # AMRFinder_Organism.csv
     File amrfinder_hits           = phoenix.amrfinder_hits           # all_genes.tsv
     #run files
-    File versions_file            = phoenix.versions_file           # software_versions.yml"
-    File multiqc_report           = phoenix.multiqc_report          # multiqc_report.html"
+    File versions_file            = phoenix.versions_file            # software_versions.yml"
+    File multiqc_report           = phoenix.multiqc_report           # multiqc_report.html"
   }
 }
