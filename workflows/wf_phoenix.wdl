@@ -11,6 +11,7 @@ workflow phoenix_workflow {
     File   read2
     String samplename
     String kraken2db
+    String entry
   }
   call phoenix_nf.phoenix {
     input:
