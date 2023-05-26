@@ -37,7 +37,7 @@ process GET_RAW_STATS {
         q30.py ${reads[0]} > ${prefix}_R1_stats.txt
         q30.py ${reads[1]} > ${prefix}_R2_stats.txt
     else 
-        mv ${prefix}_results.txt" ${prefix}_raw_read_counts.txt
+        mv ${prefix}_results.txt ${prefix}_raw_read_counts.txt
     fi
 
     if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ] 
