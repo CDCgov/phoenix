@@ -30,7 +30,8 @@ def reads_compare(file):
     with open(filename, "w") as tmp:
         tmp.write(outcome)
         tmp.close()
-    
+    return fastq_set
+
 def main():
     args = parseArgs()
     reads_compare(args.raw_read)

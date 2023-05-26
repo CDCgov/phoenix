@@ -44,7 +44,9 @@ process GET_RAW_STATS {
         then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
-
+    fi
+    if grep -Fx "PASS" ${prefix}_result.txt
+        then
         mv ${reads[0]} ${num1}C.fastq.gz
         mv ${reads[1]} ${num2}C.fastq.gz
     
