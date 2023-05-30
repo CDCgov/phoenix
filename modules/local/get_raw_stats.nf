@@ -9,11 +9,11 @@ process GET_RAW_STATS {
 
 
     output:
-    tuple val(meta), path('*_stats.txt'),           emit: raw_stats
-    tuple val(meta), path('*_raw_read_counts.txt'), emit: combined_raw_stats
-    path("versions.yml"),                           emit: versions
-    tuple val(meta), path('*_result.txt'),          emit: outcome
-    tuple val(meta), path('*.fastq.gz'),             emit: reads
+    tuple val(meta), path('*_stats.txt'),                          emit: raw_stats
+    tuple val(meta), path('*_raw_read_counts.txt'),                emit: combined_raw_stats
+    path("versions.yml"),                                          emit: versions
+    tuple val(meta), path('*_result.txt'),                         emit: outcome
+    tuple val(meta), path('*.fastq.gz'),optional:true,             emit: reads
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -47,8 +47,13 @@ process GET_RAW_STATS {
     else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_raw_read_counts.txt
     fi
 
-    echo "${reads[0]}" > ${num1}.fastq.gz
-    echo "${reads[1]}" > ${num2}.fastq.gz
+    //only send the reads that pass all QC checks
+    if grep -Fx "error" ${prefix}_raw_read_counts.txt
+        then
+        mv ${reads[0]} ${num1}_C.fastq.gz
+        mv ${reads[1]} ${num2}_C.fastq.gz
+    fi
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
