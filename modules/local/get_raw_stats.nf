@@ -25,7 +25,7 @@ process GET_RAW_STATS {
     zcat ${reads[0]} 2>> ${num1}.txt
     zcat ${reads[1]} 2>> ${num2}.txt
     # may be able to bypass
-    if grep -F "error" ${num1}.txt || grep -F "error" ${num2}.txt; then
+    if grep  "error" ${num1}.txt || grep "error" ${num2}.txt || grep  "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
         echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
     else
         echo "PASS" > ${prefix}_results.txt
