@@ -121,20 +121,20 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
         */
-        
+
         // Get stats on raw reads
         GET_RAW_STATS (
             INPUT_CHECK.out.reads//, FAIRY.out.results
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
-        if ( GET_RAW_STATS.out.reads, checkIfExists: true) {
+        /*if ( GET_RAW_STATS.out.reads, checkIfExists: true) {
             new_reads = Channel.from(GET_RAW_STATS.out.reads)
             new_outcomes = Channel.from(GET_RAW_STATS.out.outcome)
-        }
+        }*/
 
         // Remove PhiX reads
         BBDUK (
-            new_reads, params.bbdukdb, new_outcomes
+            GET_RAW_STATS.out.reads, params.bbdukdb, GET_RAW_STATS.out.outcome
         )
         ch_versions = ch_versions.mix(BBDUK.out.versions)
 

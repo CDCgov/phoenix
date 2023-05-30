@@ -54,7 +54,6 @@ process GET_RAW_STATS {
     else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_result.txt
     fi
 
-    # only send the reads that pass all QC checks
     mv ${reads[0]} ${num1}_C.fastq.gz
     mv ${reads[1]} ${num2}_C.fastq.gz
 

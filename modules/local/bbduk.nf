@@ -25,7 +25,7 @@ process BBDUK {
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
 
     """
-    if grep -Fxq "PASS" ${outcome}
+    if grep "PASS" ${outcome}
     then
         maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
         bbduk.sh \\
@@ -37,7 +37,6 @@ process BBDUK {
             $contaminants_fa \\
             &> ${prefix}.bbduk.log
     fi
-
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
