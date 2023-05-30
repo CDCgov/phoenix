@@ -14,7 +14,8 @@ process GET_RAW_STATS {
     path("versions.yml"),optional:true,                            emit: versions
     tuple val(meta), path('*_result.txt'),optional:true,           emit: outcome
     tuple val(meta), path('*.fastq.gz'),optional:true,             emit: reads
-    tuple val(meta),path('*_prd_result.txt'),optional:true,        emit: compr_rds
+    tuple val(meta),path('*_prdresult.txt'),optional:true,        emit: compr_rds
+    
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
     def num1 = "${reads[0]}".minus(".fastq.gz")
@@ -51,7 +52,7 @@ process GET_RAW_STATS {
         then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
-    else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_prd_result.txt
+    else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_prdresult.txt
     fi
 
     if grep "PASS" ${prefix}_result.txt
