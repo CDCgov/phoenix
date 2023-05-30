@@ -22,10 +22,10 @@ process GET_RAW_STATS {
 
     """
     # check for file corruption
-    # zcat ${reads[0]} | tail -1 2>> ${num1}.txt
-    # zcat ${reads[1]} | tail -1 2>> ${num2}.txt
+    zcat ${reads[0]} | tail -1 > ${num1}.txt
+    zcat ${reads[1]} | tail -1 > ${num2}.txt
     # may be able to bypass
-    if grep  "error" | zcat ${reads[0]} | tail -1 || grep "error" | zcat ${reads[1]} | tail -1 || grep  "unexpected" | zcat ${reads[0]} | tail -1 || grep "unexpected" | zcat ${reads[1]} | tail -1; then
+    if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
         echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
     else
         echo "PASS" > ${prefix}_results.txt
