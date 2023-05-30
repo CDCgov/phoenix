@@ -51,7 +51,7 @@ process GET_RAW_STATS {
         then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
-    else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_raw_read_counts.txt
+    else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_result.txt
     fi
 
     # only send the reads that pass all QC checks
