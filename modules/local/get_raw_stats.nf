@@ -23,8 +23,8 @@ process GET_RAW_STATS {
     """
     # check for file corruption
     do
-        zcat ${reads[0]} | tail -500 > ${num1}.txt
-        zcat ${reads[1]} | tail -500 > ${num2}.txt
+        gzip -t ${reads[0]} 2>> ${num1}.txt
+        gzip -t ${reads[1]} 2>> ${num2}.txt
     done
 
     # may be able to bypass
