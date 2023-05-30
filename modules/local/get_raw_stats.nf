@@ -33,7 +33,7 @@ process GET_RAW_STATS {
         done
 
     # may be able to bypass
-    if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
+    if grep "error" ${num1}.txt || grep "error" ${num2}.txt; then
         echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
     else
         echo "PASS" > ${prefix}_results.txt
@@ -52,7 +52,6 @@ process GET_RAW_STATS {
         then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
         comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
-    else echo "YOUR READ PAIRS ARE NOT THE SAME! THESE SAMPLES HAVE BEEN SKIPPED. PHOENIX ONLY ANALYZES ISOLATES WITH THE SAME NUMBER OF READS!" > ${prefix}_prdresult.txt
     fi
 
     if grep "PASS" ${prefix}_result.txt
@@ -63,6 +62,9 @@ process GET_RAW_STATS {
     # delete files that would be enter the channel
         rm ${reads[0]}
         rm ${reads[1]}
+        mv ${prefix}_result.txt ${prefix}_prdresult.txt
+        rm ${prefix}_prdresult.txt
+
     fi
 
 

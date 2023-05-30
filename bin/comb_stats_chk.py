@@ -14,7 +14,7 @@ def parseArgs(args=None):
 ## Compare the GET_RAW_STATS module combined reads output
 def reads_compare(file):
     approved = "PASS"
-    failure = "FAILED" #essentially should never show up
+    failure = "FAILED: Read pairs are NOT the same!" #essentially should never show up
     aggr_read_stats = pd.read_csv(file, sep="\t")
     
     # Confirm number of R1 reads are the same as R2 reads
