@@ -21,7 +21,10 @@ process GET_RAW_STATS {
     def num2 = "${reads[1]}".minus(".fastq.gz")
 
     """
+    set +e
+
     # check for file corruption
+
     for isolate in ${reads}
         do
             gzip -t ${reads[0]} 2>> ${num1}.txt
