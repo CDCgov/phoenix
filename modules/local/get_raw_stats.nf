@@ -48,7 +48,7 @@ process GET_RAW_STATS {
     fi
 
     //only send the reads that pass all QC checks
-    if grep -Fx "error" ${prefix}_raw_read_counts.txt
+    if grep -Fx "PASS" ${prefix}_raw_read_counts.txt
         then
         mv ${reads[0]} ${num1}_C.fastq.gz
         mv ${reads[1]} ${num2}_C.fastq.gz
