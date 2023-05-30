@@ -55,11 +55,8 @@ process GET_RAW_STATS {
     fi
 
     # only send the reads that pass all QC checks
-    if grep -Fx "PASS" ${prefix}_result.txt
-        then
-        mv ${reads[0]} ${num1}_C.fastq.gz
-        mv ${reads[1]} ${num2}_C.fastq.gz
-    fi
+    mv ${reads[0]} ${num1}_C.fastq.gz
+    mv ${reads[1]} ${num2}_C.fastq.gz
 
 
     cat <<-END_VERSIONS > versions.yml
