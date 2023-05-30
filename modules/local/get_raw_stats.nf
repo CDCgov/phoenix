@@ -22,8 +22,8 @@ process GET_RAW_STATS {
 
     """
     # check for file corruption
-    gzip -t ${reads[0]} 2>> ${num1}.txt
-    gzip -t ${reads[1]} 2>> ${num2}.txt
+    zcat ${reads[0]} | tail -1 2>> ${num1}.txt
+    zcat ${reads[1]} | tail -1 2>> ${num2}.txt
     # may be able to bypass
     if grep  "error" ${num1}.txt || grep "error" ${num2}.txt || grep  "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
         echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
