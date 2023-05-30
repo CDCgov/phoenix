@@ -9,8 +9,8 @@ process GET_RAW_STATS {
 
 
     output:
-    tuple val(meta), path('*_stats.txt'),                          emit: raw_stats
-    tuple val(meta), path('*_raw_read_counts.txt'),                emit: combined_raw_stats
+    tuple val(meta), path('*_stats.txt'),optional:true,            emit: raw_stats
+    tuple val(meta), path('*_raw_read_counts.txt'),optional:true,  emit: combined_raw_stats
     path("versions.yml"),                                          emit: versions
     tuple val(meta), path('*_result.txt'),                         emit: outcome
     tuple val(meta), path('*.fastq.gz'),optional:true,             emit: reads
