@@ -29,6 +29,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
     path(assembly_ratio_file), \
     path(amr_file), \
     path(gc_content)
+    val(coverage)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
@@ -71,6 +72,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
         $srst_file \\
         -y $mlst_file \\
         -4 $amr_file \\
+        -5 $coverage \\
         -3
 
     cat <<-END_VERSIONS > versions.yml

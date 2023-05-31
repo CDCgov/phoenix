@@ -83,7 +83,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
             .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])
 
             GENERATE_PIPELINE_STATS_EXQC (
-                pipeline_stats_ch
+                pipeline_stats_ch, params.coverage
             )
             ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_EXQC.out.versions)
 
@@ -114,7 +114,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
             .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])
 
             GENERATE_PIPELINE_STATS (
-                pipeline_stats_ch
+                pipeline_stats_ch, params.coverage
             )
             ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS.out.versions)
 

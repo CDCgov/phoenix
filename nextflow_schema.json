@@ -82,6 +82,18 @@
                     "default": "${launchDir}/results",
                     "fa_icon": "fas fa-folder-open"
                 },
+                "coverage": {
+                    "type": "string",
+                    "description": "If you want to increase the coverage cut off >30x use --coverage (ex. --coverage 40)",
+                    "default": "30",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "busco_db_path": {
+                    "type": "string",
+                    "fa_icon": "fas fa-keyboard",
+                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. Use only with -entry CDC_PHOENIX",
+                    "default": "Not to run in offline mode."
+                },
                 "email": {
                     "type": "string",
                     "description": "Email address for completion summary.",
@@ -93,12 +105,6 @@
                     "type": "string",
                     "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
                     "fa_icon": "fas fa-file-signature"
-                },
-                "busco_db_path": {
-                    "type": "string",
-                    "fa_icon": "fas fa-keyboard",
-                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. Use only with -entry CDC_PHOENIX",
-                    "default": "Not to run in offline mode."
                 },
                 "publish_dir_mode": {
                     "type": "string",

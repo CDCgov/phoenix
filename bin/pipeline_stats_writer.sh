@@ -53,7 +53,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:3" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -145,6 +145,9 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:3" opt
 		2)
 			#echo "Option -2 triggered"
 			terra=${OPTARG};;
+    5)
+      #echo "Option -5 triggered, argument = ${OPTARG}"
+      coverage=${OPTARG};;
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
       internal_phoenix="true";;
@@ -162,6 +165,17 @@ if [[ $terra = "terra" ]]; then
 	bc_path=/opt/conda/envs/phoenix/bin/bc
 else
 	bc_path=bc
+fi
+
+#check coverage parameter if >30 use that number
+if [ "${coverage}" -ge 30 ]; then
+  reads_min=${coverage}
+	reads_low=40
+	reads_high=150
+else
+  reads_min=30
+	reads_low=40
+	reads_high=150
 fi
 
 if [[ "${options_found}" -eq 0 ]]; then
@@ -904,9 +918,6 @@ if [[ -f "${assembly_ratio_file}" ]]; then
     fi
   fi
 
-  reads_min=30
-	reads_low=40
-	reads_high=150
 	if [[ -s "${total_read_counts}" ]]; then
 		bps_post_all=$(tail -n1 "${total_read_counts}" | cut -d'	' -f22)
 	# IFS='	' read -r -a qcs <<< "${line}"
@@ -922,7 +933,7 @@ if [[ -f "${assembly_ratio_file}" ]]; then
   #echo "trimmed-${avg_coverage}"
   #if (( $(echo $domain 0 | awk '{if ($1 > $2) print 1;}') )) && (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 < $2) print 1;}') )); then
 	if (( $(echo "${avg_coverage} > ${reads_low}" | $bc_path -l) )) && (( $(echo "${avg_coverage} < ${reads_high}" | $bc_path -l) )); then
-		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads (Target:40x, Cutoff: ${reads_min}x)"  >> "${sample_name}.synopsis"
 	#elif (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 > $2) print 1;}') )); then
   elif (( $(echo "${avg_coverage} > ${reads_high}" | $bc_path -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:<150x)"  >> "${sample_name}.synopsis"
@@ -931,7 +942,7 @@ if [[ -f "${assembly_ratio_file}" ]]; then
 		fi
   #elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 > $2) print 1;}') )); then
   elif (( $(echo "${avg_coverage} > ${reads_min}" | $bc_path -l) )); then
-		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:40x, Cutoff: ${reads_min}x)"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi

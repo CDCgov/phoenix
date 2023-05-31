@@ -18,6 +18,11 @@ nextflow.enable.dsl = 2
 
 WorkflowMain.initialise(workflow, params, log)
 
+//Check coverage is above its threshold
+if (params.coverage < 30) { exit 1, 'The minimum coverage allowed for QA/QC purposes is 30 and is the default. Please choose a value >=30.' }
+//Check path of kraken2db
+if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+
 /*
 ========================================================================================
     NAMED WORKFLOW FOR PIPELINE
@@ -43,7 +48,6 @@ workflow PHOENIX {
 
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX: Input samplesheet not specified!' }
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
@@ -70,7 +74,6 @@ workflow CDC_PHOENIX {
 
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry CDC_PHOENIX: Input samplesheet not specified!' }
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
@@ -104,8 +107,7 @@ workflow SRA {
 
     //input on command line
     if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'For -entry SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
-    
+
     main:
         // pull data and create samplesheet for it.
         SRA_PREP ( ch_input )
@@ -135,7 +137,6 @@ workflow CDC_SRA {
 
     //input on command line
     if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'For -entry CDC_SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
 
     main:
         // pull data and create samplesheet for it.
@@ -185,9 +186,6 @@ workflow SCAFFOLDS {
         }
     }
 
-    //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
-
     main:
         SCAFFOLDS_EXTERNAL ( ch_input, ch_input_indir )
 
@@ -227,9 +225,6 @@ workflow CDC_SCAFFOLDS {
             exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
         }
     }
-
-    //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
 
     main:
         SCAFFOLDS_EXQC ( ch_input, ch_input_indir )

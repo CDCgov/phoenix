@@ -23,7 +23,8 @@ process GENERATE_PIPELINE_STATS {
     path(fastANI_formatted_file), \
     path(assembly_ratio_file), \
     path(amr_file), \
-    path(gc_content)
+    path(gc_content),
+    val(coverage)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
@@ -68,6 +69,7 @@ process GENERATE_PIPELINE_STATS {
         -w $gamma_HV \\
         -y $mlst_file \\
         -4 $amr_file \\
+        -5 $coverage \\
         $terra
 
     cat <<-END_VERSIONS > versions.yml
