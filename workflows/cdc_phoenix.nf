@@ -125,7 +125,7 @@ workflow PHOENIX_EXQC {
             INPUT_CHECK.out.reads
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
-        failed_summaries_ch = GET_RAW_STATS.out.summary_line.ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
+        failed_summaries_ch = GET_RAW_STATS.out.summary_line.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
 
 
         // Remove PhiX reads
