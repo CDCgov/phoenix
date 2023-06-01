@@ -9,12 +9,13 @@ process GET_RAW_STATS {
 
 
     output:
-    tuple val(meta), path('*_stats.txt'),optional:true,            emit: raw_stats
-    tuple val(meta), path('*_raw_read_counts.txt'),optional:true,  emit: combined_raw_stats
-    path("versions.yml"),optional:true,                            emit: versions
-    tuple val(meta), path('*_result.txt'),optional:true,           emit: outcome
-    tuple val(meta), path('*.fastq.gz'),optional:true,             emit: reads
-    tuple val(meta),path('*_prdresult.txt'),optional:true,        emit: compr_rds
+    tuple val(meta), path('*_stats.txt'),optional:true,                     emit: raw_stats
+    tuple val(meta), path('*_raw_read_counts.txt'),optional:true,           emit: combined_raw_stats
+    path("versions.yml"),optional:true,                                     emit: versions
+    tuple val(meta), path('*_result.txt'),optional:true,                    emit: outcome
+    tuple val(meta), path('*.fastq.gz'),optional:true,                      emit: reads
+    tuple val(meta),path('*_prdresult.txt'),optional:true,                  emit: compr_rds
+    tuple val(meta),path('*_summaryline_failure.tsv'),optional:true,        emit: summary_line
     
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -35,6 +36,10 @@ process GET_RAW_STATS {
     # may be able to bypass
     if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
         echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
+        # error warning for line_summary channel
+        echo "ID	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Coverage	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline_failure.tsv
+        #file contents
+        echo "${prefix}	FAIL Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" | tr -d '\n' >> ${prefix}_summaryline_failure.tsv
     else
         echo "PASS" > ${prefix}_results.txt
     fi
@@ -57,7 +62,11 @@ process GET_RAW_STATS {
         mv ${reads[0]} ${num1}_C.fastq.gz
         mv ${reads[1]} ${num2}_C.fastq.gz
     else
-    # delete files that would be enter the channel
+        # error warning for line_summary channel
+        echo "ID	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Coverage	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline_failure.tsv
+        #file contents
+        echo "${prefix}	FAIL Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Read pairs are NOT the same!" | tr -d '\n' >> ${prefix}_summaryline_failure.tsv
+        # delete files that would be enter the channel
         rm ${reads[0]}
         rm ${reads[1]}
         mv ${prefix}_result.txt ${prefix}_prdresult.txt
