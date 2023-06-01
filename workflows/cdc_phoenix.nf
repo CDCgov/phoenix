@@ -388,8 +388,7 @@ workflow PHOENIX_EXQC {
         failed_summaries_ch = failed_summaries_ch.mix(SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder)) // if no spades failure pass empty file to keep it moving...
         // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().ifEmpty( [] )
-        //test
-        failed_summaries_ch.view()
+
         // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
         FETCH_FAILED_SUMMARIES (
             outdir_path, failed_summaries_ch, summaries_ch

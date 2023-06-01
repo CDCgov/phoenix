@@ -15,7 +15,7 @@ process GET_RAW_STATS {
     tuple val(meta), path('*_result.txt'),optional:true,                    emit: outcome
     tuple val(meta), path('*.fastq.gz'),optional:true,                      emit: reads
     tuple val(meta),path('*_prdresult.txt'),optional:true,                  emit: compr_rds
-    tuple val(meta),path('*_summaryline_failure.tsv'),optional:true,        emit: summary_line
+    path('*_summaryline_failure.tsv'),optional:true,                        emit: summary_line
     
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
