@@ -32,7 +32,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { FAIRY                          } from '../modules/local/fairy'
 include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
@@ -123,9 +122,11 @@ workflow PHOENIX_EXQC {
 
         // Get stats on raw reads
         GET_RAW_STATS (
-            INPUT_CHECK.out.reads//, FAIRY.out.results
+            INPUT_CHECK.out.reads
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
+        failed_summaries_ch = GET_RAW_STATS.out.summary_line.ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
+
 
         // Remove PhiX reads
         BBDUK (
@@ -384,7 +385,7 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
         // Collect all the summary files prior to fetch step to force the fetch process to wait
-        failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
+        failed_summaries_ch = failed_summaries_ch.mix(SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder)) // if no spades failure pass empty file to keep it moving...
         // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().ifEmpty( [] )
 
