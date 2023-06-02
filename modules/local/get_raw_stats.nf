@@ -80,6 +80,6 @@ process GET_RAW_STATS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: ${container_version}
-    END_VERSION
+    END_VERSIONS
     """
 }
