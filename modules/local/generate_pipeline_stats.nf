@@ -23,7 +23,7 @@ process GENERATE_PIPELINE_STATS {
     path(fastANI_formatted_file), \
     path(assembly_ratio_file), \
     path(amr_file), \
-    path(gc_content),
+    path(gc_content)
     val(coverage)
 
     output:

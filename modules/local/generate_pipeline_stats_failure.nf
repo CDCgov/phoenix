@@ -11,6 +11,7 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     path(kraken2_trimd_summary), \
     path(taxID), \
     val(spades_outcome)
+    val(coverage)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
