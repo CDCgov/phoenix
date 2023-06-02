@@ -29,6 +29,7 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Report.xlsx.')
     parser.add_argument('-p', '--platform', default=None, required=False, dest='platform', help='String for the sequencing platform used.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30s.')
+    parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX which is the default.')
     return parser.parse_args()
 
 #set colors for warnings so they are seen
@@ -691,10 +692,11 @@ def Append_Lists(data_location, platform, sample_name, Q30_R1_per, Q30_R2_per, T
         return Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
         Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L
 
-def Create_df(Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
+def Create_df(phoenix, Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
 Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
     #combine all metrics into a dataframe
-    data = {'WGS_ID'                 : Sample_Names,
+    if phoenix == True:
+        data = {'WGS_ID'             : Sample_Names,
         'Parent_Folder'              : Platforms,
         'Data_Location'              : Data_Locations,
         'Minimum_QC_Check'           : QC_result_L,
@@ -710,7 +712,36 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_s
         'Assembly_Length'            : Assembly_Length_L,
         'Assembly_Ratio'             : assembly_ratio_L,
         'Assembly_StDev'             : assembly_stdev_L,
-        #'Assembly_StDev'
+        'Taxa_Source'                : tax_method_L,
+        'Kraken_ID_Raw_Reads_%'      : Trim_kraken_L,
+        'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
+        'FastANI_Organism'           : fastani_organism_L, 
+        'FastANI_%ID'                : fastani_ID_L, 
+        'FastANI_%Coverage'          : fastani_coverage_L,
+        'Species_Support_ANI'        : Species_Support_L,
+        'Primary_MLST_Scheme_Name'   : MLST_scheme_1_L,
+        'Primary_MLST'               : MLST_type_1_L,
+        'Primary_MLST_alleles'       : MLST_alleles_1_L,
+        'Secondary_MLST_Scheme_Name' : MLST_scheme_2_L,
+        'Secondary_MLST'             : MLST_type_2_L,
+        'Secondary_MLST_alleles'     : MLST_alleles_2_L}
+    else:
+        data = {'WGS_ID'                 : Sample_Names,
+        'Parent_Folder'              : Platforms,
+        'Data_Location'              : Data_Locations,
+        'Minimum_QC_Check'           : QC_result_L,
+        'QC_Issues'                  : QC_reason_L,
+        'Warnings'                   : warnings_L,
+        'Alerts'                     : alerts_L,
+        'Q30_R1_[%]'                 : Q30_R1_per_L,
+        'Q30_R2_[%]'                 : Q30_R2_per_L,
+        'Total_Sequenced_[bp]'       : Total_Seq_bp_L,
+        'Total_Sequenced_[reads]'    : Total_Seq_reads_L,
+        'Estimated_Trimmed_Coverage' : Coverage_L,
+        'Scaffolds'                  : Scaffold_Count_L,
+        'Assembly_Length'            : Assembly_Length_L,
+        'Assembly_Ratio'             : assembly_ratio_L,
+        'Assembly_StDev'             : assembly_stdev_L,
         'Taxa_Source'                : tax_method_L,
         'BUSCO_Lineage'              : busco_lineage_L,
         'BUSCO_%Match'               : percent_busco_L,
@@ -725,8 +756,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_s
         'Primary_MLST_alleles'       : MLST_alleles_1_L,
         'Secondary_MLST_Scheme_Name' : MLST_scheme_2_L,
         'Secondary_MLST'             : MLST_type_2_L,
-        'Secondary_MLST_alleles'     : MLST_alleles_2_L
-        }
+        'Secondary_MLST_alleles'     : MLST_alleles_2_L}
     df = pd.DataFrame(data)
     return df
 
@@ -778,22 +808,25 @@ def big5_check(final_ar_df):
     big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "blaOXA-163", "blaOXA-405"]
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
     for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
-        gene_name = gene.split('_(')[0] # remove drug name for matching genes
-        drug = gene.split('_(')[1] # keep drug name to add back later
-        # make sure we have a complete match for blaOXA-48 and blaOXA-48-like genes
-        if gene_name.startswith("blaOXA"): #check for complete blaOXA match
-            [ columns_to_highlight.append(gene_name + "(" + drug) for big5_keep_gene in blaOXA_48_like if gene_name == big5_keep_gene ]
-        else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
-            for big5 in big5_keep:
-                if search(big5, gene_name): #search for big5 gene substring in the gene name
-                    columns_to_highlight.append(gene_name + "(" + drug)
+        if gene == 'No_AR_Genes_Found':
+            pass
+        else:
+            gene_name = gene.split('_(')[0] # remove drug name for matching genes
+            drug = gene.split('_(')[1] # keep drug name to add back later
+            # make sure we have a complete match for blaOXA-48 and blaOXA-48-like genes
+            if gene_name.startswith("blaOXA"): #check for complete blaOXA match
+                [ columns_to_highlight.append(gene_name + "(" + drug) for big5_keep_gene in blaOXA_48_like if gene_name == big5_keep_gene ]
+            else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
+                for big5 in big5_keep:
+                    if search(big5, gene_name): #search for big5 gene substring in the gene name
+                        columns_to_highlight.append(gene_name + "(" + drug)
     #loop through list of genes to drop and removed if they are in the highlight list
     for bad_gene in big5_drop:
         #search for big5 gene substring in the gene name and remove if it is
         [columns_to_highlight.remove(gene) for gene in columns_to_highlight if bad_gene in gene]
     return columns_to_highlight
 
-def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
+def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     hv_cols = list(hv_df)
     pf_cols = list(pf_df)
     ar_cols = list(ar_df)
@@ -807,8 +840,12 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
     pf_df = pf_df.loc[:, pf_cols]
     hv_df = hv_df.loc[:, hv_cols]
     ar_df = ar_df.loc[:, ar_cols]
-    # combining srst2 and gamma ar dataframes
-    final_ar_df = add_srst2(ar_df, srst2_ar_df)
+    # if we run -entry PHOENIX then skip
+    if phoenix == True: 
+        # combining srst2 and gamma ar dataframes
+        final_ar_df = add_srst2(ar_df, srst2_ar_df)
+    else:
+        final_ar_df = ar_df
     ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
     # now we will check for the "big 5" genes for highlighting later.
     columns_to_highlight = big5_check(final_ar_df)
@@ -822,7 +859,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df):
     pf_db = final_df['Plasmid_Replicon_Database'].tolist()[0]
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db,
 
-def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db):
+def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter((output + '_GRiPHin_Report.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
@@ -844,7 +881,10 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     worksheet.set_column('L:L', None, number_dec_2_format) # Estimated_Trimmed_Coverage
     worksheet.set_column('H:I', None, number_dec_2_format) # Q30%s
     worksheet.set_column('O:P', None, number_dec_2_format) # Assembly Ratio and StDev
-    worksheet.set_column('W:X', None, number_dec_2_format) # FastANI ID and Coverage
+    if phoenix == True:
+        worksheet.set_column('U:V', None, number_dec_2_format) # FastANI ID and Coverage
+    else:
+        worksheet.set_column('W:X', None, number_dec_2_format) # FastANI ID and Coverage
     # getting values to set column widths automatically
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
@@ -880,8 +920,8 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     orange_format.set_border(1) # add back border so it matches the rest of the column names
     orange_format_nb = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': False})
     # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column. adding 2 to max row to account for headers
-    worksheet.conditional_format('J3:J' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
-    worksheet.conditional_format('J3:J' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
+    worksheet.conditional_format('L3:L' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
+    worksheet.conditional_format('L3:L' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.
     worksheet.conditional_format('D3:D' + str(max_row + 2), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
     # conditional formating to highlight big 5 genes
@@ -992,18 +1032,18 @@ def main():
             Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     # combine all lists into a dataframe
-    df = Create_df(Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+    df = Create_df(args.phoenix, Data_Locations, Platforms, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
     else:
         final_df = final_df
-    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db)
+    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix)
 
 if __name__ == '__main__':
     main()
