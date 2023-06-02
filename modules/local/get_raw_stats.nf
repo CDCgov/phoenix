@@ -22,7 +22,7 @@ process GET_RAW_STATS {
     def num1 = "${reads[0]}".minus(".fastq.gz")
     def num2 = "${reads[1]}".minus(".fastq.gz")
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
-    
+
     """
     set +e
 
@@ -76,7 +76,6 @@ process GET_RAW_STATS {
         rm ${prefix}_prdresult.txt
 
     fi
-
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
