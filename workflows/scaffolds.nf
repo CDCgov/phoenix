@@ -180,7 +180,7 @@ workflow SCAFFOLDS_EXTERNAL {
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads           -> [[id:meta.id], reads]}\
         .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{              meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]},   by: [0])\
-        .join(DETERMINE_TOP_TAXA.out.reference_files.map{            meta, reference_files -> [[id:meta.id], reference_files ]}, by: [0])
+        .join(DETERMINE_TOP_TAXA.out.reference_dir.map{              meta, reference_dir   -> [[id:meta.id], reference_dir ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -308,6 +308,12 @@ workflow SCAFFOLDS_EXTERNAL {
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
             summaries_ch, outdir_path, false
+        )
+        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+
+        //create GRiPHin report
+        GRIPHIN (
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
