@@ -27,7 +27,7 @@ def parseArgs(args=None):
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
     parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Report.xlsx.')
-    parser.add_argument('-p', '--platform', default=None, required=False, dest='platform', help='String for the sequencing platform used.')
+    parser.add_argument('-p', '--platform', default=None, required=False, dest='platform', help='String for the sequencing platform used.') #kinda dumping this and just calling it parent_folder
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30s.')
     parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX which is the default.')
     return parser.parse_args()
@@ -861,7 +861,10 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
 
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
-    writer = pd.ExcelWriter((output + '_GRiPHin_Report.xlsx'), engine='xlsxwriter')
+    if output != "":
+        writer = pd.ExcelWriter((output + '_GRiPHin_Report.xlsx'), engine='xlsxwriter')
+    else:
+        writer = pd.ExcelWriter(('GRiPHin_Report.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
     df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=1)
     # Get the xlsxwriter workfbook worksheet objects for formating

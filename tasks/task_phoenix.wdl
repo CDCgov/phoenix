@@ -193,6 +193,7 @@ task phoenix {
     File amrfinder_hits            = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results
     File full_results             = "~{samplename}.tar.gz"
+    File griphin_report           = "~{samplename}/results/results_GRiPHin_Report.xlsx"
     File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
     File multiqc_report           = "~{samplename}/results/multiqc/multiqc_report.html"
   }

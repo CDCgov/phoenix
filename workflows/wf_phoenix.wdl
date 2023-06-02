@@ -52,6 +52,7 @@ workflow phoenix_workflow {
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
     String  qc_reason                         = phoenix.qc_reason
     File    full_results                      = phoenix.full_results
+    File    griphin_report                    = phoenix.griphin_report
     #phoenix fastqc
     File raw_read1_html           = phoenix.raw_read1_html           # fastqc.html
     File raw_read1_zip            = phoenix.raw_read1_zip            # fastqc.zip
