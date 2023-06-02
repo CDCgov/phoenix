@@ -34,8 +34,8 @@ workflow phoenix_workflow {
     String  assembly_ratio                    = phoenix.assembly_ratio
     Int     scaffold_count                    = phoenix.scaffold_count
     Float   gc_percent                        = phoenix.gc_percent
-    String? busco                            = phoenix.busco
-    String? busco_db                         = phoenix.busco_db
+    String? busco                             = phoenix.busco
+    String? busco_db                          = phoenix.busco_db
     String  species                           = phoenix.species
     String  taxa_confidence                   = phoenix.taxa_confidence
     String  taxa_source                       = phoenix.taxa_source
@@ -51,7 +51,7 @@ workflow phoenix_workflow {
     String  hypervirulence_genes              = phoenix.hypervirulence_genes
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
     String  qc_reason                         = phoenix.qc_reason
-    File    full_results                        = phoenix.full_results
+    File    full_results                      = phoenix.full_results
     #phoenix fastqc
     File raw_read1_html           = phoenix.raw_read1_html           # fastqc.html
     File raw_read1_zip            = phoenix.raw_read1_zip            # fastqc.zip

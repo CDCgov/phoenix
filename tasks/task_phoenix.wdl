@@ -53,44 +53,44 @@ task phoenix {
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f6 | tee ASSEMBLY_RATIO
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
-    if (~{entry} == "PHOENIX" || ~{entry} == "SRA") {
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee SPECIES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee TAXA_SOURCE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee KRAKEN2_TRIMD
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee KRAKEN2_WEIGHTED
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee MLST_SCHEME_1
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee MLST_1
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_2
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f18 | tee MLST_2
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee QC_REASON
-    }
-    if (~{entry} == "CDC_PHOENIX" || ~{entry} == "CDC_SRA") {
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee BUSCO
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee SPECIES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee KRAKEN2_TRIMD
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee KRAKEN2_WEIGHTED
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_1
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f18 | tee MLST_1
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f19 | tee MLST_SCHEME_2
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee MLST_2
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f26 | tee QC_REASON
-    }
+    if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA"]; then
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee SPECIES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee MLST_1
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f18 | tee MLST_2
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee QC_REASON
+    fi
+    if [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ]; then
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee BUSCO
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee SPECIES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f18 | tee MLST_1
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f19 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee MLST_2
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f26 | tee QC_REASON
+    fi
   >>>
   output {
     File?   work_files                        = "work.tar.gz"
