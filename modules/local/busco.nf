@@ -2,11 +2,8 @@ process BUSCO {
     tag "$meta.id"
     label 'process_high'
     //container "ezlabgva/busco:v5.4.0_dev_cv1"
+    container 'quay.io/biocontainers/busco:5.4.7--pyhdfd78af_0'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/busco:5.4.3--pyhdfd78af_0':
-        'quay.io/biocontainers/busco:5.4.3--pyhdfd78af_0' }"
-        
     input:
     tuple val(meta), path('tmp_input/*'), path(busco_lineages_path) // path to busco lineages - downloads if not set
     each(lineage)                          // Required:    lineage to check against, "auto" enables --auto-lineage instead
