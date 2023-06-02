@@ -338,7 +338,7 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         GRIPHIN (
-            summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage
+            summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
