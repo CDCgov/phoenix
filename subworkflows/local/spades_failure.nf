@@ -67,7 +67,7 @@ workflow SPADES_WF {
 
             // Generate pipeline stats for case when spades fails to create scaffolds
             GENERATE_PIPELINE_STATS_FAILURE_EXQC (
-                pipeline_stats_ch
+                pipeline_stats_ch, params.coverage
             )
             ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_FAILURE_EXQC.out.versions)
 
@@ -104,7 +104,7 @@ workflow SPADES_WF {
 
             // Generate pipeline stats for case when spades fails to create scaffolds
             GENERATE_PIPELINE_STATS_FAILURE (
-                pipeline_stats_ch
+                pipeline_stats_ch, params.coverage
             )
             ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_FAILURE.out.versions)
 
