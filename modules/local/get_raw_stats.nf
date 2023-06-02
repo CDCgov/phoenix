@@ -80,6 +80,6 @@ process GET_RAW_STATS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-    END_VERSIONS
+    END_VERSION
     """
 }
