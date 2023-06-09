@@ -238,7 +238,10 @@ def Checking_auto_pass_fail(coverage, length, assembly_stdev, asmbld_ratio, set_
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
     if coverage == "Unknown" or int(coverage) < int(set_coverage):
         QC_result = "FAIL"
-        QC_reason = "coverage below "+ str(set_coverage) +"x(" + str(coverage) + "x)"
+        if coverage == "Unknown":
+            QC_reason = "coverage below "+ str(set_coverage) +"x(" + str(coverage) + ")"
+        else:
+            QC_reason = "coverage below "+ str(set_coverage) +"x(" + str(coverage) + "x)"
     elif int(length) <= 1000000 or length == "Unknown":
         QC_result = "FAIL"
         QC_reason = "smaller than 1,000,000bps(" + str(length) + ")"
@@ -854,9 +857,15 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
     #get database names
-    ar_db = final_df['AR_Database'].tolist()[0]
-    hv_db = final_df['HV_Database'].tolist()[0]
-    pf_db = final_df['Plasmid_Replicon_Database'].tolist()[0]
+    ar_db = final_df['AR_Database'].unique().tolist()
+    ar_db.remove('GAMMA file not found') #Don't want this reported as the ar_db
+    ar_db = ",".join(ar_db)
+    hv_db = final_df['HV_Database'].unique().tolist()
+    hv_db.remove("GAMMA file not found")
+    hv_db = ",".join(hv_db)
+    pf_db = final_df['Plasmid_Replicon_Database'].unique().tolist()
+    pf_db.remove("GAMMA file not found")
+    pf_db = ",".join(pf_db)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db,
 
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix):
@@ -908,8 +917,14 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Headers
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
     worksheet.merge_range('D1:P1', "QC Metrics", cell_format_grey_blue)
-    worksheet.merge_range('Q1:Y1', "Taxonomic Information", cell_format_green)
-    worksheet.merge_range('Z1:AE1', "MLST Schemes", cell_format_green_blue)
+    if phoenix == True:
+        worksheet.merge_range('Q1:W1', "Taxonomic Information", cell_format_green)
+    else:
+        worksheet.merge_range('Q1:Y1', "Taxonomic Information", cell_format_green)
+    if phoenix == True:
+        worksheet.merge_range('X1:AC1', "MLST Schemes", cell_format_green_blue)
+    else:
+        worksheet.merge_range('Z1:AE1', "MLST Schemes", cell_format_green_blue)
     worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
