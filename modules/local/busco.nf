@@ -28,10 +28,10 @@ process BUSCO {
     def busco_lineage_dir = busco_lineages_path ? "--offline --download_path ${busco_lineages_path}" : ''
     if (params.terra==false) {
         terra = ""
-        terra_exit = "source activate busco"
+        //terra_exit = "source activate busco"
     } else if (params.terra==true) {
-        terra = "source activate busco"
-        terra_exit = "source deactivate"
+        terra = "export PYTHONPATH=/opt/conda/envs/busco/lib/python3.7/site-packages/"
+        //terra_exit = "source deactivate"
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
