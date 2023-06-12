@@ -26,19 +26,7 @@ process BUSCO {
     def busco_config = config_file ? "--config $config_file" : ''
     def busco_lineage = lineage.equals('auto') ? '--auto-lineage' : "--lineage_dataset ${lineage}"
     def busco_lineage_dir = busco_lineages_path ? "--offline --download_path ${busco_lineages_path}" : ''
-    if (params.terra==false) {
-        terra = ""
-        //terra_exit = "source activate busco"
-    } else if (params.terra==true) {
-        terra = "export PYTHONPATH=/opt/conda/envs/busco/lib/python3.7/site-packages/"
-        //terra_exit = "source deactivate"
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     """
-    #Terra
-    $terra
-
     # Nextflow changes the container --entrypoint to /bin/bash (container default entrypoint: /usr/local/env-execute)
     # Check for container variable initialisation script and source it.
     if [ -f "/usr/local/env-activate.sh" ]; then
