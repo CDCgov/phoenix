@@ -856,15 +856,18 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
     final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
-    #get database names
+    #get database names and remove if file is not found in the database list
     ar_db = final_df['AR_Database'].unique().tolist()
-    ar_db.remove('GAMMA file not found') #Don't want this reported as the ar_db
+    if 'GAMMA file not found' in ar_db:
+        ar_db.remove('GAMMA file not found') #Don't want this reported as the ar_db
     ar_db = ",".join(ar_db)
     hv_db = final_df['HV_Database'].unique().tolist()
-    hv_db.remove("GAMMA file not found")
+    if 'GAMMA file not found' in hv_db:
+        hv_db.remove("GAMMA file not found")
     hv_db = ",".join(hv_db)
     pf_db = final_df['Plasmid_Replicon_Database'].unique().tolist()
-    pf_db.remove("GAMMA file not found")
+    if 'GAMMA file not found' in pf_db:
+        pf_db.remove("GAMMA file not found")
     pf_db = ",".join(pf_db)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db,
 
