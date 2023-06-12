@@ -30,7 +30,7 @@ process BUSCO {
         terra = ""
         terra_exit = ""
     } else if (params.terra==true) {
-        terra = "source activate busco"
+        terra = "conda activate /opt/conda/envs/busco"
         //terra = "export PYTHONPATH=/opt/conda/envs/busco/lib/python3.7/site-packages/"
         terra_exit = "source deactivate"
     } else {
