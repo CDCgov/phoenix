@@ -31,7 +31,19 @@ process SRST2_AR {
     } else {
         error "Please set meta.db to either \"gene\" or \"mlst\""
     }
+    if (params.terra==false) {
+        terra = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra = "export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/"
+        terra_exit = "export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    #adding python path for running srst2 on terra
+    $terra
+
     srst2 \\
         ${read_s} \\
         --threads $task.cpus \\
@@ -50,5 +62,8 @@ process SRST2_AR {
         srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
         AMR Combined Database: $db
     END_VERSIONS
+
+    #revert python path back to main envs for running on terra
+    $terra_exit
     """
 }

@@ -25,7 +25,19 @@ process SRST2_MLST {
     def args = task.ext.args ?: ""
     def prefix = task.ext.prefix ?: "${meta.id}"
     def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
+    if (params.terra==false) {
+        terra = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra = "export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/"
+        terra_exit = "export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    #adding python path for running srst2 on terra
+    $terra
+
     echo "STATUS-IN: ${status[0]}"
     srst2_ran="False"
     if [[ "${status[0]}" = "False" ]]; then
@@ -130,5 +142,8 @@ process SRST2_MLST {
     "${task.process}":
         srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
     END_VERSIONS
+
+    #revert python path back to main envs for running on terra
+    $terra_exit
     """
 }
