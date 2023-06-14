@@ -67,13 +67,6 @@ process GET_MLST_SRST2 {
                 # Have not found any other delimiters other than underscore in all DB folders
                 echo -e "DB:\${DBID}\tdefs:\${DBID}_profile.csv\tdel:'_'" > "\${DBID}_getMLST_out.txt"
                 cp "\${DBID}_getMLST_out.txt" "\${DBID}_getMLST_out_temp.txt"
-                if [[ "\${DBID}" = "abaumannii" ]]; then
-                    sed -i -e 's/Oxf_//g' "\${DBID}_temp.fasta"
-                    sed -i -e 's/Oxf_//g' "\${DBID}_profiles_temp.csv"
-                elif [[ "\$DBID}" = "abaumannii_2" ]]; then
-                    sed -i -e 's/Pas_//g' "\${DBID}.fasta"
-                    sed -i -e 's/Pas_//g' "\${DBID}_profiles.csv"
-                fi
                 
                 for allele_file in "${local_mlst_db}/pubmlst/\${DBID}/"*".tfa"; do
                     echo "\${allele_file}"
@@ -83,6 +76,14 @@ process GET_MLST_SRST2 {
                 cp "${local_mlst_db}/pubmlst/\${DBID}/\${DBID}.txt" "\${DBID}_profiles_temp.csv"
                 new_pull_date=\$(head "${local_mlst_db}/db_version")
                 echo "\${new_pull_date}" >> "\${DBID}_pull_date.txt"
+
+                if [[ "\${DBID}" = "abaumannii" ]]; then
+                    sed -i -e 's/Oxf_//g' "\${DBID}_temp.fasta"
+                    sed -i -e 's/Oxf_//g' "\${DBID}_profiles_temp.csv"
+                elif [[ "\$DBID}" = "abaumannii_2" ]]; then
+                    sed -i -e 's/Pas_//g' "\${DBID}.fasta"
+                    sed -i -e 's/Pas_//g' "\${DBID}_profiles.csv"
+                fi
             fi
             counter=\$(( counter + 1))
         done
