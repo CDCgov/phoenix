@@ -79,7 +79,7 @@ process FAIRY_STATS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        phoenix_base_container: ${container}
+        python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
     """
 }
