@@ -49,6 +49,7 @@ include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
+include { GRIPHIN                        } from '../modules/local/griphin'
 
 /*
 ========================================================================================
@@ -313,7 +314,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         //create GRiPHin report
         GRIPHIN (
-            summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true
+            summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
