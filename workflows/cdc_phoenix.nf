@@ -33,8 +33,8 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { FAIRY                          } from '../modules/local/fairy'
-include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats_fairy' //get_raw_stats'
-//include { FAIRY_STATS                    } from '../modules/local/fairy_stats'
+//include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats_fairy' //get_raw_stats'
+include { FAIRY_STATS                    } from '../modules/local/fairy_stats'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
@@ -123,17 +123,17 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
         //fairy compressed file corruption check
-        FAIRY (
+        FAIRY_STATS (
             INPUT_CHECK.out.reads
         )
-        ch_versions = ch_versions.mix(FAIRY.out.versions)
+        ch_versions = ch_versions.mix(FAIRY_STATS.out.versions)
 
         // Get stats on raw reads
-        GET_RAW_STATS (
-            FAIRY.out.reads, FAIRY.out.outcome
+        /*GET_RAW_STATS (
+            FAIRY.out.reads, FAIRY_STATS.out.outcome
 
         )
-        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
+        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)*/
 
         // Get stats on raw reads
         /*GET_RAW_STATS (
@@ -145,7 +145,7 @@ workflow PHOENIX_EXQC {
 
         // Remove PhiX reads
         BBDUK (
-            GET_RAW_STATS.out.reads, params.bbdukdb, GET_RAW_STATS.out.outcome
+            FAIRY_STATS.out.reads, params.bbdukdb, FAIRY_STATS.out.outcome
         )
         ch_versions = ch_versions.mix(BBDUK.out.versions)
 
