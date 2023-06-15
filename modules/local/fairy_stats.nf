@@ -1,7 +1,7 @@
 process FAIRY_STATS {
     tag "$meta.id"
     label 'process_medium'
-    label 'error_ignore'
+    //label 'error_ignore'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
@@ -21,7 +21,7 @@ process FAIRY_STATS {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def num1 = "${reads[0]}".minus(".fastq.gz")
     def num2 = "${reads[1]}".minus(".fastq.gz")
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    //def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
 
     """
     set +e
@@ -80,6 +80,6 @@ process FAIRY_STATS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-    END_VERSIONS
+    
     """
 }
