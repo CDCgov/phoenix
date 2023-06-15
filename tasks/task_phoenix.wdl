@@ -24,7 +24,7 @@ task phoenix {
     export TMP=$TMPDIR
     env
 
-    if [ ~{entry} = "SRA" || ~{entry} = "CDC_SRA"]; then
+    if [ ~{entry} == "SRA" ] || [ ~{entry} == "CDC_SRA" ]; then
       # Make sample form
       echo "~{samplename}" > sample.csv
       # Run PHoeNIx
@@ -33,7 +33,7 @@ task phoenix {
       #set input variable
       input_file="--input_sra ../sample.csv"
 
-    elif [ ~{entry} = "SCAFFOLDS" || ~{entry} = "CDC_SCAFFOLDS" ]; then
+    elif [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
       # Make sample form
       echo "sample,assembly" > sample.csv
       echo "~{samplename},~{input_assembly}" >> sample.csv
