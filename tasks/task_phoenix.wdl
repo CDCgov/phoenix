@@ -31,7 +31,8 @@ task phoenix {
       mkdir ~{samplename}
       cd ~{samplename}
       #set input variable
-      input_file="--input_sra ../sample.csv"
+      #setting --use_sra to keep ~{samplename} working
+      input_file="--input_sra ../sample.csv --use_sra"
       #set scaffold as blank variable
       scaffold_ext=""
     elif [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
