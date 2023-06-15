@@ -139,9 +139,9 @@ workflow PHOENIX_EXQC {
         /*GET_RAW_STATS (
             INPUT_CHECK.out.reads
         )
-        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
-        failed_summaries_ch = GET_RAW_STATS.out.summary_line.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
-        */
+        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)*/
+        failed_summaries_ch = FAIRY_STATS.out.summary_line.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
+        
 
         // Remove PhiX reads
         BBDUK (
