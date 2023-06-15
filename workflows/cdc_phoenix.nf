@@ -191,7 +191,8 @@ workflow PHOENIX_EXQC {
         SPADES_WF (
             FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
-            GET_RAW_STATS.out.combined_raw_stats, \
+            FAIRY_STATS.out.combined_raw_stats, \
+            //GET_RAW_STATS.out.combined_raw_stats, \
             SRST2_AR.out.fullgene_results, \
             KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
@@ -349,7 +350,8 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         GENERATE_PIPELINE_STATS_WF (
-            GET_RAW_STATS.out.combined_raw_stats, \
+            FAIRY_STATS.out.combined_raw_stats, \
+            //GET_RAW_STATS.out.combined_raw_stats, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
             SRST2_AR.out.fullgene_results, \
             KRAKEN2_TRIMD.out.report, \
