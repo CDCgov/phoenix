@@ -41,6 +41,8 @@ task phoenix {
       # Run PHoeNIx
       mkdir ~{samplename}
       cd ~{samplename}
+      #set input variable
+      input_file="--input ../sample.csv"
       #set scaffold variable
       scaffold_ext="--scaffold_ext ~{scaffold_ext}"
     else
