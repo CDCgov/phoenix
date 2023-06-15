@@ -20,7 +20,6 @@ process FAIRY_STATS {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def num1 = "${reads[0]}".minus(".fastq.gz")
     def num2 = "${reads[1]}".minus(".fastq.gz")
-
     """
     set +e
 
