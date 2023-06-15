@@ -7,19 +7,25 @@ workflow phoenix_workflow {
     description: "A WDL wrapper around the qc, assembly, AR gene calls components of phoenix."
   }
   input {
-    File   read1
-    File   read2
-    String samplename
-    String kraken2db
-    String entry
+    File?   read1
+    File?   read2
+    File?   assembly
+    String  samplename
+    String  kraken2db
+    String  entry
+    Int     coverage
+    String? scaffold_ext
   }
   call phoenix_nf.phoenix {
     input:
       read1          = read1,
       read2          = read2,
+      assembly       = assembly,
       samplename     = samplename,
       kraken2db      = kraken2db,
-      entry          = entry
+      entry          = entry,
+      coverage       = coverage,
+      scaffold_ext   = scaffold_ext
   }
   output {
     #phoenix summary output values

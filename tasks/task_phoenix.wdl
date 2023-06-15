@@ -2,12 +2,15 @@ version 1.0
 
 task phoenix {
   input {
-    File   read1
-    File   read2
+    File?  read1
+    File?  read2
+    File?  assembly
     String samplename
     String kraken2db = "null"
     String entry = "PHOENIX"
     String docker = "quay.io/jvhagey/phoenix:2.0.0"
+    String scaffold_ext = ".scaffolds.fa.gz"
+    Int    coverage = 30
     Int    memory = 64
     Int    cpu = 8
     Int    disk_size = 100
@@ -16,20 +19,56 @@ task phoenix {
     date | tee DATE
     echo $(nextflow pull cdcgov/phoenix 2>&1) | sed 's/^.*revision: //;' | tee VERSION
 
-    # Make sample form
-    echo "sample,fastq_1,fastq_2" > sample.csv
-    echo "~{samplename},~{read1},~{read2}" >> sample.csv
-
     # Debug
     export TMP_DIR=$TMPDIR
     export TMP=$TMPDIR
     env
 
-    # Run PHoeNIx
-    mkdir ~{samplename}
-    cd ~{samplename}
+    if [ ~{entry} = "SRA" || ~{entry} = "CDC_SRA"]; then
+      # Make sample form
+      echo "~{samplename}" > sample.csv
+      # Run PHoeNIx
+      mkdir ~{samplename}
+      cd ~{samplename}
+      #set input variable
+      input_file="--input_sra ../sample.csv"
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0-dev -entry ~{entry} --terra true --input ../sample.csv --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --kraken2db ~{kraken2db}; then
+    elif [ ~{entry} = "SCAFFOLDS" || ~{entry} = "CDC_SCAFFOLDS" ]; then
+      # Make sample form
+      echo "sample,assembly" > sample.csv
+      echo "~{samplename},~{assembly}" >> sample.csv
+      # Run PHoeNIx
+      mkdir ~{samplename}
+      cd ~{samplename}
+
+      if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0-dev -entry ~{entry} --terra true --input ../sample.csv --scaffold_ext ~{scaffold_ext} --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB'; then
+        # Everything finished, pack up the results and clean up
+        #tar -cf - work/ | gzip -n --best > work.tar.gz
+        rm -rf .nextflow/ work/
+        cd ..
+        tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz
+      else
+        # Run failed
+        tar -cf - work/ | gzip -n --best > work.tar.gz
+        #save line for debugging specific file - just change "collated_versions.yml" to specific file name
+        find  /cromwell_root/ -path "*work*" -name "*.command.err" | xargs -I {} bash -c "echo {} && cat {}"
+        find  /cromwell_root/ -path "*work*" -name "*.command.out" | xargs -I {} bash -c "echo {} && cat {}"
+        find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
+        exit 1
+      fi
+    else
+      # Make sample form
+      echo "sample,fastq_1,fastq_2" > sample.csv
+      echo "~{samplename},~{read1},~{read2}" >> sample.csv
+      # Run PHoeNIx
+      mkdir ~{samplename}
+      cd ~{samplename}
+      #set input variable
+      input_file="--input ../sample.csv"
+      
+    fi
+
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0-dev -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB'; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -171,9 +210,9 @@ task phoenix {
     File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
     File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2
-    File? busco_generic           = "~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt"
-    File? busco_specific          = "~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt"
-    File? srst2                   = "~{samplename}/results/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20210507_srst2__results.txt"
+    File? busco_generic           = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
+    File? busco_specific          = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
+    File? srst2                   = "~{samplename}/results/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
     #phoenix gamma
     File gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
     File blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.psl"
