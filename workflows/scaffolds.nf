@@ -296,7 +296,7 @@ workflow SCAFFOLDS_EXTERNAL {
         .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])\
         .join(FORMAT_ANI.out.ani_best_hit.map{                   meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
 
-        // Generate summary per sample that passed SPAdes
+        // Generate summary per sample
         CREATE_SUMMARY_LINE (
             line_summary_ch
         )
@@ -313,7 +313,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true
+            summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
