@@ -13,7 +13,7 @@ workflow phoenix_workflow {
     String  samplename
     String  kraken2db
     String  entry
-    Int     coverage
+    Int?    coverage
     String? scaffold_ext
   }
   call phoenix_nf.phoenix {

@@ -10,7 +10,7 @@ task phoenix {
     String entry = "PHOENIX"
     String docker = "quay.io/jvhagey/phoenix:2.0.0"
     String scaffold_ext = ".scaffolds.fa.gz"
-    Int    coverage = 30
+    Int?   coverage = 30
     Int    memory = 64
     Int    cpu = 8
     Int    disk_size = 100
@@ -32,7 +32,8 @@ task phoenix {
       cd ~{samplename}
       #set input variable
       input_file="--input_sra ../sample.csv"
-
+      #set scaffold as blank variable
+      scaffold_ext=""
     elif [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
       # Make sample form
       echo "sample,assembly" > sample.csv
@@ -40,22 +41,8 @@ task phoenix {
       # Run PHoeNIx
       mkdir ~{samplename}
       cd ~{samplename}
-
-      if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0-dev -entry ~{entry} --terra true --input ../sample.csv --scaffold_ext ~{scaffold_ext} --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB'; then
-        # Everything finished, pack up the results and clean up
-        #tar -cf - work/ | gzip -n --best > work.tar.gz
-        rm -rf .nextflow/ work/
-        cd ..
-        tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz
-      else
-        # Run failed
-        tar -cf - work/ | gzip -n --best > work.tar.gz
-        #save line for debugging specific file - just change "collated_versions.yml" to specific file name
-        find  /cromwell_root/ -path "*work*" -name "*.command.err" | xargs -I {} bash -c "echo {} && cat {}"
-        find  /cromwell_root/ -path "*work*" -name "*.command.out" | xargs -I {} bash -c "echo {} && cat {}"
-        find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
-        exit 1
-      fi
+      #set scaffold variable
+      scaffold_ext="--scaffold_ext ~{scaffold_ext}"
     else
       # Make sample form
       echo "sample,fastq_1,fastq_2" > sample.csv
@@ -65,10 +52,11 @@ task phoenix {
       cd ~{samplename}
       #set input variable
       input_file="--input ../sample.csv"
-      
+      #set scaffold as blank variable
+      scaffold_ext=""
     fi
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0-dev -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB'; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v1.2.0-dev -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
