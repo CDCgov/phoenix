@@ -79,6 +79,5 @@ process FAIRY_STATS {
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
     
-    END_VERSIONS
     """
 }
