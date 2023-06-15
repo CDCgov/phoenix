@@ -54,7 +54,7 @@ process FAIRY_STATS {
     if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ] 
         then
         create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
-        comb_stats_chk.py -r ${prefix}_raw_read_counts.txt
+        fairy.py -r ${prefix}_raw_read_counts.txt
     fi
 
     if grep "PASS" ${prefix}_result.txt
