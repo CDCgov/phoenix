@@ -9,7 +9,7 @@ workflow phoenix_workflow {
   input {
     File?   read1
     File?   read2
-    File?   assembly
+    File?   input_assembly
     String  samplename
     String  kraken2db
     String  entry
@@ -20,7 +20,7 @@ workflow phoenix_workflow {
     input:
       read1          = read1,
       read2          = read2,
-      assembly       = assembly,
+      input_assembly = input_assembly,
       samplename     = samplename,
       kraken2db      = kraken2db,
       entry          = entry,

@@ -4,7 +4,7 @@ task phoenix {
   input {
     File?  read1
     File?  read2
-    File?  assembly
+    File?  input_assembly
     String samplename
     String kraken2db = "null"
     String entry = "PHOENIX"
@@ -36,7 +36,7 @@ task phoenix {
     elif [ ~{entry} = "SCAFFOLDS" || ~{entry} = "CDC_SCAFFOLDS" ]; then
       # Make sample form
       echo "sample,assembly" > sample.csv
-      echo "~{samplename},~{assembly}" >> sample.csv
+      echo "~{samplename},~{input_assembly}" >> sample.csv
       # Run PHoeNIx
       mkdir ~{samplename}
       cd ~{samplename}
