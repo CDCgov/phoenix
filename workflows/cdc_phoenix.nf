@@ -32,8 +32,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { FAIRY                          } from '../modules/local/fairy'
-//include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats_fairy' //get_raw_stats'
 include { FAIRY_STATS                    } from '../modules/local/fairy_stats'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
@@ -122,27 +120,14 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
-        //fairy compressed file corruption check
+        //fairy compressed file corruption check & generate read stats
         FAIRY_STATS (
             INPUT_CHECK.out.reads
         )
         ch_versions = ch_versions.mix(FAIRY_STATS.out.versions)
 
-        // Get stats on raw reads
-        /*GET_RAW_STATS (
-            FAIRY.out.reads, FAIRY_STATS.out.outcome
-
-        )
-        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)*/
-
-        // Get stats on raw reads
-        /*GET_RAW_STATS (
-            INPUT_CHECK.out.reads
-        )
-        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)*/
-        failed_summaries_ch = FAIRY_STATS.out.summary_line.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
+        failed_summaries_ch = FAIRY_STATS.out.summary_line.collect().ifEmpty(params.placeholder) // if no failure pass empty file to keep it moving...
         
-
         // Remove PhiX reads
         BBDUK (
             FAIRY_STATS.out.reads, params.bbdukdb, FAIRY_STATS.out.outcome
@@ -192,7 +177,6 @@ workflow PHOENIX_EXQC {
             FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
             FAIRY_STATS.out.combined_raw_stats, \
-            //GET_RAW_STATS.out.combined_raw_stats, \
             SRST2_AR.out.fullgene_results, \
             KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
@@ -351,7 +335,6 @@ workflow PHOENIX_EXQC {
 
         GENERATE_PIPELINE_STATS_WF (
             FAIRY_STATS.out.combined_raw_stats, \
-            //GET_RAW_STATS.out.combined_raw_stats, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
             SRST2_AR.out.fullgene_results, \
             KRAKEN2_TRIMD.out.report, \
