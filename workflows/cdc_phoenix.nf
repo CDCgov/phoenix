@@ -32,7 +32,9 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
+include { FAIRY                          } from '../modules/local/fairy'
+include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats_fairy' //get_raw_stats'
+//include { FAIRY_STATS                    } from '../modules/local/fairy_stats'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
@@ -120,13 +122,26 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
+        //fairy compressed file corruption check
+        FAIRY (
+            INPUT_CHECK.out.reads
+        )
+        ch_versions = ch_versions.mix(FAIRY.out.versions)
+
         // Get stats on raw reads
         GET_RAW_STATS (
+            FAIRY.out.reads, FAIRY.out.outcome
+
+        )
+        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
+
+        // Get stats on raw reads
+        /*GET_RAW_STATS (
             INPUT_CHECK.out.reads
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
         failed_summaries_ch = GET_RAW_STATS.out.summary_line.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
-
+        */
 
         // Remove PhiX reads
         BBDUK (
@@ -409,7 +424,7 @@ workflow PHOENIX_EXQC {
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
-
+        ch_versions.unique().view()
         // Collecting the software versions
         CUSTOM_DUMPSOFTWAREVERSIONS (
             ch_versions.unique().collectFile(name: 'collated_versions.yml')
