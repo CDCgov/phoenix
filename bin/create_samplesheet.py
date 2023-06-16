@@ -6,8 +6,8 @@ import os
 import argparse
 import csv
 
-##Given a samplesheet from GRiPHin's wf a new samplesheet
-##Usage: >python create_samplesheet.py -s ./samplesheet.csv -a ../PHX/phoenix/assets/databases/ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output
+##Script to generate a samplesheet with sample,directory columns
+##Usage: >python create_samplesheet.py -d input_directory
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 def parseArgs(args=None):
@@ -25,7 +25,10 @@ def create_samplesheet(directory):
     with open("GRiPHin_samplesheet_created.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
         dirs = os.listdir(directory)
-        skip_list = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
+        skip_list_a = glob.glob(directory + "/*_GRiPHin_Report.xlsx") # for if griphin is run on a folder that already has a report in it
+        skip_list_a = [ item.split('/')[-1] for item in skip_list_a ]  # just get the excel name not the full path
+        skip_list_b = [ "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
+        skip_list = skip_list_a + skip_list_b
         for sample in dirs:
             if sample not in skip_list:
                 #with open("GRiPHin_samplesheet_created.csv", "a") as samplesheet:
