@@ -154,6 +154,9 @@ task phoenix {
     String  hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
     String  qc_reason                         = read_string("QC_REASON")
+    #summary files
+    File full_results             = "~{samplename}.tar.gz"
+    File griphin_report           = "~{samplename}/results/results_GRiPHin_Report.xlsx"
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? raw_read1_html          = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
     File? raw_read1_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"

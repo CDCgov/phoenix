@@ -57,34 +57,35 @@ workflow phoenix_workflow {
     String  hypervirulence_genes              = phoenix.hypervirulence_genes
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
     String  qc_reason                         = phoenix.qc_reason
+    #summary files
     File    full_results                      = phoenix.full_results
     File    griphin_report                    = phoenix.griphin_report
-    #phoenix fastqc
-    File raw_read1_html           = phoenix.raw_read1_html           # fastqc.html
-    File raw_read1_zip            = phoenix.raw_read1_zip            # fastqc.zip
-    File raw_read2_html           = phoenix.raw_read2_html           # fastqc.html
-    File raw_read2_zip            = phoenix.raw_read2_zip            # fastqc.zip
-    #phoenix trimmed kraken/krona
-    File kraken_trimd_output      = phoenix.kraken_trimd_output      # kraken2_trimd.classifiedreads.txt 
-    File kraken_trimd_report      = phoenix.kraken_trimd_report      # kraken2_trimd.report.txt
-    File kraken_trimd_summary     = phoenix.kraken_trimd_summary     # trimd_summary.txt
-    File trimd_html               = phoenix.trimd_html               # trimd.html
-    File trimd_krona              = phoenix.trimd_krona              # trimd.krona
-    File classified_1             = phoenix.classified_1             # classified_1.fastq.gz
-    File unclassified_1           = phoenix.unclassified_1           # unclassified_1.fastq.gz
-    File classified_2             = phoenix.classified_2             # classified_2.fastq.gz
-    File unclassified_2           = phoenix.unclassified_2           # unclassified_2.fastq.gz
-    #phoenix QC
-    File paired_fastp_html        = phoenix.paired_fastp_html        # fastp.html
-    File paired_fastp_json        = phoenix.paired_fastp_json        # fastp.json
-    File single_fastp_html        = phoenix.single_fastp_html        # singles.fastp.html
-    File single_fastp_json        = phoenix.single_fastp_json        # singles.fastp.json
-    File trimmed_singles          = phoenix.trimmed_singles          # singles.fastq.gz
-    File trimmed_read1            = phoenix.trimmed_read1            # read_1.trim.fastq.gz
-    File trimmed_read2            = phoenix.trimmed_read2            # read_2.trim.fastq.gz
-    File trimmed_read_counts      = phoenix.trimmed_read_counts      # trimmed_read_counts.txt
-    File raw_read_counts          = phoenix.raw_read_counts          # raw_read_counts.txt
-    File adapter_removal_log      = phoenix.adapter_removal_log      # bbduk.log
+    #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File? raw_read1_html          = phoenix.raw_read1_html           # fastqc.html
+    File? raw_read1_zip           = phoenix.raw_read1_zip            # fastqc.zip
+    File? raw_read2_html          = phoenix.raw_read2_html           # fastqc.html
+    File? raw_read2_zip           = phoenix.raw_read2_zip            # fastqc.zip
+    #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File? kraken_trimd_output     = phoenix.kraken_trimd_output      # kraken2_trimd.classifiedreads.txt 
+    File? kraken_trimd_report     = phoenix.kraken_trimd_report      # kraken2_trimd.report.txt
+    File? kraken_trimd_summary    = phoenix.kraken_trimd_summary     # trimd_summary.txt
+    File? trimd_html              = phoenix.trimd_html               # trimd.html
+    File? trimd_krona             = phoenix.trimd_krona              # trimd.krona
+    File? classified_1            = phoenix.classified_1             # classified_1.fastq.gz
+    File? unclassified_1          = phoenix.unclassified_1           # unclassified_1.fastq.gz
+    File? classified_2            = phoenix.classified_2             # classified_2.fastq.gz
+    File? unclassified_2          = phoenix.unclassified_2           # unclassified_2.fastq.gz
+    #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File? paired_fastp_html       = phoenix.paired_fastp_html        # fastp.html
+    File? paired_fastp_json       = phoenix.paired_fastp_json        # fastp.json
+    File? single_fastp_html       = phoenix.single_fastp_html        # singles.fastp.html
+    File? single_fastp_json       = phoenix.single_fastp_json        # singles.fastp.json
+    File? trimmed_singles         = phoenix.trimmed_singles          # singles.fastq.gz
+    File? trimmed_read1           = phoenix.trimmed_read1            # read_1.trim.fastq.gz
+    File? trimmed_read2           = phoenix.trimmed_read2            # read_2.trim.fastq.gz
+    File? trimmed_read_counts     = phoenix.trimmed_read_counts      # trimmed_read_counts.txt
+    File? raw_read_counts         = phoenix.raw_read_counts          # raw_read_counts.txt
+    File? adapter_removal_log     = phoenix.adapter_removal_log      # bbduk.log
     #phoenix assembly
     File assembly_graph           = phoenix.assembly_graph           # gfa.gz
     File filtered_scaffolds_log   = phoenix.filtered_scaffolds_log   # bbmap_filtered.log
@@ -107,6 +108,7 @@ workflow phoenix_workflow {
     #phoenix quast and mlst
     File quast_report             = phoenix.quast_report             # _report.tsv
     File mlst_tsv                 = phoenix.mlst_tsv                 # .tsv
+    # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
     File? busco_generic           = phoenix.busco_generic            # short_summary.generic.*.filtered.scaffolds.fa.txt"
     File? busco_specific          = phoenix.busco_specific           # short_summary.specific.*.filtered.scaffolds.fa.txt"
     File? srst2                   = phoenix.srst2                    # __fullgenes__ResGANNCBI_20210507_srst2__results.txt"
