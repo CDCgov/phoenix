@@ -493,10 +493,10 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 						new_entry = [novel_allele_sets[i][0], novel_allele_sets[i][1],novel_allele_sets[i][2],novel_allele_sets[i][3],novel_allele_sets[i][4],new_allele_list,new_source,novel_allele_sets[i][7]]
 						checked_and_deduped_schemes.append(new_entry)
 						if i>j:
-                                                        novel_allele_sets.pop(i)
+							novel_allele_sets.pop(i)
 							novel_allele_sets.pop(j)
-                                                if j>i:
-                                                        novel_allele_sets.pop(j)
+						if j>i:
+							novel_allele_sets.pop(j)
 							novel_allele_sets.pop(i)
 						match_found=True
 				else:
