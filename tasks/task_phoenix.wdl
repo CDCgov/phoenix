@@ -83,7 +83,7 @@ task phoenix {
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f6 | tee ASSEMBLY_RATIO
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
-    if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA"] || [ ~{entry} == "SCAFFOLDS" ]; then
+    if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee SPECIES
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
@@ -100,8 +100,7 @@ task phoenix {
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee QC_REASON
-    fi
-    if [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
+    elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee BUSCO
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee SPECIES
@@ -120,6 +119,9 @@ task phoenix {
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f26 | tee QC_REASON
+    else
+      echo "Entry point not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
+      exit 1
     fi
   >>>
   output {
