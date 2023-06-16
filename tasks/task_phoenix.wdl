@@ -154,32 +154,32 @@ task phoenix {
     String  hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
     String  qc_reason                         = read_string("QC_REASON")
-    #phoenix fastqc
-    File raw_read1_html           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
-    File raw_read1_zip            = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"
-    File raw_read2_html           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.html"
-    File raw_read2_zip            = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
-    #phoenix trimmed kraken/krona
-    File kraken_trimd_output      = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.classifiedreads.txt"
-    File kraken_trimd_report      = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.report.txt"
-    File kraken_trimd_summary     = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
-    File trimd_html               = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
-    File trimd_krona              = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
-    File classified_1             = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fastq.gz"
-    File unclassified_1           = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fastq.gz"
-    File classified_2             = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fastq.gz"
-    File unclassified_2           = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fastq.gz"
-    #phoenix QC
-    File paired_fastp_html        = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
-    File paired_fastp_json        = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
-    File single_fastp_html        = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.html"
-    File single_fastp_json        = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.json"
-    File trimmed_singles          = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.singles.fastq.gz"
-    File trimmed_read1            = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_1.trim.fastq.gz"
-    File trimmed_read2            = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_2.trim.fastq.gz"
-    File trimmed_read_counts      = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_trimmed_read_counts.txt"
-    File raw_read_counts          = "~{samplename}/results/~{samplename}/raw_stats/~{samplename}_raw_read_counts.txt"
-    File adapter_removal_log      = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}.bbduk.log"
+    #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File? raw_read1_html          = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
+    File? raw_read1_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"
+    File? raw_read2_html          = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.html"
+    File? raw_read2_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
+    #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File? kraken_trimd_output     = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.classifiedreads.txt"
+    File? kraken_trimd_report     = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.report.txt"
+    File? kraken_trimd_summary    = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
+    File? trimd_html              = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
+    File? trimd_krona             = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
+    File? classified_1            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fastq.gz"
+    File? unclassified_1          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fastq.gz"
+    File? classified_2            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fastq.gz"
+    File? unclassified_2          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fastq.gz"
+    #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File? paired_fastp_html       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
+    File? paired_fastp_json       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
+    File? single_fastp_html       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.html"
+    File? single_fastp_json       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.json"
+    File? trimmed_singles         = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.singles.fastq.gz"
+    File? trimmed_read1           = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_1.trim.fastq.gz"
+    File? trimmed_read2           = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_2.trim.fastq.gz"
+    File? trimmed_read_counts     = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_trimmed_read_counts.txt"
+    File? raw_read_counts         = "~{samplename}/results/~{samplename}/raw_stats/~{samplename}_raw_read_counts.txt"
+    File? adapter_removal_log     = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}.bbduk.log"
     #phoenix assembly
     File assembly_graph           = "~{samplename}/results/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
     File filtered_scaffolds_log   = "~{samplename}/results/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
@@ -202,7 +202,7 @@ task phoenix {
     #phoenix quast and mlst
     File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
     File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
-    # cdc_phoenix busco and srst2
+    # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
     File? busco_generic           = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
     File? busco_specific          = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
     File? srst2                   = "~{samplename}/results/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
@@ -220,9 +220,9 @@ task phoenix {
     File synopsis                 = "~{samplename}/results/~{samplename}/~{samplename}.synopsis"
     File best_taxa_id             = "~{samplename}/results/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File amrfinder_mutations       = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
-    File? amrfinder_taxa_match     = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
-    File amrfinder_hits            = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    File amrfinder_mutations      = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
+    File? amrfinder_taxa_match    = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
+    File amrfinder_hits           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results
     File full_results             = "~{samplename}.tar.gz"
     File griphin_report           = "~{samplename}/results/results_GRiPHin_Report.xlsx"
