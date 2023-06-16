@@ -113,8 +113,9 @@ workflow SCAFFOLDS_EXQC {
         outdir_path = Channel.fromPath(params.outdir, relative: true)
 
         CREATE_INPUT_CHANNEL (
-            ch_input_indir, ch_input
+            ch_input_indir, ch_input, ch_versions
         )
+        ch_versions = ch_versions.mix(CREATE_INPUT_CHANNEL.out.versions)
 
         //unzip any zipped databases
         ASSET_CHECK (

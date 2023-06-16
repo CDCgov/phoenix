@@ -9,6 +9,7 @@ workflow CREATE_INPUT_CHANNEL {
     take:
         indir        // params.indir
         samplesheet  // params.input
+        ch_versions
 
     main:
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
@@ -32,6 +33,7 @@ workflow CREATE_INPUT_CHANNEL {
                     .filter( it -> !(it =~ 'renamed') ) // remove samples that are *.renamed.scaffolds.fa.gz
                     .filter( it -> !(it =~ 'contig') ) // remove samples that are *.contigs.fa.gz
                     .map{ it -> create_meta(it, params.scaffolds_ext.toString())} // create meta for sample
+                    //.ifEmpty(exit 1, "ERROR: Looks like there isn't assemblies in the folder you passed. PHoeNIx doesn't search recursively!\n") // this doesn't work for some reason. 
                 // Checking regrex has correct extension
                 scaffolds_ch.collect().map{ it -> check_scaffolds(it) }
             }
@@ -40,6 +42,7 @@ workflow CREATE_INPUT_CHANNEL {
             CREATE_SAMPLESHEET (
                 indir
             )
+            ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
 
             valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
         } else if (samplesheet != null) {
@@ -57,6 +60,7 @@ workflow CREATE_INPUT_CHANNEL {
     emit:
         scaffolds_ch      = scaffolds_ch       // channel: [ meta, [ scaffolds_file ] ]
         valid_samplesheet = valid_samplesheet
+        versions          = ch_versions
 
 }
 
@@ -106,6 +110,6 @@ def check_scaffolds(scaffold_channel) {
     if (scaffold_channel[1].toString().endsWith(".fasta.gz") or scaffold_channel[1].toString().endsWith(".fa.gz") ) {
         //If there is the correct ending just move along
     } else {
-         exit 1, 'ERROR: Your scaffold regrex seems off scaffolds files should end in either ".fa.gz" or ".fasta.gz".' 
+         exit 1, "ERROR: No scaffolds found. Either your scaffold regrex is off (scaffolds files should end in either '.fa.gz' or ''.fasta.gz') or the directory provided doesn't contain assembly files." 
     }
 }
