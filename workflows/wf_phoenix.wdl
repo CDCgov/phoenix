@@ -35,7 +35,7 @@ workflow phoenix_workflow {
     String  analysis_date                     = phoenix.analysis_date
     String  qc_outcome                        = phoenix.qc_outcome
     String  warning_count                     = phoenix.warning_count
-    Float   estimated_coverage                = phoenix.estimated_coverage
+    String  estimated_coverage                = phoenix.estimated_coverage #make string for cases where it's "unknown"
     Int     genome_length                     = phoenix.genome_length
     String  assembly_ratio                    = phoenix.assembly_ratio
     Int     scaffold_count                    = phoenix.scaffold_count
