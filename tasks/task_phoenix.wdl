@@ -183,14 +183,14 @@ task phoenix {
     File? trimmed_read_counts     = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_trimmed_read_counts.txt"
     File? raw_read_counts         = "~{samplename}/results/~{samplename}/raw_stats/~{samplename}_raw_read_counts.txt"
     File? adapter_removal_log     = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}.bbduk.log"
-    #phoenix assembly
-    File assembly_graph           = "~{samplename}/results/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
+    #phoenix assembly - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File? assembly_graph           = "~{samplename}/results/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
     File filtered_scaffolds_log   = "~{samplename}/results/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
-    File contigs                  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
+    File? contigs                  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
     File filtered_scaffolds       = "~{samplename}/results/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
     File assembly_with_seq_names  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
-    File assembly                 = "~{samplename}/results/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
-    File spades_log               = "~{samplename}/results/~{samplename}/assembly/~{samplename}.spades.log"
+    File? assembly                 = "~{samplename}/results/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
+    File? spades_log               = "~{samplename}/results/~{samplename}/assembly/~{samplename}.spades.log"
     #phoenix wtasmbld kraken/krona
     File kraken_wtasmbld_output   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
     File kraken_wtasmbld_report   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.report.txt"
