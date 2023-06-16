@@ -446,6 +446,8 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 				if primary_db == novel_allele_sets[j][1]:
 					secondary_alleles=[]
 					secondary_source = novel_allele_sets[j][6]
+					primary_is_srst2=False
+					secondary_is_srst2=False
 					for allele in novel_allele_sets[j][5]:
 						if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
 							# Mark allele as found, but a mismatch
