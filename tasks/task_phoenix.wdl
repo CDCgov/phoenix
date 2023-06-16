@@ -133,7 +133,7 @@ task phoenix {
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warning_count                     = read_string("WARNING_COUNT")
-    Float   estimated_coverage                = read_float("ESTIMATED_COVERAGE")
+    String  estimated_coverage                = read_float("ESTIMATED_COVERAGE") #make string for cases where it's "unknown"
     Int     genome_length                     = read_int("GENOME_LENGTH")
     String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
     Int     scaffold_count                    = read_int("NUM_SCAFFOLDS")
@@ -208,8 +208,8 @@ task phoenix {
     File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
     File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
-    File? busco_generic           = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
-    File? busco_specific          = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
+    Array[File?] busco_generic    = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
+    Array[File?] busco_specific   = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
     File? srst2                   = "~{samplename}/results/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
     #phoenix gamma
     File gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
