@@ -1,4 +1,4 @@
-version 1.1
+version 1.0
 
 task phoenix {
   input {
@@ -100,6 +100,8 @@ task phoenix {
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee QC_REASON
+      echo "Only run with CDC entry" | tee BUSCO_DB
+      echo "Only run with CDC entry" | tee BUSCO
     elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee BUSCO
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
@@ -136,8 +138,8 @@ task phoenix {
     String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
     Int     scaffold_count                    = read_int("NUM_SCAFFOLDS")
     Float   gc_percent                        = read_float("GC_PERCENT")
-    String? busco                             = read_string("BUSCO")
-    String? busco_db                          = read_string("BUSCO_DB")
+    String  busco                             = read_string("BUSCO") #seems like I can't make these busco things optional so just leaving blank
+    String  busco_db                          = read_string("BUSCO_DB")
     String  species                           = read_string("SPECIES")
     String  taxa_confidence                   = read_string("TAXA_CONFIDENCE")
     Float   taxa_coverage                     = read_float("TAXA_COVERAGE")

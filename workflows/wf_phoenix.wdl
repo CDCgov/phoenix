@@ -1,4 +1,4 @@
-version 1.1
+version 1.0
 
 import "../tasks/task_phoenix.wdl" as phoenix_nf
 
@@ -40,8 +40,8 @@ workflow phoenix_workflow {
     String  assembly_ratio                    = phoenix.assembly_ratio
     Int     scaffold_count                    = phoenix.scaffold_count
     Float   gc_percent                        = phoenix.gc_percent
-    String? busco                             = phoenix.busco
-    String? busco_db                          = phoenix.busco_db
+    String  busco                             = phoenix.busco
+    String  busco_db                          = phoenix.busco_db
     String  species                           = phoenix.species
     String  taxa_confidence                   = phoenix.taxa_confidence
     String  taxa_source                       = phoenix.taxa_source
