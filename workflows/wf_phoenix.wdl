@@ -129,8 +129,8 @@ workflow phoenix_workflow {
     File amrfinder_mutations      = phoenix.amrfinder_mutations      # all_mutations.tsv
     File? amrfinder_taxa_match    = phoenix.amrfinder_taxa_match     # AMRFinder_Organism.csv
     File amrfinder_hits           = phoenix.amrfinder_hits           # all_genes.tsv
-    #run files
+    #run files - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = phoenix.versions_file            # software_versions.yml"
-    File multiqc_report           = phoenix.multiqc_report           # multiqc_report.html"
+    File? multiqc_report          = phoenix.multiqc_report           # multiqc_report.html"
   }
 }

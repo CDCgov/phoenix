@@ -84,7 +84,6 @@ task phoenix {
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
     sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
     if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ]; then
-      echo "got to phx entry"
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee SPECIES
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
@@ -102,7 +101,6 @@ task phoenix {
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee QC_REASON
     elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
-      echo "got to cdc entry"
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee BUSCO
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
       sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee SPECIES
@@ -228,11 +226,9 @@ task phoenix {
     File amrfinder_mutations      = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
     File? amrfinder_taxa_match    = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
     File amrfinder_hits           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
-    #full results
-    File full_results             = "~{samplename}.tar.gz"
-    File griphin_report           = "~{samplename}/results/results_GRiPHin_Report.xlsx"
+    #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
-    File multiqc_report           = "~{samplename}/results/multiqc/multiqc_report.html"
+    File? multiqc_report          = "~{samplename}/results/multiqc/multiqc_report.html"
   }
   runtime {
     docker: "~{docker}"
