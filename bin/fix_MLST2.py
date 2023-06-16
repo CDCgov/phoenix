@@ -446,6 +446,8 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 				if primary_db == novel_allele_sets[j][1]:
 					secondary_alleles=[]
 					secondary_source = novel_allele_sets[j][6]
+					primary_is_srst2=False
+					secondary_is_srst2=False
 					for allele in novel_allele_sets[j][5]:
 						if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
 							# Mark allele as found, but a mismatch
@@ -490,8 +492,12 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 								new_allele_list.append(novel_allele_sets[j][5][k])
 						new_entry = [novel_allele_sets[i][0], novel_allele_sets[i][1],novel_allele_sets[i][2],novel_allele_sets[i][3],novel_allele_sets[i][4],new_allele_list,new_source,novel_allele_sets[i][7]]
 						checked_and_deduped_schemes.append(new_entry)
-						novel_allele_sets.pop(j)
-						novel_allele_sets.pop(i)
+						if i>j:
+							novel_allele_sets.pop(i)
+							novel_allele_sets.pop(j)
+						if j>i:
+							novel_allele_sets.pop(j)
+							novel_allele_sets.pop(i)
 						match_found=True
 				else:
 					# Databases do not match, dont want to consolidate novel allele sets fron different DBs
