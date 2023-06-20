@@ -133,7 +133,7 @@ task phoenix {
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warning_count                     = read_string("WARNING_COUNT")
-    String  estimated_coverage                = read_float("ESTIMATED_COVERAGE") #make string for cases where it's "unknown"
+    String  estimated_coverage                = read_string("ESTIMATED_COVERAGE") #make string for cases where it's "unknown"
     Int     genome_length                     = read_int("GENOME_LENGTH")
     String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
     Int     scaffold_count                    = read_int("NUM_SCAFFOLDS")
