@@ -462,7 +462,7 @@ def read_pileup_data(pileup_file, size, prob_err, consensus_file = ""):
 				# determine penalty based on coverage of last 2 bases
 				penalty = float(position_depths[nuc_num-1] + position_depths[nuc_num-2])/2
 				m = min(position_depths[nuc_num-1],position_depths[nuc_num-2])
-				hash_alignment[allele].append((0, penalty, prob_success))
+				hash_alignment[allele].append((0, round(penalty), prob_success))
 				if next_to_del_depth > m:
 					next_to_del_depth = m # keep track of lowest near-del depth for reporting
 
@@ -485,7 +485,7 @@ def read_pileup_data(pileup_file, size, prob_err, consensus_file = ""):
 				# note end-of-seq truncations are dealt with above)
 				if position_depths[j]==0 and position_depths[j+1]!=0:
 					penalty = float(position_depths[j+1]+position_depths[j+2])/2 # mean of next 2 bases
-					hash_alignment[allele].append((0, penalty, prob_success))
+					hash_alignment[allele].append((0, round(penalty), prob_success))
 					m = min(position_depths[nuc_num-1],position_depths[nuc_num-2])
 					if next_to_del_depth > m:
 						next_to_del_depth = m # keep track of lowest near-del depth for reporting
@@ -613,12 +613,11 @@ def check_command_version(command_list, version_identifier, command_name, requir
 # allow multiple specific versions that have been specifically tested
 def check_bowtie_version():
 	return check_command_versions([get_bowtie_execs()[0], '--version'], 'version ', 'bowtie',
-								  ['2.1.0','2.2.3','2.2.4','2.2.5','2.2.6','2.2.7','2.2.8','2.2.9'])
+		['2.1.0','2.2.3','2.2.4','2.2.5','2.2.6','2.2.7','2.2.8','2.2.9'])
 
 def check_samtools_version():
 	return check_command_versions([get_samtools_exec()], 'Version: ', 'samtools',
-								  ['0.1.18','0.1.19','1.0','1.1','1.2','1.3','(0.1.18 is '
-																			 'recommended)'])
+		['0.1.18','0.1.19','1.0','1.1','1.2','1.3','(0.1.18 is recommended)'])
 
 def check_command_versions(command_list, version_prefix, command_name, required_versions):
 	try:
@@ -689,7 +688,7 @@ def run_bowtie(mapping_files_pre,sample_name,fastqs,args,db_name,db_full_path):
 				'--no-unal',
 				'-a',					 # Search for and report all alignments
 				'-x', db_full_path			   # The index to be aligned to
-			   ]
+				]
 	if args.threads > 1:
 		command += ['--threads', str(args.threads)]
 
@@ -758,7 +757,7 @@ def get_pileup(args, mapping_files_pre, raw_bowtie_sam, bowtie_sam_mod, fasta, p
 	logging.info('Generate pileup...')
 	with open(pileup_file, 'w') as sam_pileup:
 		mpileup_command = [samtools_exec, 'mpileup', '-L', '1000', '-f', fasta,
-					 '-Q', str(args.baseq), '-q', str(args.mapq), '-B', out_file_bam_sorted + '.bam']
+					'-Q', str(args.baseq), '-q', str(args.mapq), '-B', out_file_bam_sorted + '.bam']
 		if args.samtools_args:
 			x = args.samtools_args
 			x = x.replace('\\','')
@@ -1261,7 +1260,7 @@ def run_srst2(args, fileSets, dbs, run_type):
 
 	for fasta in dbs:
 		db_reports, db_results_list = process_fasta_db(args, fileSets, run_type, db_reports,
-													   db_results_list, fasta)
+			db_results_list, fasta)
 
 	return db_reports, db_results_list
 
@@ -1323,8 +1322,8 @@ def process_fasta_db(args, fileSets, run_type, db_reports, db_results_list, fast
 			# __fullgenes__ will be printed during this routine if requested and this is a gene_db run
 			gene_list, results = \
 				map_fileSet_to_db(args, sample_name, fastq_inputs, db_name, fasta,size,gene_names,
-								  unique_gene_symbols, unique_allele_symbols, run_type,ST_db,
-								  results,gene_list, db_report, cluster_symbols, max_mismatch)
+								unique_gene_symbols, unique_allele_symbols, run_type,ST_db,
+								results,gene_list, db_report, cluster_symbols, max_mismatch)
 
 		# if we get an error from one of the commands we called
 		# log the error message, record as failed, and continue onto the next fasta db
@@ -1375,8 +1374,8 @@ def process_fasta_db(args, fileSets, run_type, db_reports, db_results_list, fast
 	return db_reports, db_results_list
 
 def map_fileSet_to_db(args, sample_name, fastq_inputs, db_name, fasta, size, gene_names,
-					  unique_gene_symbols, unique_allele_symbols, run_type, ST_db, results,
-					  gene_list, db_report, cluster_symbols, max_mismatch):
+					unique_gene_symbols, unique_allele_symbols, run_type, ST_db, results,
+					gene_list, db_report, cluster_symbols, max_mismatch):
 
 	mapping_files_pre = args.output + '__' + sample_name + '.' + db_name
 	pileup_file = mapping_files_pre + '.pileup'
@@ -1499,8 +1498,7 @@ def map_fileSet_to_db(args, sample_name, fastq_inputs, db_name, fasta, size, gen
 			if args.no_gene_details:
 
 				# get annotation info
-				command = "grep \""+allele+"\" "+fasta
-				header_string = os.popen(command)
+				header_string = os.popen(" ".join(["grep",allele,fasta]))
 				try:
 					header = header_string.read().rstrip().split()
 					header.pop(0) # remove allele name
