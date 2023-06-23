@@ -44,7 +44,7 @@ process SRST2_AR {
     #adding python path for running srst2 on terra
     $terra
 
-    srst2 \\
+    srst2.py \\
         ${read_s} \\
         --threads $task.cpus \\
         --output ${prefix} \\
