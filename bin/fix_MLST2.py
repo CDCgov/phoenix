@@ -341,8 +341,12 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 
 
 
-					if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
+					if '*' in allele or '?' in allele or '~' in allele:
 						original_scheme[2] = "Novel_allele"
+						bad_alleles += 1
+						lookup_allele_profile = False
+					elif '-' in allele:
+						original_scheme[2] = "Missing_allele"
 						bad_alleles += 1
 						lookup_allele_profile = False
 				## Reapply dash showing no db or proximal scheme was ever found
@@ -412,7 +416,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 	checked_and_deduped_schemes=[]
 	novel_allele_sets=[]
 	for i in checked_schemes:
-		if i[2] != "Novel_allele":
+		if i[2] != "Novel_allele" and i[2] != "Missing_allele":
 			checked_and_deduped_schemes.append(i)
 		else:
 			novel_allele_sets.append(i)
