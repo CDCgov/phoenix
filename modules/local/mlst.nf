@@ -66,7 +66,7 @@ process MLST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mlst: \$( echo \$(mlst --version 2>&1) | sed 's/mlst //' )
-        mlst_db: \$( date -d '\$mlst_db_version' +%d-%m-%Y )
+        mlst_db: \$( cat db/db_version | date -f - +%Y-%m-%d )
     END_VERSIONS
     """
 
