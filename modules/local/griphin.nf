@@ -9,6 +9,7 @@ process GRIPHIN {
     path(outdir)
     val(coverage)
     val(entry)
+    val(scaffolds_entry)
 
     output:
     path("*_Report.xlsx"),           emit: griphin_report
@@ -16,11 +17,12 @@ process GRIPHIN {
     path("versions.yml"),            emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    def phoenix = entry ? "--phoenix" : ''
+    def phoenix = entry ? "--phoenix" : ""
+    def scaffolds = scaffolds_entry ? "--scaffolds" : ""
     """
     full_path=\$(readlink -f ${outdir})
 
-    GRiPHin.py -d \$full_path -a $db --output ${outdir} --coverage ${coverage} ${phoenix}
+    GRiPHin.py -d \$full_path -a $db --output ${outdir} --coverage ${coverage} ${phoenix} ${scaffolds}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

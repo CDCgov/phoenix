@@ -1,15 +1,17 @@
 process ASSET_CHECK {
-    label 'process_single'
+    label 'process_low'
     container 'quay.io/jvhagey/phoenix:base_v1.1.0'
 
     input:
     path(zipped_sketch)
     path(mlst_db_path)
+    path(kraken_db)
 
     output:
     path('*.msh'),        emit: mash_sketch
     path("versions.yml"), emit: versions
     path('db'),           emit: mlst_db
+    path('*_folder'),     emit: kraken_db
 
     when:
     task.ext.when == null || task.ext.when
@@ -19,16 +21,31 @@ process ASSET_CHECK {
     """
     if [[ ${zipped_sketch} = *.gz ]]
     then
-        gunzip --force ${zipped_sketch}
+        pigz -vdf ${zipped_sketch}
     else
         :
     fi
 
-    if [[ ${mlst_db_path} = *.gz ]]
+    if [[ ${mlst_db_path} = *.tar.gz ]]
     then
-        tar -zvxf ${mlst_db_path}
+        tar --use-compress-program="pigz -vdf" -xf ${mlst_db_path}
     else
         :
+    fi
+
+    if [[ ${kraken_db} = *.tar.gz ]]
+    then
+        folder_name=\$(basename ${kraken_db} .tar.gz)
+        tar --use-compress-program="pigz -vdf" -xf ${kraken_db}
+        mkdir \${folder_name}_folder
+        mv *.kmer_distrib \${folder_name}_folder
+        mv *.k2d \${folder_name}_folder
+        mv seqid2taxid.map \${folder_name}_folder
+        mv inspect.txt \${folder_name}_folder
+        mv ktaxonomy.tsv \${folder_name}_folder
+    else
+        folder_name=\$(basename ${kraken_db} .tar.gz)
+        mv \${folder_name} \${folder_name}_folder
     fi
 
     cat <<-END_VERSIONS > versions.yml

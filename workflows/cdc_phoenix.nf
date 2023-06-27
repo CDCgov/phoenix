@@ -104,6 +104,8 @@ workflow PHOENIX_EXQC {
     main:
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
+        // Allow relative paths for krakendb argument
+        kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
         //
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
@@ -122,7 +124,7 @@ workflow PHOENIX_EXQC {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb
+            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -173,7 +175,7 @@ workflow PHOENIX_EXQC {
 
         // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, []
+            FASTP_TRIMD.out.reads, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -240,19 +242,22 @@ workflow PHOENIX_EXQC {
 
         // Checking for Contamination in assembly creating krona plots and best hit files
         KRAKEN2_ASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv
+            BBMAP_REFORMAT.out.filtered_scaffolds,"asmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv
+            BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
+        // combine filtered scaffolds and mash_sketch so mash_sketch goes with each filtered_scaffolds file
+        mash_dist_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(ASSET_CHECK.out.mash_sketch)
+
         // Running Mash distance to get top 20 matches for fastANI to speed things up
         MASH_DIST (
-            BBMAP_REFORMAT.out.filtered_scaffolds, ASSET_CHECK.out.mash_sketch
+            mash_dist_ch
         )
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
@@ -411,7 +416,7 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 

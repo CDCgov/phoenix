@@ -24,10 +24,10 @@ workflow KRAKEN2_WF {
     type     // val: trimd, asmbld or wtasmbld 
     qc_stats //GATHERING_READ_QC_STATS.out.fastp_total_qc
     quast    //QUAST.out.report_tsv --> only for wtasmbld and asmbld
+    kraken2_db_path 
 
     main:
     ch_versions     = Channel.empty() // Used to collect the software versions
-    kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true) // Allow relative paths for krakendb argument
     // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it. If you don't do this then only one sample goes through pipeline
     fasta_ch = fasta.combine(kraken2_db_path)
 

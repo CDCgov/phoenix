@@ -6,8 +6,7 @@ process CHECK_MLST_WITH_SRST2 {
     container "quay.io/jvhagey/phoenix:base_v1.1.0"
 
     input:
-    tuple val(meta), path(mlst_file), path(srst2_file), path(taxonomy_file), val(status)
-    path(local_dbases)
+    tuple val(meta), path(mlst_file), path(srst2_file), path(taxonomy_file), val(status), path(local_dbases)
 
     output:
     tuple val(meta), path("*_combined.tsv"), emit: checked_MLSTs
@@ -24,14 +23,13 @@ process CHECK_MLST_WITH_SRST2 {
     elif [[ "${status[0]}" == "False" ]]; then
         fix_MLST2.py --input $mlst_file --taxonomy $taxonomy_file --mlst_database $local_dbases
     else 
-        echo "Shouldnt be able to get here, but checking just in case"
+        echo "Something went very wrong, please open an issue on Github for the PHoeNIx developers to address."
     fi
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         check_mlst: $VERSION
         python: \$(python --version | sed 's/Python //g')
-        pubMLST_db_download_date: \$(date +"%d-%m-%y")
     END_VERSIONS
     """
 }

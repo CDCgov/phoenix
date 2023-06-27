@@ -4,8 +4,7 @@ process GET_MLST_SRST2 {
     container "quay.io/biocontainers/python:2.7--1"
 
     input:
-    tuple val(meta),  path(taxonomy), val(status)
-    path(local_mlst_db)
+    tuple val(meta),  path(taxonomy), val(status), path(local_mlst_db)
 
     output:
     //tuple val(meta), path("*_getMLST_out.txt")                                 , optional:true, emit: getMLSTs

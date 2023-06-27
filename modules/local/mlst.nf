@@ -5,8 +5,7 @@ process MLST {
     containerOptions '-B /scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/new_DBS_20230502/20230504/MLST/db:/mlst-2.22.1/db'
 
     input:
-    tuple val(meta), path(fasta)
-    path(mlst_db_path)
+    tuple val(meta), path(fasta), path(mlst_db_path)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
