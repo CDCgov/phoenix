@@ -1,7 +1,7 @@
 process GET_RAW_STATS {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
     tuple val(meta), path(reads)
@@ -13,6 +13,7 @@ process GET_RAW_STATS {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     q30.py ${reads[0]} > ${prefix}_R1_stats.txt
     q30.py ${reads[1]} > ${prefix}_R2_stats.txt
@@ -21,6 +22,7 @@ process GET_RAW_STATS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

@@ -1,9 +1,7 @@
-def VERSION = '1.1' // Version information not provided by tool on CLI
-
 process CHECK_MLST {
     tag "$meta.id"
     label 'process_single'
-    container "quay.io/jvhagey/phoenix:base_v1.1.0"
+    container "quay.io/jvhagey/phoenix:base_v2.0.0"
 
     input:
     tuple val(meta), path(mlst_file), path(taxonomy_file), path(local_dbases)
@@ -22,7 +20,6 @@ process CHECK_MLST {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        check_mlst: $VERSION
         python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
     """

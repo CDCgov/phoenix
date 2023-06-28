@@ -1,7 +1,7 @@
 process RENAME_SRA_FASTA {
     tag "${meta.id}"
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
     tuple val(meta), path(reads)
@@ -19,7 +19,7 @@ process RENAME_SRA_FASTA {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        phoenix_base_container: ${container} 
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

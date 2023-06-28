@@ -1,7 +1,7 @@
 process CALCULATE_ASSEMBLY_RATIO {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
     tuple val(meta), path(taxa_file), path(quast_report)
