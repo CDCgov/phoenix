@@ -4,8 +4,7 @@ process MASH_DIST {
     container "staphb/mash:2.3"
 
     input:
-    tuple val(meta), path(query)
-    path(reference)
+    tuple val(meta), path(query), path(reference)
 
     output:
     tuple val(meta), path("*.txt"), emit: dist

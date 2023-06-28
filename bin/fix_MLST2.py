@@ -334,7 +334,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 					#	   ? : partial match (>min_cov & > min_ID). Default min_cov = 10, Default min_ID=95%
 					#	   - : Allele is missing
 					#
-					#	   srst2
+					#	   reads
 					#	   * : Full length match with 1+ SNP. Novel
 					#	   ? : edge depth is below N or average depth is below X. Default edge_depth = 2, Default average_depth = 5
 					#	   - : No allele assigned, usually because no alleles achieved >90% coverage
@@ -471,7 +471,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 							elif secondary_source == "reads":
 								new_source = "assembly/reads"
 							else:
-								print("Weird, dont know what the secondary source is")
+								print("Weird, phx doesn't know what the secondary source is")
 							primary_is_srst2=True
 						elif primary_source == "reads":
 							if secondary_source == "assembly":
@@ -573,7 +573,7 @@ def main():
 			srst2_file = open(args.srst2, 'r')
 			counter = 0
 			for line in srst2_file:
-				print("srst2:"+str(counter), line.replace("\n", ""))
+				print("reads:"+str(counter), line.replace("\n", ""))
 				if counter > 0:
 					print("appending -", line.replace("\n",""))
 					profile_lines.append([line.replace("\n", ""), "srst2", args.srst2])

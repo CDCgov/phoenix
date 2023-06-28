@@ -6,8 +6,7 @@ process CHECK_MLST {
     container "quay.io/jvhagey/phoenix:base_v1.1.0"
 
     input:
-    tuple val(meta), path(mlst_file), path(taxonomy_file)
-    path(local_dbases)
+    tuple val(meta), path(mlst_file), path(taxonomy_file), path(local_dbases)
 
     output:
     tuple val(meta), path("*_combined.tsv"), emit: checked_MLSTs

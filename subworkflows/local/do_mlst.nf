@@ -20,21 +20,21 @@ workflow DO_MLST {
         ch_versions = Channel.empty() // Used to collect the software versions
 
         // Creating channel to ensure ID is paired with matching trimmed assembly
-        mlst_ch = trimmed_assembly.map{meta, fasta    -> [[id:meta.id], fasta]}
+        mlst_ch = trimmed_assembly.map{meta, fasta    -> [[id:meta.id], fasta]}.combine(mlst_db)
 
         // Running standard mlst tool (torstens) on assembly file using provided mlst database location for scemes, profiles, and allele definitions
         MLST (
-            mlst_ch, mlst_db
+            mlst_ch
         )
         ch_versions = ch_versions.mix(MLST.out.versions)
 
         // Creating a channel to pair up the tsv output to the matching taxonomy file, linked on metadata ID
         check_main_mlst_ch = MLST.out.tsv.map{meta, tsv      -> [[id:meta.id], tsv]}\
-        .join(taxonomy.map{                   meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0])
+        .join(taxonomy.map{                   meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0]).combine(mlst_db)
 
         // Checks to see if multiple schemes were found in the sample. Will create _combined.tsv with one ST profile found per line
         CHECK_MLST (
-            check_main_mlst_ch, mlst_db
+            check_main_mlst_ch
         )
         ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
@@ -42,11 +42,11 @@ workflow DO_MLST {
         // Novel_Profile will not trigger this anymore as no real-time mlst database updates are performed in the CHECK_MLST_WITH_SRST2 process
         if (do_srst2_mlst == true) {
             pre_GET_MLST_SRST2_ch = taxonomy.map                {meta, taxonomy    -> [[id:meta.id], taxonomy]}\
-            .join(CHECK_MLST.out.status.splitCsv(strip:true).map{meta, status -> [[id:meta.id], status]},  by: [0])
+            .join(CHECK_MLST.out.status.splitCsv(strip:true).map{meta, status -> [[id:meta.id], status]},  by: [0]).combine(mlst_db)
 
             // Runs the getMLST portion of the srst2 mlst script to create the required file for srst2 mlst to run. Defines the filesnames and paths to look for in the given database path
             GET_MLST_SRST2 (
-                pre_GET_MLST_SRST2_ch, mlst_db
+                pre_GET_MLST_SRST2_ch
             )
             ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
 
@@ -66,11 +66,11 @@ workflow DO_MLST {
             combined_mlst_ch = MLST.out.tsv.map{                        meta, tsv               -> [[id:meta.id], tsv]}\
             .join(SRST2_MLST.out.mlst_results_temp.map{                 meta, mlst_results_temp -> [[id:meta.id], mlst_results_temp]}, by: [0])\
             .join(taxonomy.map{                                         meta, taxonomy          -> [[id:meta.id], taxonomy]},          by: [0])\
-            .join(SRST2_MLST.out.empty_checker.splitCsv(strip:true).map{meta, empty_checker     -> [[id:meta.id], empty_checker]},     by: [0])
+            .join(SRST2_MLST.out.empty_checker.splitCsv(strip:true).map{meta, empty_checker     -> [[id:meta.id], empty_checker]},     by: [0]).combine(mlst_db)
 
             // Checks to see if multiple schemes were found in the sample. Will create _combined.tsv with one ST profile found per line. Will consolidate if srst2 and standard outputs report the same Types
             CHECK_MLST_WITH_SRST2 (
-                combined_mlst_ch, mlst_db
+                combined_mlst_ch
             )
             ch_versions = ch_versions.mix(CHECK_MLST_WITH_SRST2.out.versions)
 

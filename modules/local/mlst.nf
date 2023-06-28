@@ -5,8 +5,7 @@ process MLST {
     containerOptions '-B /scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/new_DBS_20230502/20230504/MLST/db:/mlst-2.22.1/db'
 
     input:
-    tuple val(meta), path(fasta)
-    path(mlst_db_path)
+    tuple val(meta), path(fasta), path(mlst_db_path)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
@@ -67,7 +66,7 @@ process MLST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mlst: \$( echo \$(mlst --version 2>&1) | sed 's/mlst //' )
-        mlst_db: \$( date -d '\$mlst_db_version' +%d-%m-%Y )
+        mlst_db: \$( cat db/db_version | date -f - +%Y-%m-%d )
     END_VERSIONS
     """
 

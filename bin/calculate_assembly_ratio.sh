@@ -115,6 +115,7 @@ fi
 echo "Checking if quast Assembly_stats exists: ${quast_report}"
 if [[ -f "${quast_report}" ]]; then
 	assembly_length=$(sed -n '16p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+	sample_gc_percent=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 # Another method if we start seeing too many failures with main method
 #elif
 else
@@ -178,7 +179,7 @@ while IFS='' read -r line; do
 		else
 			gc_stdev="${arr_line[11]}"
 		fi
-		echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+		echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}\nSample_GC_Percent: ${sample_gc_percent}" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 
 
 
