@@ -24,6 +24,7 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::coreutils \
     conda-forge::openssl \
     conda-forge::gsutil \
+    conda-forge::pigz \
     anaconda::graphviz \
     conda-forge::libcurl \
     # need this for mash: error while loading shared libraries: libgsl.so.25: https://github.com/ParBLiSS/FastANI/issues/96
@@ -49,11 +50,12 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     bioconda::nextflow=22.04.5 && \
     micromamba clean -a -y 
 
-RUN micromamba create -n busco -c conda-forge bioconda::busco=5.4.7 && micromamba clean -a -y 
+RUN micromamba create -n busco -c conda-forge -c bioconda busco=5.4.7 && micromamba clean -a -y 
 RUN micromamba create -n amrfinderplus -c conda-forge bioconda::ncbi-amrfinderplus=3.11.11 && micromamba clean -a -y
 RUN micromamba create -n srst2 -c conda-forge bioconda::srst2==0.2.0 && micromamba clean -a -y
 
-ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/envs/amrfinderplus/bin:/opt/conda/envs/busco/bin:/opt/conda/envs/srst2/bin:\
+
+ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/envs/amrfinderplus/bin:/opt/conda/envs/srst2/bin:/opt/conda/envs/busco/bin:\
 /opt/conda/bin:/opt/conda/envs/env/bin:/opt/conda/envs/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 #setting up stuff for BUSCO
