@@ -117,7 +117,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 						allele_list.append(alleles)
 
 					# Create a template to build Scheme array
-					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "standard", pull_date])
+					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "assembly", pull_date])
 
 					# Test first parse
 	#				   print("e:",expanded_allele_list)
@@ -150,8 +150,8 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 									expanded_allele_list.append(copy.deepcopy(temp2_allele_list)[0])
 	#					   print(expanded_allele_list)
 				else:
-					#expanded_allele_list.append([sample,db_name, "-", 7, ["-","-","-","-","-","-","-"], ["-","-","-","-","-","-","-"], "standard"])
-					expanded_allele_list.append([sample,db_name, "-", 1, ["-"], ["-"], "standard", pull_date])
+					#expanded_allele_list.append([sample,db_name, "-", 7, ["-","-","-","-","-","-","-"], ["-","-","-","-","-","-","-"], "assembly"])
+					expanded_allele_list.append([sample,db_name, "-", 1, ["-"], ["-"], "assembly", pull_date])
 
 
 			#allele_list=[['1'], ['3'], ['189','3'], ['2'], ['2'], ['96','107'], ['3']]
@@ -173,7 +173,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 						allele_names.append(allele_Identifier)
 						allele_list.append(alleles)
 
-					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "srst2", pull_date])
+					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "reads", pull_date])
 
 					for allele in allele_list:
 						if len(allele) == 1:
@@ -201,7 +201,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 									expanded_allele_list.append(copy.deepcopy(temp2_allele_list)[0])
 						print(expanded_allele_list)
 				else:
-					expanded_allele_list.append([sample,db_name, "-", 1, ["-"], ["-"], "srst2", pull_date])
+					expanded_allele_list.append([sample,db_name, "-", 1, ["-"], ["-"], "reads", pull_date])
 
 			else:
 				print("Unknown MLST filetype, can not continue")
@@ -235,32 +235,32 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 				print("SAME!!!!", i, j)
 				if catted_scheme_list[min(i,j)][6] != catted_scheme_list[max(i,j)][6]:
 					print("a")
-					if catted_scheme_list[min(i,j)][6] == "standard":
+					if catted_scheme_list[min(i,j)][6] == "assembly":
 						print("b")
-						if catted_scheme_list[max(i,j)][6] == "srst2":
+						if catted_scheme_list[max(i,j)][6] == "reads":
 							print("c")
 							#catted_scheme_list[min(i,j)][4] = catted_scheme_list[max(i,j)][4]
-							catted_scheme_list[min(i,j)][6] = "standard/srst2"
+							catted_scheme_list[min(i,j)][6] = "assembly/reads"
 							dupes.append(max(i,j))
-						elif catted_scheme_list[max(i,j)][6] == "standard/srst2":
+						elif catted_scheme_list[max(i,j)][6] == "assembly/reads":
 							print("d")
 							dupes.append(min(i,j))
-					elif catted_scheme_list[min(i,j)][6] == "srst2":
+					elif catted_scheme_list[min(i,j)][6] == "reads":
 						print("e")
-						if catted_scheme_list[max(i,j)][6] == "standard":
+						if catted_scheme_list[max(i,j)][6] == "assembly":
 							print("f")
 							#catted_scheme_list[max(i,j)][4] = catted_scheme_list[min(i,j)][4]
-							catted_scheme_list[max(i,j)][6] = "standard/srst2"
+							catted_scheme_list[max(i,j)][6] = "assembly/reads"
 							dupes.append(min(i,j))
-						elif catted_scheme_list[max(i,j)][6] == "standard/srst2":
+						elif catted_scheme_list[max(i,j)][6] == "assembly/reads":
 							print("g")
 							dupes.append(min(i,j))
-					elif catted_scheme_list[min(i,j)][6] == "standard/srst2":
+					elif catted_scheme_list[min(i,j)][6] == "assembly/reads":
 						print("h")
 						dupes.append(max(i,j))
 					else:
 						print("i")
-						print("Should never have something that is not standard, srst2, or standard/srst2")
+						print("Should never have something that is not assembly, reads, or assembly/reads")
 				else:
 					if catted_scheme_list[min(i,j)][1] != catted_scheme_list[max(i,j)][1]:
 						print("Different dbs")
@@ -463,22 +463,22 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 							# Mark allele as found and complete
 							secondary_alleles.append('Complete')
 					if primary_alleles == secondary_alleles:
-						if primary_source == "standard":
-							if secondary_source == "standard":
+						if primary_source == "assembly":
+							if secondary_source == "assembly":
 								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST")
-							elif secondary_source == "standard/srst2":
+							elif secondary_source == "assembly/reads":
 									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
-							elif secondary_source == "srst2":
-								new_source = "standard/srst2"
+							elif secondary_source == "reads":
+								new_source = "assembly/reads"
 							else:
 								print("Weird, dont know what the secondary source is")
 							primary_is_srst2=True
-						elif primary_source == "srst2":
-							if secondary_source == "standard":
-								new_source = "standard/srst2"
-							elif secondary_source == "standard/srst2":
+						elif primary_source == "reads":
+							if secondary_source == "assembly":
+								new_source = "assembly/reads"
+							elif secondary_source == "assembly/reads":
 								print("Weird, shouldnt have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
-							elif secondary_source == "srst2":
+							elif secondary_source == "reads":
 								print("Weird, shouldnt have both novel allele sets in one database come from srst2")
 							else:
 								print("Weird, dont know what the secondary source is")
@@ -554,7 +554,7 @@ def main():
 	profile_lines=[]
 	if args.input is not None:
 		if os.stat(args.input).st_size > 0:
-			#input_files=[[args.input , "standard"]]
+			#input_files=[[args.input , "assembly"]]
 			reg_file = open(args.input, 'r')
 			### No headers complicate the difference between reg and srst2
 			counter = 0

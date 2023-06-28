@@ -276,7 +276,7 @@ def Checking_auto_pass_fail(coverage, length, assembly_stdev, asmbld_ratio, set_
             QC_reason="Assembly file not Found"
         elif float(assembly_stdev) > 2.58:
             QC_result = "FAIL"
-            QC_reason="assmebly stdev above 2.58(" + str(assembly_stdev) + ")"
+            QC_reason="assembly stdev above 2.58(" + str(assembly_stdev) + ")"
         else:
             QC_result = "PASS"
             QC_reason = ""
