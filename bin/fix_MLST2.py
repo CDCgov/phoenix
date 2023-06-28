@@ -117,7 +117,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 						allele_list.append(alleles)
 
 					# Create a template to build Scheme array
-					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "assmebly", pull_date])
+					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "assembly", pull_date])
 
 					# Test first parse
 	#				   print("e:",expanded_allele_list)
