@@ -402,9 +402,9 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 		elif i[1] == "abaumannii_2" or i[1] == "Acinetobacter_baumannii#2":
 			i[1] = "abaumannii(Pasteur)"
 		# I know this looks backwards....its not
-		elif i[1] == "ecoli_2" or i[1] == "ecoli_achtman_4":
+		elif i[1] == "ecoli" or i[1] == "ecoli_achtman_4":
 			i[1] = "ecoli(Achtman)"
-		elif i[1] == "ecoli" or i[1] == "Escherichia_coli#2":
+		elif i[1] == "ecoli_2" or i[1] == "Escherichia_coli#2":
 			i[1] = "ecoli_2(Pasteur)"
 
 
@@ -465,9 +465,9 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 					if primary_alleles == secondary_alleles:
 						if primary_source == "assembly":
 							if secondary_source == "assembly":
-								print("Weird, shouldn't have both novel allele sets in one database come from assembly MLST")
+								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST")
 							elif secondary_source == "assembly/reads":
-									print("Weird, shouldn't have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
+									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
 							elif secondary_source == "reads":
 								new_source = "assembly/reads"
 							else:
@@ -477,7 +477,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 							if secondary_source == "assembly":
 								new_source = "assembly/reads"
 							elif secondary_source == "assembly/reads":
-								print("Weird, shouldn't have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
+								print("Weird, shouldnt have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
 							elif secondary_source == "reads":
 								print("Weird, shouldnt have both novel allele sets in one database come from srst2")
 							else:
