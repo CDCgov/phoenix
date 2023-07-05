@@ -55,7 +55,7 @@ def FastP_QC_before(input_json, output_file, name):
 def FastP_QC_after(input_trimmed_json, input_singles_json, output_file, name):
     """Makes a QC output file from an input FastP json for orphaned reads"""
     Out = open(output_file, 'w')
-    Out.write('Name\tR1[reads]\tR1[bp]\tR2[reads]\tR2[bp]\tUnpaired[reads]\tUnpaired[bps]\tQ20_Total_[bp]\tQ30_Total_[bp]\tQ20_R1_[bp]\tQ20_R2_[bp]\tQ20_unpaired[bp]\tQ20_R1_[%]\tQ20_R2_[%]\tQ20_unpaired[%]\tQ30_R1_[bp]\tQ30_R2_[bp]\tQ30_unpaired[bp]\tQ30_R1_[%]\tQ30_R2_[%]\tQ30_unpaired[%]\tTotal_Sequenced_[bp]\tTotal_Sequenced_[reads]\n')
+    Out.write('Name\tR1[reads]\tR1[bp]\tR2[reads]\tR2[bp]\tUnpaired[reads]\tUnpaired[bps]\tQ20_Total_[bp]\tQ30_Total_[bp]\tQ20_R1_[bp]\tQ20_R2_[bp]\tQ20_unpaired[bp]\tQ20_R1_[%]\tQ20_R2_[%]\tQ20_unpaired[%]\tQ30_R1_[bp]\tQ30_R2_[bp]\tQ30_unpaired[bp]\tQ30_R1_[%]\tQ30_R2_[%]\tQ30_unpaired[%]\tTotal_Sequenced_[bp]\tPaired_Sequenced_[reads]\tTotal_Sequenced_[reads]\n')
     f = open(input_trimmed_json)
     data = json.load(f)
     f.close()
@@ -98,10 +98,11 @@ def FastP_QC_after(input_trimmed_json, input_singles_json, output_file, name):
     Total_Sequenced_bp = str(int(Trimmed_Sequenced_bp) + int(Singles_Sequenced_bp))
     Total_Sequenced_reads = str(int(Trimmed_Sequenced_reads) + int(Singles_Sequenced_reads))
 
+
     Q20_Total = str(int(Q20_Total_trimmed) + int(Q20_Total_singles))
     Q30_Total = str(int(Q30_Total_trimmed) + int(Q30_Total_singles))
 
-    Line = name + '\t' + raw_R1_reads + '\t' + raw_R1_bases + '\t' + raw_R2_reads + '\t' + raw_R2_bases + '\t' + unpaired_reads + '\t' + unpaired_bases + '\t' + Q20_Total + '\t' + Q30_Total + '\t' + Q20_R1_bp + '\t' + Q20_R2_bp + '\t' + Q20_Total_singles + '\t' + Q20_R1_percent + '\t' + Q20_R2_percent + '\t' + Q20_unpaired_percent + '\t' + Q30_R1_bp + '\t' + Q30_R2_bp + '\t' + Q30_Total_singles + '\t' + Q30_R1_percent + '\t' + Q30_R2_percent + '\t' + Q30_unpaired_percent + '\t' + Total_Sequenced_bp + '\t' + Total_Sequenced_reads
+    Line = name + '\t' + raw_R1_reads + '\t' + raw_R1_bases + '\t' + raw_R2_reads + '\t' + raw_R2_bases + '\t' + unpaired_reads + '\t' + unpaired_bases + '\t' + Q20_Total + '\t' + Q30_Total + '\t' + Q20_R1_bp + '\t' + Q20_R2_bp + '\t' + Q20_Total_singles + '\t' + Q20_R1_percent + '\t' + Q20_R2_percent + '\t' + Q20_unpaired_percent + '\t' + Q30_R1_bp + '\t' + Q30_R2_bp + '\t' + Q30_Total_singles + '\t' + Q30_R1_percent + '\t' + Q30_R2_percent + '\t' + Q30_unpaired_percent + '\t' + Total_Sequenced_bp + '\t' + Trimmed_Sequenced_reads + '\t' + Total_Sequenced_reads
     Out.write(Line)
     Out.close()
 
