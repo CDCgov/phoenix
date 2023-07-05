@@ -8,7 +8,6 @@ task phoenix {
     String samplename
     String kraken2db = "null"
     String entry = "PHOENIX"
-    String docker = "quay.io/jvhagey/phoenix:2.0.0"
     String scaffold_ext = ".scaffolds.fa.gz"
     Int?   coverage = 30
     Int    memory = 64
@@ -129,7 +128,7 @@ task phoenix {
   output {
     File?   work_files                        = "work.tar.gz"
     String  phoenix_version                   = read_string("VERSION")
-    String  phoenix_docker                    = docker
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.0.0"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warning_count                     = read_string("WARNING_COUNT")
@@ -233,7 +232,7 @@ task phoenix {
     File? multiqc_report          = "~{samplename}/results/multiqc/multiqc_report.html"
   }
   runtime {
-    docker: "~{docker}"
+    docker: "quay.io/jvhagey/phoenix:2.0.0"
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"
