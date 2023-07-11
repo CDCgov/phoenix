@@ -812,7 +812,10 @@ def Get_Files(directory, sample_name):
         gamma_hv_file = glob.glob(directory + "/gamma_hv/" + sample_name + "_*.gamma")[0]
     except IndexError:
         gamma_hv_file = directory + "/gamma_hv/" + sample_name + "_blank.gamma"
-    fast_ani_file = directory + "/ANI/" + sample_name + ".fastANI.txt"
+    try:
+        fast_ani_file = glob.glob(directory + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")[0]
+    except IndexError:
+        fast_ani_file = directory + "/ANI/" + sample_name + ".fastANI.txt"
     tax_file = directory + "/" + sample_name + ".tax" # this file will tell you if kraken2 wtassembly, kraken2 trimmed (reads) or fastani determined the taxa
     try:
         srst2_file = glob.glob(directory + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")[0]
@@ -1161,7 +1164,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     worksheet.write('A' + str(max_row + 12), "Reviewed by:", no_bold)
     worksheet.write('D' + str(max_row + 12), "Date:")
     # add autofilter
-    worksheet.autofilter(1, 1, max_row, max_col - 1)
+    worksheet.autofilter(1, 0, max_row, max_col - 1)
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
 
@@ -1188,14 +1191,31 @@ def create_samplesheet(directory):
     skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
     skip_list_b = ["Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
     skip_list = skip_list_a + skip_list_b
-    for sample in dirs:
-        if sample not in skip_list:
-            with open("GRiPHin_samplesheet.csv", "a") as samplesheet:
-                if directory[-1] != "/": # if directory doesn't have trailing / add one
-                    directory = directory + "/"
-                samplesheet.write(sample + "," + directory + sample + '\n')
+    #remove unwanted files
+    dirs_cleaned = [item for item in dirs if item not in skip_list]
+    try: #if there are numbers in the name then use that to sort
+        dirs_sorted=sorted(dirs_cleaned, key=lambda x: int("".join([i for i in x if i.isdigit()])))
+    except: #if no numbers then use only alphabetically
+        dirs_sorted=sorted(dirs_cleaned)
+    for sample in dirs_sorted:
+        with open("GRiPHin_samplesheet.csv", "a") as samplesheet:
+            if directory[-1] != "/": # if directory doesn't have trailing / add one
+                directory = directory + "/"
+            samplesheet.write(sample + "," + directory + sample + '\n')
     samplesheet = "GRiPHin_samplesheet.csv"
     return samplesheet
+
+def sort_samplesheet(samplesheet):
+    df = pd.read_csv(samplesheet)
+    #get list of sample ids to sort
+    samples = df["sample"]
+    try: #if there are numbers in the name then use that to sort
+        samples_sorted=sorted(samples, key=lambda x: int("".join([i for i in x if i.isdigit()])))
+    except: #if no numbers then use only alphabetically
+        samples_sorted=sorted(samples)
+    df = df.set_index("sample")
+    df = df.loc[samples_sorted]
+    df.to_csv(samplesheet, sep=',', encoding='utf-8') #overwrite file
 
 def main():
     args = parseArgs()
@@ -1215,12 +1235,12 @@ def main():
     if args.directory !=None:
         samplesheet = create_samplesheet(args.directory)
     else:
+        sort_samplesheet(args.samplesheet)
         samplesheet = args.samplesheet
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
     with open(samplesheet) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
-        csv_reader = sorted(csv_reader, key=operator.itemgetter(1), reverse=False) # sort first so we have an order to the output. 
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
