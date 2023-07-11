@@ -336,7 +336,7 @@ if [[ "${run_type}" == "all" ]]; then
   total_trimmed_reads=-3
 
   if [[ "${total_exists}" = true ]]; then
-    total_trimmed_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f23)
+    total_trimmed_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f24)
     orphaned_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f6)
     trimmed_reads=$(( total_trimmed_reads - orphaned_reads))
     paired_trimmed=$((trimmed_reads/2))
@@ -814,8 +814,9 @@ if [[ -s "${quast_report}" ]]; then
 	GC_con=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
   if [[ -f "${gc_content_file}" ]]; then # if gc_content file exists get stdev line
     gc_stdev=$(awk 'NR==3' "${gc_content_file}" | cut -d' ' -f2)
-    if [[ "${gc_stdev}" = *"Not calculated on species with n<10 references"* ]]; then #check that there was enough references for stdev calculation
-      printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "WARNING" "Low references for STDev"  >> "${sample_name}.synopsis"
+    #checks if "Not calculated on species with n<10 references"
+    if [ "${gc_stdev}" = "Not" ]; then #check that there was enough references for stdev calculation
+      printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "ALERT" "Low References for STDev - ${GC_con}x(${gc_stdev}-SD)"  >> "${sample_name}.synopsis"
     else
       #Check that GC content is within the range we want (2.58 on either side)
       gc_mean=$(awk 'NR==6' "${gc_content_file}" | cut -d' ' -f2)
