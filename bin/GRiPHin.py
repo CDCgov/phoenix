@@ -64,10 +64,10 @@ def make_ar_dictionary(ar_db):
 
 def get_Q30(trim_stats, raw_stats):
     # trimmed data
-    data_df = pd.read_csv(trim_stats, sep='\t', header=0) 
+    data_df = pd.read_csv(trim_stats, sep='\t', header=0)
     Trim_Q30_R1_percent = round(data_df["Q30_R1_[%]"]*100, 2)[0] #make percent and round to two decimals
     Trim_Q30_R2_percent = round(data_df["Q30_R2_[%]"]*100, 2)[0]
-    #Total_Trimmed_bp = data_df["Total_Trimmed_[bp]"][0]
+    Total_Trimmed_bp = data_df["Total_Sequenced_[bp]"][0]
     Total_Trimmed_reads = data_df["Total_Sequenced_[reads]"][0]
     Paired_Trimmed_reads = data_df["Paired_Sequenced_[reads]"][0]
     #do the same with raw
@@ -76,7 +76,7 @@ def get_Q30(trim_stats, raw_stats):
     Q30_R2_percent = round(data_raw_df["Q30_R2_[%]"]*100, 2)[0]
     Total_Raw_bp = data_raw_df["Total_Sequenced_[bp]"][0]
     Total_Raw_reads = data_raw_df["Total_Sequenced_[reads]"][0]
-    return Q30_R1_percent, Q30_R2_percent, Total_Raw_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent
+    return Q30_R1_percent, Q30_R2_percent, Total_Raw_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent
 
 def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
     try:
@@ -97,6 +97,7 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
         print("Warning: " + sample_name + ".trimd_summary.txt not found")
         Trim_kraken = 'Unknown'
         Trim_unclassified_percent = "Unknown"
+        Trim_Genus_percent = "Unknown"
         scheme_guess_kraken_trimd = ""
     try:
         with open(kraken_wtasmbld,"r") as f:
@@ -116,17 +117,18 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
         print("Warning: " + sample_name + ".wtasmbld_summary.txt not found")
         Asmbld_kraken = 'Unknown'
         Asmbld_unclassified_percent = "Unknown"
+        Asmbld_Genus_percent = 0
         scheme_guess_kraken_wt = ""
-    return Trim_kraken, Asmbld_kraken, Trim_unclassified_percent, Asmbld_unclassified_percent, scheme_guess_kraken_wt, scheme_guess_kraken_trimd
+    return Trim_kraken, Trim_Genus_percent, Asmbld_kraken, Asmbld_Genus_percent, Trim_unclassified_percent, Asmbld_unclassified_percent, scheme_guess_kraken_wt, scheme_guess_kraken_trimd
 
-def Calculate_Trim_Coverage(Total_Sequenced_bp, quast_report):
+def Calculate_Trim_Coverage(Total_Trimmed_bp, quast_report):
     """Taking the total sequenced bp from fastp and the assembly length from quast to calculate coverage."""
     with open(quast_report, 'r') as f:
         for line in f:
             if ('Total length' in line):
                 Assembly_Length = int(line.split('\t')[1])
                 break
-    Coverage = float(round(Total_Sequenced_bp / Assembly_Length, 2))
+    Coverage = float(round(Total_Trimmed_bp / Assembly_Length, 2))
     return Coverage, Assembly_Length
 
 def Get_Assembly_Length(quast_report): #for -entry SCAFFOLDS or CDC_SCAFFOLDS
@@ -171,11 +173,17 @@ def get_gc_metrics(gc_file):
             if "Species_GC_StDev:" in line:
                 if "Not calculated on species with n<10 references" in line:
                     gc_stdev = "NA"
+                    out_of_range_stdev = gc_stdev
                 else:
                     gc_stdev = float((line.split("Species_GC_StDev: ",1)[1]).strip())
-            if "Sample_GC_Percent:" in line:
+                    out_of_range_stdev = gc_stdev*2.58
+            elif "Sample_GC_Percent:" in line:
                 sample_gc = float((line.split("Sample_GC_Percent: ",1)[1]).strip())
-    return gc_stdev, sample_gc
+            elif "Species_GC_Mean:" in line:
+                species_gc_mean = float((line.split("Species_GC_Mean: ",1)[1]).strip())
+            else:
+                pass
+    return gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean
 
 def get_assembly_ratio(asmbld_ratio, tax_file):
     '''Collects the assembly ratio, stdev and method used to determine taxa.'''
@@ -185,7 +193,7 @@ def get_assembly_ratio(asmbld_ratio, tax_file):
                 taxa =  (line.split("Tax: ",1)[1]).strip()
             if "Isolate_St.Devs:" in line:
                 stdev = (line.split("Isolate_St.Devs: ",1)[1]).strip()
-                if stdev == 'N/A': #handling making stdev a float only if its a number
+                if stdev == 'NA': #handling making stdev a float only if its a number
                     pass
                 else:
                     stdev =  float(stdev)
@@ -197,7 +205,7 @@ def get_assembly_ratio(asmbld_ratio, tax_file):
     assembly_ratio_metrics = [ratio, stdev, tax_method]
     return assembly_ratio_metrics
 
-def compile_alerts(scaffolds_entry, coverage, assembly_stdev):
+def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
     """
     No orphaned reads found after trimming
     <10 reference genomes for species identified so no stdev for assembly ratio or %GC content calculated
@@ -212,12 +220,19 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev):
                 alerts.append("coverage >100x(" + str(coverage) + "x)")
     else:
         pass
-    if str(assembly_stdev) == "N/A":
-        alerts.append("STDev was N/A <10 genomes as reference")
+    if str(assembly_stdev) == "NA":
+        if str(gc_stdev) == "NA":
+            alerts.append("Assembly ratio and GC% STDev are N/A <10 genomes as reference")
+        else:
+            alerts.append("Open Github issue assembly ratio STDev is N/A but not GC%. This shouldn't happen.")
+    elif str(gc_stdev) == "NA":
+        alerts.append("Open Github issue STDev is N/A for GC% and not assembly ratio. This shouldn't happen.")
+    else:
+        pass
     alerts = ', '.join(alerts)
     return alerts
 
-def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus):
+def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus):
     """
     <1,000,000 total reads for each raw and trimmed reads - Total_Sequenced_reads
     % raw and trimmed reads with Q30 average for R1 (<90%) and R2 (<70%) - Q30_R1_percent, Q30_R2_percent
@@ -241,17 +256,23 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
         if Trim_unclassified_percent == "trimmed" or float(Trim_unclassified_percent) > float(30.00):
             warnings.append(">{:.2f}% unclassifed trimmed reads".format(int(30)))
         if len(kraken_trim_genus) >=2:
-            warnings.append(">=2 genera had >{:.2f}% of reads assigned to them.".format(int(25)))
+            warnings.append(">=2 genera had >{:.2f}% of reads assigned to them".format(int(25)))
+        if float(Trim_Genus_percent) <float(50.00):
+            warnings.append(">50% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
     else:
         pass
-    if float(gc_metrics[0]) >2.58: #check that gc stdev is < 2.58
-        warnings.append("GC stdev >2.58({:.2f})".format(float(gc_metrics[0])))
+    if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
+        # sample_gc > (species_gc_mean + out_of_range_stdev)
+        if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
+            warnings.append("GC% >2.58 stdev away from mean GC%({:.2f})".format(float(gc_metrics[3])))
     if scaffolds == "Unknown" or int(scaffolds) > int(200):
         warnings.append(">200 scaffolds".format(int(70)))
     if Wt_asmbld_unclassified_percent == "Unknown" or float(Wt_asmbld_unclassified_percent) > float(30.00):
         warnings.append(">{:.2f}% unclassifed scaffolds".format(int(30)))
+    if float(Asmbld_Genus_percent) <float(50.00):
+        warnings.append(">50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     if len(kraken_wtasmbld_genus) >=2:
-        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them.".format(int(25))) 
+        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
         if genus == "Enterobacter" and MLST_scheme_1 == "ecloacae":
             pass
@@ -336,7 +357,7 @@ def Checking_auto_pass_fail(scaffolds_entry, coverage, length, assembly_stdev, a
         elif int(length) <= 1000000 or length == "Unknown":
             QC_result = "FAIL"
             QC_reason = "<1,000,000 trimmed bps(" + str(length) + ")"
-        elif str(assembly_stdev) != "N/A": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
+        elif str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
             if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
                 QC_result = "FAIL"
                 QC_reason="Assembly file not Found"
@@ -353,7 +374,7 @@ def Checking_auto_pass_fail(scaffolds_entry, coverage, length, assembly_stdev, a
         if int(length) <= 1000000 or length == "Unknown":
             QC_result = "FAIL"
             QC_reason = "assembly <1,000,000bps(" + str(length) + ")"
-        elif str(assembly_stdev) != "N/A": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
+        elif str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
             if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
                 QC_result = "FAIL"
                 QC_reason="assembly file not Found"
@@ -609,16 +630,16 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
 def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
-        Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
+        Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
     except FileNotFoundError:
         print("Warning: " + sample_name + "_trimmed_read_counts.txt not found")
-        Q30_R1_per = Q30_R2_per = Total_Seq_bp = Total_Seq_bp = Total_Trimmed_reads = 'Unknown'
+        Q30_R1_per = Q30_R2_per = Total_Raw_Seq_bp = Total_Raw_reads = Total_Trimmed_bp = Paired_Trimmed_reads = Total_Trimmed_reads = Trim_Q30_R1_percent = Trim_Q30_R2_percent = 'Unknown'
     # Try and except are in the get_kraken_info function to allow for cases where trimming was completed, but not assembly
-    Trim_kraken, Asmbld_kraken, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, scheme_guess_kraken_wt, scheme_guess_kraken_trimd = get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name)
+    Trim_kraken, Trim_Genus_percent, Asmbld_kraken, Asmbld_Genus_percent, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, scheme_guess_kraken_wt, scheme_guess_kraken_trimd = get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name)
     try:
-        if Total_Seq_bp != "Unknown": # for -entry CDC_SCAFFOLDS where no reads are present to calculate. For all other scenerios run this portion
-            Coverage, Assembly_Length = Calculate_Trim_Coverage(Total_Seq_bp, quast_report)
-        elif Total_Seq_bp == "Unknown": # for -entry CDC_SCAFFOLDS and -entry SCAFFOLDS
+        if Total_Trimmed_bp != "Unknown": # for -entry CDC_SCAFFOLDS where no reads are present to calculate. For all other scenerios run this portion
+            Coverage, Assembly_Length = Calculate_Trim_Coverage(Total_Trimmed_bp, quast_report)
+        elif Total_Trimmed_bp == "Unknown": # for -entry CDC_SCAFFOLDS and -entry SCAFFOLDS
             Assembly_Length = Get_Assembly_Length(quast_report)
             Coverage = 'Unknown'
         else:
@@ -648,8 +669,8 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         gc_metrics = get_gc_metrics(gc_file)
     except FileNotFoundError:
         print("Warning: " + sample_name + "_GC_content_20230504.txt not found.")
-        gc_stdev = gc = 'Unknown'
-        gc_metrics = [gc_stdev, gc]
+        gc_stdev = sample_gc = out_of_range_stdev = species_gc_mean = 'Unknown'
+        gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
         QC_result, QC_reason = Checking_auto_pass_fail(scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage)
     except FileNotFoundError: 
@@ -729,7 +750,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         df.index = [sample_name]
         srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
-        alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1])
+        alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1], gc_metrics[0])
     except:
         alerts = ""
     # try except in the function itself
@@ -746,10 +767,10 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         scheme_guess = scheme_guess_fastani
         genus = FastANI_output_list[3].split(" ")[0]
     try:
-        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent, Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus)
+        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent, Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus)
     except:
         warnings = ""
-    return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
+    return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
     Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2
 
 def Get_Files(directory, sample_name):
@@ -799,14 +820,14 @@ def Get_Files(directory, sample_name):
         srst2_file = directory + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
     return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
-def Append_Lists(sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
+def Append_Lists(sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
             Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
-            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L,Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L,Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
         Sample_Names.append(str(sample_name))
         Q30_R1_per_L.append(Q30_R1_per)
         Q30_R2_per_L.append(Q30_R2_per)
-        #Total_Seq_bp_L.append(Total_Seq_bp)
+        #Total_Raw_Seq_bp_L.append(Total_Raw_Seq_bp)
         Paired_Trimmed_reads_L.append(Paired_Trimmed_reads)
         Total_Seq_reads_L.append(Total_Seq_reads)
         Total_trim_Seq_reads_L.append(Total_trim_Seq_reads)
@@ -837,10 +858,10 @@ def Append_Lists(sample_name, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_re
         MLST_alleles_2_L.append(MLST_alleles_2)
         MLST_source_1_L.append(MLST_source_1)
         MLST_source_2_L.append(MLST_source_2)
-        return Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+        return Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
         Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L
 
-def Create_df(phoenix, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
+def Create_df(phoenix, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
 Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
     #combine all metrics into a dataframe
     if phoenix == True:
@@ -851,7 +872,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Alerts'                     : alerts_L,
         'Raw_Q30_R1_[%]'             : Q30_R1_per_L,
         'Raw_Q30_R2_[%]'             : Q30_R2_per_L,
-        #'Total_Raw_[bp]'             : Total_Seq_bp_L,
+        #'Total_Raw_[bp]'             : Total_Raw_Seq_bp_L,
         'Total_Raw_[reads]'          : Total_Seq_reads_L,
         'Paired_Trimmed_[reads]'     : Paired_Trimmed_reads_L,
         'Total_Trimmed_[reads]'      : Total_trim_Seq_reads_L,
@@ -884,7 +905,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Alerts'                     : alerts_L,
         'Raw_Q30_R1_[%]'             : Q30_R1_per_L,
         'Raw_Q30_R2_[%]'             : Q30_R2_per_L,
-        #'Total_Raw_[bp]'             : Total_Seq_bp_L,
+        #'Total_Raw_[bp]'             : Total_Raw_Seq_bp_L,
         'Total_Raw_[reads]'          : Total_Seq_reads_L,
         'Paired_Trimmed_[reads]'     : Paired_Trimmed_reads_L,
         'Total_Trimmed_[reads]'      : Total_trim_Seq_reads_L,
@@ -1179,7 +1200,7 @@ def create_samplesheet(directory):
 def main():
     args = parseArgs()
     # create empty lists to append to later
-    Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+    Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = ([] for i in range(34))
     ar_df = pd.DataFrame() #create empty dataframe to fill later for AR genes
     pf_df = pd.DataFrame() #create another empty dataframe to fill later for Plasmid markers
@@ -1206,17 +1227,17 @@ def main():
             #data_location, parent_folder = Get_Parent_Folder(directory)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
-            srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
+            srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
             QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)
             #Collect this mess of variables into appeneded lists
-            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
+            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = Append_Lists(sample_name,  \
-            Q30_R1_per, Q30_R2_per, Total_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, \
+            Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, \
             gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
-            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     # combine all lists into a dataframe
-    df = Create_df(args.phoenix, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+    df = Create_df(args.phoenix, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
