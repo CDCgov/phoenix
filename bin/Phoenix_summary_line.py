@@ -101,7 +101,6 @@ def MLST_Scheme(MLST_file):
                 Scheme_list[3].append([source])
                 Scheme_list[4].append([date])
                 print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
-            print("Yay")
             for i in Scheme_list:
                 for j in i:
                     print(j)
@@ -183,7 +182,7 @@ def Trimmed_BP(trimmed_counts_file):
     f = open(trimmed_counts_file, 'r')
     String1 = f.readline()
     String1 = f.readline()
-    BP = String1.split()[-2]
+    BP = String1.split()[-3]
     BP = int(BP)
     return BP
 

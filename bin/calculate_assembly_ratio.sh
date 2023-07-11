@@ -158,7 +158,7 @@ while IFS='' read -r line; do
 		stdev=$(echo "scale=4; 1000000 * ${arr_line[5]} /1 " | $bc_path | cut -d"." -f1)
 		if [[ "${reference_count}" -lt 10 ]]; then
 			stdev="Not calculated on species with n<10 references"
-			stdevs="N/A"
+			stdevs="NA"
 		else
 			if [[ "${assembly_length}" -gt "${expected_length}" ]]; then
 				bigger="${assembly_length}"
