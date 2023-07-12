@@ -124,7 +124,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)  
       - Bumped from `v2.0.0` to `v2.1.0` including until 2023-04-12 [commit f46d8fc](https://bitbucket.org/genomicepidemiology/resfinder_db/commits/branch/master).  
 - Updated AMRFinder Database used by AMRFinder+ and GAMMA to [v2023-04-17.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.11/).  
-- `SRST2_MLST` and `MLST` step now use the mlst_db which is provided in `~/phoenix/assests/databases` this is now static and no longer pulls updates from PubMLST.org. This will keep the pipeline running when PubMLST.org is down and keeps the schemes from changing if you run the same sample at different times. This was implimented to deal with PubMLST.org being down fairly often and with pipeline validation in mind.
+- `SRST2_MLST` and `MLST` step now use the mlst_db which is provided in `~/phoenix/assests/databases` this is now static and no longer pulls updates from PubMLST.org. This will keep the pipeline running when PubMLST.org is down and keeps the schemes from changing if you run the same sample at different times. This was implemented to deal with PubMLST.org being down fairly often and with pipeline validation in mind.  
 
 **Container Updates:**  
 - AMRFinder+ was updated from 3.10.45 to [3.11.11](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.11.11).  
