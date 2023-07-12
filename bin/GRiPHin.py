@@ -258,7 +258,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
         if len(kraken_trim_genus) >=2:
             warnings.append(">=2 genera had >{:.2f}% of reads assigned to them".format(int(25)))
         if float(Trim_Genus_percent) <float(50.00):
-            warnings.append(">50% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
+            warnings.append("<50% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
     else:
         pass
     if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
@@ -270,7 +270,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
     if Wt_asmbld_unclassified_percent == "Unknown" or float(Wt_asmbld_unclassified_percent) > float(30.00):
         warnings.append(">{:.2f}% unclassifed scaffolds".format(int(30)))
     if float(Asmbld_Genus_percent) <float(50.00):
-        warnings.append(">50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
+        warnings.append("<50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     if len(kraken_wtasmbld_genus) >=2:
         warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
