@@ -1,6 +1,9 @@
 # :fire::bird::fire: PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens
 
 <!-- [![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download)](https://github.com/CDCgov/phoenix/releases) -->
+
+[![DOI](https://zenodo.org/badge/490844937.svg)](https://zenodo.org/badge/latestdoi/490844937)
+
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
