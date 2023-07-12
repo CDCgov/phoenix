@@ -20,7 +20,7 @@ process MASH_DIST {
     db_version=\$(echo ${reference} | cut -d'_' -f1,2)
     # Setup to catch any issues while grabbing date from DB name
     if [[ "\${db_version}" = "" ]]; then
-        db_version="REFSEQ_unknown_date"
+        db_version="REFSEQ_unknown"
     fi
     mash \\
         dist \\
