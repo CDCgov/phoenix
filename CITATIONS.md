@@ -1,6 +1,6 @@
 # cdcgov/phoenix: Citations
 
-> Hagey JV, Vlachos N, Kent AG, Diaz M, Stanton R, Halpin AL. (2023). CDCgov/phoenix: v2.0.0 (v2.0.0). Zenodo. https://doi.org/10.5281/zenodo.7760681
+> Hagey JV, Vlachos N, Kent AG, Diaz M, Halpin AL. (2023). CDCgov/phoenix: v2.0.0 (v2.0.0). Zenodo. https://doi.org/10.5281/zenodo.7760681
 
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 
