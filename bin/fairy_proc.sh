@@ -24,3 +24,9 @@ if grep "error" ${prefix}.txt || grep "error" ${prefix}.txt; then
 else
 	echo "PASS" > ${prefix}_results.txt
 fi
+
+#proceed to cumulative read counts if files aren't corrupt
+if grep -Fx "PASS" ${prefix}_results.txt; then
+	q30.py $1 > ${prefix}_stats.txt
+fi
+
