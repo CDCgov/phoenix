@@ -92,7 +92,7 @@ best_organism_guess="${best_genus} ${best_species}"
 
 
 #Creates a line at the top of the file to show the best match in an easily readable format that matches the style on the MMB_Seq log
-echo -e "% ID	% Coverage	Organism	Source File" > "${sample_name}.fastANI.txt"
+echo -e "% ID	% Coverage	Organism	Source File" > "${sample_name}_${db_name}.fastANI.txt"
 echo -e "${best_percent}	${best_coverage}	${best_organism_guess}	${best_file}" >> "${sample_name}_${db_name}.fastANI.txt"
 
 ### Add headers to file for Splunk integration

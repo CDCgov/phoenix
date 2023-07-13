@@ -1021,7 +1021,7 @@ if [[ -s "${formatted_fastANI}" ]]; then
     fi
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "NO ${sample_name}.fastANI.txt  file"  >> "${sample_name}.synopsis"
+  printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "NO ${sample_name}_REFSEQ_*.fastANI.txt  file"  >> "${sample_name}.synopsis"
   status="FAILED"
 fi
 
