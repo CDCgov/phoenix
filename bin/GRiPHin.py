@@ -273,7 +273,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
         if float(Asmbld_Genus_percent) <float(50.00):
             warnings.append("<50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     else:
-        warnings.append("No Assembly file found possible SPAdes failure.")
+        warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
         warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
@@ -1137,11 +1137,8 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Start iterating through the columns and the rows to apply the format
     column_count = 0
     for column in ar_df.columns:
-        print("col is {}".format(column))
         for gene in columns_to_highlight:
-            print("gene is {} and col is {}".format(gene, column))
             if column == gene: # if the column is one of the big 5 genes to highlight
-                print("got here")
                 col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
                 cell = xl_rowcol_to_cell(1, col_adjustment)   # Gets the excel location like A1
                 #cell_value = ar_df.iloc[2, column_count] # get the value in that cell
