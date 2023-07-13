@@ -97,8 +97,10 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - The file `*_trimmed_read_counts.txt` that was in `fastp_trimd` was moved to the folder `qc_stats`.  
    - Files `*_fastqc.zip` and `*_fastqc.html` in folder `fastqc_trimd` moved to `qc_stats`.  
    - `*.bbduk.log` --> moved from `~/removedAdapters` to `~/${sample}/qc_stats` and `removedAdapters` is not longer and output folder.  
+   - `raw_stats` folder was created and contains `${sample}_raw_read_counts.txt` and `${sample}_FAIry_synopsis.txt`, previously these were in the folders `fastp_trimd` and `FAIry`, respectively.  
 - Sample GC% added to `*_GC_content_20230504.txt` file.
 - `*_trimmed_read_counts.txt` has `Paired_Sequenced_[reads]` column added as `Total_Sequenced_[reads]` is the number of the paired sequences and singletons.
+- Files produced from FastANI, MASH and FORMAT_ANI had mash database's data appended to the file name for tracking and validation. Files are now named `*${sample}_REFSEQ_20230504.ani.txt`, `${samplename}_REFSEQ_20230504.fastANI.txt`, `${samplename}_REFSEQ_20230504_best_MASH_hits.txt` and `${samplename}_REFSEQ_20230504.txt`.
 - GRiPHin file updates
    - New columns for `WARNINGS`, `ALERTS`, `Minimum_QC_Issues`, `Total_Raw_[reads]`, `Paired_Trimmed_[reads]` and `GC%`.  
    - New column `Primary_MLST_Source` as added to show if the assmebly (MLST program) or reads (SRST2) was used for MLST determination.  
