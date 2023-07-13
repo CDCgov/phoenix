@@ -7,8 +7,6 @@ process FAIRY_STATS {
 	tuple val(meta), path(reads)
 
 	output:
-
-    input:
     tuple val(meta), path(reads)
 	tuple val(meta), path('*_stats.txt'),optional:true,                     emit: raw_stats
 	tuple val(meta), path('*_raw_read_counts.txt'),optional:true,           emit: combined_raw_stats
