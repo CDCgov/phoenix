@@ -996,11 +996,11 @@ def big5_check(final_ar_df):
             drug = gene.split('_(')[1] # keep drug name to add back later
             # make sure we have a complete match for blaOXA-48 and blaOXA-48-like genes
             if gene_name.startswith("blaOXA"): #check for complete blaOXA match
-                [ columns_to_highlight.append(gene_name + "(" + drug) for big5_keep_gene in blaOXA_48_like if gene_name == big5_keep_gene ]
+                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_keep_gene in blaOXA_48_like if gene_name == big5_keep_gene ]
             else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
                 for big5 in big5_keep:
                     if search(big5, gene_name): #search for big5 gene substring in the gene name
-                        columns_to_highlight.append(gene_name + "(" + drug)
+                        columns_to_highlight.append(gene_name + "_(" + drug)
     #loop through list of genes to drop and removed if they are in the highlight list
     for bad_gene in big5_drop:
         #search for big5 gene substring in the gene name and remove if it is
@@ -1137,8 +1137,11 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Start iterating through the columns and the rows to apply the format
     column_count = 0
     for column in ar_df.columns:
+        print("col is {}".format(column))
         for gene in columns_to_highlight:
+            print("gene is {} and col is {}".format(gene, column))
             if column == gene: # if the column is one of the big 5 genes to highlight
+                print("got here")
                 col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
                 cell = xl_rowcol_to_cell(1, col_adjustment)   # Gets the excel location like A1
                 #cell_value = ar_df.iloc[2, column_count] # get the value in that cell
