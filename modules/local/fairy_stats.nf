@@ -7,7 +7,6 @@ process FAIRY_STATS {
 	tuple val(meta), path(reads)
 
 	output:
-    tuple val(meta), path(reads)
 	tuple val(meta), path('*_stats.txt'),optional:true,                     emit: raw_stats
 	tuple val(meta), path('*_raw_read_counts.txt'),optional:true,           emit: combined_raw_stats
 	path("versions.yml"),optional:true,                                     emit: versions
@@ -66,7 +65,7 @@ process FAIRY_STATS {
 			#file contents
 			echo "${prefix}	FAIL	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	kraken2_trimmed	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown		Read pairs are NOT the same!" | tr -d '\n' >> ${prefix}_summaryline_failure.tsv
 		fi
-		# delete files that would be enter the channel
+		# delete files that would enter the channel
 		rm ${reads[0]}
 		rm ${reads[1]}
 		mv ${prefix}_result.txt ${prefix}_prdresult.txt
