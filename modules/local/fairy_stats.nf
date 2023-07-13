@@ -45,9 +45,6 @@ if [ ! -f ${prefix}_summaryline_failure.tsv ]; then
 	mv ${prefix}_result.txt ${prefix}_prdresult.txt
 	rm ${prefix}_prdresult.txt
 fi
-cat <<-END_VERSIONS > versions.yml
-"${task.process}":
-		python: \$(python --version | sed 's/Python //g')
-END_VERSIONS
+
 	"""
 }

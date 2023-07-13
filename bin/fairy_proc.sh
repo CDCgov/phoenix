@@ -30,3 +30,7 @@ if grep -Fx "PASS" ${prefix}_results.txt; then
 	q30.py $1 > ${prefix}_stats.txt
 fi
 
+cat <<-END_VERSIONS > versions.yml
+"${task.process}":
+	python: \$(python --version | sed 's/Python //g')
+END_VERSIONS
