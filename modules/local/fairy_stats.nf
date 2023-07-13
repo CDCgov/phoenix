@@ -20,12 +20,9 @@ process FAIRY_STATS {
 	def num1 = "${reads[0]}".minus(".fastq.gz")
 	def num2 = "${reads[1]}".minus(".fastq.gz")
 	"""
-	for isolate in $read_pairs; do
-		set -e
-		gzip -t ${read_pairs[0]} 2>> ${prefix}.txt
-		gzip -t ${read_pairs[1]} 2>> ${prefix}.txt
-	done
-
+	fairy_proc.sh ${reads[0]}
+	fairy_proc.sh ${reads[1]}
+	
 	if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
 		echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
 		#error warning for line_summary channel
