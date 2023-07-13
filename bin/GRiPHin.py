@@ -265,12 +265,15 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
         # sample_gc > (species_gc_mean + out_of_range_stdev)
         if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
             warnings.append("GC% >2.58 stdev away from mean GC%({:.2f})".format(float(gc_metrics[3])))
-    if scaffolds == "Unknown" or int(scaffolds) > int(200):
-        warnings.append(">200 scaffolds".format(int(70)))
-    if Wt_asmbld_unclassified_percent == "Unknown" or float(Wt_asmbld_unclassified_percent) > float(30.00):
-        warnings.append(">{:.2f}% unclassifed scaffolds".format(int(30)))
-    if float(Asmbld_Genus_percent) <float(50.00):
-        warnings.append("<50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
+    if scaffolds != "Unknown" and Wt_asmbld_unclassified_percent != "Unknown" and Asmbld_Genus_percent != "Unknown":
+        if int(scaffolds) > int(200):
+            warnings.append(">200 scaffolds".format(int(70)))
+        if float(Wt_asmbld_unclassified_percent) > float(30.00):
+            warnings.append(">{:.2f}% unclassifed scaffolds".format(int(30)))
+        if float(Asmbld_Genus_percent) <float(50.00):
+            warnings.append("<50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
+    else:
+        warnings.append("No Assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
         warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
