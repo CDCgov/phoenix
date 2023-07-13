@@ -21,11 +21,10 @@ process FAIRY_STATS {
 	def num2 = "${reads[1]}".minus(".fastq.gz")
 	"""
 	set +e
-	for isolate in ${reads}
-		do
+	for isolate in ${reads}; do
 			gzip -t ${reads[0]} 2>> ${num1}.txt
 			gzip -t ${reads[1]} 2>> ${num2}.txt
-		done
+	done
 
 	if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
 		echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
@@ -38,25 +37,21 @@ process FAIRY_STATS {
 	fi
 
 	#proceed to cumulative read counts if files aren't corrupt
-	if grep -Fx "PASS" ${prefix}_results.txt
-		then
+	if grep -Fx "PASS" ${prefix}_results.txt; then
 		q30.py ${reads[0]} > ${prefix}_R1_stats.txt
 		q30.py ${reads[1]} > ${prefix}_R2_stats.txt
 	fi
 
-	if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ]
-		then
+	if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ]; then
 		create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
 		fairy.py -r ${prefix}_raw_read_counts.txt
 	fi
 
-	if grep "PASS" ${prefix}_result.txt
-		then
+	if grep "PASS" ${prefix}_result.txt; then
 		mv ${reads[0]} ${num1}_C.fastq.gz
 		mv ${reads[1]} ${num2}_C.fastq.gz
 	else
-		if [ ! -f ${prefix}_summaryline_failure.tsv ]
-			then
+		if [ ! -f ${prefix}_summaryline_failure.tsv ]; then
 			#error warning for line_summary channel
 			echo "ID	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Coverage	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline_failure.tsv
 			#file contents
