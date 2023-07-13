@@ -22,8 +22,8 @@ process FAIRY_STATS {
 	"""
 	set +e
 	for isolate in ${reads}; do
-			gzip -t ${reads[0]} 2>> ${num1}.txt
-			gzip -t ${reads[1]} 2>> ${num2}.txt
+		gzip -t ${reads[0]} 2>> ${num1}.txt
+		gzip -t ${reads[1]} 2>> ${num2}.txt
 	done
 
 	if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
