@@ -169,10 +169,10 @@ task phoenix {
     File? kraken_trimd_summary    = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
     File? trimd_html              = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
     File? trimd_krona             = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
-    File? classified_1            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fastq.gz"
-    File? unclassified_1          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fastq.gz"
-    File? classified_2            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fastq.gz"
-    File? unclassified_2          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fastq.gz"
+    File? classified_1            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fasta.gz"
+    File? unclassified_1          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fasta.gz"
+    File? classified_2            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
+    File? unclassified_2          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? paired_fastp_html       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
     File? paired_fastp_json       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
@@ -200,9 +200,9 @@ task phoenix {
     File wtasmbld_krona           = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     #phoenix ani
     File fast_ani                 = "~{samplename}/results/~{samplename}/ANI/~{samplename}.ani.txt"
-    File reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/~{samplename}.fastANI.txt"
-    File top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_best_MASH_hits.txt"
-    File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}.txt"
+    File reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.fastANI.txt"
+    File top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
+    File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"
     #phoenix quast and mlst
     File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
     File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
