@@ -199,7 +199,7 @@ task phoenix {
     File wtasmbld_html            = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
     File wtasmbld_krona           = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     #phoenix ani
-    File fast_ani                 = "~{samplename}/results/~{samplename}/ANI/~{samplename}.ani.txt"
+    File fast_ani                 = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.ani.txt"
     File reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.fastANI.txt"
     File top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
     File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"

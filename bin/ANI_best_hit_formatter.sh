@@ -23,7 +23,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":h?a:n:t:" option; do
+while getopts ":h?a:n:d:t:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -37,6 +37,9 @@ while getopts ":h?a:n:t:" option; do
 		n)
 			echo "Option -n triggered, argument = ${OPTARG}"
 			sample_name=${OPTARG};;
+		d)
+			echo "Option -d triggered, argument = ${OPTARG}"
+			db_name=${OPTARG};;
 		t)
 			echo "Option -t triggered"
 			terra=${OPTARG};;
@@ -90,7 +93,7 @@ best_organism_guess="${best_genus} ${best_species}"
 
 #Creates a line at the top of the file to show the best match in an easily readable format that matches the style on the MMB_Seq log
 echo -e "% ID	% Coverage	Organism	Source File" > "${sample_name}.fastANI.txt"
-echo -e "${best_percent}	${best_coverage}	${best_organism_guess}	${best_file}" >> "${sample_name}.fastANI.txt"
+echo -e "${best_percent}	${best_coverage}	${best_organism_guess}	${best_file}" >> "${sample_name}_${db_name}.fastANI.txt"
 
 ### Add headers to file for Splunk integration
 # sed 1i 'Isolate_Assembly_File	RefSEQ_Assembly_File	ANI_value	Mtaching_fragments	Total_fragments' "${sorted_ani}"

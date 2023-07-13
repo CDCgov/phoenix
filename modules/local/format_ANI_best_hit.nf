@@ -22,7 +22,13 @@ process FORMAT_ANI {
     }
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} $terra
+    db_version=\$(echo ${ani_file} | cut -d'_' -f2- | cut -d'.' -f1)
+    # Setup to catch any issues while grabbing date from DB name
+    if [[ "\${db_version}" = "" ]]; then
+        db_version="REFSEQ_unknown"
+    fi
+
+    ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} -d \${db_version} $terra
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

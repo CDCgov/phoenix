@@ -26,7 +26,7 @@ process FASTANI {
     db_version=\$(echo ${reference} | cut -d'_' -f2- | rev | cut -d'_' -f4- | rev)
     # Setup to catch any issues while grabbing date from DB name
     if [[ "\${db_version}" = "" ]]; then
-        db_version="REFSEQ_unknown_date"
+        db_version="REFSEQ_unknown"
     fi
     fastANI \\
         -q $query \\
