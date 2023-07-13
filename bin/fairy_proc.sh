@@ -3,7 +3,7 @@ set +e
 #
 # Description: script to check for file integrity and log errors 
 #
-# Usage: ./fairy_proc.sh reads_file 
+# Usage: ./fairy_proc.sh reads_file software_version
 #
 # v.1.0.0 (07/13/2023)
 #
@@ -29,8 +29,3 @@ fi
 if grep -Fx "PASS" ${prefix}_results.txt; then
 	q30.py $1 > ${prefix}_stats.txt
 fi
-
-cat <<-END_VERSIONS > versions.yml
-"task.process":
-	python: \$(python --version | sed 's/Python //g')
-END_VERSIONS

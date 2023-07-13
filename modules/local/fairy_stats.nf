@@ -21,8 +21,9 @@ process FAIRY_STATS {
 	def num2 = "${reads[1]}".minus(".fastq.gz")
 	"""
 	set +e
-fairy_proc.sh ${reads[0]}
+fairy_proc.sh ${reads[0]} 
 fairy_proc.sh ${reads[1]}
+
 
 if [ -f ${prefix}_R2_stats.txt -a -f ${prefix}_R1_stats.txt ]; then
 	create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
@@ -45,6 +46,9 @@ if [ ! -f ${prefix}_summaryline_failure.tsv ]; then
 	mv ${prefix}_result.txt ${prefix}_prdresult.txt
 	rm ${prefix}_prdresult.txt
 fi
-
+cat <<-END_VERSIONS > versions.yml
+"${task.process}":
+    python: \$(python --version | sed 's/Python //g')
+END_VERSIONS
 	"""
 }
