@@ -21,8 +21,8 @@ process FAIRY_STATS {
 	def num2 = "${reads[1]}".minus(".fastq.gz")
 	"""
 	fairy_proc.sh ${reads[0]}
-	fairy_proc.sh ${reads[1]}
-	
+fairy_proc.sh ${reads[1]}
+
 	if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
 		echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
 		#error warning for line_summary channel
