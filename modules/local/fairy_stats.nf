@@ -21,8 +21,8 @@ process FAIRY_STATS {
 	def num2 = "${reads[1]}".minus(".fastq.gz")
 	"""
 	set +e
-
-	# check for file corruption
+	
+	#check for file corruption
 
 	for isolate in ${reads}
 		do
@@ -32,7 +32,7 @@ process FAIRY_STATS {
 
 	if grep "error" ${num1}.txt || grep "error" ${num2}.txt || grep "unexpected" ${num1}.txt || grep "unexpected" ${num2}.txt; then
 		echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" > ${prefix}_results.txt
-		# error warning for line_summary channel
+		#error warning for line_summary channel
 		echo "ID	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Coverage	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline_failure.tsv
 		#file contents
 		echo "${prefix}	FAIL	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	kraken2_trimmed	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown		CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" | tr -d '\n' >> ${prefix}_summaryline_failure.tsv
@@ -40,7 +40,7 @@ process FAIRY_STATS {
 		echo "PASS" > ${prefix}_results.txt
 	fi
 
-	# proceed to cumulative read counts if files aren't corrupt
+	#proceed to cumulative read counts if files aren't corrupt
 	if grep -Fx "PASS" ${prefix}_results.txt
 		then
 		q30.py ${reads[0]} > ${prefix}_R1_stats.txt
@@ -60,12 +60,12 @@ process FAIRY_STATS {
 	else
 		if [ ! -f ${prefix}_summaryline_failure.tsv ]
 			then
-			# error warning for line_summary channel
+			#error warning for line_summary channel
 			echo "ID	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Coverage	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline_failure.tsv
 			#file contents
 			echo "${prefix}	FAIL	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	kraken2_trimmed	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown		Read pairs are NOT the same!" | tr -d '\n' >> ${prefix}_summaryline_failure.tsv
 		fi
-		# delete files that would enter the channel
+		#delete files that would enter the channel
 		rm ${reads[0]}
 		rm ${reads[1]}
 		mv ${prefix}_result.txt ${prefix}_prdresult.txt
