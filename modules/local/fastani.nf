@@ -23,7 +23,7 @@ process FASTANI {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    db_version=\$(echo ${reference} | rev | cut -d'_' -f4- | rev)
+    db_version=\$(echo ${reference} | cut -d'_' -f2- | rev | cut -d'_' -f4- | rev)
     # Setup to catch any issues while grabbing date from DB name
     if [[ "\${db_version}" = "" ]]; then
         db_version="REFSEQ_unknown_date"
