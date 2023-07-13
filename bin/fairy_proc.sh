@@ -31,6 +31,6 @@ if grep -Fx "PASS" ${prefix}_results.txt; then
 fi
 
 cat <<-END_VERSIONS > versions.yml
-"${task.process}":
+"task.process":
 	python: \$(python --version | sed 's/Python //g')
 END_VERSIONS
