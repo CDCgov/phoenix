@@ -1,14 +1,15 @@
 process MLST {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/mlst:2.22.1'
+    container 'staphb/mlst:2.23.0'
+    containerOptions '-B /scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/new_DBS_20230502/20230504/MLST/db:/mlst-2.23.0/db'
 
     input:
-    tuple val(meta), path(fasta)
+    tuple val(meta), path(fasta), path(mlst_db_path)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
-    path "versions.yml"           , emit: versions
+    path("versions.yml")           , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -42,14 +43,14 @@ process MLST {
         mlst --scheme abaumannii_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
-    elif [[ \$scheme == "ecoli_achtman_4" ]]; then
-        mv ${prefix}.tsv ${prefix}_1.tsv
-        mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
-        rm ${prefix}_*.tsv
     elif [[ \$scheme == "ecoli" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
-        mlst --scheme ecoli_achtman_4 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        mlst --scheme ecoli_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "ecoli_2" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     else
@@ -59,9 +60,13 @@ process MLST {
     # Add in generic header
     sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 lous_9  locus_10' ${prefix}.tsv
 
+    #getting database version)
+    mlst_db_version=\$(cat ./db/db_version)
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mlst: \$( echo \$(mlst --version 2>&1) | sed 's/mlst //' )
+        mlst_db: \$( cat db/db_version | date -f - +%Y-%m-%d )
     END_VERSIONS
     """
 

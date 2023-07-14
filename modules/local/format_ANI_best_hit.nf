@@ -1,13 +1,14 @@
 process FORMAT_ANI {
     tag "$meta.id"
-    label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
+    label 'process_single'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
     tuple val(meta), path(ani_file)
 
     output:
     tuple val(meta), path('*.fastANI.txt'), emit: ani_best_hit
+    path("versions.yml"),                   emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -19,7 +20,19 @@ process FORMAT_ANI {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} $terra
+    db_version=\$(echo ${ani_file} | sed 's/.ani.sorted.txt//' | sed 's/${meta.id}_//' )
+    # Setup to catch any issues while grabbing date from DB name
+    if [[ "\${db_version}" = "" ]]; then
+        db_version="REFSEQ_unknown"
+    fi
+
+    ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} -d \${db_version} $terra
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }

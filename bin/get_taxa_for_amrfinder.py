@@ -31,13 +31,10 @@ def get_taxa(taxa_file):
 
 def taxa_check(genus_match, species_match, gen_sp):
     # species and genus lists
-    #species = ['Enterococcus_faecalis','Enterococcus_faecium','Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 'Streptococcus_pyogenes', \
-    #'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis'] # for update
-    species = ['Enterococcus_faecalis','Enterococcus_faecium','Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 'Streptococcus_pyogenes', \
-    'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae']
+    species = ['Enterococcus_faecalis', 'Enterobacter_cloacae', 'Citrobacter_freundii', 'Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 
+    'Klebsiella_oxytoca', 'Streptococcus_pyogenes', 'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis', 'Serratia_marcescens'] # for v3.11 update
     genus = ['Salmonella']
-    #complex_genera = ['Acinetobacter', 'Neisseria', 'Escherichia', 'Klebsiella','Campylobacter', 'Shigella', 'Streptococcus'] # for update
-    complex_genera = ['Acinetobacter', 'Neisseria', 'Escherichia', 'Klebsiella','Campylobacter', 'Neisseria', 'Shigella', 'Streptococcus']
+    complex_genera = ['Acinetobacter', 'Escherichia', 'Klebsiella','Campylobacter', 'Shigella', 'Streptococcus', 'Burkholderia'] # for v3.11 update
     if gen_sp in species:
         taxa=gen_sp
     elif genus_match in genus:
@@ -52,11 +49,12 @@ def complicated_genus(gen_sp, genus_match):
     # Genus lists
     Escherichia = ["Escherichia", "Shigella"]
     # Genus_species lists
-    Klebsiella = ["Klebsiella_pneumoniae", "Klebsiella_aerogenes", "Klebsiella_oxytoca"]
-    Neisseria = ['Neisseria_gonorrhea', 'Neisseria_meningitidis']  # remove for update
+    Klebsiella = ["Klebsiella_pneumoniae", "Klebsiella_aerogenes"]
     Campylobacter = ['Campylobacter_coli','Campylobacter_jejuni']
+    Enterococcus_faecium = ['Enterococcus_faecium', 'Enterococcus_hirae']
     Streptococcus_pneumoniae = ['Streptococcus_pneumoniae', 'Streptococcus_mitis']
-    Acinetobacter = ['Acinetobacter_baumannii','Acinetobacter_calcoaceticus', 'Acinetobacter_lactucae', 'Acinetobacter_nosocomialis', 'Acinetobacter_pittii', 'Acinetobacter_seifertii']
+    # A. baumannii-calcoaceticus species complex
+    Acinetobacter_baumannii = ['Acinetobacter_baumannii','Acinetobacter_calcoaceticus', 'Acinetobacter_lactucae', 'Acinetobacter_nosocomialis', 'Acinetobacter_pittii', 'Acinetobacter_seifertii']
     # create Acinetobacter sp. names
     AB_complex_sp = []
     AB_sp = [ '0000-0051-1906','0000-0051-1909','0000-0051-8448','0000-0052-5682','0000-0052-7200','0000-0053-2562','0000-0053-7518','0000-0060-4277','0000-0082-5590','0000-0091-0263',
@@ -67,27 +65,45 @@ def complicated_genus(gen_sp, genus_match):
     for sp in AB_sp:
         name="Acinetobacter_sp._" + sp
         AB_complex_sp.append(name)
+    # Burkholderia cepacia complex 
+    Burkholderia_cepacia = ['Burkholderia_aenigmatica', 'Burkholderia_ambifaria', 'Burkholderia_anthina','Burkholderia_arboris', 'Burkholderia_catarinensis', 'Burkholderia_cenocepacia', 'Burkholderia_cepacia',
+    'Burkholderia_cf._cepacia', 'Burkholderia_contaminans', 'Burkholderia_diffusa', 'Burkholderia_dolosa', 'Burkholderia_lata', 'Burkholderia_latens', 'Burkholderia_metallica', 'Burkholderia_multivorans', 
+    'Burkholderia_orbicola', 'Burkholderia_paludis', 'Burkholderia_pseudomultivorans', 'Burkholderia_puraquae', 'Burkholderia_pyrrocinia', 'Burkholderia_semiarida', 'Burkholderia_seminalis', 
+    'Burkholderia_sola', 'Burkholderia_stabilis', 'Burkholderia_stagnalis', 'Burkholderia_territorii', 'Burkholderia_ubonensis', 'Burkholderia_vietnamiensis', 'unclassified_Burkholderia_cepacia_complex' ]
+    # Burkholderia pesudomallei complex 
+    Burkholderia_pseudomallei = ['Burkholderia_humptydooensis', 'Burkholderia_mallei', 'Burkholderia_mayonis', 'Burkholderia_oklahomensis', 'Burkholderia_pseudomallei', 'Burkholderia_savannae', 'Burkholderia_singularis', 'Burkholderia_thailandensis' ]
+    # create Burkholderia sp. names for Burkholderia pesudomallei complex
+    Burk_Pseudo_complex_sp = []
+    Burk_Pseudo_sp = ["ABCPW 14", "BDU5", "MSMB0265", "MSMB1498", "MSMB1552", "MSMB1588", "MSMB1589WGS", "MSMB2040", "MSMB2041", "MSMB2042", "MSMB617WGS", "MSMB712", "MSMB713", "MSMB714", "TSV86"]
+    for sp in Burk_Pseudo_sp:
+        name="Burkholderia_sp._" + sp
+        Burk_Pseudo_complex_sp.append(name)
     # Look for correct match
     if genus_match in Escherichia:
         taxa=str("Escherichia")
     elif gen_sp in Klebsiella:
-        taxa=str("Klebsiella")
-#        if gen_sp == "Klebsiella_pneumoniae": # for update
-#            taxa=str("Klebsiella_pneumoniae")
-#        elif gen_sp == "Klebsiella_aerogenes":
-#            taxa=str("Klebsiella_oxytoca")
-#        elif gen_sp == "Klebsiella_oxytoca":
-#            taxa=str("Klebsiella_oxytoca")
+        if gen_sp == "Klebsiella_pneumoniae": # for update
+            taxa=str("Klebsiella_pneumoniae")
+        elif gen_sp == "Klebsiella_aerogenes":
+            taxa=str("Klebsiella_oxytoca")
+        elif gen_sp == "Klebsiella_oxytoca":
+            taxa=str("Klebsiella_oxytoca")
     elif gen_sp in Streptococcus_pneumoniae:
         taxa=str("Streptococcus_pneumoniae")
+    elif gen_sp in Enterococcus_faecium:
+        taxa=str("Enterococcus_faecium")
     elif gen_sp in Campylobacter:
         taxa=str("Campylobacter")
-    elif gen_sp in Acinetobacter:
+    elif gen_sp in Acinetobacter_baumannii:
         taxa=str("Acinetobacter_baumannii")
     elif gen_sp in AB_complex_sp:
         taxa=str("Acinetobacter_baumannii")
-    elif gen_sp in Neisseria: #remove for update
-        taxa=str("Neisseria") #remove for update
+    elif gen_sp in Burkholderia_cepacia:
+        taxa=str("Burkholderia_cepacia")
+    elif gen_sp in Burkholderia_pseudomallei:
+        taxa=str("Burkholderia_pseudomallei")
+    elif gen_sp in Burk_Pseudo_complex_sp:
+        taxa=str("Burkholderia_pseudomallei")
     else:
         taxa="No Match Found"
     return taxa

@@ -1,45 +1,33 @@
 process SRATOOLS_FASTERQDUMP {
-    tag "$sra"
-    label 'process_medium'
-
-    conda (params.enable_conda ? 'bioconda::sra-tools=2.11.0 conda-forge::pigz=2.6' : null)
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-5f89fe0cd045cb1d615630b9261a1d17943a9b6a:6a9ff0e76ec016c3d0d27e0c0d362339f2d787e6-0' :
-        'quay.io/biocontainers/mulled-v2-5f89fe0cd045cb1d615630b9261a1d17943a9b6a:6a9ff0e76ec016c3d0d27e0c0d362339f2d787e6-0' }"
+    tag "${meta.id}"
+    label 'process_low'
+    container "https://depot.galaxyproject.org/singularity/sra-tools%3A3.0.3--h87f3376_0"
 
     input:
-    path(sra)
+    tuple val(meta), path(sra_folder)
 
     output:
-    path "*.fastq.gz"                 , emit: reads
-    path "versions.yml"            , emit: versions
-
-    when:
-    task.ext.when == null || task.ext.when
+    tuple val(meta), path("*_*.fastq.gz"), emit: reads // we don't want the SRR.fastq just the forward and reverse
+    path("versions.yml"),                  emit: versions
 
     script:
     def args = task.ext.args ?: ''
-    def args2 = task.ext.args2 ?: ''
-
+    def srr_number = sra_folder.toString() - "_Folder"
     """
-    for SRAFILE in $sra
-    do
-        INPUT=\$(echo "\$SRAFILE")
-        fasterq-dump \\
-            $args \\
-            --threads $task.cpus \\
-            --split-files \$INPUT 
-    done
+    # change folder name back for fasterq-dump to find
+    mv ${sra_folder} ${srr_number}
 
-    pigz \\
-        $args2 \\
-        --no-name \\
-        --processes $task.cpus \\
-        *.fastq
+    fasterq-dump \\
+        $args \\
+        --threads $task.cpus \\
+        ${srr_number}
+
+    gzip ${srr_number}_1.fastq
+    gzip ${srr_number}_2.fastq
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        sratools: \$(fasterq-dump --version 2>&1 | grep -Eo '[0-9.]+')
+        sratools: \$(fasterq-dump --version 2>&1 | sed 's/fasterq-dump : //' | awk 'NF' )
     END_VERSIONS
     """
 }

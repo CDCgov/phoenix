@@ -1,27 +1,25 @@
 process RENAME_SRA_FASTA {
+    tag "${meta.id}"
     label 'process_low'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/rename:1.601--hdfd78af_1' :
-        'quay.io/biocontainers/rename:1.601--hdfd78af_1' }"
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
-    path fastqs
-    path version_file
+    tuple val(meta), path(reads)
 
     output:
-    path "versions.yml"                                   , emit: versions
+    path("*_R*_001.fastq.gz"), emit: renamed_reads // we don't want the SRR.fastq just the forward and reverse
+    path("versions.yml"),      emit: versions
 
-    script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    """ 
-    cd $fastqs
-    rename 's/_1.fastq.gz/_R1_001.fastq.gz/' *
-    rename 's/_2.fastq.gz/_R2_001.fastq.gz/' *
+    script:
+    def srr_num = reads[0].toString() - "_1.fastq.gz" // this is the SRR number
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    """
+    mv ${srr_num}_1.fastq.gz ${meta.id}_R1_001.fastq.gz
+    mv ${srr_num}_2.fastq.gz ${meta.id}_R2_001.fastq.gz
 
     cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            seqtk: \$(echo \$(rename 2>&1) | sed 's/^.*Version: //; s/ .*\$//')
+    "${task.process}":
+        phoenix_base_container: ${container}
     END_VERSIONS
-    
     """
 }

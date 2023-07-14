@@ -1,26 +1,39 @@
 # base image
-FROM ubuntu:kinetic
+FROM ubuntu:jammy
 
 # for easy upgrade later. ARG variables only persist during image build time
-ARG PHX_VER="1.1.0"
+ARG PHX_VER="2.0.0"
 
 # metadata
-LABEL base.image="ubuntu:kinetic"
+LABEL base.image="ubuntu:jammy"
 LABEL dockerfile.version="2"
 LABEL software="PhoeNIx"
-LABEL software.version="v1.1.0"
+LABEL software.version="v2.0.0"
 LABEL description="Basic Linux for Running PHoeNIx bash scripts"
 LABEL website="https://github.com/cdcgov/phoenix"
 LABEL license="Apache 2.0"
 LABEL maintainer="Jill Hagey"
 LABEL maintainer.email="qpk9@cdc.gov"
 
+# prevents having to enter commands during apt-get install
+ENV DEBIAN_FRONTEND=noninteractive
+
 # install dependencies (pigz needed for nf-core modules, bc and rsync needed for post gamma steps in PHoeNIx)
 RUN apt-get update && apt-get -y --no-install-recommends install \
-    python3.10 \
-    python3-pip \
-    python3-dev \
-    python-is-python3 \
+    ca-certificates \
+    libssl-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    make \
+    llvm \
+    libncurses5-dev \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libffi-dev \
+    liblzma-dev \
     build-essential \
     bc \
     pigz \
@@ -33,7 +46,18 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
     apt-get autoclean && \
     rm -rf /var/lib/apt/lists/*
 
-#install biopython
+# using pyenv to set up an environment for python v3.7.12 to match what is required for the terra container
+RUN mkdir /pyenv && git clone https://github.com/pyenv/pyenv.git /pyenv
+ENV PYENV_ROOT=/pyenv
+RUN /pyenv/bin/pyenv install 3.7.12
+RUN eval "$(/pyenv/bin/pyenv init -)" && /pyenv/bin/pyenv local 3.7.12
+RUN /pyenv/bin/pyenv global 3.7.12
+
+RUN apt-get update && apt-get -y --no-install-recommends install python3-pip
+
+ENV PATH=/pyenv/bin:/pyenv/shims:${PATH}
+
+#install biopython and other required modules
 RUN pip3 install biopython \
     glob2 \
     argparse \
@@ -45,5 +69,3 @@ RUN pip3 install biopython \
     xlsxwriter \
     cryptography==36.0.2 \
     pytest-shutil
-
-ENV PATH=${PATH}:/usr/bin/python3

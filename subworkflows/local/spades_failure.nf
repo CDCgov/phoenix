@@ -6,7 +6,7 @@ include { SPADES                               } from '../../modules/local/spade
 include { CREATE_SUMMARY_LINE_FAILURE          } from '../../modules/local/phoenix_summary_line_failure'
 include { GENERATE_PIPELINE_STATS_FAILURE      } from '../../modules/local/generate_pipeline_stats_failure'
 include { GENERATE_PIPELINE_STATS_FAILURE_EXQC } from '../../modules/local/generate_pipeline_stats_failure_exqc'
-include { DETERMINE_TAXA_ID_FAILURE            } from '../../modules/local/taxa_classifier_failure'
+include { DETERMINE_TAXA_ID_FAILURE            } from '../../modules/local/determine_taxa_id_failure'
 
 workflow SPADES_WF {
     take:
@@ -50,11 +50,11 @@ workflow SPADES_WF {
 
             // Getting ID from either FastANI or if fails, from Kraken2
             DETERMINE_TAXA_ID_FAILURE (
-                    best_hit_ch, params.taxa
+                best_hit_ch, params.taxa
             )
+            ch_versions = ch_versions.mix(DETERMINE_TAXA_ID_FAILURE.out.versions)
 
-            pipeline_stats_ch = paired_reads.map{            meta, reads            -> [[id:meta.id],reads]}\
-            .join(fastp_raw_qc.map{                          meta, fastp_raw_qc     -> [[id:meta.id],fastp_raw_qc]},     by: [0])\
+            pipeline_stats_ch = fastp_raw_qc.map{            meta, fastp_raw_qc    -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{                        meta, fastp_total_qc   -> [[id:meta.id],fastp_total_qc]},   by: [0])\
             .join(fullgene_results.map{                      meta, fullgene_results -> [[id:meta.id],fullgene_results]}, by: [0])\
             .join(report.map{                                meta, report           -> [[id:meta.id],report]},           by: [0])\
@@ -67,8 +67,9 @@ workflow SPADES_WF {
 
             // Generate pipeline stats for case when spades fails to create scaffolds
             GENERATE_PIPELINE_STATS_FAILURE_EXQC (
-                pipeline_stats_ch
+                pipeline_stats_ch, params.coverage
             )
+            ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_FAILURE_EXQC.out.versions)
 
             // Adding in trimmed reads info into channel
             line_summary_ch = GENERATE_PIPELINE_STATS_FAILURE_EXQC.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id],pipeline_stats]}\
@@ -89,9 +90,9 @@ workflow SPADES_WF {
             DETERMINE_TAXA_ID_FAILURE (
                 best_hit_ch, params.taxa
             )
+            ch_versions = ch_versions.mix(DETERMINE_TAXA_ID_FAILURE.out.versions)
 
-            pipeline_stats_ch = paired_reads.map{            meta, reads           -> [[id:meta.id],reads]}\
-            .join(fastp_raw_qc.map{                          meta, fastp_raw_qc    -> [[id:meta.id],fastp_raw_qc]},     by: [0])\
+            pipeline_stats_ch = fastp_raw_qc.map{            meta, fastp_raw_qc     -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{                        meta, fastp_total_qc  -> [[id:meta.id],fastp_total_qc]},   by: [0])\
             .join(report.map{                                meta, report          -> [[id:meta.id],report]},           by: [0])\
             .join(krona_html.map{                            meta, html            -> [[id:meta.id],html]},             by: [0])\
@@ -103,14 +104,15 @@ workflow SPADES_WF {
 
             // Generate pipeline stats for case when spades fails to create scaffolds
             GENERATE_PIPELINE_STATS_FAILURE (
-                pipeline_stats_ch
+                pipeline_stats_ch, params.coverage
             )
+            ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_FAILURE.out.versions)
 
             // Adding in trimmed reads info into channel
             line_summary_ch = GENERATE_PIPELINE_STATS_FAILURE.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id],pipeline_stats]}\
             .join(fastp_total_qc.map{                                                 meta, fastp_total_qc  -> [[id:meta.id],fastp_total_qc]}, by: [0])\
-            .join(k2_bh_summary.map{                                                  meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])
-            .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{meta, taxonomy -> [[id:meta.id],taxonomy]},         by: [0])\
+            .join(k2_bh_summary.map{                                                  meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])\
+            .join(DETERMINE_TAXA_ID_FAILURE.out.taxonomy.map{                         meta, taxonomy        -> [[id:meta.id],taxonomy]},       by: [0])\
 
             // Adding the outcome of spades (scaffolds created or not) to the channel
             line_summary_ch = line_summary_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
@@ -120,6 +122,7 @@ workflow SPADES_WF {
         CREATE_SUMMARY_LINE_FAILURE (
             line_summary_ch, extended_qc
         )
+        ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE_FAILURE.out.versions)
 
         // Defining out channel
         spades_ch = SPADES.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
@@ -127,7 +130,6 @@ workflow SPADES_WF {
     emit:
         spades_ch                   = spades_ch
         spades_outcome              = SPADES.out.spades_outcome
-
         line_summary                = CREATE_SUMMARY_LINE_FAILURE.out.line_summary
         versions                    = ch_versions // channel: [ versions.yml ]
 }

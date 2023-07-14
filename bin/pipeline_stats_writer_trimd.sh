@@ -142,10 +142,10 @@ if [[ "${run_type}" == "all" ]]; then
   if [[ "${raw_exists}" = "true" ]]; then
     raw_reads=$(tail -n1  "${raw_read_counts}" | cut -d$'\t' -f17)
     raw_pairs=$((raw_reads/2))
-    raw_Q30_R1=$(tail -n1 "${raw_read_counts}" | cut -d'	' -f14)
+    raw_Q30_R1=$(tail -n1 "${raw_read_counts}" | cut -d$'\t' -f14)
     raw_Q30_R1_rounded=$(echo "${raw_Q30_R1}"  | cut -d'.' -f2)
     raw_Q30_R1_rounded=$(echo "${raw_Q30_R1_rounded::2}")
-    raw_Q30_R2=$(tail -n1 "${raw_read_counts}" | cut -d'	' -f15)
+    raw_Q30_R2=$(tail -n1 "${raw_read_counts}" | cut -d$'\t' -f15)
     raw_Q30_R2_rounded=$(echo "${raw_Q30_R2}"  | cut -d'.' -f2)
     raw_Q30_R2_rounded=$(echo "${raw_Q30_R2_rounded::2}")
   if [[ "${raw_reads}" -le 1000000 ]] && [[ "${raw_reads}" -ge 1 ]]; then
@@ -484,7 +484,7 @@ printf "%-30s: %-8s : %s\\n" "TAXA-${tax_source}" "FAILED" "No Taxa File found" 
 printf "%-30s: %-8s : %s\\n" "ASSEMBLY_RATIO(SD)" "FAILED" "No Ratio File exists"  >> "${sample_name}.synopsis"
 printf "%-30s: %-8s : %s\\n" "COVERAGE" "FAILED" "${avg_coverage}x coverage based on trimmed reads (Min:30x)"  >> "${sample_name}.synopsis"
 printf "%-30s: %-8s : %s\\n" "BUSCO" "FAILED" "short_summary.*.${sample_name}.scaffolds.fa.txt not found"  >> "${sample_name}.synopsis"
-printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "NO ${sample_name}.fastANI.txt  file"  >> "${sample_name}.synopsis"
+printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "NO ${sample_name}_REFSEQ_*.fastANI.txt  file"  >> "${sample_name}.synopsis"
 printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
 printf "%-30s: %-8s : %s\\n" "GAMMA_AR" "FAILED" "${sample_name}_ResGANNCBI_*.gamma does not exist"  >> "${sample_name}.synopsis"
 printf "%-30s: %-8s : %s\\n" "PLASMID_REPLICONS" "FAILED" "${sample_name}_PF-*.gamma does not exist"  >> "${sample_name}.synopsis"

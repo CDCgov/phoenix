@@ -1,47 +1,62 @@
-FROM mambaorg/micromamba:0.27.0
-#USER root
-
-# for easy upgrade later. ARG variables only persist during image build time
-ARG PHOENIX_VER="1.1.0"
+FROM mambaorg/micromamba:1.4.3
 
 # metadata
-LABEL base.image="mambaorg/micromamba:0.27.0"
+LABEL base.image="mambaorg/micromamba:1.4.3"
 LABEL dockerfile.version="1"
 LABEL software="phoenix"
-LABEL software.version="1.1.0"
+LABEL software.version="2.0.0"
 LABEL description="PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens"
 LABEL website="https://github.com/cdcgov/phoenix/"
 LABEL license="https://github.com/CDCgov/phoenix/blob/main/LICENSE"
 LABEL maintainer="Jill Hagey"
 LABEL maintainer.email="jvhagey@gmail.com"
 
-RUN micromamba create -n phoenix -y \
-    bioconda::bbmap==39.01 \
-    bioconda::multiqc==1.11 \
-    bioconda::fastp==0.23.2 \
-    bioconda::mash==2.3 \
-    bioconda::mlst==2.23.0 \
-    bioconda::fastqc==0.11.9 \
-    bioconda::gamma==2.2 \
-    bioconda::fastani==1.33 \
+# creating base environment
+RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::python \
-    bioconda::ncbi-amrfinderplus==3.10.45 \
-    bioconda::kraken2==2.1.2 \
-    bioconda::quast==5.0.2 \
-    bioconda::spades==3.15.5 \
-    bioconda::krona==2.8.1 \
-    bioconda::prokka==1.14.5 \
     conda-forge::biopython \
     conda-forge::rsync \
+    conda-forge::xlsxwriter \
     conda-forge::bc \
     conda-forge::wget \
     conda-forge::ca-certificates \
     conda-forge::procps-ng \
     conda-forge::coreutils \
-    bioconda::nf-core \
-    anaconda::graphviz \
+    conda-forge::openssl \
     conda-forge::gsutil \
-    bioconda::nextflow==22.04.5 && \
-    micromamba clean -a -y
+    conda-forge::pigz \
+    anaconda::graphviz \
+    conda-forge::libcurl \
+    # need this for mash: error while loading shared libraries: libgsl.so.25: https://github.com/ParBLiSS/FastANI/issues/96
+    conda-forge::gsl=2.7=he838d99_0 \
+    # you need this not the Jetbrains versio of java https://github.com/nextflow-io/nextflow/issues/2841
+    conda-forge::openjdk \
+    bioconda::nf-core \
+    bioconda::bbmap=39.01 \
+    bioconda::multiqc=1.14 \
+    bioconda::fastp=0.23.2 \
+    bioconda::mash=2.3 \
+    bioconda::mlst=2.23.0 \
+    bioconda::fastqc=0.11.9 \
+    bioconda::gamma=2.2 \
+    bioconda::sra-tools=3.0.3 \
+    bioconda::fastani=1.33 \
+    bioconda::entrez-direct=16.2 \
+    bioconda::kraken2=2.1.2 \
+    bioconda::spades=3.15.5 \
+    bioconda::krona=2.8.1 \
+    bioconda::prokka=1.14.5 \
+    bioconda::quast=5.0.2 \
+    bioconda::nextflow=22.04.5 && \
+    micromamba clean -a -y 
 
-ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+RUN micromamba create -n busco -c conda-forge -c bioconda busco=5.4.7 && micromamba clean -a -y 
+RUN micromamba create -n amrfinderplus -c conda-forge bioconda::ncbi-amrfinderplus=3.11.11 && micromamba clean -a -y
+RUN micromamba create -n srst2 -c conda-forge bioconda::srst2==0.2.0 && micromamba clean -a -y
+
+
+ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/envs/amrfinderplus/bin:/opt/conda/envs/srst2/bin:/opt/conda/envs/busco/bin:\
+/opt/conda/bin:/opt/conda/envs/env/bin:/opt/conda/envs/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+#setting up stuff for BUSCO
+ENV AUGUSTUS_CONFIG_PATH=/opt/conda/envs/busco/config/

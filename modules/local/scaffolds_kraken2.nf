@@ -15,7 +15,7 @@ process SCAFFOLDS_KRAKEN2 {
     tuple val(meta), path('*unclassified*')   , optional:true, emit: unclassified_reads_fastq
     tuple val(meta), path('*classifiedreads*'), optional:true, emit: classified_reads_assignment
     tuple val(meta), path('*report.txt')                     , emit: report
-    path "versions.yml"                                      , emit: versions
+    path("versions.yml")                                     , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

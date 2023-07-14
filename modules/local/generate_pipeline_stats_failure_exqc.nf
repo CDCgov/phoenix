@@ -1,11 +1,10 @@
 process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
     tag "${meta.id}"
-    label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
+    label 'process_single'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
-    tuple val(meta), path(trimmed_reads), \
-    path(fastp_raw_qc), \
+    tuple val(meta), path(raw_qc), \
     path(fastp_total_qc), \
     path(srst_fullgenes_file), \
     path(kraken2_trimd_report), \
@@ -13,25 +12,32 @@ process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
     path(kraken2_trimd_summary), \
     path(taxID), \
     val(spades_outcome)
+    val(coverage)
 
     output:
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
+    path("versions.yml")               , emit: versions
 
     when:
     "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     pipeline_stats_writer.sh \\
-        -a $fastp_raw_qc \\
+        -a $raw_qc \\
         -b $fastp_total_qc \\
-        -c ${trimmed_reads[0]} \\
-        -d ${trimmed_reads[1]} \\
+        -d ${prefix} \\
         -e $kraken2_trimd_report \\
         -f $kraken2_trimd_summary \\
         -g $krona_trimd \\
         -q $taxID \\
         -x $srst_fullgenes_file
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }

@@ -80,7 +80,7 @@ Check_source() {
 		if [[ "${fastani_file}" = *".fastANI"*".txt" ]]; then
 			header=$(head -n1 ${fastani_file})
 			if [[ ${header} != "No matching ANI database found for"* ]] && [[ ${header} != "0.00%"* ]] ; then
-			do_ANI
+				do_ANI
 			return
 			else
 				Check_source 2
@@ -115,7 +115,7 @@ do_ANI() {
 		info=$(tail -n 1 "${fastani_file}")
 		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
 		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
-		confidence_index=$(echo "${info}" | cut -d'	' -f2)
+		confidence_index=$(echo "${info}" | cut -d'	' -f1)
 	else
 		echo "source file (${fastani_file}) is empty"
 	fi

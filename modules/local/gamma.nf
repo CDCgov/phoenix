@@ -1,5 +1,3 @@
-def VERSION = '2.1' // Version information not provided by tool on CLI
-
 process GAMMA {
     tag "$meta.id"
     label 'process_high'
@@ -25,6 +23,7 @@ process GAMMA {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container_version = task.container.toString() - "staphb/gamma:"
     """
     db_name=\$(echo $db | sed 's:.*/::' | sed 's/.fasta//')
     if [[ ${fasta} == *.gz ]]
@@ -46,7 +45,7 @@ process GAMMA {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        gamma: $VERSION
+        gamma: ${container_version}
         Database: $db
     END_VERSIONS
     """

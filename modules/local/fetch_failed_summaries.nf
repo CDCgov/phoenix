@@ -1,6 +1,6 @@
 process FETCH_FAILED_SUMMARIES {
-    label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v1.1.0'
+    label 'process_single'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
     path(directory)
@@ -9,8 +9,10 @@ process FETCH_FAILED_SUMMARIES {
 
     output:
     path('*_summaryline.tsv'), emit: spades_failure_summary_line
+    path("versions.yml")     , emit: versions
 
     script:
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     #for each summaryline_failure.tsv file check to see if 'SPAdes_Failure' is in the file.
     if [ -f ${directory}/*/*_summaryline_failure.tsv ]; then
@@ -26,5 +28,10 @@ process FETCH_FAILED_SUMMARIES {
     else
         touch empty_summaryline.tsv
     fi
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }

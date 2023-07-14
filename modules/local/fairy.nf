@@ -1,15 +1,17 @@
 process FAIRY {
     tag "$meta.id"
-    label 'process_low'
+    label 'process_single'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
 
     input:
     tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path("*_FAIry_synopsis.txt")    , optional:true,        emit: fairy_results
+    tuple val(meta), path("*_FAIry_synopsis.txt"), optional:true, emit: fairy_results
 
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     # Asses the FASTQ for corruption
     echo "FASTQ_File:" ${prefix}_R1 >> ${prefix}_R1_FAIry.txt
@@ -28,5 +30,10 @@ process FAIRY {
         then echo ${prefix}_R2_FAIry.txt "is corrupted." >> ${prefix}_FAIry_synopsis.txt
         else echo ${prefix}_R2_FAIry.txt "is not corrupted." >> ${prefix}_FAIry_synopsis.txt
     fi
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        phoenix_base_container: ${container}
+    END_VERSIONS
     """
 }

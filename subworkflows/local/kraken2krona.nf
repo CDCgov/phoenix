@@ -24,10 +24,10 @@ workflow KRAKEN2_WF {
     type     // val: trimd, asmbld or wtasmbld 
     qc_stats //GATHERING_READ_QC_STATS.out.fastp_total_qc
     quast    //QUAST.out.report_tsv --> only for wtasmbld and asmbld
+    kraken2_db_path 
 
     main:
     ch_versions     = Channel.empty() // Used to collect the software versions
-    kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true) // Allow relative paths for krakendb argument
     // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it. If you don't do this then only one sample goes through pipeline
     fasta_ch = fasta.combine(kraken2_db_path)
 
@@ -39,20 +39,6 @@ workflow KRAKEN2_WF {
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
-/*        if (params.kraken2db != null){ // If you pass a database path use that instead of default ./phoenix/assests/databases
-            // Checking for Contamination in trimmed reads
-            KRAKEN2_TRIMD (
-                fasta, params.kraken2db, "trimd", true, true
-            )
-            ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
-        } else {
-            // Checking for Contamination in trimmed reads
-            KRAKEN2_TRIMD (
-                fasta, params.path2db, "trimd", true, true
-            )
-            ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
-        }*/
-
         // Create mpa file
         KREPORT2MPA_TRIMD (
             KRAKEN2_TRIMD.out.report
@@ -63,6 +49,7 @@ workflow KRAKEN2_WF {
         KREPORT2KRONA_TRIMD (
             KRAKEN2_TRIMD.out.report, "trimd"
         )
+        ch_versions = ch_versions.mix(KREPORT2KRONA_TRIMD.out.versions)
 
         // Create krona plot from kraken report
         KRONA_KTIMPORTTEXT_TRIMD (
@@ -78,7 +65,8 @@ workflow KRAKEN2_WF {
         KRAKEN2_BH_TRIMD (
             kraken_bh_trimd_ch, "trimd"
         )
-        
+        ch_versions = ch_versions.mix(KRAKEN2_BH_TRIMD.out.versions)
+
         report        = KRAKEN2_TRIMD.out.report
         k2_bh_summary = KRAKEN2_BH_TRIMD.out.ksummary
         krona_html    = KRONA_KTIMPORTTEXT_TRIMD.out.html
@@ -90,19 +78,6 @@ workflow KRAKEN2_WF {
         )
         ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
-/*        if (params.kraken2db != null) { // If you pass a database path use that instead of default ./phoenix/assests/databases
-            // Checking for Contamination in scaffolds
-            KRAKEN2_ASMBLD (
-                fasta, params.kraken2db, "asmbld", true, true
-            )
-            ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
-        } else {
-            KRAKEN2_ASMBLD (
-                fasta, params.path2db, "asmbld", true, true
-            )
-            ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
-        }*/
-
         // Create mpa file
         KREPORT2MPA_ASMBLD (
             KRAKEN2_ASMBLD.out.report
@@ -113,6 +88,7 @@ workflow KRAKEN2_WF {
         KREPORT2KRONA_ASMBLD (
             KRAKEN2_ASMBLD.out.report, "asmbld"
         )
+        ch_versions = ch_versions.mix(KREPORT2KRONA_ASMBLD.out.versions)
 
         // Create krona plot from kraken report
         KRONA_KTIMPORTTEXT_ASMBLD (
@@ -127,6 +103,7 @@ workflow KRAKEN2_WF {
         KRAKEN2_BH_ASMBLD (
             kraken_bh_asmbld_ch, "asmbld"
         )
+        ch_versions = ch_versions.mix(KRAKEN2_BH_ASMBLD.out.versions)
 
         report        = KRAKEN2_ASMBLD.out.report
         k2_bh_summary = KRAKEN2_BH_ASMBLD.out.ksummary
@@ -139,19 +116,6 @@ workflow KRAKEN2_WF {
             fasta_ch, "wtasmbld", true, true
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
-/*        if (params.kraken2db != null) { // If you pass a database path use that instead of default ./phoenix/assests/databases
-            // Getting species ID as back up for FastANI and checking contamination isn't in assembly
-            KRAKEN2_WTASMBLD (
-                fasta, params.kraken2db, "wtasmbld", true, true
-            )
-            ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
-        } else {
-            // Getting species ID as back up for FastANI and checking contamination isn't in assembly
-            KRAKEN2_WTASMBLD (
-                fasta, params.path2db, "wtasmbld", true, true
-            )
-            ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
-        }*/
 
         // Add in krakendb into the kraken reads channel so each fasta has a krakendb to go with it. 
         make_report_ch = KRAKEN2_WTASMBLD.out.classified_reads_assignment.combine(kraken2_db_path)
@@ -166,15 +130,17 @@ workflow KRAKEN2_WF {
         KREPORT2KRONA_WTASMBLD (
             KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report, "wtasmbld"
         )
+        ch_versions = ch_versions.mix(KREPORT2KRONA_WTASMBLD.out.versions)
 
         // Combining kraken report with quast report based on meta.id
         kraken_bh_wtasmbld_ch = KRAKENTOOLS_MAKEKREPORT.out.kraken_weighted_report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
         .join(quast.map{                                                               meta, report_tsv             -> [[id:meta.id], report_tsv]}, by: [0])
 
         // Getting Kraken best hit for assembled data
-        KRAKEN2_BH_WTASMBLD(
+        KRAKEN2_BH_WTASMBLD (
             kraken_bh_wtasmbld_ch, "wtasmbld"
         )
+        ch_versions = ch_versions.mix(KRAKEN2_BH_WTASMBLD.out.versions)
 
         KRONA_KTIMPORTTEXT_WTASMBLD (
             KREPORT2KRONA_WTASMBLD.out.krona, "wtasmbld"
@@ -193,6 +159,6 @@ workflow KRAKEN2_WF {
     report        = report
     k2_bh_summary = k2_bh_summary
     krona_html    = krona_html
-    versions = ch_versions // channel: [ versions.yml ]
+    versions      = ch_versions // channel: [ versions.yml ]
 
 }

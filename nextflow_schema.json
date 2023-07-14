@@ -10,9 +10,7 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "input"
-            ],
+            "required": [],
             "properties": {
                 "input": {
                     "type": "string",
@@ -21,13 +19,54 @@
                     "pattern": "^\\S+\\.csv$",
                     "schema": "assets/schema_input.json",
                     "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/quaisar/usage#samplesheet-input).",
+                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/quaisar/usage#samplesheet-input). You use this with entries PHOENIX, CDC_PHOENIX, SCAFFOLDS, and CDC_SCAFFOLDS.",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "kraken2db": {
                     "type": "string",
-                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
+                    "fa_icon": "fas fa-database",
+                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktaxonomy.tsv files. You can pass a decompressed folder or in its compressed '.tar.gz' form. The database can be downloaded from https://benlangmead.github.io/aws-indexes/k2 . You must use a database created after 3/14/2023.",
                     "default": "null"
+                }
+            }
+        },
+        "Optional_scaffold_options": {
+            "title": "Options for -entry SCAFFOLDS and CDC_SCAFFOLDS",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input scaffolds.",
+            "properties": {
+                "indir": {
+                    "type": "string",
+                    "description": "Path to a input directory to search for assemblies. Files with the extention '*.filtered.scaffolds.fa.gz' and '*.renamed.scaffolds.fa.gz' will be ignored. Can be a full or relative path. Alternatively, you can pass a samplesheet (columns should be 'sample,assembly') with the --input argument.",
+                    "default": "null",
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "scaffold_ext": {
+                    "type": "string",
+                    "fa_icon": "fas fa-keyboard",
+                    "description": "String that is the FULL extention of the scaffolds files you wish to input. For example, use if your file names are `<sample_id>.fa.gz` use `--scaffolds_ext '.fa.gz'` and if you want to look through subdirectories for files with the name `<sample_id>.fa.gz` then use `--scaffolds_ext '/*.fa.gz'` A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used as default. Assemblies must end in '.fa.gz' or '.fasta.gz'.",
+                    "default": ".scaffolds.fa.gz"
+                }
+            }
+        },
+        "Required_sra_options": {
+            "title": "Options for -entry SRA and CDC_SRA",
+            "type": "object",
+            "fa_icon": "fas fa-file-csv",
+            "description": "Define where the pipeline should find input scaffolds.",
+            "properties": {
+                "input_sra": {
+                    "type": "string",
+                    "description": "Path to a csv file that has one SRR number per line.",
+                    "default": "null",
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "use_sra": {
+                    "type": "string",
+                    "description": "Pass this argument if you want to keep samples named by SRA number rather than sample name found in NCBI metadata.",
+                    "default": "False",
+                    "fa_icon": "fas fa-keyboard"
                 }
             }
         },
@@ -36,15 +75,24 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": [
-                "input"
-            ],
             "properties": {
                 "outdir": {
                     "type": "string",
                     "description": "Path to the output directory where the results will be saved. Can be a full or relative path.",
-                    "default": "${PWD}/results",
+                    "default": "${launchDir}/results",
                     "fa_icon": "fas fa-folder-open"
+                },
+                "coverage": {
+                    "type": "string",
+                    "description": "If you want to increase the coverage cut off >30x use --coverage (ex. --coverage 40)",
+                    "default": "30",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "busco_db_path": {
+                    "type": "string",
+                    "fa_icon": "fas fa-keyboard",
+                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
+                    "default": "Doesn't run in offline mode and connects to the V5 BUSCO database at https://busco-data.ezlab.org/v5/data/lineages/ ."
                 },
                 "email": {
                     "type": "string",
@@ -57,11 +105,6 @@
                     "type": "string",
                     "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
                     "fa_icon": "fas fa-file-signature"
-                },
-                "busco_db_path": {
-                    "type": "string",
-                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. Use only with -entry CDC_PHOENIX",
-                    "default": "Not to run in offline mode."
                 },
                 "publish_dir_mode": {
                     "type": "string",

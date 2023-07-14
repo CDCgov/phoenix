@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #
-# Description: Checks sample output folders for correct fiels and tests the thresholds for passability. Edited for use in P
+# Description: Checks sample output folders for correct fiels and tests the thresholds for passability. Edited for use in PHoeNIx
 #
 # Usage: ./pipeline_stats_writer.sh -e explicit_path_to_isolate_folder
 #
@@ -8,9 +8,9 @@
 #
 # Modules required: None
 #
-# v1.0 (05/25/2022)
+# v1.1 (03/22/2023)
 #
-# Created by Nick Vlachos (nvx4@cdc.gov)
+# Created by Nick Vlachos (nvx4@cdc.gov), edits by Jill Hagey (qpk9@cdc.gov)
 #
 
 #  Function to print out help blurb
@@ -18,8 +18,8 @@ show_help () {
   echo "Usage: pipeline_stats_writer.sh args(* are required)
     -a raw_read_counts.txt
     -b total_read_counts.txt
-    -c removed_adapter_R1.fastq.gz
-    -d removed_adapter_R2.fastq.gz
+    -c gc_content_file
+    -d sample_name
     -e kraken2_trimd_report
     -f kraken2_trimd_summary
     -g krona_trimd.html
@@ -42,9 +42,8 @@ show_help () {
     -x srst_fullgenes_file
     -y* MLST_file (or more)
     -z* assembly_only_sample (true or false)
-    -2* amr_tsv_file
+    -1* amr_tsv_file
     -3
-    -4 gc_content_file
     "
 }
 
@@ -54,7 +53,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:5:3" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -70,10 +69,10 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:5:3" o
       total_read_counts=${OPTARG};;
     c)
       #echo "Option -c triggered, argument = ${OPTARG}"
-      removed_adapter_R1=${OPTARG};;
+      gc_content_file=${OPTARG};;
     d)
       #echo "Option -d triggered, argument = ${OPTARG}"
-      removed_adapter_R2=${OPTARG};;
+      sample_name=${OPTARG};;
     e)
       #echo "Option -e triggered, argument = ${OPTARG}"
       kraken2_trimd_report=${OPTARG};;
@@ -140,15 +139,15 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:2:4:5:3" o
     z)
       #echo "Option -z triggered, argument = ${OPTARG}"
       assembly_only="true";;
-    2)
-      #echo "Option -2 triggered, argument = ${OPTARG}"
-      amr_file=${OPTARG};;
     4)
-      #echo "Option -4 triggered, argument = ${OPTARG}"
-      gc_content_file=${OPTARG};;
-		5)
-			echo "Option -t triggered"
+      #echo "Option -1 triggered, argument = ${OPTARG}"
+      amr_file=${OPTARG};;
+		2)
+			#echo "Option -2 triggered"
 			terra=${OPTARG};;
+    5)
+      #echo "Option -5 triggered, argument = ${OPTARG}"
+      coverage=${OPTARG};;
     3)
       #echo "Option -3 triggered, argument = ${OPTARG}"
       internal_phoenix="true";;
@@ -168,6 +167,17 @@ else
 	bc_path=bc
 fi
 
+#check coverage parameter if >30 use that number
+if [ "${coverage}" -ge 30 ]; then
+  reads_min=${coverage}
+	reads_low=40
+	reads_high=150
+else
+  reads_min=30
+	reads_low=40
+	reads_high=150
+fi
+
 if [[ "${options_found}" -eq 0 ]]; then
 	echo "No options found"
 	show_help
@@ -179,7 +189,7 @@ fi
 
 #OUTDATADIR="${epath}"
 #project=$(echo "${epath}" | rev | cut -d'/' -f2 | rev)
-sample_name=$(basename "${raw_read_counts}" _raw_read_counts.txt)
+#sample_name=$(basename "${raw_read_counts}" _raw_read_counts.txt) # don't need this anymore as we are passing with -1
 
 
 # Creates and prints header info for the sample being processed
@@ -237,10 +247,10 @@ if [[ "${run_type}" == "all" ]]; then
   if [[ "${raw_exists}" = "true" ]]; then
     raw_reads=$(tail -n1  "${raw_read_counts}" | cut -d$'\t' -f17)
     raw_pairs=$((raw_reads/2))
-    raw_Q30_R1=$(tail -n1 "${raw_read_counts}" | cut -d'	' -f14)
+    raw_Q30_R1=$(tail -n1 "${raw_read_counts}" | cut -d$'\t' -f14)
     raw_Q30_R1_rounded=$(echo "${raw_Q30_R1}"  | cut -d'.' -f2)
     raw_Q30_R1_rounded=$(echo "${raw_Q30_R1_rounded::2}")
-    raw_Q30_R2=$(tail -n1 "${raw_read_counts}" | cut -d'	' -f15)
+    raw_Q30_R2=$(tail -n1 "${raw_read_counts}" | cut -d$'\t' -f15)
     raw_Q30_R2_rounded=$(echo "${raw_Q30_R2}"  | cut -d'.' -f2)
     raw_Q30_R2_rounded=$(echo "${raw_Q30_R2_rounded::2}")
   if [[ "${raw_reads}" -le 1000000 ]] && [[ "${raw_reads}" -ge 1 ]]; then
@@ -325,8 +335,8 @@ if [[ "${run_type}" == "all" ]]; then
 
   total_trimmed_reads=-3
 
-  if [[ "${total_exists}" ]]; then
-    total_trimmed_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f23)
+  if [[ "${total_exists}" = true ]]; then
+    total_trimmed_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f24)
     orphaned_reads=$(tail -n1  "${total_read_counts}" | cut -d$'\t' -f6)
     trimmed_reads=$(( total_trimmed_reads - orphaned_reads))
     paired_trimmed=$((trimmed_reads/2))
@@ -374,72 +384,6 @@ if [[ "${run_type}" == "all" ]]; then
     status="FAILED"
   fi
 
-
-	# #Checking fastP output folder
-	# remAdapt_length_R1=-1
-	# if [[ -s "${removed_adapter_R1}" ]]; then
-  #   remAdapt_length_R1=$(zcat ${removed_adapter_R1} | paste - - - - | cut -f2 | tr -d '\n' | wc -c)
-	# 	remAdapt_R1_diff=$(( raw_length_R1 - remAdapt_length_R1 ))
-	# 	if [[ ${raw_length_R1} -gt 0 ]]; then
-	# 		if [[ "${remAdapt_length_R1}" -gt 0 ]]; then
- 	# 			R1_adapt_percent_loss=$(( remAdapt_R1_diff * 100 / ${raw_length_R1} ))
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "SUCCESS" "R1: ${remAdapt_length_R1}bps (${R1_adapt_percent_loss}% loss)"  >> "${sample_name}.synopsis"
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "WARNING" "R1 FASTQ has no remaining bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	else
-	# 		if [[ "${remAdapt_length_R1}" -gt 0 ]]; then
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "ALERT" "No raw FASTQs availble. R1: ${remAdapt_length_R1}bps (UNK% loss)"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="ALERT"
-	# 			fi
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "WARNING" "No raw FASTQs available. BBDUK FASTQ R1 has no bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	fi
-	# else
-	# 	printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "FAILED" "No BBDUK R1 FASTQ file found"  >> "${sample_name}.synopsis"
-	# fi
-  #
-  # remAdapt_length_R2=-1
-  # if [[ -s "${removed_adapter_R2}" ]]; then
-	# 	remAdapt_length_R2=$(zcat ${removed_adapter_R2} | paste - - - - | cut -f2 | tr -d '\n' | wc -c)
-	# 	remAdapt_R2_diff=$(( raw_length_R2 - remAdapt_length_R2 ))
-	# 	if [[ ${raw_length_R2} -gt 0 ]]; then
-	# 		if [[ "${remAdapt_length_R2}" -gt 0 ]]; then
- 	# 			R2_adapt_percent_loss=$(( remAdapt_R2_diff * 100 / ${raw_length_R2} ))
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "SUCCESS" "R2: ${remAdapt_length_R2}bps (${R2_adapt_percent_loss}% loss)"  >> "${sample_name}.synopsis"
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "WARNING" "R2 FASTQ has no remaining bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	else
-	# 		if [[ "${remAdapt_length_R2}" -gt 0 ]]; then
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "ALERT" "No raw FASTQs availble. R2: ${remAdapt_length_R1}bps (UNK% loss)"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="ALERT"
-	# 			fi
-	# 		else
-	# 			printf "%-30s: %-8s : %s\\n" "BBDUK-R1" "WARNING" "No raw FASTQs available. BBDUK FASTQ R2 has no bases"  >> "${sample_name}.synopsis"
-	# 			if [[ "${status}" = "SUCCESS" ]] || [[ "${status}" = "SUCCESS" ]]; then
-	# 				status="WARNING"
-	# 			fi
-	# 		fi
-	# 	fi
-	# else
-	# 	printf "%-30s: %-8s : %s\\n" "BBDUK-R2" "FAILED" "No BBDUK R2 FASTQ file found"  >> "${sample_name}.synopsis"
-	# fi
-
-
-
 	#Check kraken2 on preAssembly
 	kraken2_pre_success="false"
 	if [[ -s "${kraken2_trimd_report}" ]]; then
@@ -480,11 +424,6 @@ if [[ "${run_type}" == "all" ]]; then
 		#genuspre=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f3 | xargs echo)
 		#speciespre=$(sed -n '9p' "${kraken2_trimd_summary}" | cut -d' ' -f3- | xargs echo)
 		#speciesprepercent=$(sed -n '10p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
-
-
-
-
-
 
     if [[ "${unclass}" = "UNK" ]]; then
       unclass=0
@@ -875,15 +814,21 @@ if [[ -s "${quast_report}" ]]; then
 	GC_con=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3 )
   if [[ -f "${gc_content_file}" ]]; then # if gc_content file exists get stdev line
     gc_stdev=$(awk 'NR==3' "${gc_content_file}" | cut -d' ' -f2)
-    if [[ "${gc_stdev}" = *"Not calculated on species with n<10 references"* ]]; then #check that there was enough references for stdev calculation
-      printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "WARNING" "Low references for STDev"  >> "${sample_name}.synopsis"
+    #checks if "Not calculated on species with n<10 references"
+    if [ "${gc_stdev}" = "Not" ]; then #check that there was enough references for stdev calculation
+      printf "%-30s: %-8s : %s\\n" "QUAST_GC_Content" "ALERT" "Low References for STDev - ${GC_con}x(${gc_stdev}-SD)"  >> "${sample_name}.synopsis"
     else
       #Check that GC content is within the range we want (2.58 on either side)
       gc_mean=$(awk 'NR==6' "${gc_content_file}" | cut -d' ' -f2)
       devs=$( echo 2.58 \* ${gc_stdev} | $bc_path -l)
       gc_right=$( echo ${gc_mean} + ${devs} | $bc_path -l) # right of the mean
       gc_left=$( echo ${gc_mean} - ${devs} | $bc_path -l) # left of the mean
-      gc_stdev=$( printf "%.5f" ${gc_stdev})
+      # if "Not calculated on species with n<10 references" in stdev 
+      if [[ $gc_stdev == "Not" ]]; then
+        gc_stdev=0
+      else
+        gc_stdev=$( printf "%.5f" ${gc_stdev})
+      fi
       if [[ $GC_con < $gc_left ]]; then
         gc_left=$( echo ${gc_mean} - ${devs} | $bc_path -l | xargs printf "%.5f") # just making it more readable
         gc_stdev=$( printf "%.5f" ${gc_stdev}) # just making it more readable
@@ -974,12 +919,9 @@ if [[ -f "${assembly_ratio_file}" ]]; then
     fi
   fi
 
-  reads_min=30
-	reads_low=40
-	reads_high=150
-  if [[ -s "${total_read_counts}" ]]; then
-	bps_post_all=$(tail -n1 "${total_read_counts}" | cut -d'	' -f22)
-  # IFS='	' read -r -a qcs <<< "${line}"
+	if [[ -s "${total_read_counts}" ]]; then
+		bps_post_all=$(tail -n1 "${total_read_counts}" | cut -d'	' -f22)
+	# IFS='	' read -r -a qcs <<< "${line}"
 	# read_qc_info=${qcs[@]:1}
 	# # Extract q30 reads from qcCounts to calculate average coverage as q30_reads/assembly_length
 	# q30_reads=$(echo "${read_qc_info}" | awk -F ' ' '{print $2}')
@@ -992,7 +934,7 @@ if [[ -f "${assembly_ratio_file}" ]]; then
   #echo "trimmed-${avg_coverage}"
   #if (( $(echo $domain 0 | awk '{if ($1 > $2) print 1;}') )) && (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 < $2) print 1;}') )); then
 	if (( $(echo "${avg_coverage} > ${reads_low}" | $bc_path -l) )) && (( $(echo "${avg_coverage} < ${reads_high}" | $bc_path -l) )); then
-		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "COVERAGE" "SUCCESS" "${avg_coverage}x coverage based on trimmed reads (Target:40x, Cutoff: ${reads_min}x)"  >> "${sample_name}.synopsis"
 	#elif (( $(echo ${avg_coverage} ${reads_high} | awk '{if ($1 > $2) print 1;}') )); then
   elif (( $(echo "${avg_coverage} > ${reads_high}" | $bc_path -l) )); then
 		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:<150x)"  >> "${sample_name}.synopsis"
@@ -1001,7 +943,7 @@ if [[ -f "${assembly_ratio_file}" ]]; then
 		fi
   #elif (( $(echo ${avg_coverage} ${reads_min} | awk '{if ($1 > $2) print 1;}') )); then
   elif (( $(echo "${avg_coverage} > ${reads_min}" | $bc_path -l) )); then
-		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:40x)"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "COVERAGE" "ALERT" "${avg_coverage}x coverage based on trimmed reads (Target:40x, Cutoff: ${reads_min}x)"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]]; then
 			status="ALERT"
 		fi
@@ -1022,10 +964,10 @@ if [[ "${internal_phoenix}" == "true" ]]; then
       if [[ "${line}" == *"Complete BUSCOs (C)"* ]]; then
         #echo "C-"${line}
 			  found_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-   	  elif [[ "${line}" == *"Total BUSCO groups searched"* ]]; then
+  	  elif [[ "${line}" == *"Total BUSCO groups searched"* ]]; then
         #echo "T-"${line}
         total_buscos=$(echo "${line}" | awk -F ' ' '{print $1}')
-   	  elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
+  	  elif [[ "${line}" == *"The lineage dataset is:"* ]]; then
         #echo "L-"${line}
         db=$(echo "${line}" | awk -F ' ' '{print $6}')
       fi
@@ -1061,7 +1003,6 @@ if [[ -s "${formatted_fastANI}" ]]; then
   organism=$(echo "${fastANI_info}" | cut -d$'\t' -f3)
   reference=$(echo "${fastANI_info}" | cut -d$'\t' -f4)
 
-
   if [[ "${percent_match}" = "0."* ]]; then
     printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No assembly file to work with"  >> "${sample_name}.synopsis"
   else
@@ -1080,7 +1021,7 @@ if [[ -s "${formatted_fastANI}" ]]; then
     fi
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "NO ${sample_name}.fastANI.txt  file"  >> "${sample_name}.synopsis"
+  printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "NO ${sample_name}_REFSEQ_*.fastANI.txt  file"  >> "${sample_name}.synopsis"
   status="FAILED"
 fi
 
@@ -1108,12 +1049,12 @@ if [[ -s "${mlst_file}" ]]; then
       done < "${mlst_file}"
   fi
 else
-    main_line=$(head -n1 ${mlst_file})
-    if [[ "${main_line}" = "Sample  Source"* ]]; then
-        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No MLST entries in ${sample_name}.tsv"  >> "${sample_name}.synopsis"
-    else
-        printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
-    fi
+  main_line=$(head -n1 ${mlst_file})
+  if [[ "${main_line}" = "Sample  Source"* ]]; then
+    printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "No MLST entries in ${sample_name}.tsv"  >> "${sample_name}.synopsis"
+  else
+    printf "%-30s: %-8s : %s\\n" "MLST" "FAILED" "${sample_name}.tsv does not exist"  >> "${sample_name}.synopsis"
+  fi
   status="FAILED"
 fi
 
@@ -1142,9 +1083,12 @@ else
 fi
 
 #Check NCBI AMRFinder Genes
-AMR_genes="NA"
+amr_genes="NA"
+echo "file name"
+echo ${amr_file}
 if [[ -s "${amr_file}" ]]; then
   amr_genes=0
+  echo "Got here"
   while read line_in; do
     if [[ "${line_in}" = *"POINT"* ]]; then
       amr_genes=$(( amr_genes + 1 ))
@@ -1152,15 +1096,15 @@ if [[ -s "${amr_file}" ]]; then
       :
     fi
   done < "${amr_file}"
-  if [[ ${amr_genes} -eq 0 ]]; then
+  if [[ "${amr_genes}" -eq 0 ]]; then
     printf "%-30s: %-8s : %s\\n" "AMRFINDER" "SUCCESS" "No point mutations were found"  >> "${sample_name}.synopsis"
-  elif [[ ${amr_genes} -ge 1 ]]; then
+  elif [[ "${amr_genes}" -ge 1 ]]; then
     printf "%-30s: %-8s : %s\\n" "AMRFINDER" "SUCCESS" "${amr_genes} point mutation(s) found"  >> "${sample_name}.synopsis"
   else
     echo "Should never get here (amr_genes less than 0)"
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "AMRFINDER" "FAILED" "${sample_name}_amr_hits.tsv does not exist"  >> "${sample_name}.synopsis"
+  printf "%-30s: %-8s : %s\\n" "AMRFINDER" "FAILED" "${amr_file} does not exist"  >> "${sample_name}.synopsis"
   status="FAILED"
 fi
 

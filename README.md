@@ -26,22 +26,22 @@ For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/
        mamba create -n nextflow -c bioconda -c conda-forge nf-core=2.2 nextflow=21.10.6 git=2.35.0 openjdk=8.0.312 graphviz
        ```--->
 
-   * If you prefer a to use `curl` or `wget` for install see the [Nextflow Documentaiton](https://www.nextflow.io/docs/latest/getstarted.html) 
+   * If you prefer a to use `curl` or `wget` for install see the [Nextflow Documentation](https://www.nextflow.io/docs/latest/getstarted.html) 
 
 2. Install [`Docker`](https://docs.docker.com/engine/installation/) or [`Singularity >=3.8.0`](https://www.sylabs.io/guides/3.0/user-guide/) for full pipeline reproducibility. 
 
-3. Email HAISeq@cdc.gov, with the subject line "krakenDB invite request" to request access to the sharefile link and provide the email address to send invite to.
+3. For PHoeNIx >=2.0.0 you will need to download the public Standard-8 version kraken2 database **created on or after March 14th, 2023** from [Ben Langmead's github page](https://benlangmead.github.io/aws-indexes/k2). **You CANNOT use an older version of the public kraken databases** on Ben Langmead's github page. We thank @BenLangmead and @jenniferlu717 for taking the time to include an extra file in public kraken databases created after March 14th, 2023 to allow them to work in PHoeNIx! **You CANNOT use the old database downloaded from CDC’s sharefile.** The pipeline is not backwards compatible (hence the bump to version 2). 
 
-4. Download the `hash.k2d`, `opts.k2d`, and `taxo.k2d` files needed for the kraken2 subworkflow of PHoeNIx from the CDC sharefile link. You **CANNOT** use a different krakenDB for this as it needs to match the `ktax_map.k2` file that is included in the pipeline. At this time this is not downloadable via command line. Once downloaded the folder containing these files is passed to PHoeNIx via the `--kraken2db`.
-    
-     > If you ran the v1.0.0-dev version of the pipeline and already downloaded the `hash.k2d` file there is no need to redownload it. The `opts.k2d`, and `taxo.k2d` are found in the `phoenix/assets/databases` folder. You can just copy these over into a new folder to pass to the PHoeNIx.  
-
-5. (optional) If you installed nextflow via a conda environment activate the nextflow environment with:  
-
-6. Run PHoeNIx on a test sample loaded with the package with a single command:
+4. (optional) If you installed nextflow via a conda environment activate the nextflow environment with:  
 
     ```console
-    nextflow run cdcgov/phoenix -r v1.0.0 -profile <singularity/docker/custom>,test -entry PHOENIX --kraken2db $PATH_TO_DB
+    conda activate <environment name>
+    ```
+
+5. Run PHoeNIx on a test sample loaded with the package with a single command:
+
+    ```console
+    nextflow run cdcgov/phoenix -r v2.0.0 -profile <singularity/docker/custom>,test -entry PHOENIX --kraken2db $PATH_TO_DB
     ```
 
 Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcgov/phoenix`. See [wiki](https://github.com/CDCgov/phoenix/wiki/Dependencies-and-Install#run-phoenix) for how to clone and have the software downloaded to a different location. 
@@ -49,12 +49,12 @@ Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcg
     > * The pipeline comes with config profiles called `docker` and `singularity` which instruct the pipeline to use the named tool for software management. For example, `-profile test,docker`.
     > * Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
  
-7. Start running your own analysis with a [samplesheet](https://github.com/cdcent/phoenix/wiki/Running-PHoeNIx#samplesheet-input)!
+6. Start running your own analysis with a [samplesheet](https://github.com/cdcent/phoenix/wiki/Running-PHoeNIx#samplesheet-input)!
 
     ```console
-    nextflow run cdcgov/phoenix -r v1.0.0 -profile <singularity/docker/custom> -entry PHOENIX --input <path_to_samplesheet.csv> --kraken2db $PATH_TO_DB
+    nextflow run cdcgov/phoenix -r v2.0.0 -profile <singularity/docker/custom> -entry PHOENIX --input <path_to_samplesheet.csv> --kraken2db $PATH_TO_DB
     ```
-    
+
 # CDCgov GitHub Organization Open Source Project
 
 **General disclaimer** This repository was created for use by CDC programs to collaborate on public health related projects in support of the [CDC mission](https://www.cdc.gov/about/organization/mission.htm).  GitHub is not hosted by the CDC, but is a third party website used by CDC and its partners to share information and collaborate on software. CDC use of GitHub does not imply an endorsement of any one particular service, product, or enterprise. 

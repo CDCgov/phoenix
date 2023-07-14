@@ -1,35 +1,26 @@
 process SRATOOLS_PREFETCH {
-    tag "$id"
-    label 'process_low'
-
-    conda (params.enable_conda ? 'bioconda::sra-tools=2.11.0' : null)
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/sra-tools:2.11.0--pl5321ha49a11a_3' :
-        'quay.io/biocontainers/sra-tools:2.11.0--pl5321ha49a11a_3' }"
+    tag "${sra_accession[0]}"
+    label 'process_single'
+    container "https://depot.galaxyproject.org/singularity/sra-tools%3A3.0.3--h87f3376_0"
 
     input:
-    path(id)
-    
+    val(sra_accession)
 
     output:
-    path 'tmp_inputs/*'             , emit: sra
-    path 'sra_samples.csv'          , emit: samplesheet
-    path 'versions.yml'             , emit: versions
-
-    when:
-    task.ext.when == null || task.ext.when
+    path("*_Folder")    , emit: sra_folder
+    path('versions.yml'), emit: versions
 
     script:
     """
-    TMP_INPUTS=tmp_inputs
-    mkdir "\$TMP_INPUTS"
-
     # fetch sras
-    prefetch --option-file $id --output-directory "\$TMP_INPUTS"
+    prefetch --verify yes ${sra_accession[0]}
+
+    #move so we have some common name to collect output, indexing is just to get rid of [] around the SRR number
+    mv ${sra_accession[0]} ${sra_accession[0]}_Folder
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        sratools: \$(prefetch --version 2>&1 | grep -Eo '[0-9.]+')
+        sratools: \$(prefetch --version 2>&1 | sed 's/prefetch : //' | awk 'NF')
     END_VERSIONS
     """
 }

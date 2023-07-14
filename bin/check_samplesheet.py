@@ -64,8 +64,42 @@ def check_samplesheet(file_in, file_out):
             sys.exit(1)
 
         ## Check sample entries
+        sample_name_list = [] # used to check if sample name has been used before
+        Read_list = []
         for line in fin:
             lspl = [x.strip().strip('"') for x in line.strip().split(",")]
+
+            # Check for duplicate sample names
+            sample_name = line.split(",")[0]
+            if sample_name in sample_name_list:
+                print_error(
+                    "The sample id {} is used multiple times! IDs need to be unique.".format(sample_name),
+                    "Line",
+                    line,
+                )
+            else:
+                sample_name_list.append(sample_name)
+
+            # Check for duplicate R1 and R2 files being run
+            sample_R1 = line.split(",")[1].split("/")[-1]
+            if sample_R1 in Read_list:
+                print_error(
+                    "The forward read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R1),
+                    "Line",
+                    line,
+                )
+            else:
+                Read_list.append(sample_R1)
+
+            sample_R2 = line.split(",")[2].split("/")[-1].strip("\n")
+            if sample_R2 in Read_list:
+                print_error(
+                    "The reverse read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R2),
+                    "Line",
+                    line,
+                )
+            else:
+                Read_list.append(sample_R2)
 
             # Check valid number of columns per row
             if len(lspl) < len(HEADER):
