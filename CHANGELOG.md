@@ -69,9 +69,9 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed problem where samples that didn't create scaffolds, but created contigs didn't have species printed out in `Phoenix_Output_Report.tsv` details in [commit c7f7ea5](https://github.com/CDCgov/phoenix/commit/c7f7ea5bd42a0e2010e0b15e4b4f7e9119d394a2).  
 - Fixed problem in `-entry CDC_PHOENIX` where samples that didn't create scaffolds, but created contigs or samples that failed spades completely didn't have correct columns lining up in `Phoenix_Output_Report.tsv` details in [commit d17bdda](https://github.com/CDCgov/phoenix/commit/d17bdda89cf4d89aebe02a53082e5bb72c33582f).  
 
-## [v1.2.0](https://github.com/CDCgov/phoenix/releases/tag/v1.2.0) (07/XX/2023)
+## [v2.0.0](https://github.com/CDCgov/phoenix/releases/tag/v2.0.0) (07/14/2023)
 
-[Full Changelog](https://github.com/CDCgov/phoenix/compare/v1.1.1...v1.2.0)
+[Full Changelog](https://github.com/CDCgov/phoenix/compare/v1.1.1...v2.0.0)
 
 **Implemented Enhancements:**  
 - entry point for scaffolds added using either `-entry SCAFFOLDS` or `-entry CDC_SCAFFOLDS` that runs everything post SPAdes step. New input parameters `--indir` and `--scaffold_ext` added for functionality of this entry point [commit f12da60](https://github.com/CDCgov/phoenix/commit/f12da60fc4bc18499aa020ef1fb2c13d35361bb1).  
