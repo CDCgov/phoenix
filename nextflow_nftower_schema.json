@@ -98,7 +98,7 @@
                     "type": "string",
                     "fa_icon": "fas fa-keyboard",
                     "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. Use only with -entry CDC_PHOENIX",
-                    "default": "Not to run in offline mode."
+                    "default": ""
                 },
                 "publish_dir_mode": {
                     "type": "string",
