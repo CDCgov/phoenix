@@ -22,7 +22,7 @@ process FORMAT_ANI {
     }
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    db_version=\$(echo ${ani_file} | cut -d'_' -f2- | cut -d'.' -f1)
+    db_version=\$(echo ${ani_file} | sed 's/.ani.sorted.txt//' | sed 's/${meta.id}//' )
     # Setup to catch any issues while grabbing date from DB name
     if [[ "\${db_version}" = "" ]]; then
         db_version="REFSEQ_unknown"
