@@ -45,7 +45,7 @@
                 "scaffold_ext": {
                     "type": "string",
                     "fa_icon": "fas fa-keyboard",
-                    "description": "String that is the FULL extention of the scaffolds files you wish to input. For example, use if your file names are `<sample_id>.fa.gz` use `--scaffolds_ext '.fa.gz'` and if you want to look through subdirectories for files with the name `<sample_id>.fa.gz` then use `--scaffolds_ext '/*.fa.gz'` A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used as default. Assemblies must end in '.fa.gz' or '.fasta.gz'.",
+                    "description": "String that is the FULL extension of the scaffolds files you wish to input. For example, use if your file names are `<sample_id>.fa.gz` use `--scaffolds_ext '.fa.gz'` and if you want to look through subdirectories for files with the name `<sample_id>.fa.gz` then use `--scaffolds_ext '/*.fa.gz'` A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used as default. Assemblies must end in '.fa.gz' or '.fasta.gz'.",
                     "default": ".scaffolds.fa.gz"
                 }
             }
