@@ -139,7 +139,10 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.0.0...v2.0.1)
 
+**Implemented Enhancements:**  
+- Updated nextflow towwer scheme that describes inputs.
+
 **Fixed Bugs:**  
-- Typo fix and changed branch called in Terra task that caused Terra version to crash.  
+- Typo fix and changed branch called in Terra task that caused Terra version to crash.
 
 
