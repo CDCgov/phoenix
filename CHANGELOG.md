@@ -132,4 +132,17 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - AMRFinder+ was updated from 3.10.45 to [3.11.11](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.11.11).  
 - BUSCO was updated from 5.4.3 to [5.4.7](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG).  
 - MultiQC was updated from 1.11 to [1.14](https://github.com/ewels/MultiQC/releases/tag/v1.14).  
-- MLST was updated from 2.22.1 to [2.23.0](https://github.com/tseemann/mlst/releases/tag/v2.23.0).  
+- MLST was updated from 2.22.1 to [2.23.0](https://github.com/tseemann/mlst/releases/tag/v2.23.0).
+
+
+## [v2.0.1](https://github.com/CDCgov/phoenix/releases/tag/v2.0.1) (07/14/2023)
+
+[Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.0.0...v2.0.1)
+
+**Implemented Enhancements:**  
+- Updated nextflow towwer scheme that describes inputs.
+
+**Fixed Bugs:**  
+- Typo fix and changed branch called in Terra task that caused Terra version to crash.
+
+

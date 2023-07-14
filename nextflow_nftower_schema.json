@@ -88,11 +88,17 @@
                     "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
                     "fa_icon": "fas fa-file-signature"
                 },
+                "coverage": {
+                    "type": "string",
+                    "description": "If you want to increase the coverage cut off >30x use --coverage (ex. --coverage 40)",
+                    "default": "30",
+                    "fa_icon": "fas fa-hashtag"
+                },
                 "busco_db_path": {
                     "type": "string",
                     "fa_icon": "fas fa-keyboard",
-                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. Use only with -entry CDC_PHOENIX",
-                    "default": "Not to run in offline mode."
+                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
+                    "default": ""
                 },
                 "publish_dir_mode": {
                     "type": "string",
