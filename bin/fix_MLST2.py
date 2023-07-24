@@ -514,7 +514,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 	outfile=isolate_name+"_combined.tsv"
 	print(outfile)
 	with open(outfile,'w') as writer:
-		writer.write("Sample\tSource\tPulled on\tDatabase\tST\tlocus_1\tlocus_2\tlocus_3\tlocus_4\tlocus_5\tlocus_6\tlocus_7\tlocus_8\tlocus_9\tlocus_10\n")
+		writer.write("Sample\tSource\tPulled_on\tDatabase\tST\tlocus_1\tlocus_2\tlocus_3\tlocus_4\tlocus_5\tlocus_6\tlocus_7\tlocus_8\tlocus_9\tlocus_10\n")
 		if len(checked_and_deduped_schemes) == 0:
 			print("No schemes found")
 			writer.write(isolate_name+"\tNone-"+genus+" "+species+"\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t")

@@ -1,6 +1,6 @@
 process GRIPHIN {
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
 
     input:
     path(summary_line_files)

@@ -51,7 +51,7 @@ workflow PHOENIX {
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        PHOENIX_EXTERNAL ( ch_input, ch_versions )
+        PHOENIX_EXTERNAL ( ch_input, ch_versions, true )
     emit:
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
@@ -77,7 +77,7 @@ workflow CDC_PHOENIX {
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        PHOENIX_EXQC ( ch_input, ch_versions )
+        PHOENIX_EXQC ( ch_input, ch_versions, true )
 
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
@@ -112,7 +112,7 @@ workflow SRA {
         // pull data and create samplesheet for it.
         SRA_PREP ( ch_input )
         // pass samplesheet to PHOENIX
-        PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions )
+        PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false )
 
     emit:
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
@@ -142,7 +142,7 @@ workflow CDC_SRA {
         // pull data and create samplesheet for it.
         SRA_PREP ( ch_input )
         // pass samplesheet to PHOENIX
-        PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions )
+        PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false )
 
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds

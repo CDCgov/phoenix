@@ -1192,7 +1192,7 @@ def create_samplesheet(directory):
     # If there are any new files added to the top directory they will need to be added here or you will get an error
     skip_list_a = glob.glob(directory + "/*_GRiPHin_Report.xlsx") # for if griphin is run on a folder that already has a report in it
     skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
-    skip_list_b = ["Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
+    skip_list_b = ["BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
     skip_list = skip_list_a + skip_list_b
     #remove unwanted files
     dirs_cleaned = [item for item in dirs if item not in skip_list]
@@ -1219,6 +1219,21 @@ def sort_samplesheet(samplesheet):
     df = df.set_index("sample")
     df = df.loc[samples_sorted]
     df.to_csv(samplesheet, sep=',', encoding='utf-8') #overwrite file
+
+def convert_excel_to_tsv(output):
+    '''Reads in the xlsx file that was just created, outputs as tsv version with first layer of headers removed'''
+    if output != "":
+        output_file = output + '_GRiPHin_Report'
+    else:
+        output_file = 'GRiPHin_Report'
+    #Read excel file into a dataframe
+    data_xlsx = pd.read_excel(output_file + '.xlsx', 'Sheet1', index_col=None, header=[1])
+    #Replace all fields having line breaks with space
+    #data_xlsx = data_xlsx.replace('\n', ' ',regex=True)
+    #drop the footer information
+    data_xlsx = data_xlsx.iloc[:-10] 
+    #Write dataframe into csv
+    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
 
 def main():
     args = parseArgs()
@@ -1272,6 +1287,8 @@ def main():
     else:
         final_df = final_df
     write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix)
+    convert_excel_to_tsv(args.output)
+
 
 if __name__ == '__main__':
     main()
