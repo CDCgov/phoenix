@@ -13,6 +13,7 @@ process GRIPHIN {
 
     output:
     path("*_Report.xlsx"),           emit: griphin_report
+    path("*_Report.tsv"),            emit: griphin_tsv_report
     path("GRiPHin_samplesheet.csv"), emit: converted_samplesheet
     path("versions.yml"),            emit: versions
 
