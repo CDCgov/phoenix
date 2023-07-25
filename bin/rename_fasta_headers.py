@@ -33,7 +33,7 @@ args=parseArgs()
 def spades_rename(input_file, name, reverse, output):
 	"""
 	Typical spades output: >NODE_1_length_600507_cov_51.436379
-	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#_depth_depthx)
+	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#)
 	"""
 	sequences = []
 	if not reverse:
@@ -52,7 +52,7 @@ def spades_rename(input_file, name, reverse, output):
 def shovill_rename(input_file, name, output):
 	"""
 	Typical shovill output: >contig00001 len=1423313 cov=21.0 corr=0 origname=NODE_1_length_1423313_cov_21.008026_pilon sw=shovill-spades/1.1.0 date=20230327
-	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#_depth_depthx)
+	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#)
 	"""
 	sequences = []
 	for record in SeqIO.parse(input_file,"fasta"):
@@ -65,7 +65,7 @@ def shovill_rename(input_file, name, output):
 def skesa_rename(input_file, name, output):
 	"""
 	Typical skesa output: >Contig_1_42.0537_Circ [topology=circular]
-	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#_depth_depthx)
+	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#)
 	"""
 	sequences = []
 	for record in SeqIO.parse(input_file,"fasta"):
@@ -87,20 +87,52 @@ def unicycler_rename(input_file, name, output):
 		sequences.append(record)
 	SeqIO.write(sequences, output, "fasta")
 
+def flye_rename(input_file, name, output):
+	"""
+	Typical Flye output: >contig_1
+	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#)
+	"""
+	sequences = []
+	for record in SeqIO.parse(input_file,"fasta"):
+		record.id = name + "_" + record.id.split("_")[1] + "_length_" + str(len(record.seq))
+		#record.id = record.id.replace("contig",name)
+		record.description = ""
+		sequences.append(record)
+	SeqIO.write(sequences, output, "fasta")
+
+def trycycler_rename(input_file, name, output):
+	"""
+	Typical Flye output: >cluster_001_consensus_polypolish or >cluster_001_consensus
+	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#)
+	"""
+	sequences = []
+	for record in SeqIO.parse(input_file,"fasta"):
+		record.id = name + "_" + str(int(record.id.split("_")[1])) + "_length_" + str(len(record.seq))
+		record.id = record.id.replace("Contig",name)
+		record.description = ""
+		sequences.append(record)
+	SeqIO.write(sequences, output, "fasta")
+
 def detect_assemblier(input_file, name):
 	for record in SeqIO.parse(input_file,"fasta"):
 		if record.id.startswith("contig00001"):
-			assemblier = "shovill"
+			assembler = "shovill"
 		elif record.id.startswith("NODE_1"):
-			assemblier = "spades"
+			assembler = "spades"
 		elif record.id.startswith("Contig_1"):
-			assemblier = "skesa"
+			assembler = "skesa"
+		elif record.id.startswith("contig_1"):
+			assembler = "flye"
+		elif record.id.startswith("cluster_001"):
+			assembler = "trycycler"
 		elif record.id.startswith("1") and record.description.startswith("1 length="):
-			assemblier = "unicycler"
+			assembler = "unicycler"
 		elif record.id.startswith(name + "_1_length_"):
-			assemblier = "correct name"
+			assembler = "correct name"
+		else: # if none of these then leave blank for error to be reported
+			assembler = ""
 		break # we only need to do this for the first record
-	return assemblier
+	return assembler
 
 def rename_file(input_file, output):
 	sequences = []
@@ -110,19 +142,23 @@ def rename_file(input_file, output):
 
 def main():
 	args = parseArgs()
-	assemblier = detect_assemblier(args.input, args.name)
-	if assemblier == "spades":
+	assembler = detect_assemblier(args.input, args.name)
+	if assembler == "spades":
 		spades_rename(args.input, args.name, args.reverse, args.output)
-	elif assemblier == "skesa":
+	elif assembler == "skesa":
 		skesa_rename(args.input, args.name, args.output)
-	elif assemblier == "shovill":
+	elif assembler == "shovill":
 		shovill_rename(args.input, args.name, args.output)
-	elif assemblier == "unicycler":
+	elif assembler == "unicycler":
 		unicycler_rename(args.input, args.name, args.output)
-	elif assemblier == "correct name": # if the name looks like the correct scheme then just rename and move on
+	elif assembler == "flye": 
+		flye_rename(args.input, args.name, args.output)
+	elif assembler == "trycycler":
+		trycycler_rename(args.input, args.name, args.output)
+	elif assembler == "correct name": # if the name looks like the correct scheme then just rename and move on
 		rename_file(args.input, args.output)
 	else:
-		print("ERROR: The assemblier used could not be determined. PHoeNIx supports assemblies from either Skesa, Shovill or SPAdes.")
+		print("ERROR: The assembler used could not be determined. PHoeNIx supports assemblies from either Skesa, Shovill, SPAdes, Unicycler,Trycycler and Flye. If you used one of these open a github issue to report the problem.")
 
 if __name__ == '__main__':
 	main()
