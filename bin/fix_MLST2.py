@@ -368,7 +368,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 						db_alleles = db_line.split("\t")
 						match = False
 						db_type = db_alleles[0]
-						for i in range(1,len(current_alleles)):
+						for i in range(0,len(current_alleles)):
 							#print(i, len(db_alleles), len(current_alleles))
 							if db_alleles[i+1] == current_alleles[i]:
 								match = True
