@@ -463,11 +463,16 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 							# Mark allele as found and complete
 							secondary_alleles.append('Complete')
 					if primary_alleles == secondary_alleles:
+						new_source="unset"
 						if primary_source == "assembly":
 							if secondary_source == "assembly":
 								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="assembly"
 							elif secondary_source == "assembly/reads":
-									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
+								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="assembly/reads"
 							elif secondary_source == "reads":
 								new_source = "assembly/reads"
 							else:
@@ -478,8 +483,12 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 								new_source = "assembly/reads"
 							elif secondary_source == "assembly/reads":
 								print("Weird, shouldnt have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="assembly/reads"
 							elif secondary_source == "reads":
 								print("Weird, shouldnt have both novel allele sets in one database come from srst2")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="reads"
 							else:
 								print("Weird, dont know what the secondary source is")
 							secondary_is_srst2=True
