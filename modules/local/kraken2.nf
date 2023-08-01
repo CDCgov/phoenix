@@ -13,7 +13,7 @@ process KRAKEN2_KRAKEN2 {
     tuple val(meta), path('*classified*')     , optional:true, emit: classified_reads_fastq
     tuple val(meta), path('*unclassified*')   , optional:true, emit: unclassified_reads_fastq
     tuple val(meta), path('*classifiedreads*'), optional:true, emit: classified_reads_assignment
-    tuple val(meta), path('*report.txt')                     , emit: report
+    tuple val(meta), path('*.summary.txt')                   , emit: report
     path "versions.yml"                                      , emit: versions
 
     when:
@@ -34,7 +34,7 @@ process KRAKEN2_KRAKEN2 {
     kraken2 \\
         --db $db \\
         --threads $task.cpus \\
-        --report ${prefix}.kraken2_${kraken_type}.report.txt \\
+        --report ${prefix}.kraken2_${kraken_type}.summary.txt \\
         --gzip-compressed \\
         $unclassified_command \\
         $classified_command \\

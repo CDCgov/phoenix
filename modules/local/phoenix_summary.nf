@@ -8,7 +8,7 @@ process GATHER_SUMMARY_LINES {
     val(busco_val)
 
     output:
-    path('Phoenix_Output_Report.tsv'), emit: summary_report
+    path('Phoenix_Summary.tsv'), emit: summary_report
     path("versions.yml")             , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
@@ -16,7 +16,7 @@ process GATHER_SUMMARY_LINES {
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     Create_phoenix_summary_tsv.py \\
-        --out Phoenix_Output_Report.tsv \\
+        --out Phoenix_Summary.tsv \\
         $busco_parameter
 
     cat <<-END_VERSIONS > versions.yml
