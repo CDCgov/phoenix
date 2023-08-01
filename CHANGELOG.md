@@ -162,7 +162,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - kraken2_trimd/${samplename}.trimd_summary.txt changed to kraken2_asmbld/${samplename}.kraken2_trimd.top_kraken_hit.txt  
   - kraken2_asmbld/${samplename}.asmbld_summary.txt changed to kraken2_asmbld/${samplename}.kraken2_asmbld.top_kraken_hit.txt  
   - kraken2_asmbld_weighted/${samplename}.wtasmbld_summary.txt changed to kraken2_asmbld/${samplename}.kraken2_wtasmbld.top_kraken_hit.txt  
-  - kraken2_trimd/${samplename}.kraken2_trimd.summary.txt changed to kraken2_trimd/${samplename}.kraken2_trimd.summary.txt  
+  - kraken2_trimd/${samplename}.kraken2_trimd.report.txt changed to kraken2_trimd/${samplename}.kraken2_trimd.summary.txt  
   - kraken2_asmbld/${samplename}.kraken2_asmbld.report.txt changed to kraken2_asmbld/${samplename}.kraken2_asmbld.summary.txt  
   - kraken2_asmbld_weighted/${samplename}.kraken2_wtasmbld.report.txt changed to kraken2_asmbld_weighted/${samplename}.kraken2_wtasmbld.summary.txt  
 

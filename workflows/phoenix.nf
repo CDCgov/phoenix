@@ -56,7 +56,6 @@ include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summar
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GRIPHIN                        } from '../modules/local/griphin'
-include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/create_ncbi_upload_sheet'
 
 /*
 ========================================================================================
@@ -384,17 +383,6 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-        if (ncbi_excel_creation == true) {
-
-            // requiring files so that this process doesn't start until needed files are made. 
-            required_files_ch = FASTP_TRIMD.out.reads.map{ meta, reads -> reads[0]}.collect().combine(DO_MLST.out.checked_MLSTs.map{ meta, checked_MLSTs -> checked_MLSTs}.collect()).combine(DETERMINE_TAXA_ID.out.taxonomy.map{ meta, taxonomy -> taxonomy}.collect())
-
-            //Fill out NCBI excel sheets for upload based on what PHX found
-            CREATE_NCBI_UPLOAD_SHEET (
-                required_files_ch, params.microbe_example, params.sra_metadata, params.osii_bioprojects, outdir_path
-            )
-            ch_versions = ch_versions.mix(CREATE_NCBI_UPLOAD_SHEET.out.versions)
-        }
 
         // Collecting the software versions
         CUSTOM_DUMPSOFTWAREVERSIONS (
