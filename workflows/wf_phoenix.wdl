@@ -132,6 +132,6 @@ workflow phoenix_workflow {
     File amrfinder_hits           = phoenix.amrfinder_hits           # all_genes.tsv
     #run files - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = phoenix.versions_file            # software_versions.yml"
-    File? multiqc_report          = phoenix.multiqc_report           # multiqc_report.html"
+    File? multiqc_output          = phoenix.multiqc_output           # multiqc_report.html"
   }
 }
