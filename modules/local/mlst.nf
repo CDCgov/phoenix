@@ -1,15 +1,14 @@
 process MLST {
     tag "$meta.id"
-    label 'process_low'
-    container 'staphb/mlst:2.23.0'
-    containerOptions '-B /scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/new_DBS_20230502/20230504/MLST/db:/mlst-2.23.0/db'
+    label 'process_medium'
+    container 'quay.io/jvhagey/mlst:2.23.0'
 
     input:
     tuple val(meta), path(fasta), path(mlst_db_path)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
-    path("versions.yml")           , emit: versions
+    path("versions.yml")          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -18,6 +17,7 @@ process MLST {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
+    def mlst_version = task.container.toString() - "quay.io/jvhagey/mlst:"
     """
     if [[ ${fasta} = *.gz ]]
     then
@@ -27,8 +27,7 @@ process MLST {
         unzipped_fasta=${fasta}
     fi
 
-    mlst \\
-        --threads $task.cpus \\
+    mlst --threads $task.cpus \\
         \$unzipped_fasta \\
         > ${prefix}.tsv
 
@@ -66,8 +65,7 @@ process MLST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mlst: \$( echo \$(mlst --version 2>&1) | sed 's/mlst //' )
-        mlst_db: \$( cat db/db_version | date -f - +%Y-%m-%d )
+        mlst_db: \$( cat /mlst-${mlst_version}/db/db_version | date -f - +%Y-%m-%d )
     END_VERSIONS
     """
-
 }
