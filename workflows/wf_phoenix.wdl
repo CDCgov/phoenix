@@ -58,8 +58,9 @@ workflow phoenix_workflow {
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
     String  qc_reason                         = phoenix.qc_reason
     #summary files
-    File    full_results                      = phoenix.full_results
-    File    griphin_report                    = phoenix.griphin_report
+    File  full_results                      = phoenix.full_results
+    File  griphin_excel_summary             = phoenix.griphin_excel_summary
+    File  griphin_tsv_summary               = phoenix.griphin_tsv_summary
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? raw_read1_html          = phoenix.raw_read1_html           # fastqc.html
     File? raw_read1_zip           = phoenix.raw_read1_zip            # fastqc.zip
@@ -67,8 +68,8 @@ workflow phoenix_workflow {
     File? raw_read2_zip           = phoenix.raw_read2_zip            # fastqc.zip
     #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? kraken_trimd_output     = phoenix.kraken_trimd_output      # kraken2_trimd.classifiedreads.txt 
-    File? kraken_trimd_report     = phoenix.kraken_trimd_report      # kraken2_trimd.report.txt
-    File? kraken_trimd_summary    = phoenix.kraken_trimd_summary     # trimd_summary.txt
+    File? kraken_trimd_summary    = phoenix.kraken_trimd_summary     # kraken2_trimd.summary.txt
+    File? kraken_trimd_top_taxa   = phoenix.kraken_trimd_top_taxa    # trimd_top_taxa.txt
     File? trimd_html              = phoenix.trimd_html               # trimd.html
     File? trimd_krona             = phoenix.trimd_krona              # trimd.krona
     File? classified_1            = phoenix.classified_1             # classified_1.fastq.gz
@@ -88,16 +89,16 @@ workflow phoenix_workflow {
     File? adapter_removal_log     = phoenix.adapter_removal_log      # bbduk.log
     #phoenix assembly - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? assembly_graph          = phoenix.assembly_graph           # gfa.gz
-    File filtered_scaffolds_log  = phoenix.filtered_scaffolds_log   # bbmap_filtered.log
+    File filtered_scaffolds_log   = phoenix.filtered_scaffolds_log   # bbmap_filtered.log
     File? contigs                 = phoenix.contigs                  # contigs.fa.gz
-    File filtered_scaffolds      = phoenix.filtered_scaffolds       # filtered.scaffolds.fa.gz
-    File assembly_with_seq_names = phoenix.assembly_with_seq_names  # renamed.scaffolds.fa.gz
+    File filtered_scaffolds       = phoenix.filtered_scaffolds       # filtered.scaffolds.fa.gz
+    File assembly_with_seq_names  = phoenix.assembly_with_seq_names  # renamed.scaffolds.fa.gz
     File? assembly                = phoenix.assembly                 # scaffolds.fa.gz
     File? spades_log              = phoenix.spades_log               # spades.log
     #phoenix wtasmbld kraken/krona
     File kraken_wtasmbld_output   = phoenix.kraken_wtasmbld_output   # kraken2_wtasmbld.classifiedreads.txt 
-    File kraken_wtasmbld_report   = phoenix.kraken_wtasmbld_report   # kraken2_wtasmbld.report.txt
-    File kraken_wtasmbld_summary  = phoenix.kraken_wtasmbld_summary  # wtasmbld_summary.txt
+    File kraken_wtasmbld_summary  = phoenix.kraken_wtasmbld_summary  # kraken2_wtasmbld.summary.txt
+    File kraken_wtasmbld_top_taxa = phoenix.kraken_wtasmbld_top_taxa # wtasmbld_top_taxa.txt
     File wtasmbld_html            = phoenix.wtasmbld_html            # wtasmbld.html
     File wtasmbld_krona           = phoenix.wtasmbld_krona           # wtasmbld.krona
     #phoenix ani
@@ -106,7 +107,7 @@ workflow phoenix_workflow {
     File top_20_taxa_matches      = phoenix.top_20_taxa_matches      # best_MASH_hits.txt 
     File mash_distance            = phoenix.mash_distance            # .txt
     #phoenix quast and mlst
-    File quast_report             = phoenix.quast_report             # _report.tsv
+    File quast_summary            = phoenix.quast_summary            # _report.tsv
     File mlst_tsv                 = phoenix.mlst_tsv                 # .tsv
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
     Array[File?] busco_generic    = phoenix.busco_generic            # short_summary.generic.*.filtered.scaffolds.fa.txt"
