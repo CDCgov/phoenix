@@ -1,7 +1,7 @@
 process FORMAT_ANI {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
 
     input:
     tuple val(meta), path(ani_file)
