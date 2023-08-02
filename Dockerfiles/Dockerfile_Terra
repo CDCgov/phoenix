@@ -17,6 +17,8 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::biopython \
     conda-forge::rsync \
     conda-forge::xlsxwriter \
+    anaconda::pandas=1.3.5 \
+    anaconda::openpyxl \
     conda-forge::bc \
     conda-forge::wget \
     conda-forge::ca-certificates \

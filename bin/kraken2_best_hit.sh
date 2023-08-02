@@ -71,7 +71,7 @@ fi
 # Based upon standard naming protocols pulling last portion of path off should result in proper name
 #sample_name=$(echo "${list_file}" | rev | cut -d'/' -f1 | cut -d'.' -f4- | rev)
 #SAMPDATADIR=$(echo "${list_file}" | rev | cut -d'/' -f2- | rev)
-#sample_name=$(basename "${list_file}" .kraken2.report.txt)
+#sample_name=$(basename "${list_file}" .kraken2.summary.txt)
 #echo "-${sample_name}-"
 
 #Creates the default values for output in case any calculations are interrupted.
@@ -201,7 +201,7 @@ done < "${list_file}"
 
 # Calculate % of unclassified reads/contigs using sum of highest taxon level reads against total reads found in QC counts
 # Grabs total possible reads from preQC counts if kraken was used on reads (pre assembly)
-if [[ "${list_file}" = *"kraken2_trimd.report.txt" ]]; then
+if [[ "${list_file}" = *"kraken2_trimd.summary.txt" ]]; then
 	echo "doing trimd"
 #	r1s=$(tail -n 1 "${read_file}" | cut -d'	' -f2)
 #	r2s=$(tail -n 1 "${read_file}" | cut -d'	' -f4)
@@ -211,13 +211,13 @@ if [[ "${list_file}" = *"kraken2_trimd.report.txt" ]]; then
 	# Calculates the percent of unclassified reads/contigs using the total possible reads
 #	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 # Grabs total possible bases from contigs in trimmed assembly (post assembly, using weighted kraken output)
-elif [[ "${list_file}" = *"kraken2_asmbld.report.txt" ]]; then
+elif [[ "${list_file}" = *"kraken2_asmbld.summary.txt" ]]; then
 	echo "doing asmbld"
 	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
 #	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
 	# Calculates percent of classified reads as 100*classified reads/contigs
 #	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-elif [[ "${list_file}" = *".kraken2_wtasmbld.report.txt" ]]; then
+elif [[ "${list_file}" = *".kraken2_wtasmbld.summary.txt" ]]; then
 	echo "doing weighted"
 	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
 #	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
