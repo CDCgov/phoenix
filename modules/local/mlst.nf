@@ -19,9 +19,9 @@ process MLST {
     // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
     def mlst_version = task.container.toString() - "quay.io/jvhagey/mlst:"
     if (params.terra==false) {
-        terra = "false"
+        terra = false
     } else if (params.terra==true) {
-        terra = "true"
+        terra = true
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
@@ -66,10 +66,12 @@ process MLST {
     # Add in generic header
     sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 lous_9  locus_10' ${prefix}.tsv
 
-    if [[ $terra == "false" ]]; then
+    #handling to get database version being used
+    if [[ $terra == false ]]; then
         db_version=\$(cat /mlst-${mlst_version}/db/db_version | date -f - +%Y-%m-%d )
-    else:
+    else
         db_version=\$(cat /opt/conda/envs/phoenix/db/db_version | date -f - +%Y-%m-%d )
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
