@@ -95,6 +95,7 @@ workflow PHOENIX_EXTERNAL {
     take:
         ch_input
         ch_versions
+        ncbi_excel_creation
 
     main:
         // Allow outdir to be relative
@@ -381,6 +382,7 @@ workflow PHOENIX_EXTERNAL {
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+
 
         // Collecting the software versions
         CUSTOM_DUMPSOFTWAREVERSIONS (

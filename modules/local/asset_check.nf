@@ -1,6 +1,6 @@
 process ASSET_CHECK {
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
 
     input:
     path(zipped_sketch)

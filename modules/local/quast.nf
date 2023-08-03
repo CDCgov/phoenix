@@ -24,7 +24,7 @@ process QUAST {
         $args \\
         $consensus
 
-    mv quast/report.tsv ./${prefix}_report.tsv
+    mv quast/report.tsv ./${prefix}_summary.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

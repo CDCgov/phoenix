@@ -140,9 +140,37 @@ Below are the list of changes to phx since is initial release. As fixes can take
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.0.0...v2.0.1)
 
 **Implemented Enhancements:**  
-- Updated nextflow towwer scheme that describes inputs.
+- Updated nextflow tower scheme that describes inputs.
 
 **Fixed Bugs:**  
 - Typo fix and changed branch called in Terra task that caused Terra version to crash.
 
+## [v2.0.2](https://github.com/CDCgov/phoenix/releases/tag/v2.0.2) (08/03/2023)
+
+[Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.0.1...v2.0.2)
+
+**Implemented Enhancements:**  
+- Added handling for -entry `SCAFFOLDS` and `CDC_SCAFFOLDS` to accept assemblies from tricylcer and flye.  
+- Added tsv version of GRiPHin_Summary.xlsx  
+
+**Output File Changes:**  
+- GRiPHin_samplesheet.csv changed to Directory_samplesheet.csv  
+- In response to feedback from compliance program, "report" is being replaced by "summary" in file names to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
+  - GRiPHin_Report.xlsx changed to GRiPHin_Summary.xlsx  
+  - Phoenix_Output_Report.tsv changed to Phoenix_Summary.tsv  
+  - quast/${samplename}_report.txt changed to quast/${samplename}_summary.tsv  
+  - kraken2_trimd/${samplename}.trimd_summary.txt changed to kraken2_asmbld/${samplename}.kraken2_trimd.top_kraken_hit.txt  
+  - kraken2_asmbld/${samplename}.asmbld_summary.txt changed to kraken2_asmbld/${samplename}.kraken2_asmbld.top_kraken_hit.txt  
+  - kraken2_asmbld_weighted/${samplename}.wtasmbld_summary.txt changed to kraken2_asmbld/${samplename}.kraken2_wtasmbld.top_kraken_hit.txt  
+  - kraken2_trimd/${samplename}.kraken2_trimd.report.txt changed to kraken2_trimd/${samplename}.kraken2_trimd.summary.txt  
+  - kraken2_asmbld/${samplename}.kraken2_asmbld.report.txt changed to kraken2_asmbld/${samplename}.kraken2_asmbld.summary.txt  
+  - kraken2_asmbld_weighted/${samplename}.kraken2_wtasmbld.report.txt changed to kraken2_asmbld_weighted/${samplename}.kraken2_wtasmbld.summary.txt  
+
+**Fixed Bugs:**  
+- For MLST when final alleles were assigned, PHX called 100% match despite 1 allele not being a match.  
+- MLST step not using the custom database. A custom MLST container was added with this database included.  
+
+**Container Updates:**  
+- MLST version remains the same, but a custom database was added so that it no longer uses the database included in the software. Now hosted on quay.io.  
+- Bumped up base container (v2.0.2) to have openpyxl module.  
 

@@ -368,7 +368,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 						db_alleles = db_line.split("\t")
 						match = False
 						db_type = db_alleles[0]
-						for i in range(1,len(current_alleles)):
+						for i in range(0,len(current_alleles)):
 							#print(i, len(db_alleles), len(current_alleles))
 							if db_alleles[i+1] == current_alleles[i]:
 								match = True
@@ -463,11 +463,16 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 							# Mark allele as found and complete
 							secondary_alleles.append('Complete')
 					if primary_alleles == secondary_alleles:
+						new_source="unset"
 						if primary_source == "assembly":
 							if secondary_source == "assembly":
 								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="assembly"
 							elif secondary_source == "assembly/reads":
-									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
+								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="assembly/reads"
 							elif secondary_source == "reads":
 								new_source = "assembly/reads"
 							else:
@@ -478,8 +483,12 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 								new_source = "assembly/reads"
 							elif secondary_source == "assembly/reads":
 								print("Weird, shouldnt have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="assembly/reads"
 							elif secondary_source == "reads":
 								print("Weird, shouldnt have both novel allele sets in one database come from srst2")
+								# Not as weird, contamination testing this comes up, so a good way to catch?
+								new_source="reads"
 							else:
 								print("Weird, dont know what the secondary source is")
 							secondary_is_srst2=True
@@ -514,7 +523,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 	outfile=isolate_name+"_combined.tsv"
 	print(outfile)
 	with open(outfile,'w') as writer:
-		writer.write("Sample\tSource\tPulled on\tDatabase\tST\tlocus_1\tlocus_2\tlocus_3\tlocus_4\tlocus_5\tlocus_6\tlocus_7\tlocus_8\tlocus_9\tlocus_10\n")
+		writer.write("Sample\tSource\tPulled_on\tDatabase\tST\tlocus_1\tlocus_2\tlocus_3\tlocus_4\tlocus_5\tlocus_6\tlocus_7\tlocus_8\tlocus_9\tlocus_10\n")
 		if len(checked_and_deduped_schemes) == 0:
 			print("No schemes found")
 			writer.write(isolate_name+"\tNone-"+genus+" "+species+"\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t")

@@ -3,13 +3,13 @@ def VERSION = '1.2' // Version information not provided by tool on CLI
 process KRAKENTOOLS_MAKEKREPORT {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
 
     input:
     tuple val(meta), path(kraken_output), path(kraken2db_path)
 
     output:
-    tuple val(meta), path('*_wtasmbld.report.txt'), emit: kraken_weighted_report
+    tuple val(meta), path('*_wtasmbld.summary.txt'), emit: kraken_weighted_report
     path("versions.yml")                          , emit: versions
 
     script: // This script is bundled with the pipeline, in phoenix/bin/
@@ -19,7 +19,7 @@ process KRAKENTOOLS_MAKEKREPORT {
     """
     make_kreport.py \\
         --input ${kraken_output} \\
-        --output ${prefix}.kraken2_wtasmbld.report.txt \\
+        --output ${prefix}.kraken2_wtasmbld.summary.txt \\
         --taxonomy ${kraken2db_path}/ktaxonomy.tsv \\
         --use-read-len
     

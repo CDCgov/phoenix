@@ -26,7 +26,7 @@ def parseArgs(args=None):
     parser.add_argument('-d', '--directory', default=None, required=False, dest='directory', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
-    parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Report.xlsx.')
+    parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
     parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX, which is the default.')
@@ -272,7 +272,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
             warnings.append(">{:.2f}% unclassifed scaffolds".format(int(30)))
         if float(Asmbld_Genus_percent) <float(50.00):
             warnings.append("<50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
-    else:
+    elif scaffolds == "Unknown" and Wt_asmbld_unclassified_percent == "Unknown" and Asmbld_Genus_percent == "Unknown":
         warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
         warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
@@ -321,7 +321,7 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
                         if genus_percent >= 25.00:
                             kraken_trim_genus.append(thing.replace(' ',''))
     except FileNotFoundError:
-        print("Warning: " + sample_name + ".kraken2_trimd.report.txt not found")
+        print("Warning: " + sample_name + ".kraken2_trimd.summary.txt not found")
         kraken_trim_genus = 'Unknown'
     try:
         #file is a VERY WERID so need some extra arguments
@@ -343,7 +343,7 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
                         if genus_percent >= 25.00:
                             kraken_wtasmbld_genus.append(thing.replace(' ',''))
     except FileNotFoundError:
-        print("Warning: " + sample_name + ".kraken2_wtasmbld.report.txt not found")
+        print("Warning: " + sample_name + ".kraken2_wtasmbld.summary.txt not found")
         kraken_wtasmbld_report = 'Unknown'
     return kraken_trim_genus, kraken_wtasmbld_genus
 
@@ -648,12 +648,12 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         else:
             Coverage = Assembly_Length = 'Unknown'
     except FileNotFoundError:
-        print("Warning: " + sample_name + "_report.tsv not found")
+        print("Warning: " + sample_name + "_summary.tsv not found")
         Coverage = Assembly_Length = 'Unknown'
     try:
         Scaffold_Count = get_scaffold_count(quast_report)
     except FileNotFoundError:
-        print("Warning: " + sample_name + "_report.tsv not found")
+        print("Warning: " + sample_name + "_summary.tsv not found")
         Scaffold_Count = 'Unknown'
     try:
         busco_metrics = Get_BUSCO_Gene_Count(busco_short_summary)
@@ -783,11 +783,11 @@ def Get_Files(directory, sample_name):
     # create file names
     trim_stats = directory + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt"
     raw_stats = directory + "/raw_stats/" + sample_name + "_raw_read_counts.txt"
-    kraken_trim = directory + "/kraken2_trimd/" + sample_name + ".trimd_summary.txt"
-    kraken_trim_report = directory + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.report.txt"
-    kraken_wtasmbld = directory + "/kraken2_asmbld_weighted/" + sample_name + ".wtasmbld_summary.txt"
-    kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.report.txt"
-    quast_report = directory + "/quast/" + sample_name + "_report.tsv"
+    kraken_trim = directory + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt"
+    kraken_trim_report = directory + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt"
+    kraken_wtasmbld = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt"
+    kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt"
+    quast_report = directory + "/quast/" + sample_name + "_summary.tsv"
     mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
     # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
     # You only need this for glob because glob will throw an index error if not.
@@ -1053,9 +1053,9 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
-        writer = pd.ExcelWriter((output + '_GRiPHin_Report.xlsx'), engine='xlsxwriter')
+        writer = pd.ExcelWriter((output + '_GRiPHin_Summary.xlsx'), engine='xlsxwriter')
     else:
-        writer = pd.ExcelWriter(('GRiPHin_Report.xlsx'), engine='xlsxwriter')
+        writer = pd.ExcelWriter(('GRiPHin_Summary.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
     df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=1)
     # Get the xlsxwriter workfbook worksheet objects for formating
@@ -1186,13 +1186,13 @@ def blind_samples(final_df, control_file):
 def create_samplesheet(directory):
     """Function will create a samplesheet from samples in a directory if -d argument passed."""
     directory = os.path.abspath(directory) # make sure we have an absolute path to start with
-    with open("GRiPHin_samplesheet.csv", "w") as samplesheet:
+    with open("Directory_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
     dirs = sorted(os.listdir(directory))
     # If there are any new files added to the top directory they will need to be added here or you will get an error
-    skip_list_a = glob.glob(directory + "/*_GRiPHin_Report.xlsx") # for if griphin is run on a folder that already has a report in it
+    skip_list_a = glob.glob(directory + "/*_GRiPHin_Summary.*") # for if griphin is run on a folder that already has a report in it
     skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
-    skip_list_b = ["Phoenix_Output_Report.tsv", "pipeline_info", "GRiPHin_Report.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv", "sra_samplesheet.csv"]
+    skip_list_b = ["BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "Phoenix_Summary.tsv", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "Directory_samplesheet.csv", "sra_samplesheet.csv"]
     skip_list = skip_list_a + skip_list_b
     #remove unwanted files
     dirs_cleaned = [item for item in dirs if item not in skip_list]
@@ -1201,11 +1201,11 @@ def create_samplesheet(directory):
     except: #if no numbers then use only alphabetically
         dirs_sorted=sorted(dirs_cleaned)
     for sample in dirs_sorted:
-        with open("GRiPHin_samplesheet.csv", "a") as samplesheet:
+        with open("Directory_samplesheet.csv", "a") as samplesheet:
             if directory[-1] != "/": # if directory doesn't have trailing / add one
                 directory = directory + "/"
             samplesheet.write(sample + "," + directory + sample + '\n')
-    samplesheet = "GRiPHin_samplesheet.csv"
+    samplesheet = "Directory_samplesheet.csv"
     return samplesheet
 
 def sort_samplesheet(samplesheet):
@@ -1219,6 +1219,21 @@ def sort_samplesheet(samplesheet):
     df = df.set_index("sample")
     df = df.loc[samples_sorted]
     df.to_csv(samplesheet, sep=',', encoding='utf-8') #overwrite file
+
+def convert_excel_to_tsv(output):
+    '''Reads in the xlsx file that was just created, outputs as tsv version with first layer of headers removed'''
+    if output != "":
+        output_file = output + '_GRiPHin_Summary'
+    else:
+        output_file = 'GRiPHin_Summary'
+    #Read excel file into a dataframe
+    data_xlsx = pd.read_excel(output_file + '.xlsx', 'Sheet1', index_col=None, header=[1])
+    #Replace all fields having line breaks with space
+    #data_xlsx = data_xlsx.replace('\n', ' ',regex=True)
+    #drop the footer information
+    data_xlsx = data_xlsx.iloc[:-10] 
+    #Write dataframe into csv
+    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
 
 def main():
     args = parseArgs()
@@ -1272,6 +1287,8 @@ def main():
     else:
         final_df = final_df
     write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix)
+    convert_excel_to_tsv(args.output)
+
 
 if __name__ == '__main__':
     main()

@@ -58,7 +58,7 @@ task phoenix {
       scaffold_ext=""
     fi
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v2.0.1 -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v2.0.2 -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -75,51 +75,51 @@ task phoenix {
     fi
 
     # Gather Phoenix Output
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f3 | tee WARNING_COUNT
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f4 | tee ESTIMATED_COVERAGE
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f5 | tee GENOME_LENGTH
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f6 | tee ASSEMBLY_RATIO
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
-    sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
+    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
+    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f3 | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f4 | tee ESTIMATED_COVERAGE
+    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f5 | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f6 | tee ASSEMBLY_RATIO
+    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
     if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee SPECIES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee MLST_1
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f18 | tee MLST_2
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee QC_REASON
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f9 | tee SPECIES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f13 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f14 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f15 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee MLST_1
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_2
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee QC_REASON
       echo "Only run with CDC entry" | tee BUSCO_DB
       echo "Only run with CDC entry" | tee BUSCO
     elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f9 | tee BUSCO
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f11 | tee SPECIES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f15 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f16 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f18 | tee MLST_1
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f19 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f20 | tee MLST_2
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-      sed -n 2p ~{samplename}/results/Phoenix_Output_Report.tsv | cut -d$'\t' -f26 | tee QC_REASON
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f9 | tee BUSCO
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f11 | tee SPECIES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f15 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_1
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee MLST_2
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee QC_REASON
     else
       echo "Entry point not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
       exit 1
@@ -128,7 +128,7 @@ task phoenix {
   output {
     File?   work_files                        = "work.tar.gz"
     String  phoenix_version                   = read_string("VERSION")
-    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.0.0"
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warning_count                     = read_string("WARNING_COUNT")
@@ -157,7 +157,8 @@ task phoenix {
     String  qc_reason                         = read_string("QC_REASON")
     #summary files
     File full_results             = "~{samplename}.tar.gz"
-    File griphin_report           = "~{samplename}/results/results_GRiPHin_Report.xlsx"
+    File griphin_excel_summary    = "~{samplename}/results/results_GRiPHin_Summary.xlsx"
+    File griphin_tsv_summary      = "~{samplename}/results/results_GRiPHin_Summary.tsv"
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? raw_read1_html          = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
     File? raw_read1_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"
@@ -165,8 +166,8 @@ task phoenix {
     File? raw_read2_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
     #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? kraken_trimd_output     = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.classifiedreads.txt"
-    File? kraken_trimd_report     = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.report.txt"
-    File? kraken_trimd_summary    = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
+    File? kraken_trimd_summary    = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.top_kraken_hit.txt"
+    File? kraken_trimd_top_taxa   = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
     File? trimd_html              = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
     File? trimd_krona             = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
     File? classified_1            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fasta.gz"
@@ -194,8 +195,8 @@ task phoenix {
     File? spades_log               = "~{samplename}/results/~{samplename}/assembly/~{samplename}.spades.log"
     #phoenix wtasmbld kraken/krona
     File kraken_wtasmbld_output   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
-    File kraken_wtasmbld_report   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.report.txt"
-    File kraken_wtasmbld_summary  = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.wtasmbld_summary.txt"
+    File kraken_wtasmbld_summary  = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.summary.txt"
+    File kraken_wtasmbld_top_taxa = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
     File wtasmbld_html            = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
     File wtasmbld_krona           = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     #phoenix ani
@@ -204,7 +205,7 @@ task phoenix {
     File top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
     File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"
     #phoenix quast and mlst
-    File quast_report             = "~{samplename}/results/~{samplename}/quast/~{samplename}_report.tsv"
+    File quast_summary            = "~{samplename}/results/~{samplename}/quast/~{samplename}_summary.tsv"
     File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
     Array[File?] busco_generic    = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
@@ -229,10 +230,10 @@ task phoenix {
     File amrfinder_hits           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
-    File? multiqc_report          = "~{samplename}/results/multiqc/multiqc_report.html"
+    File? multiqc_output          = "~{samplename}/results/multiqc/multiqc_report.html"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix:2.0.0"
+    docker: "quay.io/jvhagey/phoenix:2.0.2"
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"

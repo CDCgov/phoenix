@@ -1,7 +1,7 @@
 process GET_TRIMD_STATS {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
 
     input:
     tuple val(meta), path(fastp_trimd_json), path(fastp_singles_json)

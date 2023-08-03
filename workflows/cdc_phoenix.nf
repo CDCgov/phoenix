@@ -100,6 +100,7 @@ workflow PHOENIX_EXQC {
     take:
         ch_input
         ch_versions
+        ncbi_excel_creation
 
     main:
         // Allow outdir to be relative
@@ -415,6 +416,7 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
+        //create GRiPHin report
         GRIPHIN (
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false
         )

@@ -68,4 +68,5 @@ RUN pip3 install biopython \
     times \
     xlsxwriter \
     cryptography==36.0.2 \
-    pytest-shutil
+    pytest-shutil \
+    openpyxl 

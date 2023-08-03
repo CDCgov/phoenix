@@ -17,6 +17,8 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::biopython \
     conda-forge::rsync \
     conda-forge::xlsxwriter \
+    anaconda::pandas=1.3.5 \
+    anaconda::openpyxl \
     conda-forge::bc \
     conda-forge::wget \
     conda-forge::ca-certificates \
@@ -60,3 +62,9 @@ ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/envs/amrfinderplus/bin:/opt/cond
 
 #setting up stuff for BUSCO
 ENV AUGUSTUS_CONFIG_PATH=/opt/conda/envs/busco/config/
+
+#remove db and add custom mlst db
+RUN rm /opt/conda/envs/phoenix/db/scheme_species_map.tab && rm -r /opt/conda/envs/phoenix/db/pubmlst && rm -r /opt/conda/envs/phoenix/db/blast
+COPY --chown=mambauser:mambauser db /opt/conda/envs/phoenix/db/
+#change permissions of database files
+RUN chmod 755 --recursive /opt/conda/envs/phoenix/db/*

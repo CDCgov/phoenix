@@ -1,15 +1,14 @@
 process MLST {
     tag "$meta.id"
-    label 'process_low'
-    container 'staphb/mlst:2.23.0'
-    containerOptions '-B /scicomp/groups/OID/NCEZID/DHQP/CEMB/Nick_DIR/new_DBS_20230502/20230504/MLST/db:/mlst-2.23.0/db'
+    label 'process_medium'
+    container 'quay.io/jvhagey/mlst:2.23.0_07282023'
 
     input:
-    tuple val(meta), path(fasta), path(mlst_db_path)
+    tuple val(meta), path(fasta)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
-    path("versions.yml")           , emit: versions
+    path("versions.yml")          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -18,6 +17,15 @@ process MLST {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
+    def mlst_version = task.container.toString() - "quay.io/jvhagey/mlst:"
+    def mlst_version_cleaned = mlst_version.split("_")[0]
+    if (params.terra==false) {
+        terra = false
+    } else if (params.terra==true) {
+        terra = true
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
     if [[ ${fasta} = *.gz ]]
     then
@@ -27,8 +35,7 @@ process MLST {
         unzipped_fasta=${fasta}
     fi
 
-    mlst \\
-        --threads $task.cpus \\
+    mlst --threads $task.cpus \\
         \$unzipped_fasta \\
         > ${prefix}.tsv
 
@@ -60,14 +67,17 @@ process MLST {
     # Add in generic header
     sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 lous_9  locus_10' ${prefix}.tsv
 
-    #getting database version)
-    mlst_db_version=\$(cat ./db/db_version)
+    #handling to get database version being used
+    if [[ $terra == false ]]; then
+        db_version=\$(cat /mlst-${mlst_version_cleaned}/db/db_version | date -f - +%Y-%m-%d )
+    else
+        db_version=\$(cat /opt/conda/envs/phoenix/db/db_version | date -f - +%Y-%m-%d )
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mlst: \$( echo \$(mlst --version 2>&1) | sed 's/mlst //' )
-        mlst_db: \$( cat db/db_version | date -f - +%Y-%m-%d )
+        mlst_db: \$db_version
     END_VERSIONS
     """
-
 }
