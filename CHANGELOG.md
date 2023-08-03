@@ -145,7 +145,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Fixed Bugs:**  
 - Typo fix and changed branch called in Terra task that caused Terra version to crash.
 
-## [v2.0.2](https://github.com/CDCgov/phoenix/releases/tag/v2.0.2) (08/0X/2023)
+## [v2.0.2](https://github.com/CDCgov/phoenix/releases/tag/v2.0.2) (08/03/2023)
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.0.1...v2.0.2)
 
