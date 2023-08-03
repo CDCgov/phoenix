@@ -1,7 +1,7 @@
 process MLST {
     tag "$meta.id"
     label 'process_medium'
-    container 'quay.io/jvhagey/mlst:2.23.0'
+    container 'quay.io/jvhagey/mlst:2.23.0_07282023'
 
     input:
     tuple val(meta), path(fasta)
