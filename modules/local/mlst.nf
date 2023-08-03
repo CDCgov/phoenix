@@ -18,6 +18,13 @@ process MLST {
     def prefix = task.ext.prefix ?: "${meta.id}"
     // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
     def mlst_version = task.container.toString() - "quay.io/jvhagey/mlst:"
+    if (params.terra==false) {
+        terra = false
+    } else if (params.terra==true) {
+        terra = true
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
     if [[ ${fasta} = *.gz ]]
     then
