@@ -1,7 +1,7 @@
 process SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
 
     input:
     path samplesheet

@@ -1,7 +1,7 @@
 process DETERMINE_TAXA_ID_FAILURE {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.0'
+    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
 
     input:
     tuple val(meta), path(k2_bh_summary), val(spades_outcome)
