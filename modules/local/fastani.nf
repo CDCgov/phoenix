@@ -23,7 +23,7 @@ process FASTANI {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    line=$(head -n1 ${reference})
+    line=\$(head -n1 ${reference})
     if [[ "\${line}" = "No MASH hits found" ]]; then
         echo "No MASH hit found" > ${meta.id}.ani.txt
     else
