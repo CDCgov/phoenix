@@ -12,7 +12,7 @@ process FORMAT_ANI {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     line=$(head -n1 ${ani_file})
-    if [[ "${line}" = "No MASH hit found" ]]; then
+    if [[ "\${line}" = "No MASH hit found" ]]; then
         echo "No MASH hit found" > "${meta.id}.fastani.txt"
     else
         def prefix = task.ext.prefix ?: "${meta.id}"
