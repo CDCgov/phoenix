@@ -28,6 +28,10 @@ process DETERMINE_TOP_TAXA {
 
     sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -o reference_dir $terra
 
+    if [[ ! -f ${meta.id}_best_MASH_hits.txt ]]; then
+        touch ${meta.id}_best_MASH_hits.txt
+    fi
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         Date of RefSeq Pull: \$(date +"%d-%m-%y")
