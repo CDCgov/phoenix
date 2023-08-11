@@ -11,7 +11,7 @@ process FORMAT_ANI {
     path("versions.yml"),                   emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    line=$(head -n1 ${ani_file})
+    line=\$(head -n1 ${ani_file})
     def prefix = task.ext.prefix ?: "${meta.id}"
     // terra=true sets paths for bc/wget for terra container paths
     if (params.terra==false) {
