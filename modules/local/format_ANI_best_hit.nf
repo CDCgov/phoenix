@@ -12,20 +12,20 @@ process FORMAT_ANI {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     line=$(head -n1 ${ani_file})
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    // terra=true sets paths for bc/wget for terra container paths
+    if (params.terra==false) {
+        terra = ""
+    } else if (params.terra==true) {
+        terra = "-t terra"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    """
     if [[ "\${line}" = "No MASH hit found" ]]; then
         echo "No MASH hit found" > "${meta.id}.fastani.txt"
     else
-        def prefix = task.ext.prefix ?: "${meta.id}"
-        // terra=true sets paths for bc/wget for terra container paths
-        if (params.terra==false) {
-            terra = ""
-        } else if (params.terra==true) {
-            terra = "-t terra"
-        } else {
-            error "Please set params.terra to either \"true\" or \"false\""
-        }
-        def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
-        """
         db_version=\$(echo ${ani_file} | sed 's/.ani.txt//' | sed 's/${meta.id}_//' )
         # Setup to catch any issues while grabbing date from DB name
         if [[ "\${db_version}" = "" ]]; then
