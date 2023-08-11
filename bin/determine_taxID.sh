@@ -79,7 +79,7 @@ Check_source() {
 #		for f in ${OUTDATADIR}/ANI/*; do
 		if [[ "${fastani_file}" = *".fastANI"*".txt" ]]; then
 			header=$(head -n1 ${fastani_file})
-			if [[ ${header} != "No matching ANI database found for"* ]] && [[ ${header} != "0.00%"* ]] ; then
+			if [[ ${header} != "No matching ANI database found for"* ]] && [[ ${header} != "No MASH hit found" ]] && [[ ${header} != "0.00%"* ]] ; then
 				do_ANI
 			return
 			else
@@ -111,8 +111,8 @@ do_ANI() {
 #	source_file=$(find "${OUTDATADIR}/ANI" -type f -name "${sample_name}.fastANI_*.txt" | sort -k3,3 -Vrt '.' | head -n1)
 	source_file="${fastani_file}"
 	if [[ -s "${fastani_file}" ]]; then
-		header=$(head -n 1 "${fastani_file}")
-		info=$(tail -n 1 "${fastani_file}")
+ 		header=$(head -n 1 "${fastani_file}")
+   		info=$(tail -n 1 "${fastani_file}")
 		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
 		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
 		confidence_index=$(echo "${info}" | cut -d'	' -f1)
