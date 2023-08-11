@@ -24,7 +24,7 @@ process FASTANI {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     line=\$(head -n1 ${reference})
-    if [[ "\${line}" = "No MASH hits found" ]]; then
+    if [[ "\${line}" = "No MASH hit found" ]]; then
         echo "No MASH hit found" > ${meta.id}.ani.txt
     else
         db_version=\$(echo ${reference} | sed 's/_best_MASH_hits.txt//' | sed 's/${meta.id}_//' )
