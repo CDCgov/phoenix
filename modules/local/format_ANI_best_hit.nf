@@ -24,7 +24,7 @@ process FORMAT_ANI {
     """
     line=\$(head -n1 ${ani_file})
     if [[ "\${line}" = "No MASH hit found" ]]; then
-        echo "No MASH hit found" > "${meta.id}.fastani.txt"
+        echo "No MASH hit found" > "${meta.id}.fastANI.txt"
     else
         db_version=\$(echo ${ani_file} | sed 's/.ani.txt//' | sed 's/${meta.id}_//' )
         # Setup to catch any issues while grabbing date from DB name
