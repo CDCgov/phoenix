@@ -293,7 +293,7 @@ workflow PHOENIX_EXQC {
         // Combining weighted kraken report with the FastANI hit based on meta.id
         best_hit_ch = KRAKEN2_WTASMBLD.out.report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
         .join(FORMAT_ANI.out.ani_best_hit.map{        meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]},  by: [0])\
-        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{    meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary ]}, by: [0])
+        .join(KRAKEN2_TRIMD.out.report.map{    meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary ]}, by: [0])
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
