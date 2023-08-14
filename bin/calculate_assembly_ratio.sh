@@ -78,6 +78,14 @@ else
 	bc_path=bc
 fi
 
+taxid="NA"
+stdev="NA"
+stdevs="NA"
+assembly_length='NA'
+expected_length='NA'
+total_tax='NA'
+taxid='NA'
+
 # Accounts for manual entry or passthrough situations
 if [[ -f "${db_path}" ]]; then
 	#Clean up database so the name doesn't start with lowercase letter (change to uppercase) and remove brackets
@@ -89,6 +97,8 @@ if [[ -f "${db_path}" ]]; then
 #	NCBI_ratio_date="20210819"
 else
 	echo "No ratio DB, exiting"
+ 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
+	echo -e "Tax: No genus Found	No species found\nNCBI_TAXID: No Match Found\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 fi
 
@@ -120,6 +130,8 @@ if [[ -f "${quast_report}" ]]; then
 #elif
 else
 	echo "No quast exists, cannot continue"
+ 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
+	echo -e "Tax: No genus Found	No species found\nNCBI_TAXID: No Match Found\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 fi
 counter=0
@@ -129,7 +141,13 @@ if [[ ! "${force}" ]]; then
 	if  [[ -f "${tax_file}" ]]; then
 		# All tax files seem to have an extra empty line. To avoid messing anything else up, we'll deal with it as is
 		genus=$(head -n7 "${tax_file}" | tail -n1 | cut -d'	' -f2)
+  		if [[ "${genus}" = "" ]]; then
+    			genus="No genus found"
+       		fi
 		species=$(head -n8 "${tax_file}" | tail -n1 | cut -d'	' -f2)
+  		if [[ "${species}" = "" ]]; then
+    			species="No species found"
+       		fi
 		total_tax="${genus} ${species}"
 		#echo "${genus} ${species}"
 	else
@@ -141,6 +159,7 @@ else
 	species="${in_species}"
 	total_tax="${genus} ${species}	(selected manually)"
 fi
+
 
 while IFS='' read -r line; do
 	IFS=$'\t' read -a arr_line <<< "$line"
@@ -194,14 +213,14 @@ done < "${NCBI_ratio}"
 
 if [[ ! ${expected_length} ]]; then
 	echo "No expected length was found to compare to"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -1" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: NA\nIsolate_St.Devs: NA\nActual_length: ${assembly_length}\nExpected_length: NA\nRatio: -1" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 elif [[ ! ${assembly_length} ]]; then
 	echo "No assembly length was found to compare with"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
-	exit
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: NA\nActual_length: NA\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
+	"Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}\nSample_GC_Percent: NA" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+ 	exit
 fi
 
 ratio=$(echo "scale=6; ${assembly_length} / ${expected_length}" | $bc_path | awk '{printf "%.4f", $0}')
