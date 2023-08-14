@@ -9,7 +9,7 @@
 #
 # Modules required: None
 #
-# v1.1 (06/03/2022)
+# v1.2 (08/14/2023)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
@@ -195,10 +195,12 @@ done < "${NCBI_ratio}"
 if [[ ! ${expected_length} ]]; then
 	echo "No expected length was found to compare to"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -1" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 elif [[ ! ${assembly_length} ]]; then
 	echo "No assembly length was found to compare with"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 fi
 
