@@ -193,7 +193,7 @@ def get_assembly_ratio(asmbld_ratio, tax_file):
                 taxa =  (line.split("Tax: ",1)[1]).strip()
             if "Isolate_St.Devs:" in line:
                 stdev = (line.split("Isolate_St.Devs: ",1)[1]).strip()
-                if stdev == 'NA': #handling making stdev a float only if its a number
+                if stdev == 'NA' or stdev == 'No Match Found': #handling making stdev a float only if its a number
                     pass
                 else:
                     stdev =  float(stdev)
