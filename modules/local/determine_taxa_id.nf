@@ -24,8 +24,8 @@ process DETERMINE_TAXA_ID {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        NCBI Taxonomy Nodes Reference File: $nodes
-        NCBI Taxonomy Names Reference File: $names
+        NCBI Taxonomy Nodes Reference File: $nodes_file
+        NCBI Taxonomy Names Reference File: $names_file
         phoenix_base_container: ${container}
     END_VERSIONS
     """
