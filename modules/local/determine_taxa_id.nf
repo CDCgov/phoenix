@@ -18,13 +18,14 @@ process DETERMINE_TAXA_ID {
     def k2_bh_file = k2_bh_summary ? "-r $k2_bh_summary" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    
+
     determine_taxID.sh -k $kraken_weighted -s $meta.id -f $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
 
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        NCBI Taxonomy Reference File: $taxa_file
+        NCBI Taxonomy Nodes Reference File: $nodes
+        NCBI Taxonomy Names Reference File: $names
         phoenix_base_container: ${container}
     END_VERSIONS
     """
