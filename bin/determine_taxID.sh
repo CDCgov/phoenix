@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #
-# Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.kraken2
+# Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.kraken2 assembly 3.kraken2 reads
 # 	The taxon is chosen based on the highest ranked classifier first
 #
-# Usage: ./determine_texID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_file -m names_file
+# Usage: ./determine_texID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_file -m names_file [-r reads_kraken_report]
 #
 # Modules required: None
 #
@@ -14,13 +14,13 @@
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./determine_taxID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_X.dmp -m names_X.dmp"
+	echo "Usage is ./determine_taxID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_X.dmp -m names_X.dmp [-r reads_kraken_report]"
 	echo "Output is saved to /sample_name/sample_name.tax"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?k:s:f:d:r:" option; do
+while getopts ":h?k:s:f:d:r:m:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -43,7 +43,7 @@ while getopts ":h?k:s:f:d:r:" option; do
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
 			nodes=${OPTARG};;
-   		m)
+		m)
 			echo "Option -m triggered, argument = ${OPTARG}"
 			names=${OPTARG};;
 		:)
@@ -114,8 +114,8 @@ do_ANI() {
 #	source_file=$(find "${OUTDATADIR}/ANI" -type f -name "${sample_name}.fastANI_*.txt" | sort -k3,3 -Vrt '.' | head -n1)
 	source_file="${fastani_file}"
 	if [[ -s "${fastani_file}" ]]; then
- 		header=$(head -n 1 "${fastani_file}")
-   		info=$(tail -n 1 "${fastani_file}")
+		header=$(head -n 1 "${fastani_file}")
+		info=$(tail -n 1 "${fastani_file}")
 		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
 		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
 		confidence_index=$(echo "${info}" | cut -d'	' -f1)
@@ -176,32 +176,39 @@ Check_source 0
 # Check if species was assigned and get starting taxID
 if [[ -n ${species} ]]; then
 	species=$(echo ${species} | tr -d [:space:])
-	for name_line in $(zgrep $"	|	${species}	|	" ${names}); do
- 		taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
+	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
+	#echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
+	IFS=$'\n'
+	for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
+		taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
 		name=$(echo "${name_line}" | cut -d$'\t' -f3)
 		unique_name=$(echo "${name_line}" | cut -d$'\t' -f5)
 		name_class=$(echo "${name_line}" | cut -d$'\t' -f7)
 		if [[ "${name_class}" = "scientific name" ]]; then
 			species_taxID="${taxID}"
+			genus_taxID="Not_needed,species_found"
 		fi
 	done
- fi
+fi
 
- # See if we can at least start at genus level to fill in upper taxonomy
- if [[ -z "${species_taxID}" ]]; then
- 	# Check if genus was assigned
- 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
- 	if [[ -n "${Genus}" ]]; then
-  		for name_line in $(zgrep $"	|	${species}	|	" ${names}); do
-  			taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
+# See if we can at least start at genus level to fill in upper taxonomy
+if [[ -z "${species_taxID}" ]]; then
+	# Check if genus was assigned
+	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
+	#echo "${Genus} - zgrep '	|	${Genus}	|	${names}'"
+	if [[ -n "${Genus}" ]]; then
+		IFS=$'\n'
+		for name_line in $(zgrep $'\t|\t'"${Genus}"$'\t|\t' ${names}); do
+			taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
 			name=$(echo "${name_line}" | cut -d$'\t' -f3)
 			unique_name=$(echo "${name_line}" | cut -d$'\t' -f5)
 			name_class=$(echo "${name_line}" | cut -d$'\t' -f7)
 			if [[ "${name_class}" = "scientific name" ]]; then
+				#echo "Matched! - ${taxID}"
 				genus_taxID="${taxID}"
 			fi
-  		done
-    	fi
+		done
+    fi
 fi
 
 # Check if genus was assigned as peptoclostridium and relabel it as Clostridium for downstream analyses relying on this older naming convention
@@ -215,6 +222,7 @@ taxa_indices=( "kingdom" "phylum" "class" "order" "family" "genus" "species")
 declare -A taxID_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 declare -A tax_name_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 
+echo "${species_taxID}-${genus_taxID}"
 
 if [[ -z "${species_taxID}" ]]; then
 	if [[ -z "${genus_taxID}" ]]; then
@@ -224,13 +232,13 @@ if [[ -z "${species_taxID}" ]]; then
 		max_counter=6
 		taxID_list[species]=0
 		tax_name_list[species]="Unknown"
-  		taxID="${genus_taxID}"
+		taxID="${genus_taxID}"
 	fi
 else
- 	max_counter=7
+	max_counter=7
 	taxID="${species_taxID}"
 fi
- 
+
 counter=0
 
 while [[ ${counter} -lt "${max_counter}" ]]; do
@@ -271,10 +279,10 @@ if [[ "${tax_name_list[species]}" != "Unknown" ]]; then
 	tax_name_list[species]=$(echo ${tax_name_list[species],,} | cut -d' ' -f2-)
 fi
 
-for i in "${!tax_name_list[@]}"; do
-	echo $i-${tax_name_list[$i]}
-done
+#for i in "${!tax_name_list[@]}"; do
+#	echo $i-${tax_name_list[$i]}
+#done
 
 # Print output to tax file for sample
 #echo -e "(${source})-${confidence_index}-${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${OUTDATADIR}/${sample_name}.tax"
-echo -e "${source}	${confidence_index}	${source_file}\nK:${taxID_list[0]}	${taxID_list[0]}\nP:${taxID_list[1]}	${taxID_list[1]}\nC:${taxID_list[2]}	${taxID_list[2]}\nO:${taxID_list[3]}	${taxID_list[3]}\nF:${taxID_list[4]}	${taxID_list[4]}\nG:${taxID_list[5]}	${taxID_list[5]}\ns:${taxID_list[6]}	${taxID_list[06}\n" > "${sample_name}.tax"
+echo -e "${source}	${confidence_index}	${source_file}\nK:${taxID_list[${taxa_indices[0]}]}	${tax_name_list[${taxa_indices[0]}]}\nP:${taxID_list[${taxa_indices[1]}]}	${tax_name_list[${taxa_indices[1]}]}\nC:${taxID_list[${taxa_indices[2]}]}	${tax_name_list[${taxa_indices[2]}]}\nO:${taxID_list[${taxa_indices[3]}]}	${tax_name_list[${taxa_indices[3]}]}\nF:${taxID_list[${taxa_indices[4]}]}	${tax_name_list[${taxa_indices[4]}]}\nG:${taxID_list[${taxa_indices[5]}]}	${tax_name_list[${taxa_indices[5]}]}\ns:${taxID_list[${taxa_indices[6]}]}	${tax_name_list[${taxa_indices[6]}]}\n" > "${sample_name}.tax"
