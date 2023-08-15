@@ -207,10 +207,10 @@ workflow SCAFFOLDS_EXTERNAL {
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
-            best_hit_ch, params.taxa
+            best_hit_ch, params.nodes, params.names
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
- 
+
         // Perform MLST steps on isolates (with srst2 on internal samples)
         DO_MLST (
             BBMAP_REFORMAT.out.filtered_scaffolds, \

@@ -5,7 +5,8 @@ process DETERMINE_TAXA_ID {
 
     input:
     tuple val(meta), path(kraken_weighted), path(formatted_ani_file), path(k2_bh_summary)
-    path(taxa_file)
+    path(nodes_file)
+    path(names_file)
 
     output:
     tuple val(meta), path('*.tax'), emit: taxonomy
@@ -25,11 +26,14 @@ process DETERMINE_TAXA_ID {
     def k2_bh_file = k2_bh_summary ? "-r $k2_bh_summary" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    ${ica}determine_taxID.sh -k $kraken_weighted -s $meta.id -f $formatted_ani_file -d $taxa_file $k2_bh_file
+
+    ${ica}determine_taxID.sh -k $kraken_weighted -s $meta.id -f $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        NCBI Taxonomy Reference File: $taxa_file
+        NCBI Taxonomy Nodes Reference File: $nodes_file
+        NCBI Taxonomy Names Reference File: $names_file
         phoenix_base_container: ${container}
     END_VERSIONS
     """
