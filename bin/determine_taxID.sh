@@ -3,18 +3,18 @@
 # Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.kraken2
 # 	The taxon is chosen based on the highest ranked classifier first
 #
-# Usage: ./determine_texID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d database_file(taxes.csv location)
+# Usage: ./determine_texID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_file -m names_file
 #
 # Modules required: None
 #
-# v1.0.8 (08/18/2020)
+# v2.0 (08/15/2023)
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./determine_taxID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d database_file(taxes.csv location)"
+	echo "Usage is ./determine_taxID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_X.dmp -m names_X.dmp"
 	echo "Output is saved to /sample_name/sample_name.tax"
 }
 
@@ -42,7 +42,10 @@ while getopts ":h?k:s:f:d:r:" option; do
 			fastani_file=${OPTARG};;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
-			tax_DB=${OPTARG};;
+			nodes=${OPTARG};;
+   		m)
+			echo "Option -m triggered, argument = ${OPTARG}"
+			names=${OPTARG};;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -169,40 +172,109 @@ do_kraken2_reads() {
 # Start the program by checking ALL sources
 Check_source 0
 
-# Check if genus was assigned
-if [[ ! -z ${Genus} ]]; then
-	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
-fi
-# Check if species was assigned
-if [[ ! -z ${species} ]]; then
+
+# Check if species was assigned and get starting taxID
+if [[ -n ${species} ]]; then
 	species=$(echo ${species} | tr -d [:space:])
+	for name_line in $(zgrep $"	|	${species}	|	" ${names}); do
+ 		taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
+		name=$(echo "${name_line}" | cut -d$'\t' -f3)
+		unique_name=$(echo "${name_line}" | cut -d$'\t' -f5)
+		name_class=$(echo "${name_line}" | cut -d$'\t' -f7)
+		if [[ "${name_class}" = "scientific name" ]]; then
+			species_taxID="${taxID}"
+		fi
+	done
+ fi
+
+ # See if we can at least start at genus level to fill in upper taxonomy
+ if [[ -z "${species_taxID}" ]]; then
+ 	# Check if genus was assigned
+ 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
+ 	if [[ -n "${Genus}" ]]; then
+  		for name_line in $(zgrep $"	|	${species}	|	" ${names}); do
+  			taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
+			name=$(echo "${name_line}" | cut -d$'\t' -f3)
+			unique_name=$(echo "${name_line}" | cut -d$'\t' -f5)
+			name_class=$(echo "${name_line}" | cut -d$'\t' -f7)
+			if [[ "${name_class}" = "scientific name" ]]; then
+				genus_taxID="${taxID}"
+			fi
+  		done
+    	fi
 fi
 
 # Check if genus was assigned as peptoclostridium and relabel it as Clostridium for downstream analyses relying on this older naming convention
-if [[ ${Genus} == "Peptoclostridium" ]]; then
-	Genus="Clostridium"
-fi
+#if [[ ${Genus} == "Peptoclostridium" ]]; then
+#	Genus="Clostridium"
+#fi
+
+#taxa_indices=( "species" "genus" "family" "order" "class" "phylum" "kingdom")
+taxa_indices=( "kingdom" "phylum" "class" "order" "family" "genus" "species")
+
+declare -A taxID_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
+declare -A tax_name_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 
 
-if [[ -f ${tax_DB} ]]; then
-	# Using premade database fill in upper levels of taxonomy info based on genus
-	while IFS= read -r line  || [ -n "$line" ]; do
-		DB_genus=$(echo ${line} | cut -d"," -f1)
-		#echo ":${Genus}:${DB_genus}:"
-		if [[ "${Genus,}" = "${DB_genus}" ]]; then
-				Domain=$(echo "${line}" | cut -d"," -f2)
-				Phylum=$(echo "${line}" | cut -d"," -f3)
-				Class=$(echo "${line}" | cut -d"," -f4)
-				Order=$(echo "${line}" | cut -d"," -f5)
-				Family=$(echo "${line}" | cut -d"," -f6 | tr -d '\r' )
-				#echo ":${Family}:"
-				break
-		fi
-	done < "${tax_DB}"
+if [[ -z "${species_taxID}" ]]; then
+	if [[ -z "${genus_taxID}" ]]; then
+		echo -e "${source}	${confidence_index}	${source_file}\nK:	Unknown\nP:	Unknown\nC:	Unknown\nO:	Unknown\nF:	Unknown\nG:	Unknown\ns:	Unknown\n" > "${sample_name}.tax"
+		exit
+	else
+		max_counter=6
+		taxID_list[species]=0
+		tax_name_list[species]="Unknown"
+  		taxID="${genus_taxID}"
+	fi
 else
-	echo "taxes.csv (${tax_DB}) does not exist"
+ 	max_counter=7
+	taxID="${species_taxID}"
 fi
+ 
+counter=0
+
+while [[ ${counter} -lt "${max_counter}" ]]; do
+	index=$(( max_counter - 1 - counter ))
+	node_line=$(zgrep "^${taxID}	|	" ${nodes})
+	parent=$(echo "${node_line}" | cut -d$'\t' -f3)
+	rank=$(echo "${node_line}" | cut -d$'\t' -f5)
+	#echo "${counter},${taxID},${parent},${rank},${taxa_indices[${index}]}"
+	if [[ "${rank}" = "${taxa_indices[${index}]}" ]] || [[ "${rank}" = "superkingdom" ]]; then
+		#echo "Adding-${taxa_indices[${index}]}-${taxID}"
+		taxID_list["${taxa_indices[${index}]}"]="${taxID}"
+		counter=$(( counter + 1 ))
+	fi
+	taxID=${parent}
+	#for taxa in "${!taxID_list[@]}"; do
+	#	echo "${taxa}-${taxID_list[${taxa}]}"
+	#done
+done
+
+counter=0
+while [[ ${counter} -lt "${max_counter}" ]]; do
+	#index=$(( max_counter - 1 - counter ))
+	taxID=${taxID_list[${taxa_indices[${counter}]}]}
+	IFS=$'\n'
+	for name_line in $(zgrep "^${taxID}	|	" ${names}); do
+		name=$(echo "${name_line}" | cut -d$'\t' -f3)
+		unique_name=$(echo "${name_line}" | cut -d$'\t' -f5)
+		name_class=$(echo "${name_line}" | cut -d$'\t' -f7)
+		if [[ "${name_class}" = "scientific name" ]]; then
+			#echo "${name^} as ${taxa_indices[${counter}]}"
+			tax_name_list[${taxa_indices[${counter}]}]="${name^}"
+		fi
+	done
+	counter=$(( counter + 1 ))
+done
+
+if [[ "${tax_name_list[species]}" != "Unknown" ]]; then
+	tax_name_list[species]=$(echo ${tax_name_list[species],,} | cut -d' ' -f2-)
+fi
+
+for i in "${!tax_name_list[@]}"; do
+	echo $i-${tax_name_list[$i]}
+done
 
 # Print output to tax file for sample
 #echo -e "(${source})-${confidence_index}-${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${OUTDATADIR}/${sample_name}.tax"
-echo -e "${source}	${confidence_index}	${source_file}\nD:	${Domain}\nP:	${Phylum}\nC:	${Class}\nO:	${Order}\nF:	${Family}\nG:	${Genus}\ns:	${species}\n" > "${sample_name}.tax"
+echo -e "${source}	${confidence_index}	${source_file}\nK:${taxID_list[0]}	${taxID_list[0]}\nP:${taxID_list[1]}	${taxID_list[1]}\nC:${taxID_list[2]}	${taxID_list[2]}\nO:${taxID_list[3]}	${taxID_list[3]}\nF:${taxID_list[4]}	${taxID_list[4]}\nG:${taxID_list[5]}	${taxID_list[5]}\ns:${taxID_list[6]}	${taxID_list[06}\n" > "${sample_name}.tax"
