@@ -13,13 +13,21 @@ process DETERMINE_TAXA_ID {
     path("versions.yml")          , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    if (params.ica==false) {
+        ica = ""
+    } else if (params.ica==true) {
+        ica = "bash ${workflow.launchDir}/bin/"
+    } else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+    }
     def prefix = task.ext.prefix ?: "${meta.id}"
     // -r needs to be last as in -entry SCAFFOLDS/CDC_SCAFFOLDS k2_bh_summary is not passed so its a blank argument
     def k2_bh_file = k2_bh_summary ? "-r $k2_bh_summary" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
 
-    determine_taxID.sh -k $kraken_weighted -s $meta.id -f $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
+    ${ica}determine_taxID.sh -k $kraken_weighted -s $meta.id -f $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
 
 
     cat <<-END_VERSIONS > versions.yml

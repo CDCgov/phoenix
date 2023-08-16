@@ -263,21 +263,21 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
             warnings.append(">{:.2f}% unclassifed trimmed reads".format(int(30)))
         if len(kraken_trim_genus) >=2:
             warnings.append(">=2 genera had >{:.2f}% of reads assigned to them".format(int(25)))
-        if float(Trim_Genus_percent) <float(50.00):
-            warnings.append("<50% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
+        if float(Trim_Genus_percent) <float(70.00):
+            warnings.append("<70% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
     else:
         pass
     if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
         # sample_gc > (species_gc_mean + out_of_range_stdev)
         if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
-            warnings.append("GC% >2.58 stdev away from mean GC%({:.2f})".format(float(gc_metrics[3])))
+            warnings.append("GC% >2.58 stdev away from mean GC of {:.2f}%".format(float(gc_metrics[3])))
     if scaffolds != "Unknown" and Wt_asmbld_unclassified_percent != "Unknown" and Asmbld_Genus_percent != "Unknown":
-        if int(scaffolds) > int(200):
-            warnings.append(">200 scaffolds".format(int(70)))
+        if int(scaffolds) > int(200) and int(scaffolds) < int(500): # between 200-500 
+            warnings.append("High scaffold count 200-500 ({}).".format(int(scaffolds)))
         if float(Wt_asmbld_unclassified_percent) > float(30.00):
             warnings.append(">{:.2f}% unclassifed scaffolds".format(int(30)))
-        if float(Asmbld_Genus_percent) <float(50.00):
-            warnings.append("<50% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
+        if float(Asmbld_Genus_percent) <float(70.00):
+            warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     elif scaffolds == "Unknown" and Wt_asmbld_unclassified_percent == "Unknown" and Asmbld_Genus_percent == "Unknown":
         warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
@@ -353,49 +353,47 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
         kraken_wtasmbld_report = 'Unknown'
     return kraken_trim_genus, kraken_wtasmbld_genus
 
-def Checking_auto_pass_fail(scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage):
+def Checking_auto_pass_fail(scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds):
     """Checking auto pass fail conditions"""
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
-    if scaffolds_entry == False:
+    QC_reason = []
+    QC_result = [] # set as blank to begin with, need this to assign variable in QC_result == "FAIL": line
+    if scaffolds_entry == False: # if its not being used for scaffolds entry check estimated coverage otherwise don't
         if coverage == "Unknown" or int(coverage) < int(set_coverage):
-            QC_result = "FAIL"
-            if coverage == "Unknown":
-                QC_reason = "coverage <"+ str(set_coverage) +"x(" + str(coverage) + ")"
+            QC_result.append("FAIL")
+            if coverage == "Unknown": # if else really only needed so you don't end up with "unknownx"
+                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
             else:
-                QC_reason = "coverage <"+ str(set_coverage) +"x(" + str(coverage) + "x)"
-        elif int(length) <= 1000000 or length == "Unknown":
-            QC_result = "FAIL"
-            QC_reason = "<1,000,000 trimmed bps(" + str(length) + ")"
-        elif str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
-            if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
-                QC_result = "FAIL"
-                QC_reason="Assembly file not Found"
-            elif float(assembly_stdev) > 2.58:
-                QC_result = "FAIL"
-                QC_reason="assembly stdev >2.58(" + str(assembly_stdev) + ")"
-            else:
-                QC_result = "PASS"
-                QC_reason = ""
+                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
         else:
-            QC_result = "PASS"
-            QC_reason = ""
+            QC_result.append("PASS")
     else:
-        if int(length) <= 1000000 or length == "Unknown":
-            QC_result = "FAIL"
-            QC_reason = "assembly <1,000,000bps(" + str(length) + ")"
-        elif str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
-            if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
-                QC_result = "FAIL"
-                QC_reason="assembly file not Found"
-            elif float(assembly_stdev) > 2.58:
-                QC_result = "FAIL"
-                QC_reason="assembly stdev >2.58(" + str(assembly_stdev) + ")"
-            else:
-                QC_result = "PASS"
-                QC_reason = ""
+        pass
+    if length == "Unknown" or int(length) <= 1000000:
+        QC_result.append("FAIL")
+        QC_reason.append("assembly <1,000,000bps (" + str(length) + ")")
+    else:
+        QC_result.append("PASS")
+    if str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
+        if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
+            QC_result.append("FAIL")
+            QC_reason.append("assembly file not found")
+        elif float(assembly_stdev) > 2.58:
+            QC_result.append("FAIL")
+            QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ")")
         else:
-            QC_result = "PASS"
-            QC_reason = ""
+            QC_result.append("PASS")
+    if str(scaffolds) == "Unknown" or int(scaffolds) > int(500):
+        QC_result.append("FAIL")
+        QC_reason.append("High scaffold count >500 ({}).".format(str(scaffolds)))
+    else:
+        QC_result.append("PASS")
+    QC_reason = ', '.join(QC_reason)
+    #checking if it was a pass
+    if any("FAIL" in sub for sub in QC_result):
+        QC_result = "FAIL"
+    else:
+        QC_result = "PASS"
     return QC_result, QC_reason
 
 def duplicate_column_clean(df):
@@ -686,7 +684,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         gc_stdev = sample_gc = out_of_range_stdev = species_gc_mean = 'Unknown'
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
-        QC_result, QC_reason = Checking_auto_pass_fail(scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage)
+        QC_result, QC_reason = Checking_auto_pass_fail(scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count)
     except FileNotFoundError: 
         print("Warning: Possibly coverage and assembly length was not calculated and/or"+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
@@ -1140,7 +1138,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     orange_format.set_border(1) # add back border so it matches the rest of the column names
     orange_format_nb = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': False})
     # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column. adding 2 to max row to account for headers
-    worksheet.conditional_format('K3:K' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  40.00, 'format': yellow_format})
+    worksheet.conditional_format('K3:K' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  str(set_coverage), 'format': yellow_format})
     worksheet.conditional_format('K3:K' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.
     worksheet.conditional_format('B3:B' + str(max_row + 2), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})

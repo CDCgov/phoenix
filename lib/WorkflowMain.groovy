@@ -10,7 +10,7 @@ class WorkflowMain {
     public static String citation(workflow) {
         return "If you use ${workflow.manifest.name} for your analysis please cite:\n\n" +
             "* PHoeNIx\n" +
-            " https://doi.org/10.5281/zenodo.8148569\n\n" +
+            " See README.md for DOI for Citation. https://github.com/CDCgov/phoenix#readme\n\n" +
             "* The nf-core framework\n" +
             "  https://doi.org/10.1038/s41587-020-0439-x\n\n" +
             "* Software dependencies\n" +
