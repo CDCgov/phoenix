@@ -171,16 +171,22 @@ def get_gc_metrics(gc_file):
     with open(gc_file, 'r') as f:
         for line in f:
             if "Species_GC_StDev:" in line:
-                if "Not calculated on species with n<10 references" in line:
+                if "Not calculated on species with n<10 references" in line or "No Match Found" in line:
                     gc_stdev = "NA"
                     out_of_range_stdev = gc_stdev
                 else:
                     gc_stdev = float((line.split("Species_GC_StDev: ",1)[1]).strip())
                     out_of_range_stdev = gc_stdev*2.58
             elif "Sample_GC_Percent:" in line:
-                sample_gc = float((line.split("Sample_GC_Percent: ",1)[1]).strip())
+                if "No Match Found" in line:
+                    sample_gc="NA"
+                else:
+                    sample_gc = float((line.split("Sample_GC_Percent: ",1)[1]).strip())
             elif "Species_GC_Mean:" in line:
-                species_gc_mean = float((line.split("Species_GC_Mean: ",1)[1]).strip())
+                if "No Match Found" in line:
+                    species_gc_mean="NA"
+                else:
+                    species_gc_mean = float((line.split("Species_GC_Mean: ",1)[1]).strip())
             else:
                 pass
     return gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean
@@ -576,16 +582,21 @@ def parse_mlst(mlst_file):
 
 def parse_ani(fast_ani_file):
     """Parse ANI file to get format 99.98%ID-98.58%COV-Acinetobacter baumannii(Acinetobacter_baumannii_GCF_012935145.1_ASM1293514v1_genomic.fna.gz)."""
-    ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
-    ID = ani_df["% ID"][0]
-    coverage = ani_df["% Coverage"][0]
-    organism = ani_df["Organism"][0]
-    source_file = ani_df["Source File"][0]
-    #Species_Support = str(ID) + "%ID-" + str(coverage) + "%COV-" + organism + "(" + source_file + ")" #old way of reporting
-    FastANI_output_list = [source_file, ID, coverage, organism]
-    # get taxa to check mlst scheme
-    scheme_guess = organism.split(' ')[0][0].lower() + organism.split(' ')[1][0:4]
-    return FastANI_output_list, scheme_guess
+    with open(fast_ani_file) as f:
+        first_line = f.readline().strip('\n')
+    if first_line == "No MASH hit found":
+        return ['NA','NA','NA','NA'], "NA NA"
+    else:
+        ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
+        ID = ani_df["% ID"][0]
+        coverage = ani_df["% Coverage"][0]
+        organism = ani_df["Organism"][0]
+        source_file = ani_df["Source File"][0]
+        #Species_Support = str(ID) + "%ID-" + str(coverage) + "%COV-" + organism + "(" + source_file + ")" #old way of reporting
+        FastANI_output_list = [source_file, ID, coverage, organism]
+        # get taxa to check mlst scheme
+        scheme_guess = organism.split(' ')[0][0].lower() + organism.split(' ')[1][0:4]
+        return FastANI_output_list, scheme_guess
 
 def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     """Parsing the srst2 file run on the ar gene database."""
