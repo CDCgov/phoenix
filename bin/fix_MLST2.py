@@ -55,6 +55,9 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 	isolate_name = taxonomy_file.split(".")[:-1]
 	isolate_name = ".".join(isolate_name)
 	tax_file = open(taxonomy_file, 'r')
+	# Create default taxonomy values in case they cant be determined later
+	genus="Unknown"
+	species="Unknown"
 	# Changing from real-time to set pull date
 	#today=datetime.today().strftime('%Y-%m-%d')
 	with open(mlst_db_path+'/db_version') as f:
@@ -526,7 +529,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 		writer.write("Sample\tSource\tPulled_on\tDatabase\tST\tlocus_1\tlocus_2\tlocus_3\tlocus_4\tlocus_5\tlocus_6\tlocus_7\tlocus_8\tlocus_9\tlocus_10\n")
 		if len(checked_and_deduped_schemes) == 0:
 			print("No schemes found")
-			writer.write(isolate_name+"\tNone-"+genus+" "+species+"\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t")
+			writer.write(isolate_name+"\tNone-"+genus+" "+species+"\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-")
 			all_Types_are_complete="False"
 		else:
 			for i in checked_and_deduped_schemes:
