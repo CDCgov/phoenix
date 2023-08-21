@@ -96,3 +96,19 @@ workflow SRA_PREP {
         samplesheet = CREATE_SRA_SAMPLESHEET.out.csv  // stored in results folder
         versions    = ch_versions                    // channel: [ versions.yml ]
 }
+
+// Adding if/else for running on ICA
+if (params.ica==false) {
+    // do nothing, not running ICA and no erros occurred
+} else if (params.ica==true) {
+    workflow.onError { 
+        // copy intermediate files + directories
+        println("Getting intermediate files from ICA")
+        ['cp','-r',"${workflow.workDir}","${workflow.launchDir}/out"].execute()
+        // return trace files
+        println("Returning workflow run-metric reports from ICA")
+        ['find','/ces','-type','f','-name','\"*.ica\"','2>','/dev/null', '|', 'grep','"report"' ,'|','xargs','-i','cp','-r','{}',"${workflow.launchDir}/out"].execute()
+    }
+} else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+}

@@ -11,7 +11,6 @@ process FORMAT_ANI {
     path("versions.yml"),                   emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    def prefix = task.ext.prefix ?: "${meta.id}"
     // terra=true sets paths for bc/wget for terra container paths
     if (params.terra==false) {
         terra = ""
@@ -20,6 +19,15 @@ process FORMAT_ANI {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    if (params.ica==false) {
+        ica = ""
+    } else if (params.ica==true) {
+        ica = "bash ${workflow.launchDir}/bin/"
+    } else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+    }
+    def prefix = task.ext.prefix ?: "${meta.id}"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     line=\$(head -n1 ${ani_file})
@@ -31,8 +39,7 @@ process FORMAT_ANI {
         if [[ "\${db_version}" = "" ]]; then
             db_version="REFSEQ_unknown"
         fi
-    
-        ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} -d \${db_version} $terra
+        ${ica}ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} -d \${db_version} $terra
     fi
 
     cat <<-END_VERSIONS > versions.yml

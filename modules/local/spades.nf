@@ -23,6 +23,14 @@ process SPADES {
     tuple val(meta), path("*_spades_outcome.csv") ,                emit: spades_outcome
 
     script:
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    if (params.ica==false) {
+        ica = ""
+    } else if (params.ica==true) {
+        ica = "bash ${workflow.launchDir}/bin/"
+    } else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+    }
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def maxmem = task.memory.toGiga() // allow 4 less GB to provide enough space
@@ -32,8 +40,8 @@ process SPADES {
     def extended_qc_arg = extended_qc ? "-c" : ""
     """
     # preemptively create _summary_line.csv and .synopsis file incase spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
-    pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
-    beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
+    ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
+    ${ica}beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -78,6 +86,6 @@ process SPADES {
     #Create a summaryline file that will be deleted later if spades is successful if not this line shows up in the final Phoenix_output_summary file
     #create file '*_spades_outcome.csv' to state if spades fails, if contigs or scaffolds are created. See spades_failure.nf subworkflow
     #This file will determine if downstream process GENERATE_PIPELINE_STATS_FAILURE and CREATE_SUMMARY_LINE_FAILURE will run (if spades creates contigs, but not scaffolds).
-    afterSpades.sh
+    ${ica}afterSpades.sh
     """
 }

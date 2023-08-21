@@ -18,6 +18,14 @@ process FASTP_SINGLES {
     task.ext.when == null || task.ext.when
 
     script:
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    if (params.ica==false) {
+        ica = ""
+    } else if (params.ica==true) {
+        ica = "bash ${workflow.launchDir}/bin/"
+    } else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+    }
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
@@ -27,7 +35,7 @@ process FASTP_SINGLES {
         echo "!!!!! - Both are empty"
         # Both are empty, do nothing??? Nope we handle now
         #Create psuedo file as empty aint cutting it
-        create_empty_fastp_json.sh -n ${prefix}
+        ${ica}create_empty_fastp_json.sh -n ${prefix}
 
         touch "${prefix}_empty.html"
         touch ${prefix}.singles.fastq

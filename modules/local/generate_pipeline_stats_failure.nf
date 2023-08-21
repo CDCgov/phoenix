@@ -21,7 +21,6 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    def prefix = task.ext.prefix ?: "${meta.id}"
     // terra=true sets paths for bc/wget for terra container paths
     if (params.terra==false) {
         terra = ""
@@ -30,9 +29,18 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    if (params.ica==false) {
+        ica = ""
+    } else if (params.ica==true) {
+        ica = "bash ${workflow.launchDir}/bin/"
+    } else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+    }
+    def prefix = task.ext.prefix ?: "${meta.id}"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    pipeline_stats_writer.sh \\
+    ${ica}pipeline_stats_writer.sh \\
         -a $raw_qc \\
         -b $fastp_total_qc \\
         -d ${prefix} \\

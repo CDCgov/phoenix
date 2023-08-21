@@ -367,14 +367,39 @@ workflow SCAFFOLDS_EXQC {
 ========================================================================================
 */
 
-workflow.onComplete {
-    if (count == 0){
-        if (params.email || params.email_on_fail) {
-            NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+// Adding if/else for running on ICA
+if (params.ica==false) {
+    workflow.onComplete {
+        if (count == 0) {
+            if (params.email || params.email_on_fail) {
+                NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+            }
+            NfcoreTemplate.summary(workflow, params, log)
+            count++
         }
-        NfcoreTemplate.summary(workflow, params, log)
-        count++
     }
+} else if (params.ica==true) {
+    workflow.onComplete { 
+        if (workflow.success) {
+            println("Pipeline Completed Successfully")
+            NfcoreTemplate.summary(workflow, params, log)
+            System.exit(0)
+        } else {
+            println("Pipeline Completed with Errors")
+            NfcoreTemplate.summary(workflow, params, log)
+            System.exit(1)
+        }
+    }
+    workflow.onError { 
+        // copy intermediate files + directories
+        println("Getting intermediate files from ICA")
+        ['cp','-r',"${workflow.workDir}","${workflow.launchDir}/out"].execute()
+        // return trace files
+        println("Returning workflow run-metric reports from ICA")
+        ['find','/ces','-type','f','-name','\"*.ica\"','2>','/dev/null', '|', 'grep','"report"' ,'|','xargs','-i','cp','-r','{}',"${workflow.launchDir}/out"].execute()
+    }
+} else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
 }
 
 /*

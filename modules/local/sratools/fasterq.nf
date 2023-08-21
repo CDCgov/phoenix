@@ -1,7 +1,7 @@
 process SRATOOLS_FASTERQDUMP {
     tag "${meta.id}"
     label 'process_low'
-    container "https://depot.galaxyproject.org/singularity/sra-tools%3A3.0.3--h87f3376_0"
+    container "quay.io/biocontainers/sra-tools:3.0.3--h87f3376_0"
 
     input:
     tuple val(meta), path(sra_folder)

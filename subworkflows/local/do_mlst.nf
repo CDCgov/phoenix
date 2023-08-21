@@ -84,4 +84,3 @@ workflow DO_MLST {
         checked_MLSTs = checked_mlst_ch
         versions      = ch_versions // channel: [ versions.yml ]
 }
-

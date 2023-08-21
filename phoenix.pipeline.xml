@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<pd:pipeline xmlns:pd="xsd://www.illumina.com/ica/cp/pipelinedefinition" code="phoenix pipeline" version="1.0">
+    <pd:dataInputs>
+        <pd:dataInput code="input" format="CSV" type="FILE" required="false" multiValue="false">
+            <pd:label>input</pd:label>
+            <pd:description>A comma-separated (csv) file containing information about the samples in the experiment.</pd:description>
+        </pd:dataInput>
+        <pd:dataInput code="input_sra" format="CSV" type="FILE" required="false" multiValue="false">
+            <pd:label>input_sra</pd:label>
+            <pd:description>A csv file that has one SRR number per line. Use with SRA or CDC_SRA entry point.</pd:description>
+        </pd:dataInput>
+        <pd:dataInput code="input_samples" format="FASTQ, FASTA" type="FILE" required="false" multiValue="true">
+            <pd:label>input_samples</pd:label>
+            <pd:description>input samples for pipeline. For SCAFFOLDS and CDC_SCAFFOLDS entry points this should be a FASTA file, for PHOENIX and CDC_PHOENIX entry points it should be a FASTQ file. Don't pass any samples if using SRA or CDC_SRA, just pass a text file with one SRR per line to INPUT_SRA.
+All files will be staged in workflow.launchDir</pd:description>
+        </pd:dataInput>
+        <pd:dataInput code="kraken2db" format="TAR" type="FILE" required="true" multiValue="false">
+            <pd:label>kraken2db</pd:label>
+            <pd:description>Path for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktaxonomy.tsv files. You can pass a decompressed folder or in its compressed '.tar.gz' form. The database can be downloaded from https://benlangmead.github.io/aws-indexes/k2 . You must use a database created after 3/14/2023.",
+</pd:description>
+        </pd:dataInput>
+        <pd:dataInput code="project_dirs" format="UNKNOWN" type="DIRECTORY" required="true" multiValue="true">
+            <pd:label>project_dirs</pd:label>
+            <pd:description>directories (assets, conf, lib, bin, modules, workflows and subworkflows) with additional files/input to run pipeline found on github repo. </pd:description>
+        </pd:dataInput>
+        <pd:dataInput code="schema_json" format="JSON" type="FILE" required="true" multiValue="false">
+            <pd:label>schema_json</pd:label>
+            <pd:description>nextflow_schema.json file found on github repo.</pd:description>
+        </pd:dataInput>
+    </pd:dataInputs>
+    <pd:steps>
+        <pd:step execution="MANDATORY" code="general">
+            <pd:label>general</pd:label>
+            <pd:description>general parameters</pd:description>
+            <pd:tool code="general parameters">
+                <pd:label>general</pd:label>
+                <pd:description>general parameters</pd:description>
+                <pd:parameter code="mode" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>entry</pd:label>
+                    <pd:description>State the entry of the pipeline you want to use. The options are PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA and CDC_SRA.",
+</pd:description>
+                    <pd:stringType/>
+                    <pd:value>PHOENIX</pd:value>
+                </pd:parameter>
+                <pd:parameter code="busco_db_path" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>busco_db_path</pd:label>
+                    <pd:description>Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.</pd:description>
+                    <pd:stringType/>
+                    <pd:value></pd:value>
+                </pd:parameter>
+                <pd:parameter code="coverage" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>coverage</pd:label>
+                    <pd:description>Used to increase the coverage cut off >30x.</pd:description>
+                    <pd:integerType/>
+                    <pd:value>30</pd:value>
+                </pd:parameter>
+            </pd:tool>
+        </pd:step>
+        <pd:step execution="MANDATORY" code="scaffolds entry parameters">
+            <pd:label>SCAFFOLDS and CDC_SCAFFOLDS parameters</pd:label>
+            <pd:description>scaffolds entry parameters</pd:description>
+            <pd:tool code="scaffolds entry parameters">
+                <pd:label>scaffolds entry parameters</pd:label>
+                <pd:description>scaffolds entry parameters</pd:description>
+                <pd:parameter code="indir" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>indir</pd:label>
+                    <pd:description>Path to a input directory to search for assemblies. Files with the extention '*.filtered.scaffolds.fa.gz' and '*.renamed.scaffolds.fa.gz' will be ignored. Alternatively, you can pass a samplesheet (columns should be 'sample,assembly') with the --input argument.</pd:description>
+                    <pd:stringType/>
+                    <pd:value></pd:value>
+                </pd:parameter>
+                <pd:parameter code="scaffolds_ext" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>scaffolds_ext</pd:label>
+                    <pd:description>String that is the FULL extension of the scaffolds files you wish to input. For example, use if your file names are {sample_id}.fa.gz use '.fa.gz' and if you want to look through subdirectories for files with the name {sample_id}.fa.gz then use '/*.fa.gz'. A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used as default. Assemblies must end in '.fa.gz' or '.fasta.gz'.</pd:description>
+                    <pd:stringType/>
+                    <pd:value>.scaffolds.fa.gz</pd:value>
+                </pd:parameter>
+            </pd:tool>
+        </pd:step>
+        <pd:step execution="MANDATORY" code="sra entry parameters">
+            <pd:label>SRA and CDC_SRA parameters</pd:label>
+            <pd:description>sra entry parameters</pd:description>
+            <pd:tool code="sra entry parameters">
+                <pd:label>sra entry parameters</pd:label>
+                <pd:description>sra entry parameters</pd:description>
+                <pd:parameter code="use_sra" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>use_sra</pd:label>
+                    <pd:description>Select true if you want to keep samples named by SRA number rather than sample name found in NCBI metadata.</pd:description>
+                    <pd:booleanType/>
+                    <pd:value>false</pd:value>
+                </pd:parameter>
+            </pd:tool>
+        </pd:step>
+    </pd:steps>
+</pd:pipeline>

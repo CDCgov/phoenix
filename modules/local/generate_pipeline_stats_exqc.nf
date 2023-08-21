@@ -36,6 +36,14 @@ process GENERATE_PIPELINE_STATS_EXQC {
     path("versions.yml")               , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    if (params.ica==false) {
+        ica = ""
+    } else if (params.ica==true) {
+        ica = "bash ${workflow.launchDir}/bin/"
+    } else {
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+    }
     def prefix = task.ext.prefix ?: "${meta.id}"
     def raw             = raw_qc ? "-a $raw_qc" : "" // if raw_qc is null return "-a $raw_qc" else return ""
     def fastp_total     = fastp_total_qc ? "-b $fastp_total_qc" : ""
@@ -45,7 +53,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
     def srst_file       = srst_fullgenes_file ? "-x $srst_fullgenes_file" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    pipeline_stats_writer.sh \\
+    ${ica}pipeline_stats_writer.sh \\
         $raw \\
         $fastp_total \\
         -c $gc_content \\
