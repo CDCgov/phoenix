@@ -3,8 +3,8 @@ process SRST2_AR {
     label 'process_medium'
     //container 'staphb/srst2:0.2.0'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
-        'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
+ #       'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
+        'quay.io/jvhagey/srst2:0.2.0'}"
 
     input:
     tuple val(meta), path(fastq_s), path(db)
