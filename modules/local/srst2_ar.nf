@@ -4,7 +4,8 @@ process SRST2_AR {
     //container 'staphb/srst2:0.2.0'
     //'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'quay.io/jvhagey/srst2:0.2.0'}"
+        'quay.io/jvhagey/srst2:0.2.0':
+        'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2'}"
 
     input:
     tuple val(meta), path(fastq_s), path(db)
