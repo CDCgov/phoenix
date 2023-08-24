@@ -58,7 +58,7 @@ process SRST2_MLST {
 
                 echo "Test: \${mlst_db} \${mlst_db}_profiles.csv \${mlst_delimiter}"
 
-                srst2 ${read_s} \\
+                srst2.py ${read_s} \\
                     --threads $task.cpus \\
                     --output \${scheme_count}_${prefix} \\
                     --mlst_db \${mlst_db}_temp.fasta \\

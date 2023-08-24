@@ -613,12 +613,12 @@ def check_command_version(command_list, version_identifier, command_name, requir
 # allow multiple specific versions that have been specifically tested
 def check_bowtie_version():
 	return check_command_versions([get_bowtie_execs()[0], '--version'], 'version ', 'bowtie',
-								  ['2.1.0','2.2.3','2.2.4','2.2.5','2.2.6','2.2.7','2.2.8','2.2.9'])
+		['2.1.0','2.2.3','2.2.4','2.2.5','2.2.6','2.2.7','2.2.8','2.2.9'])
 
 def check_samtools_version():
 	return check_command_versions([get_samtools_exec()], 'Version: ', 'samtools',
-								  ['0.1.18','0.1.19','1.0','1.1','1.2','1.3','(0.1.18 is '
-																			 'recommended)'])
+		['0.1.18','0.1.19','1.0','1.1','1.2','1.3','(0.1.18 is '
+		'recommended)'])
 
 def check_command_versions(command_list, version_prefix, command_name, required_versions):
 	try:
@@ -758,7 +758,7 @@ def get_pileup(args, mapping_files_pre, raw_bowtie_sam, bowtie_sam_mod, fasta, p
 	logging.info('Generate pileup...')
 	with open(pileup_file, 'w') as sam_pileup:
 		mpileup_command = [samtools_exec, 'mpileup', '-L', '1000', '-f', fasta,
-					 '-Q', str(args.baseq), '-q', str(args.mapq), '-B', out_file_bam_sorted + '.bam']
+			'-Q', str(args.baseq), '-q', str(args.mapq), '-B', out_file_bam_sorted + '.bam']
 		if args.samtools_args:
 			x = args.samtools_args
 			x = x.replace('\\','')
