@@ -28,6 +28,7 @@ from math import log
 from itertools import groupby
 from operator import itemgetter
 from collections import OrderedDict
+import operator as op
 try:
 	from version import srst2_version
 except:
@@ -449,8 +450,17 @@ def read_pileup_data(pileup_file, size, prob_err, consensus_file = ""):
 					consensus_type = "variant"
 				elif consensus_file.split(".")[-2] == "all_consensus_alleles":
 					consensus_type = "consensus"
+				#print "consensus file before fail",consensus_file
 				with open(consensus_file, "a") as consensus_outfile:
-					consensus_outfile.write(">{0}.{1} {2}\n".format(allele, consensus_type, pileup_file.split(".")[1].split("__")[1]))
+					#print pileup_file
+					xm = re.search("^.*__.*__.*\..*__", pileup_file)
+					#print xm
+					if xm:
+						temp_allele=pileup_file.split("_")[4]
+						per_counter = op.countOf(temp_allele, ".")
+						consensus_outfile.write(">{0}.{1} {2}\n".format(allele, consensus_type, pileup_file.split(".")[1 + per_counter].split("__")[1]))
+					else:
+						consensus_outfile.write(">{0}.{1} {2}\n".format(allele, consensus_type, pileup_file.split(".")[1].split("__")[1]))
 					outstring = consensus_seq + "\n"
 					consensus_outfile.write(outstring)
 
@@ -462,7 +472,7 @@ def read_pileup_data(pileup_file, size, prob_err, consensus_file = ""):
 				# determine penalty based on coverage of last 2 bases
 				penalty = float(position_depths[nuc_num-1] + position_depths[nuc_num-2])/2
 				m = min(position_depths[nuc_num-1],position_depths[nuc_num-2])
-				hash_alignment[allele].append((0, round(penalty), prob_success))
+				hash_alignment[allele].append((0, penalty, prob_success))
 				if next_to_del_depth > m:
 					next_to_del_depth = m # keep track of lowest near-del depth for reporting
 
@@ -485,7 +495,7 @@ def read_pileup_data(pileup_file, size, prob_err, consensus_file = ""):
 				# note end-of-seq truncations are dealt with above)
 				if position_depths[j]==0 and position_depths[j+1]!=0:
 					penalty = float(position_depths[j+1]+position_depths[j+2])/2 # mean of next 2 bases
-					hash_alignment[allele].append((0, round(penalty), prob_success))
+					hash_alignment[allele].append((0, penalty, prob_success))
 					m = min(position_depths[nuc_num-1],position_depths[nuc_num-2])
 					if next_to_del_depth > m:
 						next_to_del_depth = m # keep track of lowest near-del depth for reporting
@@ -613,12 +623,12 @@ def check_command_version(command_list, version_identifier, command_name, requir
 # allow multiple specific versions that have been specifically tested
 def check_bowtie_version():
 	return check_command_versions([get_bowtie_execs()[0], '--version'], 'version ', 'bowtie',
-		['2.1.0','2.2.3','2.2.4','2.2.5','2.2.6','2.2.7','2.2.8','2.2.9'])
+								  ['2.1.0','2.2.3','2.2.4','2.2.5','2.2.6','2.2.7','2.2.8','2.2.9'])
 
 def check_samtools_version():
 	return check_command_versions([get_samtools_exec()], 'Version: ', 'samtools',
-		['0.1.18','0.1.19','1.0','1.1','1.2','1.3','(0.1.18 is '
-		'recommended)'])
+								  ['0.1.18','0.1.19','1.0','1.1','1.2','1.3','(0.1.18 is '
+																			 'recommended)'])
 
 def check_command_versions(command_list, version_prefix, command_name, required_versions):
 	try:
@@ -689,7 +699,7 @@ def run_bowtie(mapping_files_pre,sample_name,fastqs,args,db_name,db_full_path):
 				'--no-unal',
 				'-a',					 # Search for and report all alignments
 				'-x', db_full_path			   # The index to be aligned to
-			]
+			   ]
 	if args.threads > 1:
 		command += ['--threads', str(args.threads)]
 
@@ -758,7 +768,7 @@ def get_pileup(args, mapping_files_pre, raw_bowtie_sam, bowtie_sam_mod, fasta, p
 	logging.info('Generate pileup...')
 	with open(pileup_file, 'w') as sam_pileup:
 		mpileup_command = [samtools_exec, 'mpileup', '-L', '1000', '-f', fasta,
-			'-Q', str(args.baseq), '-q', str(args.mapq), '-B', out_file_bam_sorted + '.bam']
+					 '-Q', str(args.baseq), '-q', str(args.mapq), '-B', out_file_bam_sorted + '.bam']
 		if args.samtools_args:
 			x = args.samtools_args
 			x = x.replace('\\','')
@@ -1022,6 +1032,7 @@ def parse_scores(run_type,args,scores, hash_edge_depth,
 		if args.report_all_consensus:
 			new_alleles_filename = args.output + ".all_consensus_alleles.fasta"
 			allele_pileup_file = create_allele_pileup(results[gene][0], pileup_file)
+			#print "allele_pileup_file,size_allele,args.prob_err",allele_pileup_file,size_allele,args.prob_err
 			read_pileup_data(allele_pileup_file, size_allele, args.prob_err, consensus_file = new_alleles_filename)
 
 	return results # (allele, diffs, depth_problem, divergence)
@@ -1512,6 +1523,8 @@ def map_fileSet_to_db(args, sample_name, fastq_inputs, db_name, fasta, size, gen
 				except:
 					annotation = ""
 
+				# Just an old fashioned way of checking/interfering in allele name for problem allele names (ie. ones with '.'s)
+				allele
 				f.write("\t".join([sample_name,db_name,gene_name,allele_name,str(round(coverage_allele[allele],3)),str(avg_depth_allele[allele]),diffs,depth_problem,str(round(divergence*100,3)),str(size_allele[allele]),str(round(mix_rates[allele],3)),cluster_id,seqid,annotation])+"\n")
 
 		# log the gene detection result
