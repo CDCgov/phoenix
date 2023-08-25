@@ -456,9 +456,12 @@ def read_pileup_data(pileup_file, size, prob_err, consensus_file = ""):
 					xm = re.search("^.*__.*__.*\..*__", pileup_file)
 					#print xm
 					if xm:
+						gene_dot_counter,allele_dot_counter = 0,0
+						temp_gene=pileup_file.split("_")[2]
 						temp_allele=pileup_file.split("_")[4]
-						per_counter = op.countOf(temp_allele, ".")
-						consensus_outfile.write(">{0}.{1} {2}\n".format(allele, consensus_type, pileup_file.split(".")[1 + per_counter].split("__")[1]))
+						gene_dot_counter = op.countOf(temp_gene, ".")
+						allele_dot_counter = op.countOf(temp_allele, ".")
+						consensus_outfile.write(">{0}.{1} {2}\n".format(allele, consensus_type, pileup_file.split(".")[1 + allele_dot_counter + gene_dot_counter].split("__")[1]))
 					else:
 						consensus_outfile.write(">{0}.{1} {2}\n".format(allele, consensus_type, pileup_file.split(".")[1].split("__")[1]))
 					outstring = consensus_seq + "\n"
