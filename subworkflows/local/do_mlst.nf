@@ -20,7 +20,8 @@ workflow DO_MLST {
         ch_versions = Channel.empty() // Used to collect the software versions
 
         // Creating channel to ensure ID is paired with matching trimmed assembly
-        mlst_ch = trimmed_assembly.map{meta, fasta    -> [[id:meta.id], fasta]}.combine(mlst_db)
+        mlst_ch = trimmed_assembly.map{meta, fasta    -> [[id:meta.id], fasta]}\
+        .join(taxonomy.map{                   meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0]).combine(mlst_db)
 
         // Running standard mlst tool (torstens) on assembly file using provided mlst database location for scemes, profiles, and allele definitions
         MLST (
