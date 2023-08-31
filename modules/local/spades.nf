@@ -52,7 +52,7 @@ process SPADES {
     spades_complete=run_failure,no_scaffolds,no_contigs
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
 
-    if [ -z $(zcat $unpaired_reads) ]; then
+    if [ -z \$(zcat $unpaired_reads) ]; then
         spades.py \\
             $args \\
             --threads $task.cpus \\
