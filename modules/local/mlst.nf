@@ -4,7 +4,7 @@ process MLST {
     container 'quay.io/jvhagey/mlst:2.23.0_07282023'
 
     input:
-    tuple val(meta), path(fasta), path(mlst_db_path)
+    tuple val(meta), path(fasta), path(taonomy), path(mlst_db_path)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
@@ -35,6 +35,16 @@ process MLST {
         unzipped_fasta=${fasta}
     fi
 
+    if [[ -f ${taxonomy} ]]; then
+        genus=$(head -n7 ${taxonomy} | tail -n1 | cut -d\$'\t' -f2)
+        species=$(head -n8 ${taxonomy} | tail -n1 | cut -d\$'\t' -f2)
+    else
+        genus="UNKNOWN"
+        species="UNKNOWN"
+    fi
+
+    gs="${genus} ${species}"
+
     mlst --threads $task.cpus \\
         \$unzipped_fasta \\
         > ${prefix}.tsv
@@ -60,6 +70,21 @@ process MLST {
         mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
+    # New as of MLST 2.23.0, correctness score update results in some other species outperforming instrinsic ecoli_2 alleles in some cases. Force ecoli to run if ANI taxonomy says so
+    elif [[ \S{genus,,} == "escherichia" ]]; then
+        if [[ \$scheme == "aeromonas" ]]; then
+            mv ${prefix}.tsv ${prefix}.OLD-tsv
+            mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
+            mlst --scheme ecoli_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+            cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+            rm ${prefix}_*.tsv
+        elif [[ \$scheme == "cfreundii" ]]); then
+            mv ${prefix}.tsv ${prefix}.OLD-tsv
+            mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
+            mlst --scheme ecoli_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+            cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+            rm ${prefix}_*.tsv
+        fi
     else
         :
     fi
