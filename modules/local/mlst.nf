@@ -36,8 +36,8 @@ process MLST {
     fi
 
     if [[ -f ${taxonomy} ]]; then
-        genus=$(head -n7 ${taxonomy} | tail -n1 | cut -d\$'\t' -f2)
-        species=$(head -n8 ${taxonomy} | tail -n1 | cut -d\$'\t' -f2)
+        genus=\$(head -n7 ${taxonomy} | tail -n1 | cut -d\$'\t' -f2)
+        species=\$(head -n8 ${taxonomy} | tail -n1 | cut -d\$'\t' -f2)
     else
         genus="UNKNOWN"
         species="UNKNOWN"
