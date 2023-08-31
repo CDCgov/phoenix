@@ -43,7 +43,7 @@ process MLST {
         species="UNKNOWN"
     fi
 
-    gs="${genus} ${species}"
+    #gs="${genus} ${species}"
 
     mlst --threads $task.cpus \\
         \$unzipped_fasta \\
