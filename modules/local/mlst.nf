@@ -4,7 +4,7 @@ process MLST {
     container 'quay.io/jvhagey/mlst:2.23.0_07282023'
 
     input:
-    tuple val(meta), path(fasta), path(taonomy), path(mlst_db_path)
+    tuple val(meta), path(fasta), path(taxonomy), path(mlst_db_path)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
