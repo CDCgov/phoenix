@@ -69,7 +69,7 @@ process MLST {
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     //New as of MLST 2.23.0, correctness score update results in some other species outperforming instrinsic ecoli_2 alleles in some cases. Force ecoli to run if ANI taxonomy says so
-    elif [[ \S{genus,,} == "escherichia" ]]; then
+    elif [[ \${genus,,} == "escherichia" ]]; then
         if [[ \$scheme == "aeromonas" ]]; then
             mv ${prefix}.tsv ${prefix}.OLD-tsv
             mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
