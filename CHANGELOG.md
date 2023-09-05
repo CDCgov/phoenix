@@ -150,12 +150,12 @@ Below are the list of changes to phx since is initial release. As fixes can take
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.0.1...v2.0.2)
 
 **Implemented Enhancements:**  
-- Added handling for -entry `SCAFFOLDS` and `CDC_SCAFFOLDS` to accept assemblies from tricylcer and flye.  
+- Added handling for -entry `SCAFFOLDS` and `CDC_SCAFFOLDS` to accept assemblies from tricylcer and flye [commit 31cb573](https://github.com/CDCgov/phoenix/commit/31cb573f1945b5bb955fb48f5f1856857f157799).  
 - Added tsv version of GRiPHin_Summary.xlsx  
 
 **Output File Changes:**  
-- GRiPHin_samplesheet.csv changed to Directory_samplesheet.csv  
-- In response to feedback from compliance program, "report" is being replaced by "summary" in file names to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
+- GRiPHin_samplesheet.csv changed to Directory_samplesheet.csv [commit b39d8d7](https://github.com/CDCgov/phoenix/commit/b39d8d706ccdd6a22de636bdd20b7cf188ae98f0)  
+- In response to feedback from compliance program, "report" is being replaced by "summary" in file names to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report) [commit b39d8d7](https://github.com/CDCgov/phoenix/commit/b39d8d706ccdd6a22de636bdd20b7cf188ae98f0)  
   - GRiPHin_Report.xlsx changed to GRiPHin_Summary.xlsx  
   - Phoenix_Output_Report.tsv changed to Phoenix_Summary.tsv  
   - quast/${samplename}_report.txt changed to quast/${samplename}_summary.tsv  
@@ -181,11 +181,14 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - 
 
 **Output File Changes:**  
-- 
+- The default outdir phx produces, if the user doesn't pass `--outdir`, was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
 
 **Fixed Bugs:**  
-- Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up.  
-- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite --coverage setting, changes made to respect --coverage flag. 
+- Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
+- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite --coverage setting, changes made to respect --coverage flag.  
+- Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHX will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
+- Correct instance where, in some cases, an mlst scheme could not be determined that a proper out file was not created.  
 
 **Container Updates:**  
 - Base container bummped up to v2.1.0  
+- Container for SRA entry steps `SRATOOLS_FASTERQDUMP` and `SRATOOLS_PREFETCH` was switched to a quay.io/biocontainers to address issues with the old container and ICA. The version of SRATools being used remains the same. [commit 68815e3](https://github.com/CDCgov/phoenix/commit/68815e3797c1944dcd0280ee658c79be90b63c0e#diff-cc23f3860dea73e90629539d540e72a7fc7cf9438de0e89eca1cc31a763c7b2b)
