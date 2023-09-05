@@ -187,6 +187,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up.  
 - `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite --coverage setting, changes made to respect --coverage flag.
 - Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHX will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: E.coli )Pasteur) being incorrectly indentified as aeromonas and E.coli (Pasteur) being identified as klebsiella. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 aeromonas genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene)
+- Correct instance where in some cases where an mlst scheme could not be determined that a proper out file was not created
 
 **Container Updates:**  
 - Base container bummped up to v2.1.0
