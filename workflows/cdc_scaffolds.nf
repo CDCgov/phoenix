@@ -346,7 +346,7 @@ workflow SCAFFOLDS_EXQC {
         GRIPHIN (
             summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true
         )
-        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
         // Collecting the software versions
         CUSTOM_DUMPSOFTWAREVERSIONS (

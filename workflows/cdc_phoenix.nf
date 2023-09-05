@@ -421,7 +421,7 @@ workflow PHOENIX_EXQC {
         GRIPHIN (
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false
         )
-        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
         if (ncbi_excel_creation == true) {
 
