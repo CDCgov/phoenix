@@ -34,15 +34,10 @@ if [ -f ${prefix}_R1_stats.txt -a -f ${prefix}_R2_stats.txt ]; then
 		fairy.py -r ${prefix}_raw_read_counts.txt
 fi
 
-if [ ! -f ${prefix}_summaryline_failure.tsv ] ; then
+if [ ! -f ${prefix}_summaryline_failure.tsv -a -f ${prefix}_raw_read_counts.txt ] ; then
 	mv ${reads[0]} ${num1}_C.fastq.gz
 	mv ${reads[1]} ${num2}_C.fastq.gz
 else
-	if [ -f ${prefix}_raw_read_counts.txt ]; then
-		#create synopsis file
-		fairy_countdiff.sh ${prefix}_raw_read_counts.txt
-	fi
-
 	#delete files that would enter the channel
 	rm ${reads[0]}
 	rm ${reads[1]}
