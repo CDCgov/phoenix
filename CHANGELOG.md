@@ -184,6 +184,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - The default outdir phx produces, if the user doesn't pass `--outdir`, was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
 
 **Fixed Bugs:**  
+<<<<<<< HEAD
 - Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
 - `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite --coverage setting, changes made to respect --coverage flag.  
 - Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHX will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
@@ -192,3 +193,13 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Container Updates:**  
 - Base container bummped up to v2.1.0  
 - Container for SRA entry steps `SRATOOLS_FASTERQDUMP` and `SRATOOLS_PREFETCH` was switched to a quay.io/biocontainers to address issues with the old container and ICA. The version of SRATools being used remains the same. [commit 68815e3](https://github.com/CDCgov/phoenix/commit/68815e3797c1944dcd0280ee658c79be90b63c0e#diff-cc23f3860dea73e90629539d540e72a7fc7cf9438de0e89eca1cc31a763c7b2b)
+=======
+- Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up.  
+- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite --coverage setting, changes made to respect --coverage flag.
+- Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHX will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: E.coli )Pasteur) being incorrectly indentified as aeromonas and E.coli (Pasteur) being identified as klebsiella. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 aeromonas genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene)
+- Correct instance where in some cases where an mlst scheme could not be determined that a proper out file was not created
+
+**Container Updates:**  
+- Base container bummped up to v2.1.0
+- srst2 container version stays the same, but added a fix to address issues related to handling grepping  of '(' and ')'. Hosting updated container on quay  
+>>>>>>> 98259e041c084854a310c15b1afc34bd9bcca73f
