@@ -10,6 +10,8 @@
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
 
+[![Get help on Slack](http://img.shields.io/badge/slack-StaPH--B%20%23phoenix--dev-4A154B?labelColor=000000&logo=slack)](https://staph-b-dev.slack.com/channels/phoenix-dev)
+
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
 # Quick Start

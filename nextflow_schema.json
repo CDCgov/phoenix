@@ -79,7 +79,7 @@
                 "outdir": {
                     "type": "string",
                     "description": "Path to the output directory where the results will be saved. Can be a full or relative path.",
-                    "default": "${launchDir}/results",
+                    "default": "${launchDir}/phx_output",
                     "fa_icon": "fas fa-folder-open"
                 },
                 "coverage": {

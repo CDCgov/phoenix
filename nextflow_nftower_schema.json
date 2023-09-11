@@ -25,7 +25,7 @@
                 "kraken2db": {
                     "type": "string",
                     "fa_icon": "fas fa-database",
-                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
+                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktaxonomy.tsv files. You can pass a decompressed folder or in its compressed '.tar.gz' form. The database can be downloaded from https://benlangmead.github.io/aws-indexes/k2 . You must use a database created after 3/14/2023.",
                     "default": "kraken-db"
                 }
             }
