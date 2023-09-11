@@ -30,7 +30,7 @@ def reads_compare(file):
         'AMRFinder_Point_Mutations': ['Unknown'],'Hypervirulence_Genes': ['Unknown'],'Plasmid_Incompatibility_Replicons': ['Unknown'],
         'Auto_QC_Failure_Reason': [failure]}
         df = pd.DataFrame(data)
-        df.to_csv(prefix + '_summaryline_failure.tsv', sep="\t",index=False, lineterminator="\n")
+        df.to_csv(prefix + '_summaryline_failure.tsv', sep="\t",index=False)
 
     #write to .txt file
     filename = prefix + "_result.txt"
