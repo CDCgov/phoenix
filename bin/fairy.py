@@ -23,13 +23,16 @@ def reads_compare(file):
         outcome = approved
     else:
         outcome = failure
-        data = {'ID': [prefix],'Auto_QC_Outcome': ['FAIL'],'Warning_Count': ['Unknown'],'Estimated_Coverage': ['Unknown'],'Genome_Length': ['Unknown'],
-        'Assembly_Ratio_(STDev)': ['Unknown'],'#_of_Scaffolds_>500bp': ['Unknown'],'GC_%,Species,Taxa_Confidence': ['Unknown'],
-        'Taxa_Coverage': ['Unknown'],'Taxa_Source': ['Unknown'],'Kraken2_Trimd': ['Unknown'],'Kraken2_Weighted': ['Unknown'],'MLST_Scheme_1': ['Unknown'],'MLST_1': ['Unknown'],
-        'MLST_Scheme_2': ['Unknown'],'MLST_2': ['Unknown'],'GAMMA_Beta_Lactam_Resistance_Genes': ['Unknown'],'GAMMA_Other_AR_Genes': ['Unknown'],
-        'AMRFinder_Point_Mutations': ['Unknown'],'Hypervirulence_Genes': ['Unknown'],'Plasmid_Incompatibility_Replicons': ['Unknown'],
-        'Auto_QC_Failure_Reason': [failure]}
-        df = pd.DataFrame(data)
+        column_names = ['ID','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
+        'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%,Species,Taxa_Confidence',
+        'Taxa_Coverage','Taxa_Source','Kraken2_Trimd','Kraken2_Weighted','MLST_Scheme_1','MLST_1',
+        'MLST_Scheme_2','MLST_2','GAMMA_Beta_Lactam_Resistance_Genes','GAMMA_Other_AR_Genes',
+        'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons',
+        'Auto_QC_Failure_Reason']
+        data = [[prefix,'FAIL','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
+        'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
+        'Unknown','Unknown','Unknown',failure]]
+        df = pd.DataFrame(data, columns=column_names)
         df.to_csv(prefix + '_summaryline_failure.tsv', sep="\t",index=False)
 
     #write to .txt file
