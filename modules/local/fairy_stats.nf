@@ -34,7 +34,6 @@ if [ -f ${prefix}_R1_stats.txt -a -f ${prefix}_R2_stats.txt ]; then
 	fairy.py -r ${prefix}_raw_read_counts.txt
 fi
 
-
 #address summaryline failure mismatched read pairs
 if grep "FAILED: Read pairs are NOT the same!" ${prefix}_result.txt; then
 	#error warning for line_summary channel
@@ -50,7 +49,7 @@ else
 	#delete files that would enter the channel
 	rm ${reads[0]}
 	rm ${reads[1]}
-	#mv ${prefix}_result.txt ${prefix}_prdresult.txt
+	mv ${prefix}_result.txt ${prefix}_prdresult.txt
 	rm ${prefix}_prdresult.txt
 fi
 
