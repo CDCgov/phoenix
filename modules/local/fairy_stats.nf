@@ -30,8 +30,8 @@ if grep "PASS" ${prefix}_results.txt; then
 fi
 
 if [ -f ${prefix}_R1_stats.txt -a -f ${prefix}_R2_stats.txt ]; then
-		create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
-		fairy.py -r ${prefix}_raw_read_counts.txt
+	create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
+	fairy.py -r ${prefix}_raw_read_counts.txt
 fi
 
 if [ ! -f ${prefix}_summaryline_failure.tsv -a -f ${prefix}_raw_read_counts.txt ] ; then
