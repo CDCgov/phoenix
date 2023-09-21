@@ -6,6 +6,7 @@ process BBDUK {
     input:
     tuple val(meta), path(reads)
     path contaminants
+    tuple val(meta), path(outcome)
 
     output:
     tuple val(meta), path('*.fastq.gz'), emit: reads
@@ -23,15 +24,18 @@ process BBDUK {
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
     """
-    maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
-    bbduk.sh \\
-        -Xmx\$maxmem \\
-        $raw \\
-        $trimmed \\
-        threads=$task.cpus \\
-        $args \\
-        $contaminants_fa \\
-        &> ${prefix}.bbduk.log
+    if grep "PASS" ${outcome}
+    then
+        maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
+        bbduk.sh \\
+            -Xmx\$maxmem \\
+            $raw \\
+            $trimmed \\
+            threads=$task.cpus \\
+            $args \\
+            $contaminants_fa \\
+            &> ${prefix}.bbduk.log
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
