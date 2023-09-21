@@ -16,7 +16,7 @@ prefix=${fname%"$sfx"}
 gzip -t $1 2>> ${prefix}.txt
 
 
-if grep -q -e "error" -e "unexpected" ${prefix}.txt ]; then
+if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
 	prefix=${prefix%%_*}
 	echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" >> ${prefix}_results.txt
 	
