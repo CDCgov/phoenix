@@ -23,17 +23,17 @@ def reads_compare(file):
         outcome = approved
     else:
         outcome = failure
-        column_names = ['ID','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
-        'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%,Species,Taxa_Confidence',
-        'Taxa_Coverage','Taxa_Source','Kraken2_Trimd','Kraken2_Weighted','MLST_Scheme_1','MLST_1',
-        'MLST_Scheme_2','MLST_2','GAMMA_Beta_Lactam_Resistance_Genes','GAMMA_Other_AR_Genes',
-        'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons',
-        'Auto_QC_Failure_Reason']
-        data = [[prefix,'FAIL','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
-        'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
-        'Unknown','Unknown','Unknown',failure]]
-        df = pd.DataFrame(data, columns=column_names)
-        df.to_csv(prefix + '_summaryline_failure.tsv', sep="\t",index=False)
+        # column_names = ['ID','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
+        # 'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%,Species,Taxa_Confidence',
+        # 'Taxa_Coverage','Taxa_Source','Kraken2_Trimd','Kraken2_Weighted','MLST_Scheme_1','MLST_1',
+        # 'MLST_Scheme_2','MLST_2','GAMMA_Beta_Lactam_Resistance_Genes','GAMMA_Other_AR_Genes',
+        # 'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons',
+        # 'Auto_QC_Failure_Reason']
+        # data = [[prefix,'FAIL','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
+        # 'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
+        # 'Unknown','Unknown','Unknown',failure]]
+        # df = pd.DataFrame(data, columns=column_names)
+        # df.to_csv(prefix + '_summaryline_failure.tsv', sep="\t",index=False)
 
     #write to .txt file
     filename = prefix + "_result.txt"
