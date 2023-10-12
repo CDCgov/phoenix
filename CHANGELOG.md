@@ -178,19 +178,20 @@ Below are the list of changes to phx since is initial release. As fixes can take
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.1.0...v2.0.2)
 
 **Implemented Enhancements:**  
-- 
+- Added handling for "unknown" assemblers in the scaffolds entry point so genomes can be downloaded from NCBI and run through PHoeNIx.  
 
 **Output File Changes:**  
-- The default outdir phx produces, if the user doesn't pass `--outdir`, was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
+- The default outdir phx produces was changed. If the user doesn't pass `--outdir`, the default was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
 - The `phx_output/FAIry` folder will contain a `*_summaryline_failure.tsv` file for any isolate where file corruption was detected.
 
 **Fixed Bugs:**  
 - Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
-- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite --coverage setting, changes made to respect --coverage flag.  
+- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite `--coverage`` setting, changes made to respect `--coverage` flag.  
 - Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHX will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
-- Correct instance where, in some cases, an mlst scheme could not be determined that a proper out file was not created.  
+- Corrected instance where, in some cases, an mlst scheme could not be determined that a proper out file was not created.  
 - Updated FAIry to catch additional file corruption errors.
    - FAIry will detect file corruption that prevents the completion of gzip and zcat and generate a synopsis file when needed.
+   - FAIry will detect and report out if R1/R2 fastqs do not have equal number of reads in the files.
 
 **Container Updates:**  
 - Base container bummped up to v2.1.0  

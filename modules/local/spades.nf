@@ -39,7 +39,7 @@ process SPADES {
     def phred_offset = params.phred
     def extended_qc_arg = extended_qc ? "-c" : ""
     """
-    # preemptively create _summary_line.csv and .synopsis file incase spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
+    # preemptively create _summary_line.csv and .synopsis file in case spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
     ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
     ${ica}beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
 
