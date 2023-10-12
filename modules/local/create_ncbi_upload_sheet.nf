@@ -8,6 +8,7 @@ process CREATE_NCBI_UPLOAD_SHEET {
     path(sra_metadata)
     path(osii_bioprojects)
     path(outdir)
+    path(griphin_tsv_report)
 
     output:
     path("Sra_Microbe.1.0.xlsx"),                 emit: ncbi_samplesheet
@@ -25,7 +26,7 @@ process CREATE_NCBI_UPLOAD_SHEET {
     }
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    ${ica}get_ncbi_format_file.py -d ${outdir} --biosample-type microbe -o ./ -s ${sra_metadata} -m ${microbe_example} -b ${osii_bioprojects}
+    ${ica}get_ncbi_format_file.py -d ${outdir} --biosample-type microbe -o ./ -s ${sra_metadata} -m ${microbe_example} -b ${osii_bioprojects} -g ${griphin_tsv_report}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
