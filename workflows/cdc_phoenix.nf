@@ -32,7 +32,9 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { FAIRY_STATS                    } from '../modules/local/fairy_stats'
+include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
+include { CORRUPTION_CHECK               } from '../modules/local/fairy_corruption_check'
+include { READ_COUNT_CHECK               } from '../modules/local/fairy_read_count_check'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
@@ -108,11 +110,7 @@ workflow PHOENIX_EXQC {
         // Allow relative paths for krakendb argument
         kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
-        //
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
-        //
-
-        // Call in reads
         INPUT_CHECK (
             ch_input
         )
@@ -125,16 +123,37 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
         //fairy compressed file corruption check & generate read stats
-        FAIRY_STATS (
+        CORRUPTION_CHECK (
             INPUT_CHECK.out.reads
         )
-        ch_versions = ch_versions.mix(FAIRY_STATS.out.versions)
+        ch_versions = ch_versions.mix(CORRUPTION_CHECK.out.versions)
 
-        failed_summaries_ch = FAIRY_STATS.out.summary_line.collect().ifEmpty(params.placeholder) // if no failure pass empty file to keep it moving...
+        //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
+        //The mapping here is just to get things in the right bracket so we can call var[0]
+        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+
+        //Get stats on raw reads if the reads aren't corrupted
+        GET_RAW_STATS (
+            read_stats_ch
+        )
+        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
+
+        // Combining reads with read stats to check the read counts match
+        read_count_ch = GET_RAW_STATS.out.combined_raw_stats.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0])
+
+        //check that the read counts match between R1/R2
+        //only runs on files not corrupt as GET_RAW_STATS doesn't run unless files aren't corrupt and its output are required.
+        READ_COUNT_CHECK (
+            read_count_ch, true
+        )
+        ch_versions = ch_versions.mix(READ_COUNT_CHECK.out.versions)
+
+        // Combining reads with output of corruption check
+        bbduk_ch = INPUT_CHECK.out.reads.join(READ_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
 
         // Remove PhiX reads
         BBDUK (
-            FAIRY_STATS.out.reads, params.bbdukdb, FAIRY_STATS.out.outcome
+            bbduk_ch, params.bbdukdb
         )
         ch_versions = ch_versions.mix(BBDUK.out.versions)
 
@@ -180,7 +199,7 @@ workflow PHOENIX_EXQC {
         SPADES_WF (
             FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
-            FAIRY_STATS.out.combined_raw_stats, \
+            GET_RAW_STATS.out.combined_raw_stats, \
             SRST2_AR.out.fullgene_results, \
             KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
@@ -342,7 +361,7 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         GENERATE_PIPELINE_STATS_WF (
-            FAIRY_STATS.out.combined_raw_stats, \
+            GET_RAW_STATS.out.combined_raw_stats, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
             SRST2_AR.out.fullgene_results, \
             KRAKEN2_TRIMD.out.report, \
@@ -393,7 +412,7 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
         // Collect all the summary files prior to fetch step to force the fetch process to wait
-        failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
+        failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no failures pass empty file to keep it moving...
         // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().ifEmpty( [] )
 
@@ -405,7 +424,9 @@ workflow PHOENIX_EXQC {
 
         // combine all line summaries into one channel
         spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
-        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch)
+        // collect the failed fairy summary lines
+        fairy_created_failed_summaries_ch = CORRUPTION_CHECK.out.summary_line.collect().combine(READ_COUNT_CHECK.out.summary_line.collect()).ifEmpty(params.placeholder) // if no failure pass empty file to keep it moving...
+        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_created_failed_summaries_ch)
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
@@ -420,13 +441,13 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
         if (ncbi_excel_creation == true) {
-
             // requiring files so that this process doesn't start until needed files are made. 
             required_files_ch = FASTP_TRIMD.out.reads.map{ meta, reads -> reads[0]}.collect().combine(DO_MLST.out.checked_MLSTs.map{ meta, checked_MLSTs -> checked_MLSTs}.collect()).combine(DETERMINE_TAXA_ID.out.taxonomy.map{ meta, taxonomy -> taxonomy}.collect())
 
             //Fill out NCBI excel sheets for upload based on what PHX found
+            //GRiPHin summary is required to filter out failed samples
             CREATE_NCBI_UPLOAD_SHEET (
-                required_files_ch, params.microbe_example, params.sra_metadata, params.osii_bioprojects, outdir_path
+                required_files_ch, params.microbe_example, params.sra_metadata, params.osii_bioprojects, outdir_path, GRIPHIN.out.griphin_tsv_report
             )
             ch_versions = ch_versions.mix(CREATE_NCBI_UPLOAD_SHEET.out.versions)
         }

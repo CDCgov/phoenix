@@ -4,9 +4,8 @@ process BBDUK {
     container 'staphb/bbtools:39.01'
 
     input:
-    tuple val(meta), path(reads)
-    path contaminants
-    tuple val(meta), path(outcome)
+    tuple val(meta), path(reads), val(fairy_outcome)
+    path(contaminants)
 
     output:
     tuple val(meta), path('*.fastq.gz'), emit: reads
@@ -14,7 +13,8 @@ process BBDUK {
     path "versions.yml"                , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
+    "${fairy_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt." && "${fairy_outcome[2]}" == "PASSED: Read pairs are equal."
 
     script:
     def args = task.ext.args ?: ''
@@ -24,18 +24,15 @@ process BBDUK {
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
     """
-    if grep "PASS" ${outcome}
-    then
-        maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
-        bbduk.sh \\
-            -Xmx\$maxmem \\
-            $raw \\
-            $trimmed \\
-            threads=$task.cpus \\
-            $args \\
-            $contaminants_fa \\
-            &> ${prefix}.bbduk.log
-    fi
+    maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
+    bbduk.sh \\
+        -Xmx\$maxmem \\
+        $raw \\
+        $trimmed \\
+        threads=$task.cpus \\
+        $args \\
+        $contaminants_fa \\
+        &> ${prefix}.bbduk.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -353,11 +353,24 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
         kraken_wtasmbld_report = 'Unknown'
     return kraken_trim_genus, kraken_wtasmbld_genus
 
-def Checking_auto_pass_fail(scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds):
+def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds):
     """Checking auto pass fail conditions"""
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
     QC_reason = []
     QC_result = [] # set as blank to begin with, need this to assign variable in QC_result == "FAIL": line
+    #check output of fairy and determine if reads were corrupt or had unequal number of reads
+    with open(fairy_file, 'r') as f:
+        for line in f:
+            if ('FAILED CORRUPTION CHECK!' in line):
+                fastq_file_failure = str(line.split(' ')[10])
+                QC_result.append("FAIL")
+                QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped.")
+            elif ('The number of reads in R1/R2 are NOT equal' in line):
+                QC_result.append("FAIL")
+                QC_reason.append("The # of reads in raw R1/R2 are NOT equal.")
+            else:
+                QC_result.append("PASS")
+    f.close()
     if scaffolds_entry == False: # if its not being used for scaffolds entry check estimated coverage otherwise don't
         if coverage == "Unknown" or int(coverage) < int(set_coverage):
             QC_result.append("FAIL")
@@ -639,7 +652,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_srst2_df
 
-def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
+def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
         Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
@@ -684,7 +697,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         gc_stdev = sample_gc = out_of_range_stdev = species_gc_mean = 'Unknown'
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
-        QC_result, QC_reason = Checking_auto_pass_fail(scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count)
+        QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count)
     except FileNotFoundError: 
         print("Warning: Possibly coverage and assembly length was not calculated and/or"+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
@@ -798,6 +811,7 @@ def Get_Files(directory, sample_name):
     kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt"
     quast_report = directory + "/quast/" + sample_name + "_summary.tsv"
     mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
+    fairy_file = directory + "/fairy/" + sample_name + "_results.txt"
     # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
     # You only need this for glob because glob will throw an index error if not.
     try:
@@ -833,12 +847,14 @@ def Get_Files(directory, sample_name):
         srst2_file = glob.glob(directory + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")[0]
     except IndexError:
         srst2_file = directory + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
-    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
+    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
-def Append_Lists(sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
+def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
             Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
-            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L,Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+            data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L,Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
+        data_location_L.append(data_location)
+        parent_folder_L.append(parent_folder)
         Sample_Names.append(str(sample_name))
         Q30_R1_per_L.append(Q30_R1_per)
         Q30_R2_per_L.append(Q30_R2_per)
@@ -873,14 +889,16 @@ def Append_Lists(sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Se
         MLST_alleles_2_L.append(MLST_alleles_2)
         MLST_source_1_L.append(MLST_source_1)
         MLST_source_2_L.append(MLST_source_2)
-        return Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+        return data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
         Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L
 
-def Create_df(phoenix, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
+def Create_df(phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
 Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
     #combine all metrics into a dataframe
     if phoenix == True:
         data = {'WGS_ID'             : Sample_Names,
+        'Parent_Folder'              : parent_folder_L,
+        'Data_Location'              : data_location_L,
         'Minimum_QC_Check'           : QC_result_L,
         'Minimum_QC_Issues'          : QC_reason_L,
         'Warnings'                   : warnings_L,
@@ -914,6 +932,8 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Secondary_MLST_Alleles'     : MLST_alleles_2_L}
     else:
         data = {'WGS_ID'             : Sample_Names,
+        'Parent_Folder'              : parent_folder_L,
+        'Data_Location'              : data_location_L,
         'Minimum_QC_Check'           : QC_result_L,
         'Minimum_QC_Issues'          : QC_reason_L,
         'Warnings'                   : warnings_L,
@@ -1076,8 +1096,8 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     ##worksheet.set_column('H:J', None, number_comma_format) # Total_seqs (raw and trimmed) Total_bp - use when python is >3.7.12
     ##worksheet.set_column('M:N', None, number_comma_format) # scaffolds and assembly_length - use when python is >3.7.12
     # set formating for python 3.7.12
-    worksheet.conditional_format('M3:N' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_comma_format})
-    worksheet.conditional_format('H3:J' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_comma_format})
+    worksheet.conditional_format('O3:P' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_comma_format})
+    worksheet.conditional_format('J3:L' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_comma_format})
     # Setting columns to float so its more human readable
     #number_dec_format = workbook.add_format({'num_format': '0.000'})
     #number_dec_format.set_align('left') - agh not working
@@ -1086,23 +1106,26 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     ##worksheet.set_column('F:G', None, number_dec_2_format) # Q30%s - use when python is >3.7.12
     ##worksheet.set_column('O:P', None, number_dec_2_format) # Assembly Ratio and StDev - use when python is >3.7.12
     # set formating for python 3.7.12
-    worksheet.conditional_format('K3:L' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
-    worksheet.conditional_format('F3:G' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
-    worksheet.conditional_format('O3:P' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+    worksheet.conditional_format('M3:N' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+    worksheet.conditional_format('H3:I' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+    worksheet.conditional_format('Q3:R' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
     if phoenix == True:
-        worksheet.conditional_format('U3:V' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+        worksheet.conditional_format('W3:X' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
         #worksheet.set_column('U:V', None, number_dec_2_format) # FastANI ID and Coverage
     else:
-        worksheet.conditional_format('W3:X' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+        worksheet.conditional_format('Y3:Z' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
         #worksheet.set_column('W:X', None, number_dec_2_format) # FastANI ID and Coverage
     # getting values to set column widths automatically
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
         #print(series)  # uncomment this to see what the issue is with the "mad" error
-        max_len = max((
-        series.astype(str).map(len).max(),  # len of largest item
-            len(str(series.name))  # len of column name/header
-            )) + 1  # adding a little extra space
+        if col == "Parent_Folder": #name is real long due to path so just making the width of the column header
+            max_len = len("Parent_Folder")
+        else:
+            max_len = max((
+            series.astype(str).map(len).max(),  # len of largest item
+                len(str(series.name))  # len of column name/header
+                )) + 1  # adding a little extra space
         worksheet.set_column(idx, idx, max_len)  # set column width
     # Setting colors for headers
     cell_format_light_blue = workbook.add_format({'bg_color': '#ADD8E6', 'font_color': '#000000', 'bold': True})
@@ -1114,17 +1137,18 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     cell_format_darkgrey = workbook.add_format({'bg_color': '#808B96', 'font_color': '#000000', 'bold': True})
     # Headers
     #worksheet.set_column('', "PHoeNIx Summary", cell_format_light_blue)
-    worksheet.write('A1', "PHoeNIx Summary")
-    worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue
-    worksheet.merge_range('B1:P1', "QC Metrics", cell_format_grey_blue)
+    #worksheet.write('A1', "PHoeNIx Summary") #use for only 1 column in length
+    #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
+    worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
+    worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
     if phoenix == True: #for non-CDC entry points
-        worksheet.merge_range('Q1:W1', "Taxonomic Information", cell_format_green)
+        worksheet.merge_range('S1:Y1', "Taxonomic Information", cell_format_green)
     else:
-        worksheet.merge_range('Q1:Y1', "Taxonomic Information", cell_format_green)
+        worksheet.merge_range('S1:AA1', "Taxonomic Information", cell_format_green)
     if phoenix == True: #for non-CDC entry points
-        worksheet.merge_range('X1:AE1', "MLST Schemes", cell_format_green_blue)
-    else:
         worksheet.merge_range('Z1:AG1', "MLST Schemes", cell_format_green_blue)
+    else:
+        worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)
     worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
@@ -1138,10 +1162,10 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     orange_format.set_border(1) # add back border so it matches the rest of the column names
     orange_format_nb = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': False})
     # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column. adding 2 to max row to account for headers
-    worksheet.conditional_format('K3:K' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  str(set_coverage), 'format': yellow_format})
-    worksheet.conditional_format('K3:K' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
+    worksheet.conditional_format('M3:M' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  str(set_coverage), 'format': yellow_format})
+    worksheet.conditional_format('M3:M' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.
-    worksheet.conditional_format('B3:B' + str(max_row + 2), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
+    worksheet.conditional_format('D3:D' + str(max_row + 2), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
     # conditional formating to highlight big 5 genes
     # Start iterating through the columns and the rows to apply the format
     column_count = 0
@@ -1248,7 +1272,7 @@ def main():
     args = parseArgs()
     # create empty lists to append to later
     Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
-    busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = ([] for i in range(34))
+    busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, data_location_L, parent_folder_L= ([] for i in range(36))
     ar_df = pd.DataFrame() #create empty dataframe to fill later for AR genes
     pf_df = pd.DataFrame() #create another empty dataframe to fill later for Plasmid markers
     hv_df = pd.DataFrame() #create another empty dataframe to fill later for hypervirulence genes
@@ -1271,20 +1295,20 @@ def main():
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
-            #data_location, parent_folder = Get_Parent_Folder(directory)
-            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
+            data_location, parent_folder = Get_Parent_Folder(directory)
+            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
-            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)
+            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)
             #Collect this mess of variables into appeneded lists
-            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
-            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = Append_Lists(sample_name,  \
+            data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = Append_Lists(data_location, parent_folder, sample_name, \
             Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, \
             gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
-            Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+            data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     # combine all lists into a dataframe
-    df = Create_df(args.phoenix, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+    df = Create_df(args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
