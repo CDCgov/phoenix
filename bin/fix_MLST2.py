@@ -423,104 +423,102 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 			checked_and_deduped_schemes.append(i)
 		else:
 			novel_allele_sets.append(i)
-
-	for i in range(0,len(novel_allele_sets)):
-		if len(novel_allele_sets) == 0:
-			break
-		if len(novel_allele_sets) == 1:
-			checked_and_deduped_schemes.append(novel_allele_sets[0])
-			novel_allele_sets.pop(0)
-			break
-		print(len(novel_allele_sets), novel_allele_sets)
-		primary_db = novel_allele_sets[i][1]
-		primary_alleles = []
-		primary_source = novel_allele_sets[i][6]
-		match_found=False
-		for allele in novel_allele_sets[i][5]:
-			if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
-				# Mark allele as found, but a mismatch
-				primary_alleles.append('Mismatch')
-			elif '-' in allele:
-				# Mark allele as not found
-				primary_alleles.append('Not Found')
-			else:
-				# Mark allele as found and complete
-				primary_alleles.append('Complete')
-		for j in range(0,len(novel_allele_sets)):
-			if i == j:
-				next
-			else:
-				if primary_db == novel_allele_sets[j][1]:
-					secondary_alleles=[]
-					secondary_source = novel_allele_sets[j][6]
-					primary_is_srst2=False
-					secondary_is_srst2=False
-					for allele in novel_allele_sets[j][5]:
-						if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
-							# Mark allele as found, but a mismatch
-							secondary_alleles.append('Mismatch')
-						elif '-' in allele:
-							# Mark allele as not found
-							secondary_alleles.append('Not Found')
-						else:
-							# Mark allele as found and complete
-							secondary_alleles.append('Complete')
-					if primary_alleles == secondary_alleles:
-						new_source="unset"
-						if primary_source == "assembly":
-							if secondary_source == "assembly":
-								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST")
-								# Not as weird, contamination testing this comes up, so a good way to catch?
-								new_source="assembly"
-							elif secondary_source == "assembly/reads":
-								print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
-								# Not as weird, contamination testing this comes up, so a good way to catch?
-								new_source="assembly/reads"
-							elif secondary_source == "reads":
-								new_source = "assembly/reads"
-							else:
-								print("Weird, phx doesn't know what the secondary source is")
-							primary_is_srst2=True
-						elif primary_source == "reads":
-							if secondary_source == "assembly":
-								new_source = "assembly/reads"
-							elif secondary_source == "assembly/reads":
-								print("Weird, shouldnt have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
-								# Not as weird, contamination testing this comes up, so a good way to catch?
-								new_source="assembly/reads"
-							elif secondary_source == "reads":
-								print("Weird, shouldnt have both novel allele sets in one database come from srst2")
-								# Not as weird, contamination testing this comes up, so a good way to catch?
-								new_source="reads"
-							else:
-								print("Weird, dont know what the secondary source is")
-							secondary_is_srst2=True
-						new_allele_list=[]
-						for k in range(0,len(primary_alleles)):
-							if primary_alleles[k] == 'Mismatch':
-								if primary_is_srst2:
-									new_allele_list.append('^'+novel_allele_sets[i][5][k]+','+novel_allele_sets[j][5][k])
-								elif secondary_is_srst2:
-									new_allele_list.append(novel_allele_sets[i][5][k]+',^'+novel_allele_sets[j][5][k])
-								else:
-									print("Weird, there is no srst2 found when comparing....these are all assembly MLSTs")
-							else:
-								new_allele_list.append(novel_allele_sets[j][5][k])
-						new_entry = [novel_allele_sets[i][0], novel_allele_sets[i][1],novel_allele_sets[i][2],novel_allele_sets[i][3],novel_allele_sets[i][4],new_allele_list,new_source,novel_allele_sets[i][7]]
-						checked_and_deduped_schemes.append(new_entry)
-						if i>j:
-							novel_allele_sets.pop(i)
-							novel_allele_sets.pop(j)
-						if j>i:
-							novel_allele_sets.pop(j)
-							novel_allele_sets.pop(i)
-						match_found=True
+	if len(novel_allele_sets) == 1:
+				print("Only one, moving to aproved list")
+				checked_and_deduped_schemes.append(novel_allele_sets[0])
+				novel_allele_sets.pop(0)
+	elif len(novel_allele_sets) > 1:
+		for i in range(len(novel_allele_sets)-1,-1,-1):
+			print(len(novel_allele_sets), novel_allele_sets)
+			primary_db = novel_allele_sets[i][1]
+			primary_alleles = []
+			primary_source = novel_allele_sets[i][6]
+			match_found=False
+			for allele in novel_allele_sets[i][5]:
+				if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
+					# Mark allele as found, but a mismatch
+					primary_alleles.append('Mismatch')
+				elif '-' in allele:
+					# Mark allele as not found
+					primary_alleles.append('Not Found')
 				else:
-					# Databases do not match, dont want to consolidate novel allele sets fron different DBs
+					# Mark allele as found and complete
+					primary_alleles.append('Complete')
+			for j in range(0,len(novel_allele_sets)):
+				if i == j:
 					next
-		if not match_found:
-			checked_and_deduped_schemes.append(novel_allele_sets[i])
-			novel_allele_sets.pop(i)
+				else:
+					if primary_db == novel_allele_sets[j][1]:
+						secondary_alleles=[]
+						secondary_source = novel_allele_sets[j][6]
+						primary_is_srst2=False
+						secondary_is_srst2=False
+						for allele in novel_allele_sets[j][5]:
+							if '*' in allele or '?' in allele or '~' in allele or '-' in allele:
+								# Mark allele as found, but a mismatch
+								secondary_alleles.append('Mismatch')
+							elif '-' in allele:
+								# Mark allele as not found
+								secondary_alleles.append('Not Found')
+							else:
+								# Mark allele as found and complete
+								secondary_alleles.append('Complete')
+						if primary_alleles == secondary_alleles:
+							new_source="unset"
+							if primary_source == "assembly":
+								if secondary_source == "assembly":
+									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST")
+									# Not as weird, contamination testing this comes up, so a good way to catch?
+									new_source="assembly"
+								elif secondary_source == "assembly/reads":
+									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
+									# Not as weird, contamination testing this comes up, so a good way to catch?
+									new_source="assembly/reads"
+								elif secondary_source == "reads":
+									new_source = "assembly/reads"
+								else:
+									print("Weird, phx doesn't know what the secondary source is")
+								primary_is_srst2=True
+							elif primary_source == "reads":
+								if secondary_source == "assembly":
+									new_source = "assembly/reads"
+								elif secondary_source == "assembly/reads":
+									print("Weird, shouldnt have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
+									# Not as weird, contamination testing this comes up, so a good way to catch?
+									new_source="assembly/reads"
+								elif secondary_source == "reads":
+									print("Weird, shouldnt have both novel allele sets in one database come from srst2")
+									# Not as weird, contamination testing this comes up, so a good way to catch?
+									new_source="reads"
+								else:
+									print("Weird, dont know what the secondary source is")
+								secondary_is_srst2=True
+							new_allele_list=[]
+							for k in range(0,len(primary_alleles)):
+								if primary_alleles[k] == 'Mismatch':
+									if primary_is_srst2:
+										new_allele_list.append('^'+novel_allele_sets[i][5][k]+','+novel_allele_sets[j][5][k])
+									elif secondary_is_srst2:
+										new_allele_list.append(novel_allele_sets[i][5][k]+',^'+novel_allele_sets[j][5][k])
+									else:
+										print("Weird, there is no srst2 found when comparing....these are all assembly MLSTs")
+								else:
+									new_allele_list.append(novel_allele_sets[j][5][k])
+							new_entry = [novel_allele_sets[i][0], novel_allele_sets[i][1],novel_allele_sets[i][2],novel_allele_sets[i][3],novel_allele_sets[i][4],new_allele_list,new_source,novel_allele_sets[i][7]]
+							checked_and_deduped_schemes.append(new_entry)
+							if i>j:
+								novel_allele_sets.pop(i)
+								novel_allele_sets.pop(j)
+							if j>i:
+								novel_allele_sets.pop(j)
+								novel_allele_sets.pop(i)
+							match_found=True
+					else:
+						# Databases do not match, dont want to consolidate novel allele sets fron different DBs
+						next
+			if not match_found:
+				checked_and_deduped_schemes.append(novel_allele_sets[i])
+				novel_allele_sets.pop(i)
 
 	all_Types_are_complete="unknown"
 	outfile=isolate_name+"_combined.tsv"
