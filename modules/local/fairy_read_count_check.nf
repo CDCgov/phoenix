@@ -10,7 +10,7 @@ process READ_COUNT_CHECK {
     output:
     tuple val(meta), path('*_results.txt'),                emit: outcome 
     path('*_summaryline_failure.tsv'),      optional:true, emit: summary_line
-    tuple val(meta), path('*_results_old.txt'),            emit: outcome_to_edit
+    tuple val(meta), path('*_results_old_2.txt'),          emit: outcome_to_edit
     tuple val(meta), path('*.synopsis'),    optional:true, emit: synopsis
     path("versions.yml"),                                  emit: versions
 
@@ -31,7 +31,7 @@ process READ_COUNT_CHECK {
     ${ica}fairy.py -r ${raw_read_counts} -f ${fairy_corrupt_outcome} ${busco_parameter}
 
     #making a copy of the results file to pass to BBMAP_REFORMAT to handle file names being the same
-    cp ${prefix}_results.txt ${prefix}_results_old.txt
+    cp ${prefix}_results.txt ${prefix}_results_old_2.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
