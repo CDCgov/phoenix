@@ -10,7 +10,6 @@ process FASTANI {
 
     input:
     tuple val(meta), path(query), path(reference), path(reference_dir)
-    
 
     output:
     tuple val(meta), path("*.ani.txt"), emit: ani
