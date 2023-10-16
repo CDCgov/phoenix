@@ -19,18 +19,15 @@ process SPADES {
     tuple val(meta), path('*.log')                ,                emit: log
     tuple val(meta), path('*_summaryline.tsv')    , optional:true, emit: line_summary
     tuple val(meta), path('*.synopsis')           , optional:true, emit: synopsis
-    path  "versions.yml"                          ,                emit: versions
+    path("versions.yml")                          ,                emit: versions
     tuple val(meta), path("*_spades_outcome.csv") ,                emit: spades_outcome
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) {
-        ica = ""
-    } else if (params.ica==true) {
-        ica = "bash ${workflow.launchDir}/bin/"
-    } else {
-        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
-    }
+    if (params.ica==false) { ica = "" } 
+    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
+    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    // define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def maxmem = task.memory.toGiga() // allow 4 less GB to provide enough space
