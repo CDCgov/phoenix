@@ -16,13 +16,9 @@ process CHECK_MLST {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) {
-        ica = ""
-    } else if (params.ica==true) {
-        ica = "python ${workflow.launchDir}/bin/"
-    } else {
-        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
-    }
+    if (params.ica==false) { ica = "" } 
+    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
+    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     """
     ${ica}fix_MLST2.py --input $mlst_file --taxonomy $taxonomy_file --mlst_database ${local_dbases}
 
