@@ -4,9 +4,9 @@ process PROKKA {
     container 'staphb/prokka:1.14.5'
 
     input:
-    tuple val(meta), path(fasta)
-    path proteins
-    path prodigal_tf
+    tuple val(meta), path(fasta), val(fairy_outcome)
+    path(proteins)
+    path(prodigal_tf)
 
     output:
     tuple val(meta), path("*.gff"), emit: gff //GFF3 format, containing both sequences and annotations
@@ -24,7 +24,8 @@ process PROKKA {
     path "versions.yml" , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args = task.ext.args   ?: ''

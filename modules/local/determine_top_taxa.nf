@@ -13,7 +13,7 @@ process DETERMINE_TOP_TAXA {
 
     when:
     //if there are scaffolds left after filtering
-    "${fairy_outcome[3]}" == "PASSED: More than 0 scaffolds left after filtering."
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths

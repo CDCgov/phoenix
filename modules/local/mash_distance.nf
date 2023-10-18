@@ -4,14 +4,15 @@ process MASH_DIST {
     container "staphb/mash:2.3"
 
     input:
-    tuple val(meta), path(query), path(reference)
+    tuple val(meta), path(query), val(fairy_outcome), path(reference)
 
     output:
     tuple val(meta), path("*.txt"), emit: dist
     path("versions.yml")          , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args = task.ext.args ?: ''

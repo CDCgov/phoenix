@@ -7,8 +7,8 @@ process CORRUPTION_CHECK {
     tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path('*_results.txt'),                    emit: outcome
-    tuple val(meta), path('*_results_old.txt'),                emit: outcome_to_edit
+    tuple val(meta), path('*_summary.txt'),                    emit: outcome
+    tuple val(meta), path('*_summary_old.txt'),                emit: outcome_to_edit
     path('*_summaryline_failure.tsv'),          optional:true, emit: summary_line
     tuple val(meta), path('*.synopsis'),        optional:true, emit: synopsis
     path("versions.yml"),                                      emit: versions
@@ -30,8 +30,8 @@ process CORRUPTION_CHECK {
     ${ica}fairy_proc.sh -r ${reads[0]} -p ${prefix}
     ${ica}fairy_proc.sh -r ${reads[1]} -p ${prefix}
 
-    #making a copy of the results file to pass to READ_COUNT_CHECKS to handle file names being the same
-    cp ${prefix}_results.txt ${prefix}_results_old.txt
+    #making a copy of the summary file to pass to READ_COUNT_CHECKS to handle file names being the same
+    cp ${prefix}_summary.txt ${prefix}_summary_old.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

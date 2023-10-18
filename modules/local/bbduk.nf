@@ -14,7 +14,7 @@ process BBDUK {
 
     when:
     //if the files are not corrupt and there are equal number of reads in each file then run bbduk
-    "${fairy_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt." && "${fairy_outcome[2]}" == "PASSED: Read pairs are equal."
+    "${fairy_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt." && "${fairy_outcome[2]}" == "PASSED: Read pairs for ${meta.id} are equal."
 
     script:
     def args = task.ext.args ?: ''

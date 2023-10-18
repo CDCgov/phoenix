@@ -50,11 +50,11 @@ workflow SPADES_WF {
 
             // Getting ID from either FastANI or if fails, from Kraken2
             DETERMINE_TAXA_ID_FAILURE (
-                best_hit_ch, params.taxa
+                best_hit_ch, params.nodes, params.names
             )
             ch_versions = ch_versions.mix(DETERMINE_TAXA_ID_FAILURE.out.versions)
 
-            pipeline_stats_ch = fastp_raw_qc.map{            meta, fastp_raw_qc    -> [[id:meta.id],fastp_raw_qc]}\
+            pipeline_stats_ch = fastp_raw_qc.map{            meta, fastp_raw_qc     -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{                        meta, fastp_total_qc   -> [[id:meta.id],fastp_total_qc]},   by: [0])\
             .join(fullgene_results.map{                      meta, fullgene_results -> [[id:meta.id],fullgene_results]}, by: [0])\
             .join(report.map{                                meta, report           -> [[id:meta.id],report]},           by: [0])\
@@ -88,7 +88,7 @@ workflow SPADES_WF {
 
             // Getting ID from either FastANI or if fails, from Kraken2
             DETERMINE_TAXA_ID_FAILURE (
-                best_hit_ch, params.taxa
+                best_hit_ch, params.nodes, params.names
             )
             ch_versions = ch_versions.mix(DETERMINE_TAXA_ID_FAILURE.out.versions)
 
@@ -125,6 +125,7 @@ workflow SPADES_WF {
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE_FAILURE.out.versions)
 
         // Defining out channel
+        //single end needs to be true for kraken2 weighted and assembled steps
         spades_ch = SPADES.out.scaffolds.map{meta, scaffolds -> [ [id:meta.id, single_end:true], scaffolds]}
 
     emit:

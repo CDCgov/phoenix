@@ -4,7 +4,7 @@ process QUAST {
     container 'staphb/quast:5.0.2'
 
     input:
-    tuple val(meta), path(consensus)
+    tuple val(meta), path(consensus), val(fairy_outcome)
 
     output:
     tuple val(meta), path("quast")        , emit: results
@@ -12,7 +12,8 @@ process QUAST {
     path "versions.yml"                   , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args     = task.ext.args   ?: ''

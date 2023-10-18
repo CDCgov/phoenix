@@ -1,19 +1,21 @@
 process FASTQC {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_medium'
-
-    conda (params.enable_conda ? "bioconda::fastqc=0.11.9" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/fastqc:0.11.9--0' :
         'quay.io/biocontainers/fastqc:0.11.9--0' }"
 
     input:
-    tuple val(meta), path(reads)
+    tuple val(meta), path(reads), val(fairy_outcome)
+
+    when:
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[3]}" == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."
 
     output:
     tuple val(meta), path("*.html"), emit: html
     tuple val(meta), path("*.zip") , emit: zip
-    path  "versions.yml"           , emit: versions
+    path("versions.yml")           , emit: versions
 
     script:
     def args = task.ext.args ?: ''

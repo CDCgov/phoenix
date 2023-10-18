@@ -20,16 +20,25 @@ include { KRAKEN_BEST_HIT as KRAKEN2_BH_WTASMBLD            } from '../../module
 
 workflow KRAKEN2_WF {
     take:
-    fasta    // channel: tuple (meta) path(read_R1, reads_R2) or tuple (meta) path(scaffolds)
-    type     // val: trimd, asmbld or wtasmbld 
-    qc_stats //GATHERING_READ_QC_STATS.out.fastp_total_qc
-    quast    //QUAST.out.report_tsv --> only for wtasmbld and asmbld
+    fasta           // channel: tuple (meta) path(read_R1, reads_R2) or tuple (meta) path(scaffolds)
+    fairy_check     // GET_RAW_STATS.out.outcome or SCAFFOLD_COUNT_CHECK.out.outcome
+    type            // val: trimd, asmbld or wtasmbld 
+    qc_stats        //GATHERING_READ_QC_STATS.out.fastp_total_qc
+    quast           //QUAST.out.report_tsv --> only for wtasmbld and asmbld
     kraken2_db_path 
 
     main:
     ch_versions     = Channel.empty() // Used to collect the software versions
     // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it. If you don't do this then only one sample goes through pipeline
-    fasta_ch = fasta.combine(kraken2_db_path)
+    if (type =="trimd") {
+        // add in fairy to confirm reads are uncorrupted and correct
+        fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])\
+        .combine(kraken2_db_path)
+    } else if(type =="asmbld" || type=="wtasmbld") {
+        // add in scaffold_count_check so its confirmed that there are scaffolds in file post filtering
+        fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])\
+        .combine(kraken2_db_path)
+    }
 
     if(type =="trimd") {
 
@@ -72,6 +81,7 @@ workflow KRAKEN2_WF {
         krona_html    = KRONA_KTIMPORTTEXT_TRIMD.out.html
 
     } else if(type =="asmbld") {
+
         // Checking for Contamination in scaffolds
         KRAKEN2_ASMBLD (
             fasta_ch, "asmbld", true, true

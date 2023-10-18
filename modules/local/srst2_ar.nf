@@ -2,13 +2,14 @@ process SRST2_AR {
     tag "${meta.id}"
     label 'process_medium'
     //container 'staphb/srst2:0.2.0','quay.io/jvhagey/srst2:0.2.0':
-    //'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2'
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
         'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
 
     input:
-    tuple val(meta), path(fastq_s), path(db)
+    tuple val(meta), path(fastq_s), val(fairy_outcome)
+    val(database_type)
+    path(db)
 
     output:
     tuple val(meta), path("*_genes_*_results.txt")                              , emit: gene_results
@@ -16,18 +17,19 @@ process SRST2_AR {
     tuple val(meta), path("*_mlst_*_results.txt")                , optional:true, emit: mlst_results
     tuple val(meta), path("*.pileup")                            , optional:true, emit: pileup
     tuple val(meta), path("*.sorted.bam")                        , optional:true, emit: sorted_bam
-    path "versions.yml"                                          ,                emit: versions
+    path("versions.yml")                                         ,                emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[3]}" == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."
 
     script:
     def args = task.ext.args ?: ""
     def prefix = task.ext.prefix ?: "${meta.id}"
     def read_s = meta.single_end ? "--input_se ${fastq_s}" : "--input_pe ${fastq_s[0]} ${fastq_s[1]}"
-    if (meta.db=="gene") {
+    if (database_type=="gene") {
         database = "--gene_db ${db}"
-    } else if (meta.db=="mlst") {
+    } else if (database_type=="mlst") {
         database = "--mlst_db ${db}"
     } else {
         error "Please set meta.db to either \"gene\" or \"mlst\""

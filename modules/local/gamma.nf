@@ -7,7 +7,7 @@ process GAMMA {
         'quay.io/biocontainers/gamma:2.1--hdfd78af_0' }" */
 
     input:
-    tuple val(meta), path(fasta)
+    tuple val(meta), path(fasta), val(fairy_outcome)
     path(db)
 
     output:
@@ -18,7 +18,8 @@ process GAMMA {
     path "versions.yml"                             , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args = task.ext.args ?: ''

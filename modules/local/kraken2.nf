@@ -4,7 +4,7 @@ process KRAKEN2_KRAKEN2 {
     container 'staphb/kraken2:2.1.2-no-db'
 
     input:
-    tuple val(meta), path(reads), path(db)
+    tuple val(meta), path(reads), val(fairy_outcome), path(db)
     val(kraken_type) //weighted, trimmmed or assembled
     val(save_output_fastqs)
     val(save_reads_assignment)
@@ -14,10 +14,15 @@ process KRAKEN2_KRAKEN2 {
     tuple val(meta), path('*unclassified*')   , optional:true, emit: unclassified_reads_fastq
     tuple val(meta), path('*classifiedreads*'), optional:true, emit: classified_reads_assignment
     tuple val(meta), path('*.summary.txt')                   , emit: report
-    path "versions.yml"                                      , emit: versions
+    path("versions.yml")                                     , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    if (kraken_type=="trimd") {
+        "${fairy_outcome[3]}" == "PASSED: There are reads in ${meta.id} R1/R2 after trimming." 
+    } else if(kraken_type=="asmbld" || kraken_type=="wtasmbld") {
+        "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering." || "${fairy_outcome[4]}" == "End_of_File"
+    }
 
     script:
     def args                       = task.ext.args ?: ''

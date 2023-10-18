@@ -5,7 +5,8 @@ process BUSCO {
     container 'quay.io/biocontainers/busco:5.4.7--pyhdfd78af_0'
 
     input:
-    tuple val(meta), path('tmp_input/*'), path(busco_lineages_path) // path to busco lineages - downloads if not set
+    tuple val(meta), path('tmp_input/*'), path(busco_lineages_path), // path to busco lineages - downloads if not set
+    val(fairy_outcome)
     each(lineage)                          // Required:    lineage to check against, "auto" enables --auto-lineage instead
     path(config_file)                      // Optional:    busco configuration file
 
@@ -18,7 +19,8 @@ process BUSCO {
     path "versions.yml"                                   , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args = task.ext.args ?: ''

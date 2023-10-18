@@ -4,28 +4,27 @@ process MLST {
     container 'quay.io/jvhagey/mlst:2.23.0_07282023'
 
     input:
-    tuple val(meta), path(fasta), path(taxonomy), path(mlst_db_path)
+    tuple val(meta), path(fasta), val(fairy_outcome), path(taxonomy), path(mlst_db_path)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
     path("versions.yml")          , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
+    // helps set correct paths to get database version being used
+    if (params.terra==false) { terra = false }
+    else if (params.terra==true) { terra = true}
+    else { error "Please set params.terra to either \"true\" or \"false\""}
+    //define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
     def mlst_version = task.container.toString() - "quay.io/jvhagey/mlst:"
     def mlst_version_cleaned = mlst_version.split("_")[0]
-    if (params.terra==false) {
-        terra = false
-    } else if (params.terra==true) {
-        terra = true
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     """
     if [[ ${fasta} = *.gz ]]
     then

@@ -358,6 +358,7 @@ def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assem
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
     QC_reason = []
     QC_result = [] # set as blank to begin with, need this to assign variable in QC_result == "FAIL": line
+    QC_result.append("PASS") #set default as PASS
     #check output of fairy and determine if reads were corrupt or had unequal number of reads
     with open(fairy_file, 'r') as f:
         for line in f:
@@ -365,11 +366,15 @@ def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assem
                 fastq_file_failure = str(line.split(' ')[10])
                 QC_result.append("FAIL")
                 QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped.")
-            elif ('The number of reads in R1/R2 are NOT equal' in line):
+            if ('FAILED: The number of reads in R1/R2 are NOT the same!' in line):
                 QC_result.append("FAIL")
-                QC_reason.append("The # of reads in raw R1/R2 are NOT equal.")
-            else:
-                QC_result.append("PASS")
+                QC_reason.append("The # of reads in raw R1/R2 files are NOT equal.")
+            if ('FAILED: There are 0 reads in' in line):
+                QC_result.append("FAIL")
+                QC_reason.append("No reads remain after trimming.")
+            if ('FAILED: No scaffolds in ' in line):
+                QC_result.append("FAIL")
+                QC_reason.append("No scaffolds were >500bp.")
     f.close()
     if scaffolds_entry == False: # if its not being used for scaffolds entry check estimated coverage otherwise don't
         if coverage == "Unknown" or int(coverage) < int(set_coverage):
@@ -378,15 +383,11 @@ def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assem
                 QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
             else:
                 QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
-        else:
-            QC_result.append("PASS")
     else:
         pass
     if length == "Unknown" or int(length) <= 1000000:
         QC_result.append("FAIL")
         QC_reason.append("assembly <1,000,000bps (" + str(length) + ")")
-    else:
-        QC_result.append("PASS")
     if str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
         if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
             QC_result.append("FAIL")
@@ -394,13 +395,9 @@ def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assem
         elif float(assembly_stdev) > 2.58:
             QC_result.append("FAIL")
             QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ")")
-        else:
-            QC_result.append("PASS")
     if str(scaffolds) == "Unknown" or int(scaffolds) > int(500):
         QC_result.append("FAIL")
         QC_reason.append("High scaffold count >500 ({}).".format(str(scaffolds)))
-    else:
-        QC_result.append("PASS")
     QC_reason = ', '.join(QC_reason)
     #checking if it was a pass
     if any("FAIL" in sub for sub in QC_result):
@@ -811,7 +808,7 @@ def Get_Files(directory, sample_name):
     kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt"
     quast_report = directory + "/quast/" + sample_name + "_summary.tsv"
     mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
-    fairy_file = directory + "/fairy/" + sample_name + "_results.txt"
+    fairy_file = directory + "/file_integrity/" + sample_name + "_summary.txt"
     # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
     # You only need this for glob because glob will throw an index error if not.
     try:
