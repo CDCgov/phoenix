@@ -120,8 +120,16 @@ def write_synopsis(sample_name, busco, raw_length_R1, raw_length_R2, raw_reads, 
             f.write("TRIMMED_R2                    : FAILED  : " + sample_name + "_trimmed_read_counts.txt not found. No trimming performed -- " + Error)
             f.write("TRIMMED_FASTQs                : FAILED  : " + sample_name + "_trimmed_read_counts.txt not found. No trimming performed -- " + Error)
             f.write("TRIMMED_READ_COUNTS           : FAILED  : No individual read count after trimming: " + str(trimd_reads)+ "(" + trimd_pairs + "paired reads, " + orphaned_reads + " singled reads)" + Error)
-            f.write("TRIMMED_Q30_R1%               : FAILED  : Q30_R1% at " + str(trimd_Q30_R1_rounded) + "% (Threshold is 90%) -- " + Error)
-            f.write("TRIMMED_Q30_R2%               : FAILED  : Q30_R2% at " + str(trimd_Q30_R2_rounded) + "% (Threshold is 70%) -- " + Error)
+            if trimd_Q30_R1_rounded < 90:
+                f.write("TRIMMED_Q30_R1%           : WARNING : Q30_R1% at " + str(trimd_Q30_R1_rounded) + "% (Threshold is 90%)\n")
+                warning_count = warning_count + 1
+            else:
+                f.write("TRIMMED_Q30_R1%           : SUCCESS : Q30_R1% at " + str(trimd_Q30_R1_rounded) + "% (Threshold is 90%)\n")
+            if trimd_Q30_R2_rounded < 70:
+                f.write("TRIMMED_Q30_R2%           : WARNING : Q30_R2% at " + str(trimd_Q30_R2_rounded) + "% (Threshold is 70%)\n")
+                warning_count = warning_count + 1
+            else:
+                f.write("TRIMMED_Q30_R2%           : SUCCESS : Q30_R2% at " + str(trimd_Q30_R2_rounded) + "% (Threshold is 70%)\n")
         f.write("KRAKEN2_READS                 : FAILED  : " + sample_name + ".kraken2_trimd.report.txt not found -- " + Error)
         f.write("KRONA_READS                   : FAILED  : kraken2 reads do not exist -- " + Error)
         f.write("KRAKEN2_CLASSIFY_READS        : FAILED  : There are no classified reads -- " + Error)
@@ -168,19 +176,17 @@ def write_summary_line(prefix, busco, warning_count, error):
         'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%', 'BUSCO', 'BUSCO_DB', 'Species','Taxa_Confidence',
         'Taxa_Coverage','Taxa_Source','Kraken2_Trimd','Kraken2_Weighted','MLST_Scheme_1','MLST_1',
         'MLST_Scheme_2','MLST_2','GAMMA_Beta_Lactam_Resistance_Genes','GAMMA_Other_AR_Genes',
-        'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons',
-        'Auto_QC_Failure_Reason']
+        'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons','Auto_QC_Failure_Reason']
         data = [[prefix,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', 'Unknown','Unknown','Unknown',
         'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', error]]
     else:
         column_names = ['ID','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
-        'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%', 'Species','Taxa_Confidence',
+        'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%','Species','Taxa_Confidence',
         'Taxa_Coverage','Taxa_Source','Kraken2_Trimd','Kraken2_Weighted','MLST_Scheme_1','MLST_1',
         'MLST_Scheme_2','MLST_2','GAMMA_Beta_Lactam_Resistance_Genes','GAMMA_Other_AR_Genes',
-        'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons',
-        'Auto_QC_Failure_Reason']
-        data = [[prefix,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', 'Unknown'
-        'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', error]]
+        'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons','Auto_QC_Failure_Reason']
+        data = [[prefix,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
+                'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', error]]
     df = pd.DataFrame(data, columns=column_names)
     df.to_csv(prefix + '_summaryline_failure.tsv', sep="\t",index=False)
 

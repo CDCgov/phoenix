@@ -315,9 +315,9 @@ def Get_Taxa_Source(taxa_file, fastani):
         lines = f.readlines()
         for line in lines:
             if line.startswith("G:"):
-                genus = line.replace("G:	","").strip('\n')
+                genus = line.split('\t')[1].strip('\n')
             if line.startswith("s:"):
-                species = line.replace("s:	","").strip('\n')
+                species = line.split('\t')[1].strip('\n')
         Species = genus + " " + species
     return taxa_source, percent_match, Species, fastani_coverage
 

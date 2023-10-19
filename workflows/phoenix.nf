@@ -37,12 +37,14 @@ include { READ_COUNT_CHECK               } from '../modules/local/fairy_read_cou
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
+include { FASTQC as FASTQCTRIMD          } from '../modules/local/fastqc'
 include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
 include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
 include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
 include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
 include { MLST                           } from '../modules/local/mlst'
 include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
+include { SCAFFOLD_COUNT_CHECK           } from '../modules/local/fairy_scaffold_count_check'
 include { QUAST                          } from '../modules/local/quast'
 include { MASH_DIST                      } from '../modules/local/mash_distance'
 include { FASTANI                        } from '../modules/local/fastani'
@@ -84,7 +86,6 @@ include { DO_MLST                        } from '../subworkflows/local/do_mlst'
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                      } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
@@ -126,26 +127,17 @@ workflow PHOENIX_EXTERNAL {
 
         //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
         //The mapping here is just to get things in the right bracket so we can call var[0]
-        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0])
+        .join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
 
         //Get stats on raw reads if the reads aren't corrupted
         GET_RAW_STATS (
-            read_stats_ch
+            read_stats_ch, false // false says no busco is being run
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
 
-        // Combining reads with read stats to check the read counts match
-        read_count_ch = GET_RAW_STATS.out.combined_raw_stats.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0])
-
-        //check that the read counts match between R1/R2
-        //only runs on files not corrupt as GET_RAW_STATS doesn't run unless files aren't corrupt and its output are required.
-        READ_COUNT_CHECK (
-            read_count_ch, true
-        )
-        ch_versions = ch_versions.mix(READ_COUNT_CHECK.out.versions)
-
         // Combining reads with output of corruption check
-        bbduk_ch = INPUT_CHECK.out.reads.join(READ_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
+        bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
 
         // Remove PhiX reads
         BBDUK (
@@ -166,32 +158,39 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(FASTP_SINGLES.out.versions)
 
         // Combining fastp json outputs based on meta.id
-        fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0])
+        fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0,0])\
+        .join(GET_RAW_STATS.out.combined_raw_stats, by: [0,0])\
+        .join(GET_RAW_STATS.out.outcome_to_edit, by: [0,0])
 
         // Script gathers data from fastp jsons for pipeline stats file
         GET_TRIMD_STATS (
-            fastp_json_ch
+            fastp_json_ch, false // false says no busco is being run
         )
         ch_versions = ch_versions.mix(GET_TRIMD_STATS.out.versions)
 
+        // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
+        trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
+
         // Running Fastqc on trimmed reads
         FASTQCTRIMD (
-            FASTP_TRIMD.out.reads
+            trimd_reads_file_integrity_ch
         )
         ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
         // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db
+            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
         SPADES_WF (
-            FASTP_SINGLES.out.reads, FASTP_TRIMD.out.reads, \
+            FASTP_SINGLES.out.reads, \
+            FASTP_TRIMD.out.reads, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
             GET_RAW_STATS.out.combined_raw_stats, \
             [], \
-            KRAKEN2_TRIMD.out.report, KRAKEN2_TRIMD.out.krona_html, \
+            KRAKEN2_TRIMD.out.report, \
+            KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
             false
         )
@@ -209,37 +208,56 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
+        // Combine bbmap log with the fairy outcome file
+        scaffold_check_ch = BBMAP_REFORMAT.out.log.map{meta, log                -> [[id:meta.id], log]}\
+        .join(GET_RAW_STATS.out.outcome_to_edit.map{   meta, outcome_to_edit    -> [[id:meta.id], outcome_to_edit]},    by: [0])\
+        .join(GET_RAW_STATS.out.combined_raw_stats.map{meta, combined_raw_stats -> [[id:meta.id], combined_raw_stats]}, by: [0])\
+        .join(GET_TRIMD_STATS.out.fastp_total_qc.map{  meta, fastp_total_qc     -> [[id:meta.id], fastp_total_qc]},     by: [0])\
+        .join(KRAKEN2_TRIMD.out.report.map{            meta, report             -> [[id:meta.id], report]},             by: [0])\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{     meta, k2_bh_summary      -> [[id:meta.id], k2_bh_summary]},      by: [0])\
+        .join(KRAKEN2_TRIMD.out.krona_html.map{        meta, krona_html         -> [[id:meta.id], krona_html]},         by: [0])
+
+        // Checking that there are still scaffolds left after filtering
+        SCAFFOLD_COUNT_CHECK (
+            scaffold_check_ch, true, params.coverage, params.nodes, params.names
+        )
+        ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
+
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
+        .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
-            BBMAP_REFORMAT.out.filtered_scaffolds, params.hvgamdb
+            filtered_scaffolds_ch, params.hvgamdb
         )
         ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
 
         // Running gamma to identify AR genes in scaffolds
         GAMMA_AR (
-            BBMAP_REFORMAT.out.filtered_scaffolds, params.ardb
+            filtered_scaffolds_ch, params.ardb
         )
         ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
         GAMMA_PF (
-            BBMAP_REFORMAT.out.filtered_scaffolds, params.gamdbpf
+            filtered_scaffolds_ch, params.gamdbpf
         )
         ch_versions = ch_versions.mix(GAMMA_PF.out.versions)
 
         // Getting Assembly Stats
         QUAST (
-            BBMAP_REFORMAT.out.filtered_scaffolds
+            filtered_scaffolds_ch
         )
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds,"wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
         // combine filtered scaffolds and mash_sketch so mash_sketch goes with each filtered_scaffolds file
-        mash_dist_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(ASSET_CHECK.out.mash_sketch)
+        mash_dist_ch = filtered_scaffolds_ch.combine(ASSET_CHECK.out.mash_sketch)
 
         // Running Mash distance to get top 20 matches for fastANI to speed things up
         MASH_DIST (
@@ -248,8 +266,9 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
         // Combining mash dist with filtered scaffolds based on meta.id
-        top_taxa_ch = MASH_DIST.out.dist.map{           meta, dist  -> [[id:meta.id], dist]}\
-        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads -> [[id:meta.id], reads ]}, by: [0])
+        top_taxa_ch = MASH_DIST.out.dist.map{                                 meta, dist               -> [[id:meta.id], dist]}\
+        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{                      meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds ]}, by: [0])
+        .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
 
         // Generate file with list of paths of top taxa for fastANI
         DETERMINE_TOP_TAXA (
@@ -258,9 +277,9 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(DETERMINE_TOP_TAXA.out.versions)
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
-        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads         -> [[id:meta.id], reads]}\
-        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{              meta, top_taxa_list -> [[id:meta.id], top_taxa_list ]}, by: [0])\
-        .join(DETERMINE_TOP_TAXA.out.reference_dir.map{              meta, reference_dir -> [[id:meta.id], reference_dir ]}, by: [0])
+        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}\
+        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{              meta, top_taxa_list      -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+        .join(DETERMINE_TOP_TAXA.out.reference_dir.map{              meta, reference_dir      -> [[id:meta.id], reference_dir ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -275,9 +294,9 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(FORMAT_ANI.out.versions)
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
-        best_hit_ch = KRAKEN2_WTASMBLD.out.report.map{meta, kraken_weighted_report -> [[id:meta.id], kraken_weighted_report]}\
-        .join(FORMAT_ANI.out.ani_best_hit.map{        meta, ani_best_hit           -> [[id:meta.id], ani_best_hit ]},  by: [0])\
-        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{    meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary ]}, by: [0])
+        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}\
+        .join(FORMAT_ANI.out.ani_best_hit.map{               meta, ani_best_hit  -> [[id:meta.id], ani_best_hit ]},  by: [0])\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{           meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary ]}, by: [0])
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
@@ -288,6 +307,7 @@ workflow PHOENIX_EXTERNAL {
         // Perform MLST steps on isolates (with srst2 on internal samples)
         DO_MLST (
             BBMAP_REFORMAT.out.filtered_scaffolds, \
+            SCAFFOLD_COUNT_CHECK.out.outcome, \
             FASTP_TRIMD.out.reads, \
             DETERMINE_TAXA_ID.out.taxonomy, \
             ASSET_CHECK.out.mlst_db, \
@@ -297,7 +317,7 @@ workflow PHOENIX_EXTERNAL {
 
         // get gff and protein files for amrfinder+
         PROKKA (
-            BBMAP_REFORMAT.out.filtered_scaffolds, [], []
+            filtered_scaffolds_ch, [], []
         )
         ch_versions = ch_versions.mix(PROKKA.out.versions)
 
@@ -396,7 +416,11 @@ workflow PHOENIX_EXTERNAL {
         // combine all line summaries into one channel
         spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
         // collect the failed fairy summary lines
-        fairy_created_failed_summaries_ch = CORRUPTION_CHECK.out.summary_line.collect().combine(READ_COUNT_CHECK.out.summary_line.collect()).ifEmpty(params.placeholder) // if no failure pass empty file to keep it moving...
+        fairy_created_failed_summaries_ch = CORRUPTION_CHECK.out.summary_line.collect()\
+        .combine(GET_RAW_STATS.out.summary_line.collect())\
+        .combine(GET_TRIMD_STATS.out.summary_line.collect())\
+        .ifEmpty( [] ) // if no failure pass empty file to keep it moving...
+        // pulling it all together
         all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_created_failed_summaries_ch)
 
         // Combining sample summaries into final report

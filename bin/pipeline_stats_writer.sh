@@ -43,6 +43,7 @@ show_help () {
     -y* MLST_file (or more)
     -z* assembly_only_sample (true or false)
     -1* amr_tsv_file
+    -5 coverage
     -3
     "
 }
@@ -62,94 +63,94 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3" o
       exit 0
       ;;
     a)
-      #echo "Option -a triggered, argument = ${OPTARG}"
+      echo "Option -a triggered, argument = ${OPTARG}"
       raw_read_counts=${OPTARG};;
     b)
-      #echo "Option -b triggered, argument = ${OPTARG}"
+      echo "Option -b triggered, argument = ${OPTARG}"
       total_read_counts=${OPTARG};;
     c)
-      #echo "Option -c triggered, argument = ${OPTARG}"
+      echo "Option -c triggered, argument = ${OPTARG}"
       gc_content_file=${OPTARG};;
     d)
-      #echo "Option -d triggered, argument = ${OPTARG}"
+      echo "Option -d triggered, argument = ${OPTARG}"
       sample_name=${OPTARG};;
     e)
-      #echo "Option -e triggered, argument = ${OPTARG}"
+      echo "Option -e triggered, argument = ${OPTARG}"
       kraken2_trimd_report=${OPTARG};;
     f)
-      #echo "Option -f triggered, argument = ${OPTARG}"
+      echo "Option -f triggered, argument = ${OPTARG}"
       kraken2_trimd_summary=${OPTARG};;
     g)
-      #echo "Option -g triggered, argument = ${OPTARG}"
+      echo "Option -g triggered, argument = ${OPTARG}"
       krona_trimd=${OPTARG};;
     h)
-      #echo "Option -h triggered, argument = ${OPTARG}"
+      echo "Option -h triggered, argument = ${OPTARG}"
       SPAdes_assembly=${OPTARG};;
     i)
-      #echo "Option -i triggered, argument = ${OPTARG}"
+      echo "Option -i triggered, argument = ${OPTARG}"
       trimmed_assembly=${OPTARG};;
     j)
-      #echo "Option -j triggered, argument = ${OPTARG}"
+      echo "Option -j triggered, argument = ${OPTARG}"
       kraken2_asmbld_report=${OPTARG};;
     k)
-      #echo "Option -k triggered, argument = ${OPTARG}"
+      echo "Option -k triggered, argument = ${OPTARG}"
       kraken2_asmbled_summary=${OPTARG};;
     l)
-      #echo "Option -l triggered, argument = ${OPTARG}"
+      echo "Option -l triggered, argument = ${OPTARG}"
       krona_asmbld=${OPTARG};;
     m)
-      #echo "Option -m triggered, argument = ${OPTARG}"
+      echo "Option -m triggered, argument = ${OPTARG}"
       kraken2_weighted_report=${OPTARG};;
     n)
-      #echo "Option -n triggered, argument = ${OPTARG}"
+      echo "Option -n triggered, argument = ${OPTARG}"
       kraken2_weighted_summary=${OPTARG};;
     o)
-      #echo "Option -o triggered, argument = ${OPTARG}"
+      echo "Option -o triggered, argument = ${OPTARG}"
       krona_weighted=${OPTARG};;
     p)
-      #echo "Option -p triggered, argument = ${OPTARG}"
+      echo "Option -p triggered, argument = ${OPTARG}"
       quast_report=${OPTARG};;
     q)
-      #echo "Option -q triggered, argument = ${OPTARG}"
+      echo "Option -q triggered, argument = ${OPTARG}"
       taxID_file=${OPTARG};;
     r)
-      #echo "Option -r triggered, argument = ${OPTARG}"
+      echo "Option -r triggered, argument = ${OPTARG}"
       assembly_ratio_file=${OPTARG};;
     s)
-      #echo "Option -s triggered, argument = ${OPTARG}"
+      echo "Option -s triggered, argument = ${OPTARG}"
       busco_summary=${OPTARG};;
     t)
-      #echo "Option -t triggered, argument = ${OPTARG}"
+      echo "Option -t triggered, argument = ${OPTARG}"
       formatted_fastANI=${OPTARG};;
     u)
-      #echo "Option -t triggered, argument = ${OPTARG}"
+      echo "Option -t triggered, argument = ${OPTARG}"
       gamma_AR=${OPTARG};;
     v)
-      #echo "Option -u triggered, argument = ${OPTARG}"
+      echo "Option -u triggered, argument = ${OPTARG}"
       gamma_replicon=${OPTARG};;
     w)
-      #echo "Option -v triggered, argument = ${OPTARG}"
+      echo "Option -v triggered, argument = ${OPTARG}"
       gamma_HV=${OPTARG};;
     x)
-      #echo "Option -w triggered, argument = ${OPTARG}"
+      echo "Option -w triggered, argument = ${OPTARG}"
       srst2_file=${OPTARG};;
     y)
-      #echo "Option -x triggered, argument = ${OPTARG}"
+      echo "Option -x triggered, argument = ${OPTARG}"
       mlst_file=${OPTARG};;
     z)
-      #echo "Option -z triggered, argument = ${OPTARG}"
+      echo "Option -z triggered, argument = ${OPTARG}"
       assembly_only="true";;
     4)
-      #echo "Option -1 triggered, argument = ${OPTARG}"
+      echo "Option -1 triggered, argument = ${OPTARG}"
       amr_file=${OPTARG};;
 		2)
-			#echo "Option -2 triggered"
+			echo "Option -2 triggered"
 			terra=${OPTARG};;
     5)
-      #echo "Option -5 triggered, argument = ${OPTARG}"
+      echo "Option -5 triggered, argument = ${OPTARG}"
       coverage=${OPTARG};;
     3)
-      #echo "Option -3 triggered, argument = ${OPTARG}"
+      echo "Option -3 triggered, argument = ${OPTARG}"
       internal_phoenix="true";;
     :)
       echo "Option -${OPTARG} requires as argument";;
@@ -206,7 +207,6 @@ if [[ "${assembly_only}" = "true" ]]; then
 else
   run_type="all"
 fi
-
 
 if [[ "${run_type}" == "all" ]]; then
   #Checking existence of FASTQ files
