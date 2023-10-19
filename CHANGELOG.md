@@ -21,14 +21,16 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - `Phoenix_Output_Report.tsv` now has antibiotic genes and plasmid markers filtered to ensure quality [#d0fa32c](https://github.com/CDCgov/phoenix/commit/d0fa32c511a21b21366651b28dfb1539f800e262).  
    - Plasmid markers require >=60% length and >=98% identity to be reported  
    - Antibiotic Genes require >=90% length and >=98% identity to be reported  
-- AMRFinder+ point mutation are now included in `Phoenix_Output_Report.tsv` under the column `AMRFinder_Point_Mutations`.  
+- AMRFinder+ point mutation are now included in `Phoenix_Output_Report.tsv` under the column `AMRFinder_Point_Mutations`.
+- In determine_taxID.sh, Upper taxonomy lineage now uses NCBI names and nodes files for the ability to assign nearly all possible taxonomies compared to the very limited options with the previous taxes.csv file  
 
 **Output File Changes:**  
 - Removed spaces in header of `*_all_genes.tsv` file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#fd048d1](https://github.com/CDCgov/phoenix/commit/fd048d1a54ca262617eeef32d85cd4f47650af23).  
 - Fixed error causing PROKKA output to not be in Annotation folder [#d014aa0](https://github.com/CDCgov/phoenix/commit/d014aa00b27c1fa9e2d1b1151bc7f6c44d8a82b3).  
 - Added headers to 2 files: `*.fastANI.txt` and `*.wtasmbld_summary.txt`.  
 - Also, added headers to `phoenix_line_summary.tsv` see [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#sample-specific-files) for details.  
-- MLST final output that includes different headers and organization was renamed to `*_combined.tsv` which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags.  
+- MLST final output that includes different headers and organization was renamed to `*_combined.tsv` which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags.
+- Taxonomy file now includes NCBI TaxID at each standard level. Example species line would like like this "s:287 aeruginosa"  
 
 **Fixed Bugs:**  
 - Edit to allow nf-tower to work [#b21d61f](https://github.com/CDCgov/phoenix/commit/b21d61f269212311737dffecd54664d7c8019f09)  
