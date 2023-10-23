@@ -179,7 +179,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db
+            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db, "reads"
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -219,7 +219,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Checking that there are still scaffolds left after filtering
         SCAFFOLD_COUNT_CHECK (
-            scaffold_check_ch, true, params.coverage, params.nodes, params.names
+            scaffold_check_ch, false, params.coverage, params.nodes, params.names
         )
         ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
 
@@ -252,7 +252,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "reads"
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
@@ -265,10 +265,8 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
-        // Combining mash dist with filtered scaffolds based on meta.id
-        top_taxa_ch = MASH_DIST.out.dist.map{                                 meta, dist               -> [[id:meta.id], dist]}\
-        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{                      meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds ]}, by: [0])
-        .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+        // Combining mash dist with filtered scaffolds and the outcome of the scaffolds count check based on meta.id
+        top_taxa_ch = MASH_DIST.out.dist.join(filtered_scaffolds_ch, by: [0])
 
         // Generate file with list of paths of top taxa for fastANI
         DETERMINE_TOP_TAXA (
@@ -416,12 +414,13 @@ workflow PHOENIX_EXTERNAL {
         // combine all line summaries into one channel
         spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
         // collect the failed fairy summary lines
-        fairy_created_failed_summaries_ch = CORRUPTION_CHECK.out.summary_line.collect()\
+        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect()\
         .combine(GET_RAW_STATS.out.summary_line.collect())\
         .combine(GET_TRIMD_STATS.out.summary_line.collect())\
+        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect())\
         .ifEmpty( [] ) // if no failure pass empty file to keep it moving...
         // pulling it all together
-        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_created_failed_summaries_ch)
+        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (

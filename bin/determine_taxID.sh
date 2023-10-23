@@ -92,14 +92,14 @@ Check_source() {
 #		done
 	fi
 	if [[ "${start_at}" -le 2 ]]; then
-#		if [[ -s "${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt" ]]; then
+#		if [[ -s "${OUTDATADIR}/kraken2_weighted/${sample_name}.top_kraken_hit.txt" ]]; then
 		if [[ -s "${weighted_kraken}" ]]; then
 			do_kraken2_assembly
 		return
 		fi
 	fi
 	if [[ "${start_at}" -le 3 ]]; then
-#		if [[ -s "${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt" ]]; then
+#		if [[ -s "${OUTDATADIR}/kraken2_weighted/${sample_name}.top_kraken_hit.txt" ]]; then
 		if [[ -s "${trimmed_kraken}" ]]; then
 			do_kraken2_reads
 		return
@@ -127,7 +127,7 @@ do_ANI() {
 # Function to pull info from kraken2 output based on assembly
 do_kraken2_assembly() {
 	source="kraken2_wtasmbld"
-#	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt"
+#	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.top_kraken_hit.txt"
 	source_file="${weighted_kraken}"
 	#echo "${source}"
 	while IFS= read -r line  || [ -n "$line" ]; do
@@ -150,7 +150,7 @@ do_kraken2_assembly() {
 # Function to pull info from kraken2 output based on assembly
 do_kraken2_reads() {
 	source="kraken2_trimmed"
-#	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.summary.txt"
+#	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.top_kraken_hit.txt"
 	source_file="${trimmed_kraken}"
 	#echo "${source}"
 	while IFS= read -r line  || [ -n "$line" ]; do

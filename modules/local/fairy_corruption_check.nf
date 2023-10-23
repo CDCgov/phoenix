@@ -9,7 +9,7 @@ process CORRUPTION_CHECK {
     output:
     tuple val(meta), path('*_summary.txt'),                    emit: outcome
     tuple val(meta), path('*_summary_old.txt'),                emit: outcome_to_edit
-    path('*_summaryline_failure.tsv'),          optional:true, emit: summary_line
+    path('*_summaryline.tsv'),                  optional:true, emit: summary_line
     tuple val(meta), path('*.synopsis'),        optional:true, emit: synopsis
     path("versions.yml"),                                      emit: versions
 
@@ -26,7 +26,7 @@ process CORRUPTION_CHECK {
     """
     #set +e
     #check for file integrity and log errors
-    #if there is a corruption problem the script will create a *_summaryline_failure.tsv and *.synopsis file for the sample.
+    #if there is a corruption problem the script will create a *_summaryline.tsv and *.synopsis file for the sample.
     ${ica}fairy_proc.sh -r ${reads[0]} -p ${prefix}
     ${ica}fairy_proc.sh -r ${reads[1]} -p ${prefix}
 

@@ -188,7 +188,7 @@ def write_summary_line(prefix, busco, warning_count, error):
         data = [[prefix,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
                 'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', error]]
     df = pd.DataFrame(data, columns=column_names)
-    df.to_csv(prefix + '_summaryline_failure.tsv', sep="\t",index=False)
+    df.to_csv(prefix + '_summaryline.tsv', sep="\t",index=False)
 
 def main():
     args = parseArgs()

@@ -188,10 +188,11 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Fixed Bugs:**  
 - Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
-- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite `--coverage`` setting, changes made to respect `--coverage` flag.  
+- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite `--coverage` setting, changes made to respect `--coverage` flag.  
 - Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHX will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
 - Corrected instance where, in some cases, an mlst scheme could not be determined that a proper out file was not created.  
 - Fixed issue where samples that failed SPAdes did not have `--coverage` parameter respected when generating synopsis file.  
+- Fixed `-entry CDC_SCAFFOLDS` providing incorrect headers (missing `BUSCO` and `BUSCO_DB`).  
 - Updated FAIry( file integrity check) to catch additional file integrity errors.
    - FAIry detects and reports when:  
       - Corrupt fastq files that prevents the completion of gzip and zcat and generate a synopsis file when needed.  

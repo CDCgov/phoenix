@@ -11,7 +11,7 @@ process GET_RAW_STATS {
     tuple val(meta), path('*_stats.txt'),                        emit: raw_stats
     tuple val(meta), path('*_raw_read_counts.txt'),              emit: combined_raw_stats
     tuple val(meta), path('*_summary.txt'),                      emit: outcome
-    path('*_summaryline.tsv'),            optional:true, emit: summary_line
+    path('*_summaryline.tsv'),                    optional:true, emit: summary_line
     tuple val(meta), path('*_summary_old_2.txt'),                emit: outcome_to_edit
     tuple val(meta), path('*.synopsis'),          optional:true, emit: synopsis
     path("versions.yml"),                                        emit: versions

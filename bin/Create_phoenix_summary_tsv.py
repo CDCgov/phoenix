@@ -32,7 +32,7 @@ def List_TSV(output_file, input_list, busco):
             with open(entry, "r") as f2:
                 header = next(f2) # skip the first line of the samplesheet
                 for line in f2:
-                    f.write(line + '\n')
+                    f.write(line.strip('\n') + '\n')
 
 def collect_files():
     summary_files = glob.glob('*.tsv')

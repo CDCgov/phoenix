@@ -390,7 +390,7 @@ if [[ "${run_type}" == "all" ]]; then
 		#printf "%-30s: %-8s : %s\\n" "kraken2 preassembly" "SUCCESS" "Found"
 		kraken2_pre_success="true"
 	else
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS" "FAILED" "${sample_name}.kraken2_trimd.report.txt not found"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_READS" "FAILED" "${sample_name}.kraken2_trimd.summary.txt not found"  >> "${sample_name}.synopsis"
 		status="FAILED"
 	fi
 
@@ -547,7 +547,7 @@ if [[ "${internal_phoenix}" == "true" ]]; then
 		#printf "%-30s: %-8s : %s\\n" "kraken2 postassembly" "SUCCESS" "Found"
 		kraken2_unweighted_success="true"
 	else
-		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD" "FAILED" "${sample_name}.kraken2_asmbld.report.txt not found"  >> "${sample_name}.synopsis"
+		printf "%-30s: %-8s : %s\\n" "KRAKEN2_ASMBLD" "FAILED" "${sample_name}.kraken2_asmbld.summary.txt not found"  >> "${sample_name}.synopsis"
 		status="FAILED"
 	fi
 
@@ -667,7 +667,7 @@ if [[ -s "${kraken2_weighted_report}" ]]; then
 	#printf "%-30s: %-8s : %s\\n" "kraken2 weighted" "SUCCESS" "Found"
 	kraken2_weighted_success=true
 else
-	printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED" "FAILED" "${sample_name}.kraken2_wtasmbld.report.txt not found"  >> "${sample_name}.synopsis"
+	printf "%-30s: %-8s : %s\\n" "KRAKEN2_WEIGHTED" "FAILED" "${sample_name}.kraken2_wtasmbld.summary.txt not found"  >> "${sample_name}.synopsis"
 	status="FAILED"
 fi
 
@@ -1021,7 +1021,7 @@ if [[ -s "${formatted_fastANI}" ]]; then
     fi
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "NO ${sample_name}_REFSEQ_*.fastANI.txt  file"  >> "${sample_name}.synopsis"
+  printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "No ${sample_name}_REFSEQ_*.fastANI.txt file"  >> "${sample_name}.synopsis"
   status="FAILED"
 fi
 
@@ -1104,7 +1104,7 @@ if [[ -s "${amr_file}" ]]; then
     echo "Should never get here (amr_genes less than 0)"
   fi
 else
-  printf "%-30s: %-8s : %s\\n" "AMRFINDER" "FAILED" "${amr_file} does not exist"  >> "${sample_name}.synopsis"
+  printf "%-30s: %-8s : %s\\n" "AMRFINDER" "FAILED" "${sample_name}_all_genes.tsv does not exist"  >> "${sample_name}.synopsis"
   status="FAILED"
 fi
 
