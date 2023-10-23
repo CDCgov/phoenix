@@ -40,7 +40,7 @@ def get_isolate_dirs(directory, griphin_summary):
     failed_id_list = df_fails["WGS_ID"].tolist()
     skip_list = skip_list_dirs + failed_id_list
     # remove bad directories from list
-    dirs_cleaned = [val for val in filtered_dirs if not any(bad_val in val for bad_val in skip_list)] #remove unwanted files
+    dirs_cleaned = [val for val in filtered_dirs if not any(str(bad_val) in str(val) for bad_val in skip_list)] #remove unwanted files
     try: #if there are numbers in the name then use that to sort
         dirs_sorted=sorted(dirs_cleaned, key=lambda x: int("".join([i for i in x if i.isdigit()])))
     except: #if no numbers then use only alphabetically
