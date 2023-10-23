@@ -975,9 +975,9 @@ if [[ "${internal_phoenix}" == "true" ]]; then
       BUSCO_organism=$(sed 's/_odb[0-9]\+//' <<< $db)
       percent_BUSCO_present=$($bc_path<<<"${found_buscos}*100/${total_buscos}")
       if [[ "${percent_BUSCO_present}" -gt 90 ]]; then
-        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "SUCCESS" "${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
+        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "SUCCESS" "${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos}) (Target:90%)"  >> "${sample_name}.synopsis"
       else
-        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "FAILED" "only ${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos})"  >> "${sample_name}.synopsis"
+        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "FAILED" "only ${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos}) (Target:90%)"  >> "${sample_name}.synopsis"
         status="FAILED"
       fi
     # If the busco summary file does not exist

@@ -364,6 +364,7 @@ def Get_BUSCO_Gene_Count(stats):
         #ratio = split_list[2].split(' ')[9].rstrip('\n')
         lineage="_".join(split_list[0].split("_")[-2:]).strip()
         percent=str(split_list[2].split("%")[0].strip())+"%"
+        percent = re.sub("only ", "", percent)
         ratio="("+str(split_list[2].split("(")[1].strip())
         busco_line = percent + ' ' + ratio
     busco_file = True
