@@ -25,6 +25,7 @@ class RowChecker:
     """
 
     VALID_FORMATS = (
+        ".fna.gz",
         ".fa.gz",
         ".fasta.gz",
     )
