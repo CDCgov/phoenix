@@ -238,7 +238,7 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
     alerts = ', '.join(alerts)
     return alerts
 
-def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus):
+def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning):
     """
     <1,000,000 total reads for each raw and trimmed reads - Total_Sequenced_reads
     % raw and trimmed reads with Q30 average for R1 (<90%) and R2 (<70%) - Q30_R1_percent, Q30_R2_percent
@@ -308,7 +308,9 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
             pass
         else:
             warnings.append("Check 2nd MLST scheme matches taxa IDed.")
-    warnings = ', '.join(warnings)
+    #add in fastani warning
+    warnings.append(fastani_warning)
+    warnings = ', '.join(warnings).strip(", ")
     return warnings
 
 def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name):
@@ -592,9 +594,20 @@ def parse_ani(fast_ani_file):
     """Parse ANI file to get format 99.98%ID-98.58%COV-Acinetobacter baumannii(Acinetobacter_baumannii_GCF_012935145.1_ASM1293514v1_genomic.fna.gz)."""
     with open(fast_ani_file) as f:
         first_line = f.readline().strip('\n')
-    if first_line == "No MASH hit found":
-        return ['NA','NA','NA','NA'], "NA NA"
+        #try: #try to see if there is a second line.
+        #    second_line = f.readlines()[0].strip('\n')
+        #except IndexError:
+        #    second_line = ""
+    if "No MASH hit found" in first_line:
+        FastANI_output_list = ['NA','NA','NA','NA']
+        scheme_guess = "NA NA"
+        fastani_warning = "No MASH hit found"
+    elif "No hits above an ANI value >=80%" in first_line:
+        FastANI_output_list = ['NA','NA','NA','NA']
+        scheme_guess = "NA NA"
+        fastani_warning = "No hits with >=80% ANI."
     else:
+        fastani_warning = ""
         ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
@@ -604,7 +617,7 @@ def parse_ani(fast_ani_file):
         FastANI_output_list = [source_file, ID, coverage, organism]
         # get taxa to check mlst scheme
         scheme_guess = organism.split(' ')[0][0].lower() + organism.split(' ')[1][0:4]
-        return FastANI_output_list, scheme_guess
+    return FastANI_output_list, scheme_guess, fastani_warning
 
 def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     """Parsing the srst2 file run on the ar gene database."""
@@ -699,7 +712,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         print("Warning: Possibly coverage and assembly length was not calculated and/or"+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
     try:
-        FastANI_output_list, scheme_guess_fastani = parse_ani(fast_ani_file)
+        FastANI_output_list, scheme_guess_fastani, fastani_warning = parse_ani(fast_ani_file)
     except FileNotFoundError: 
         print("Warning: " + sample_name + ".fastANI.txt not found")
         ani_source_file = fastani_ID = fastani_coverage = fastani_organism = 'Unknown'
@@ -789,7 +802,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         scheme_guess = scheme_guess_fastani
         genus = FastANI_output_list[3].split(" ")[0]
     try:
-        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent, Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus)
+        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent, Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning)
     except:
         warnings = ""
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \

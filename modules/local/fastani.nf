@@ -23,9 +23,9 @@ process FASTANI {
     """
     line=\$(head -n1 ${reference})
     if [[ "\${line}" = "No MASH hit found" ]]; then
-        echo "No MASH hit found" > ${meta.id}.ani.txt
+        echo "Mash/FastANI Error: No MASH hit found" > ${prefix}.ani.txt
     else
-        db_version=\$(echo ${reference} | sed 's/_best_MASH_hits.txt//' | sed 's/${meta.id}_//' )
+        db_version=\$(echo ${reference} | sed 's/_best_MASH_hits.txt//' | sed 's/${prefix}_//' )
         # Setup to catch any issues while grabbing date from DB name
         if [[ "\${db_version}" = "" ]]; then
             db_version="REFSEQ_unknown"
@@ -34,6 +34,13 @@ process FASTANI {
             -q $query \\
             --rl $reference \\
             -o ${prefix}_\${db_version}.ani.txt
+    fi
+
+    # NOTE: No ANI output is reported (but file is created) for a genome pair if ANI value is much below 80%. 
+    # Such case should be computed at amino acid level. However, we aren't going to do that so we will confirm the file isn't empty. 
+    # if the file doesn't exist or is empty say no Mash hits found
+    if [[ ! -s ${prefix}_\${db_version}.ani.txt ]]; then
+        echo "Mash/FastANI Error: No hits above an ANI value >80%" > ${prefix}_\${db_version}.ani.txt
     fi
 
     cat <<-END_VERSIONS > versions.yml

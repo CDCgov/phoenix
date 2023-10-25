@@ -41,7 +41,7 @@ include { SCAFFOLD_COUNT_CHECK           } from '../modules/local/fairy_scaffold
 include { QUAST                          } from '../modules/local/quast'
 include { MASH_DIST                      } from '../modules/local/mash_distance'
 include { FASTANI                        } from '../modules/local/fastani'
-include { DETERMINE_TOP_TAXA             } from '../modules/local/determine_top_taxa'
+include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/determine_top_mash_hits'
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
 include { PROKKA                         } from '../modules/local/prokka'
@@ -232,18 +232,18 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
         // Combining mash dist with filtered scaffolds and the outcome of the scaffolds count check based on meta.id
-        top_taxa_ch = MASH_DIST.out.dist.join(filtered_scaffolds_ch, by: [0])
+        top_mash_hits_ch = MASH_DIST.out.dist.join(filtered_scaffolds_ch, by: [0])
 
         // Generate file with list of paths of top taxa for fastANI
-        DETERMINE_TOP_TAXA (
-            top_taxa_ch
+        DETERMINE_TOP_MASH_HITS (
+            top_mash_hits_ch
         )
-        ch_versions = ch_versions.mix(DETERMINE_TOP_TAXA.out.versions)
+        ch_versions = ch_versions.mix(DETERMINE_TOP_MASH_HITS.out.versions)
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads           -> [[id:meta.id], reads]}\
-        .join(DETERMINE_TOP_TAXA.out.top_taxa_list.map{              meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]}, by: [0])\
-        .join(DETERMINE_TOP_TAXA.out.reference_dir.map{              meta, reference_dir   -> [[id:meta.id], reference_dir ]}, by: [0])
+        .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{              meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+        .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{              meta, reference_dir   -> [[id:meta.id], reference_dir ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -370,7 +370,7 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
         // Collect all the summary files prior to fetch step to force the fetch process to wait
-         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()
 
         // Collect all the summary files prior to fetch step to force the fetch process to wait
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()

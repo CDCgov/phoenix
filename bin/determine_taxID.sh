@@ -82,7 +82,7 @@ Check_source() {
 #		for f in ${OUTDATADIR}/ANI/*; do
 		if [[ "${fastani_file}" = *".fastANI"*".txt" ]]; then
 			header=$(head -n1 ${fastani_file})
-			if [[ ${header} != "No matching ANI database found for"* ]] && [[ ${header} != "No MASH hit found" ]] && [[ ${header} != "0.00%"* ]] ; then
+			if [[ ${header} != "No matching ANI database found for"* ]] && [[ ${header} != "Mash/FastANI Error: "* ]] && [[ ${header} != "0.00%"* ]] ; then
 				do_ANI
 			return
 			else

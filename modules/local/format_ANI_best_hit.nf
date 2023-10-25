@@ -24,15 +24,16 @@ process FORMAT_ANI {
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     line=\$(head -n1 ${ani_file})
-    if [[ "\${line}" = "No MASH hit found" ]]; then
-        echo "No MASH hit found" > "${meta.id}.fastANI.txt"
+    if [[ "\${line}" == "Mash/FastANI Error:"* ]]; then
+        echo "Mash/FastANI Error: No MASH hit found." > "${prefix}.fastANI.txt"
     else
-        db_version=\$(echo ${ani_file} | sed 's/.ani.txt//' | sed 's/${meta.id}_//' )
+        db_version=\$(echo ${ani_file} | sed 's/.ani.txt//' | sed 's/${prefix}_//' )
         # Setup to catch any issues while grabbing date from DB name
         if [[ "\${db_version}" = "" ]]; then
             db_version="REFSEQ_unknown"
         fi
-        ${ica}ANI_best_hit_formatter.sh -a $ani_file -n ${prefix} -d \${db_version} $terra
+        # script also checks that match is 80 or > otherwise an error is thrown
+        ${ica}ANI_best_hit_formatter.sh -a ${ani_file} -n ${prefix} -d \${db_version} ${terra}
     fi
 
     cat <<-END_VERSIONS > versions.yml

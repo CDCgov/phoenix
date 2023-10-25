@@ -1,4 +1,4 @@
-process DETERMINE_TOP_TAXA {
+process DETERMINE_TOP_MASH_HITS {
     tag "$meta.id"
     label 'process_low'
     container 'quay.io/jvhagey/phoenix:base_v2.1.0'
