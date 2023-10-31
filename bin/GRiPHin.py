@@ -601,7 +601,7 @@ def parse_ani(fast_ani_file):
     if "No MASH hit found" in first_line:
         FastANI_output_list = ['NA','NA','NA','NA']
         scheme_guess = "NA NA"
-        fastani_warning = "No MASH hit found"
+        fastani_warning = "No MASH hit found."
     elif "No hits above an ANI value >=80%" in first_line:
         FastANI_output_list = ['NA','NA','NA','NA']
         scheme_guess = "NA NA"
