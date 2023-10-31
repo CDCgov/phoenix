@@ -125,7 +125,7 @@ workflow PHOENIX_EXQC {
 
         //fairy compressed file corruption check & generate read stats
         CORRUPTION_CHECK (
-            INPUT_CHECK.out.reads
+            INPUT_CHECK.out.reads, true // true says busco is being run in this workflow
         )
         ch_versions = ch_versions.mix(CORRUPTION_CHECK.out.versions)
 
@@ -455,12 +455,19 @@ workflow PHOENIX_EXQC {
 
         // combine all line summaries into one channel
         spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
-        // collect the failed fairy summary lines
-        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect()\
-        .combine(GET_RAW_STATS.out.summary_line.collect())\
-        .combine(GET_TRIMD_STATS.out.summary_line.collect())\
-        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect())\
-        .ifEmpty( [] ) 
+        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )\
+        .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] ))\
+        .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] ))\
+        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
+        .ifEmpty( [] )
+
+        /*/ collect the failed fairy summary lines
+        fairy_corrupt_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )
+        fairy_raw_summary_ch = GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] )
+        fairy_trimd_summary_ch = GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] )
+        fairy_scaff_summary_ch = SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] )
+        //add all fairy channels together
+        fairy_summary_ch = fairy_corrupt_summary_ch.combine(fairy_raw_summary_ch).combine(fairy_trimd_summary_ch).combine(fairy_scaff_summary_ch).ifEmpty( [] )*/
 
         // pulling it all together
         all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)

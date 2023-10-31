@@ -5,6 +5,7 @@ process CORRUPTION_CHECK {
 
     input:
     tuple val(meta), path(reads)
+    val(busco_val)
 
     output:
     tuple val(meta), path('*_summary.txt'),                    emit: outcome
@@ -22,13 +23,14 @@ process CORRUPTION_CHECK {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def num1 = "${reads[0]}".minus(".fastq.gz")
     def num2 = "${reads[1]}".minus(".fastq.gz")
+    def busco_parameter = busco_val ? "-b" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     #set +e
     #check for file integrity and log errors
     #if there is a corruption problem the script will create a *_summaryline.tsv and *.synopsis file for the sample.
-    ${ica}fairy_proc.sh -r ${reads[0]} -p ${prefix}
-    ${ica}fairy_proc.sh -r ${reads[1]} -p ${prefix}
+    ${ica}fairy_proc.sh -r ${reads[0]} -p ${prefix} ${busco_parameter}
+    ${ica}fairy_proc.sh -r ${reads[1]} -p ${prefix} ${busco_parameter}
 
     #making a copy of the summary file to pass to READ_COUNT_CHECKS to handle file names being the same
     cp ${prefix}_summary.txt ${prefix}_summary_old.txt
