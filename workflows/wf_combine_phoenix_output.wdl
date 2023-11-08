@@ -8,8 +8,8 @@ workflow combine_phoenix_output {
   }
   input {
     Array[File] phoenix_tsv_summary
-    String? output_file = "Phoenix_Summary.tsv"
-    String? cdc = false
+    String? output_file
+    String? cdc
   }
   call combine_phoenix_run.combine_phoenix {
     input:
@@ -19,7 +19,7 @@ workflow combine_phoenix_output {
   }
   output {
     #phoenix summary output
-    File?   phoenix_tsv_summary = combine_phoenix.phoenix_tsv_summary
+    File   phoenix_tsv_summary = combine_phoenix.phoenix_tsv_summary
     String  phoenix_version     = combine_phoenix.phoenix_version
     String  phoenix_docker      = combine_phoenix.phoenix_docker
     String  analysis_date       = combine_phoenix.analysis_date
