@@ -20,8 +20,8 @@ workflow combine_phoenix_output {
   output {
     #phoenix summary output
     File   phoenix_tsv_summary = combine_phoenix.phoenix_tsv_summary
-    String  phoenix_version     = combine_phoenix.phoenix_version
-    String  phoenix_docker      = combine_phoenix.phoenix_docker
-    String  analysis_date       = combine_phoenix.analysis_date
+    String phoenix_version     = combine_phoenix.phoenix_version
+    String phoenix_docker      = combine_phoenix.phoenix_docker
+    String analysis_date       = combine_phoenix.analysis_date
   }
 }
