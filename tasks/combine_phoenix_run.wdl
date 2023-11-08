@@ -18,7 +18,7 @@ task combine_phoenix_run {
 
   >>>
   output {
-    File    phoenix_tsv_summary = ~{output_file}
+    File    phoenix_tsv_summary = "~{output_file}"
     String  phoenix_version     = read_string("VERSION")
     String  phoenix_docker      = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date       = read_string("DATE")
