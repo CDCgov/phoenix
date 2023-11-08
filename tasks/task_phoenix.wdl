@@ -159,7 +159,7 @@ task phoenix {
     File full_results             = "~{samplename}.tar.gz"
     File griphin_excel_summary    = "~{samplename}/results/results_GRiPHin_Summary.xlsx"
     File griphin_tsv_summary      = "~{samplename}/results/results_GRiPHin_Summary.tsv"
-    File phoenix_tsv_summary      = "~{samplename}/results/Phoenix_Summary.tsv
+    File phoenix_tsv_summary      = "~{samplename}/results/Phoenix_Summary.tsv"
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? raw_read1_html          = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
     File? raw_read1_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"
