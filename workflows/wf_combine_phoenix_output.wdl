@@ -7,13 +7,13 @@ workflow combine_phoenix_output {
     description: "A WDL wrapper to combine the output of a phoenix run."
   }
   input {
-    Array[File] phoenix_tsv_summary
+    Array[File] phoenix_tsv_summaries
     String? output_file
     String? cdc
   }
   call combine_phoenix_run_nf.combine_phoenix_run {
     input:
-      phoenix_tsv_summary = phoenix_tsv_summary,
+      phoenix_tsv_summaries = phoenix_tsv_summaries,
       output_file         = output_file,
       cdc                 = cdc
   }
