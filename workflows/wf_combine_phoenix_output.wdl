@@ -1,6 +1,6 @@
 version 1.0
 
-import "../tasks/combine_phoenix_run.wdl" as combine_phoenix_run
+import "../tasks/combine_phoenix_run.wdl" as combine_phoenix_run_nf
 
 workflow combine_phoenix_output {
   meta {
@@ -11,7 +11,7 @@ workflow combine_phoenix_output {
     String? output_file
     String? cdc
   }
-  call combine_phoenix_run.combine_phoenix {
+  call combine_phoenix_run_nf.combine_phoenix_run {
     input:
       phoenix_tsv_summary = phoenix_tsv_summary,
       output_file         = output_file,
@@ -19,9 +19,9 @@ workflow combine_phoenix_output {
   }
   output {
     #phoenix summary output
-    File   phoenix_tsv_summary = combine_phoenix.phoenix_tsv_summary
-    String phoenix_version     = combine_phoenix.phoenix_version
-    String phoenix_docker      = combine_phoenix.phoenix_docker
-    String analysis_date       = combine_phoenix.analysis_date
+    File   phoenix_tsv_summary = combine_phoenix_run.phoenix_tsv_summary
+    String phoenix_version     = combine_phoenix_run.phoenix_version
+    String phoenix_docker      = combine_phoenix_run.phoenix_docker
+    String analysis_date       = combine_phoenix_run.analysis_date
   }
 }
