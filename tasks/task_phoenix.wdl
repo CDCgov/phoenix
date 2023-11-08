@@ -210,8 +210,8 @@ task phoenix {
     File? quast_summary            = "~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv"
     File? mlst_tsv                 = "~{samplename}/phx_output/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
-    Array[File?]? busco_generic    = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
-    Array[File?]? busco_specific   = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
+    Array[File?] busco_generic    = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
+    Array[File?] busco_specific   = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
     File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
     #phoenix gamma
     File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
