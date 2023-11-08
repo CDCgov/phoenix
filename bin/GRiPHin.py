@@ -545,7 +545,7 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return pf_df
 
-def parse_mlst(mlst_file):
+def parse_mlst(mlst_file, scheme_guess, sample_name):
     """Pulls MLST info from *_combined.tsv file."""
     Scheme_list = [[],[],[],[],[]] # create empty list to fill later this would be the MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2
     with open(mlst_file, 'r') as f:
@@ -558,36 +558,37 @@ def parse_mlst(mlst_file):
             date = split_line[2]
             DB_ID = split_line[3] # scheme name (i.e Pasteur or Oxford etc)
             Scheme = str(split_line[4]) # scheme number
-            #handle cases where the alleles are all -
-            if (len(set(split_line[5:]))==1) and split_line[5:][0] == "-":
-                alleles = "-"
+            if scheme_guess == "abaum" and "PARALOG" in Scheme: # supress Paralogs for Acinetobacter_baumannii
+                print("Warning: surpressing " + Scheme + " in " + sample_name)
             else:
-                alleles = ".".join(split_line[5:]) # combine all alleles separated by -
-            #exclusion list for later
-            exclusion_list = [ "-", "Novel_allele", "Novel_profile", "Missing_allele", "Novel_allele-PARALOG", "Novel_profile-PARALOG", "Missing_allele-PARALOG" ]
-            if DB_ID in Scheme_list[0]: # check if scheme name is already in the scheme list
-                for i in range(0,len(Scheme_list[0])): #loop through list of scheme names
-                    if DB_ID == Scheme_list[0][i]: # looking for matching scheme name that was already in the list 
-                        # If the scheme was already in the list then add the ST, alleles, source and data into that list within for that scheme
-                        # Example: [['abaumannii(Pasteur)', 'abaumannii(Oxford)'], [['ST2'], ['ST195', 'ST1816-PARALOG']], [['cpn60(2)-fusA(2)-gltA(2)-pyrG(2)-recA(2)-rplB(2)-rpoB(2)'], ['gltA(1)-gyrB(3)-gdhB(3)-recA(2)-cpn60(2)-gpi(96)-rpoD(3)', 'gltA(1)-gyrB(3)-gdhB(189)-recA(2)-cpn60(2)-gpi(96)-rpoD(3)']], [['standard/srst2'], ['standard', 'standard/srst2']], [['2022-12-02'], ['2022-12-02', '2022-12-02']]]
-                        #if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile" and Scheme != "Missing_allele" and Scheme !="Novel_allele-PARALOG" and Scheme != "Novel_profile-PARALOG" and Scheme != "Missing_allele-PARALOG":
-                        if not any(x in Scheme for x in exclusion_list):
-                            Scheme_list[1][i].append("ST"+str(Scheme)) # if there is a value add ST in front of number
-                        else:
-                            Scheme_list[1][i].append(Scheme) # just append what is there
-                        Scheme_list[2][i].append(alleles)
-                        Scheme_list[3][i].append(source)
-                        Scheme_list[4][i].append(date)
-            else: # if scheme name is not already in the scheme list add it
-                Scheme_list[0].append(DB_ID) 
-                if not any(x in Scheme for x in exclusion_list):
-                #if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
-                    Scheme_list[1].append(["ST"+Scheme]) # if there is a value add ST in front of number
+                #handle cases where the alleles are all -
+                if (len(set(split_line[5:]))==1) and split_line[5:][0] == "-":
+                    alleles = "-"
                 else:
-                    Scheme_list[1].append([Scheme]) # just append what is there
-                Scheme_list[2].append([alleles])
-                Scheme_list[3].append([source])
-                Scheme_list[4].append([date])
+                    alleles = ".".join(split_line[5:]) # combine all alleles separated by -
+                #exclusion list for later
+                exclusion_list = [ "-", "Novel_allele", "Novel_profile", "Missing_allele", "Novel_allele-PARALOG", "Novel_profile-PARALOG", "Missing_allele-PARALOG" ]
+                if DB_ID in Scheme_list[0]: # check if scheme name is already in the scheme list
+                    for i in range(0,len(Scheme_list[0])): #loop through list of scheme names
+                        if DB_ID == Scheme_list[0][i]: # looking for matching scheme name that was already in the list 
+                            # If the scheme was already in the list then add the ST, alleles, source and data into that list within for that scheme
+                            # Example: [['abaumannii(Pasteur)', 'abaumannii(Oxford)'], [['ST2'], ['ST195', 'ST1816-PARALOG']], [['cpn60(2)-fusA(2)-gltA(2)-pyrG(2)-recA(2)-rplB(2)-rpoB(2)'], ['gltA(1)-gyrB(3)-gdhB(3)-recA(2)-cpn60(2)-gpi(96)-rpoD(3)', 'gltA(1)-gyrB(3)-gdhB(189)-recA(2)-cpn60(2)-gpi(96)-rpoD(3)']], [['standard/srst2'], ['standard', 'standard/srst2']], [['2022-12-02'], ['2022-12-02', '2022-12-02']]]
+                            if not any(x in Scheme for x in exclusion_list):
+                                Scheme_list[1][i].append("ST"+str(Scheme)) # if there is a value add ST in front of number
+                            else:
+                                Scheme_list[1][i].append(Scheme) # just append what is there
+                            Scheme_list[2][i].append(alleles)
+                            Scheme_list[3][i].append(source)
+                            Scheme_list[4][i].append(date)
+                else: # if scheme name is not already in the scheme list add it
+                    Scheme_list[0].append(DB_ID)
+                    if not any(x in Scheme for x in exclusion_list):
+                        Scheme_list[1].append(["ST"+str(Scheme)]) # if there is a value add ST in front of number
+                    else:
+                        Scheme_list[1].append([Scheme]) # just append what is there
+                    Scheme_list[2].append([alleles])
+                    Scheme_list[3].append([source])
+                    Scheme_list[4].append([date])
     return Scheme_list
 
 def parse_ani(fast_ani_file):
@@ -709,7 +710,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     try:
         QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count)
     except FileNotFoundError: 
-        print("Warning: Possibly coverage and assembly length was not calculated and/or"+ sample_name + "_Assembly_ratio_*.txt not found.")
+        print("Warning: Possibly coverage and assembly length was not calculated and/or "+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
     try:
         FastANI_output_list, scheme_guess_fastani, fastani_warning = parse_ani(fast_ani_file)
@@ -718,43 +719,6 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         ani_source_file = fastani_ID = fastani_coverage = fastani_organism = 'Unknown'
         FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
         scheme_guess_fastani = ""
-    try:
-        Scheme_list = parse_mlst(mlst_file)
-        if len(Scheme_list[0]) > 1: # If there is more than one scheme
-            if Scheme_list[0][0] < Scheme_list[0][1]: # this if else is all just to make sure things are printing out in the same order.
-                MLST_scheme_1 = Scheme_list[0][0] # get 1st scheme name from the list
-                mlst_types_1=sorted(Scheme_list[1][0])[::-1]
-                MLST_type_1 = ", ".join(mlst_types_1)
-                MLST_alleles_1 = ",".join(Scheme_list[2][0])
-                MLST_source_1 = ",".join(Scheme_list[3][0])
-                MLST_scheme_2 = Scheme_list[0][1] # get 2nd scheme name from the list
-                mlst_types_2=sorted(Scheme_list[1][1])[::-1]
-                MLST_type_2 = ", ".join(mlst_types_2)
-                MLST_alleles_2 = ",".join(Scheme_list[2][1])
-                MLST_source_2 = ",".join(Scheme_list[3][1])
-            else:
-                MLST_scheme_1 = Scheme_list[0][1] # get 1st scheme name from the list, in this case its the 2nd element
-                mlst_types_1=sorted(Scheme_list[1][1])[::-1]
-                MLST_type_1 = ", ".join(mlst_types_1)
-                MLST_alleles_1 = ",".join(Scheme_list[2][1])
-                MLST_source_1 = ",".join(Scheme_list[3][1])
-                MLST_scheme_2 = Scheme_list[0][0] # get 2nd scheme name from the list, in this case its the first element
-                mlst_types_2=sorted(Scheme_list[1][0])[::-1]
-                MLST_type_2 = ", ".join(mlst_types_2)
-                MLST_alleles_2 = ",".join(Scheme_list[2][0])
-                MLST_source_2 = ",".join(Scheme_list[3][0])
-        else: # If there is only one scheme then the last scheme and type are just "-"
-            MLST_scheme_1 = Scheme_list[0][0]
-            MLST_type_1 = ", ".join(Scheme_list[1][0]) # join together the STs for this one scheme
-            MLST_alleles_1 = ",".join(Scheme_list[2][0])
-            MLST_source_1 = ",".join(Scheme_list[3][0])
-            MLST_scheme_2 = "-"
-            MLST_type_2 = "-"
-            MLST_alleles_2 = "-"
-            MLST_source_2 = "-"
-    except FileNotFoundError: 
-        print("Warning: " + sample_name + "_combined.tsv not found")
-        MLST_scheme_1 = MLST_scheme_2 = MLST_type_1 = MLST_type_2 = MLST_alleles_1 = MLST_alleles_2 = MLST_source_1 = MLST_source_2 = 'Unknown'
     try:
         ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df)
     except FileNotFoundError: 
@@ -801,6 +765,43 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     else:
         scheme_guess = scheme_guess_fastani
         genus = FastANI_output_list[3].split(" ")[0]
+    try:
+        Scheme_list = parse_mlst(mlst_file, scheme_guess, sample_name)
+        if len(Scheme_list[0]) > 1: # If there is more than one scheme
+            if Scheme_list[0][0] < Scheme_list[0][1]: # this if else is all just to make sure things are printing out in the same order.
+                MLST_scheme_1 = Scheme_list[0][0] # get 1st scheme name from the list
+                mlst_types_1=sorted(Scheme_list[1][0])[::-1]
+                MLST_type_1 = ", ".join(mlst_types_1)
+                MLST_alleles_1 = ",".join(Scheme_list[2][0])
+                MLST_source_1 = ",".join(Scheme_list[3][0])
+                MLST_scheme_2 = Scheme_list[0][1] # get 2nd scheme name from the list
+                mlst_types_2=sorted(Scheme_list[1][1])[::-1]
+                MLST_type_2 = ", ".join(mlst_types_2)
+                MLST_alleles_2 = ",".join(Scheme_list[2][1])
+                MLST_source_2 = ",".join(Scheme_list[3][1])
+            else:
+                MLST_scheme_1 = Scheme_list[0][1] # get 1st scheme name from the list, in this case its the 2nd element
+                mlst_types_1=sorted(Scheme_list[1][1])[::-1]
+                MLST_type_1 = ", ".join(mlst_types_1)
+                MLST_alleles_1 = ",".join(Scheme_list[2][1])
+                MLST_source_1 = ",".join(Scheme_list[3][1])
+                MLST_scheme_2 = Scheme_list[0][0] # get 2nd scheme name from the list, in this case its the first element
+                mlst_types_2=sorted(Scheme_list[1][0])[::-1]
+                MLST_type_2 = ", ".join(mlst_types_2)
+                MLST_alleles_2 = ",".join(Scheme_list[2][0])
+                MLST_source_2 = ",".join(Scheme_list[3][0])
+        else: # If there is only one scheme then the last scheme and type are just "-"
+            MLST_scheme_1 = Scheme_list[0][0]
+            MLST_type_1 = ", ".join(Scheme_list[1][0]) # join together the STs for this one scheme
+            MLST_alleles_1 = ",".join(Scheme_list[2][0])
+            MLST_source_1 = ",".join(Scheme_list[3][0])
+            MLST_scheme_2 = "-"
+            MLST_type_2 = "-"
+            MLST_alleles_2 = "-"
+            MLST_source_2 = "-"
+    except FileNotFoundError: 
+        print("Warning: " + sample_name + "_combined.tsv not found")
+        MLST_scheme_1 = MLST_scheme_2 = MLST_type_1 = MLST_type_2 = MLST_alleles_1 = MLST_alleles_2 = MLST_source_1 = MLST_source_2 = 'Unknown'
     try:
         warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent, Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning)
     except:
@@ -1233,7 +1234,9 @@ def create_samplesheet(directory):
         samplesheet.write('sample,directory\n')
     dirs = sorted(os.listdir(directory))
     # If there are any new files added to the top directory they will need to be added here or you will get an error
-    skip_list_a = glob.glob(directory + "/*_GRiPHin_Summary.*") # for if griphin is run on a folder that already has a report in it
+    skip_list_a1 = glob.glob(directory + "/*_GRiPHin_Summary.*") # for if griphin is run on a folder that already has a report in it
+    skip_list_a2 = glob.glob(directory + "/*_comparison") # for comparinator script
+    skip_list_a = skip_list_a1 + skip_list_a2
     skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
     skip_list_b = ["BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "Phoenix_Summary.tsv", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "Directory_samplesheet.csv", "sra_samplesheet.csv"]
     skip_list = skip_list_a + skip_list_b
