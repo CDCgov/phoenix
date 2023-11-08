@@ -58,9 +58,10 @@ workflow phoenix_workflow {
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
     String  qc_reason                         = phoenix.qc_reason
     #summary files
-    File  full_results                      = phoenix.full_results
-    File  griphin_excel_summary             = phoenix.griphin_excel_summary
-    File  griphin_tsv_summary               = phoenix.griphin_tsv_summary
+    File  full_results            = phoenix.full_results
+    File  griphin_excel_summary   = phoenix.griphin_excel_summary
+    File  griphin_tsv_summary     = phoenix.griphin_tsv_summary
+    File  phoenix_tsv_summary     = phoenix.phoenix_tsv_summary
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? raw_read1_html          = phoenix.raw_read1_html           # fastqc.html
     File? raw_read1_zip           = phoenix.raw_read1_zip            # fastqc.zip
