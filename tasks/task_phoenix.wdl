@@ -75,51 +75,51 @@ task phoenix {
     fi
 
     # Gather Phoenix Output
-    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
-    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f3 | tee WARNING_COUNT
-    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f4 | tee ESTIMATED_COVERAGE
-    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f5 | tee GENOME_LENGTH
-    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f6 | tee ASSEMBLY_RATIO
-    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
-    sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f3 | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f4 | tee ESTIMATED_COVERAGE
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f5 | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f6 | tee ASSEMBLY_RATIO
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f7 | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f8 | tee GC_PERCENT
     if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f9 | tee SPECIES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f13 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f14 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f15 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee MLST_1
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_2
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee QC_REASON
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f9 | tee SPECIES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f10 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f11 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f13 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f14 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f15 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee QC_REASON
       echo "Only run with CDC entry" | tee BUSCO_DB
       echo "Only run with CDC entry" | tee BUSCO
     elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f9 | tee BUSCO
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f11 | tee SPECIES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f15 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_1
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee MLST_2
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-      sed -n 2p ~{samplename}/results/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee QC_REASON
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f9 | tee BUSCO
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f10 | tee BUSCO_DB
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f11 | tee SPECIES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f15 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee QC_REASON
     else
       echo "Entry point not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
       exit 1
@@ -157,82 +157,82 @@ task phoenix {
     String  qc_reason                         = read_string("QC_REASON")
     #summary files
     File full_results             = "~{samplename}.tar.gz"
-    File griphin_excel_summary    = "~{samplename}/results/results_GRiPHin_Summary.xlsx"
-    File griphin_tsv_summary      = "~{samplename}/results/results_GRiPHin_Summary.tsv"
-    File phoenix_tsv_summary      = "~{samplename}/results/Phoenix_Summary.tsv"
+    File griphin_excel_summary    = "~{samplename}/phx_output/results_GRiPHin_Summary.xlsx"
+    File griphin_tsv_summary      = "~{samplename}/phx_output/results_GRiPHin_Summary.tsv"
+    File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File? raw_read1_html          = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
-    File? raw_read1_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"
-    File? raw_read2_html          = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.html"
-    File? raw_read2_zip           = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
+    File? raw_read1_html          = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
+    File? raw_read1_zip           = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_1_fastqc.zip"
+    File? raw_read2_html          = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_2_fastqc.html"
+    File? raw_read2_zip           = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
     #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File? kraken_trimd_output     = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.classifiedreads.txt"
-    File? kraken_trimd_summary    = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.top_kraken_hit.txt"
-    File? kraken_trimd_top_taxa   = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
-    File? trimd_html              = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
-    File? trimd_krona             = "~{samplename}/results/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
-    File? classified_1            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fasta.gz"
-    File? unclassified_1          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fasta.gz"
-    File? classified_2            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
-    File? unclassified_2          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
+    File? kraken_trimd_output     = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.classifiedreads.txt"
+    File? kraken_trimd_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.top_kraken_hit.txt"
+    File? kraken_trimd_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
+    File? trimd_html              = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
+    File? trimd_krona             = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
+    File? classified_1            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fasta.gz"
+    File? unclassified_1          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fasta.gz"
+    File? classified_2            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
+    File? unclassified_2          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File  file_integrity          = "~{samplename}/results/~{samplename}/file_integrity/~{samplename}_summary.txt"
-    File? paired_fastp_html       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
-    File? paired_fastp_json       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
-    File? single_fastp_html       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.html"
-    File? single_fastp_json       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.json"
-    File? trimmed_singles         = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.singles.fastq.gz"
-    File? trimmed_read1           = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_1.trim.fastq.gz"
-    File? trimmed_read2           = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_2.trim.fastq.gz"
-    File? trimmed_read_counts     = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}_trimmed_read_counts.txt"
-    File? raw_read_counts         = "~{samplename}/results/~{samplename}/raw_stats/~{samplename}_raw_read_counts.txt"
-    File? adapter_removal_log     = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}.bbduk.log"
+    File  file_integrity          = "~{samplename}/phx_output/~{samplename}/file_integrity/~{samplename}_summary.txt"
+    File? paired_fastp_html       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
+    File? paired_fastp_json       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
+    File? single_fastp_html       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.html"
+    File? single_fastp_json       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.json"
+    File? trimmed_singles         = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.singles.fastq.gz"
+    File? trimmed_read1           = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}_1.trim.fastq.gz"
+    File? trimmed_read2           = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}_2.trim.fastq.gz"
+    File? trimmed_read_counts     = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_trimmed_read_counts.txt"
+    File? raw_read_counts         = "~{samplename}/phx_output/~{samplename}/raw_stats/~{samplename}_raw_read_counts.txt"
+    File? adapter_removal_log     = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}.bbduk.log"
     #phoenix assembly - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File? assembly_graph           = "~{samplename}/results/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
-    File? filtered_scaffolds_log   = "~{samplename}/results/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
-    File? contigs                  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
-    File? filtered_scaffolds       = "~{samplename}/results/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
-    File? assembly_with_seq_names  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
-    File? assembly                 = "~{samplename}/results/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
-    File? spades_log               = "~{samplename}/results/~{samplename}/assembly/~{samplename}.spades.log"
+    File? assembly_graph           = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
+    File? filtered_scaffolds_log   = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
+    File? contigs                  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
+    File? filtered_scaffolds       = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
+    File? assembly_with_seq_names  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
+    File? assembly                 = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
+    File? spades_log               = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.spades.log"
     #phoenix wtasmbld kraken/krona
-    File? kraken_wtasmbld_output   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
-    File? kraken_wtasmbld_summary  = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.summary.txt"
-    File? kraken_wtasmbld_top_taxa = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
-    File? wtasmbld_html            = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
-    File? wtasmbld_krona           = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
+    File? kraken_wtasmbld_output   = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
+    File? kraken_wtasmbld_summary  = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.summary.txt"
+    File? kraken_wtasmbld_top_taxa = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
+    File? wtasmbld_html            = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
+    File? wtasmbld_krona           = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     #phoenix ani
-    File? fast_ani                 = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.ani.txt"
-    File? reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.fastANI.txt"
-    File? top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
-    File? mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"
+    File? fast_ani                 = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.ani.txt"
+    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.fastANI.txt"
+    File? top_20_taxa_matches      = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
+    File? mash_distance            = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"
     #phoenix quast and mlst
-    File? quast_summary            = "~{samplename}/results/~{samplename}/quast/~{samplename}_summary.tsv"
-    File? mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
+    File? quast_summary            = "~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv"
+    File? mlst_tsv                 = "~{samplename}/phx_output/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
-    Array[File?] busco_generic    = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
-    Array[File?] busco_specific   = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
-    File? srst2                   = "~{samplename}/results/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
+    Array[File?]? busco_generic    = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
+    Array[File?]? busco_specific   = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
+    File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
     #phoenix gamma
-    File? gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
-    File? blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.psl"
-    File? gamma_hv_calls           = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
-    File? blat_hv_calls            = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
-    File? gamma_pf_calls           = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.gamma"
-    File? blat_pf_calls            = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.psl"
+    File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
+    File? blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.psl"
+    File? gamma_hv_calls           = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
+    File? blat_hv_calls            = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
+    File? gamma_pf_calls           = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.gamma"
+    File? blat_pf_calls            = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.psl"
     #phoenix output
-    File? assembly_ratio_file      = "~{samplename}/results/~{samplename}/~{samplename}_Assembly_ratio_20230504.txt"
-    File? gc_content_file          = "~{samplename}/results/~{samplename}/~{samplename}_GC_content_20230504.txt"
-    File  summary_line             = "~{samplename}/results/~{samplename}/~{samplename}_summaryline.tsv"
-    File  synopsis                 = "~{samplename}/results/~{samplename}/~{samplename}.synopsis"
-    File? best_taxa_id             = "~{samplename}/results/~{samplename}/~{samplename}.tax"
+    File? assembly_ratio_file      = "~{samplename}/phx_output/~{samplename}/~{samplename}_Assembly_ratio_20230504.txt"
+    File? gc_content_file          = "~{samplename}/phx_output/~{samplename}/~{samplename}_GC_content_20230504.txt"
+    File  summary_line             = "~{samplename}/phx_output/~{samplename}/~{samplename}_summaryline.tsv"
+    File  synopsis                 = "~{samplename}/phx_output/~{samplename}/~{samplename}.synopsis"
+    File? best_taxa_id             = "~{samplename}/phx_output/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File? amrfinder_mutations      = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
-    File? amrfinder_taxa_match    = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
-    File? amrfinder_hits           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    File? amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
+    File? amrfinder_taxa_match    = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
+    File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
-    File? multiqc_output          = "~{samplename}/results/multiqc/multiqc_report.html"
+    File versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
+    File? multiqc_output          = "~{samplename}/phx_output/multiqc/multiqc_report.html"
   }
   runtime {
     docker: "quay.io/jvhagey/phoenix:2.0.2"
