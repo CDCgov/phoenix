@@ -16,7 +16,7 @@ task phoenix {
   }
   command <<<
     date | tee DATE
-    echo $(nextflow pull cdcgov/phoenix 2>&1) | sed 's/^.*revision: //;' | tee VERSION
+    VERSION="v2.1.0-dev"
 
     # Debug
     export TMP_DIR=$TMPDIR
@@ -58,7 +58,7 @@ task phoenix {
       scaffold_ext=""
     fi
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r v2.1.0-dev -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $VERSION -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -176,6 +176,7 @@ task phoenix {
     File? classified_2            = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
     File? unclassified_2          = "~{samplename}/results/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File  file_integrity          = "~{samplename}/results/~{samplename}/file_integrity/~{samplename}_summary.txt"
     File? paired_fastp_html       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
     File? paired_fastp_json       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
     File? single_fastp_html       = "~{samplename}/results/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.html"
@@ -188,47 +189,47 @@ task phoenix {
     File? adapter_removal_log     = "~{samplename}/results/~{samplename}/qc_stats/~{samplename}.bbduk.log"
     #phoenix assembly - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? assembly_graph           = "~{samplename}/results/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
-    File filtered_scaffolds_log   = "~{samplename}/results/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
+    File? filtered_scaffolds_log   = "~{samplename}/results/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
     File? contigs                  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
-    File filtered_scaffolds       = "~{samplename}/results/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
-    File assembly_with_seq_names  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
+    File? filtered_scaffolds       = "~{samplename}/results/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
+    File? assembly_with_seq_names  = "~{samplename}/results/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
     File? assembly                 = "~{samplename}/results/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
     File? spades_log               = "~{samplename}/results/~{samplename}/assembly/~{samplename}.spades.log"
     #phoenix wtasmbld kraken/krona
-    File kraken_wtasmbld_output   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
-    File kraken_wtasmbld_summary  = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.summary.txt"
-    File kraken_wtasmbld_top_taxa = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
-    File wtasmbld_html            = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
-    File wtasmbld_krona           = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
+    File? kraken_wtasmbld_output   = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
+    File? kraken_wtasmbld_summary  = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.summary.txt"
+    File? kraken_wtasmbld_top_taxa = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
+    File? wtasmbld_html            = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
+    File? wtasmbld_krona           = "~{samplename}/results/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     #phoenix ani
-    File fast_ani                 = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.ani.txt"
-    File reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.fastANI.txt"
-    File top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
-    File mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"
+    File? fast_ani                 = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.ani.txt"
+    File? reformated_fast_ani      = "~{samplename}/results/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.fastANI.txt"
+    File? top_20_taxa_matches      = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
+    File? mash_distance            = "~{samplename}/results/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"
     #phoenix quast and mlst
-    File quast_summary            = "~{samplename}/results/~{samplename}/quast/~{samplename}_summary.tsv"
-    File mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
+    File? quast_summary            = "~{samplename}/results/~{samplename}/quast/~{samplename}_summary.tsv"
+    File? mlst_tsv                 = "~{samplename}/results/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
     Array[File?] busco_generic    = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
     Array[File?] busco_specific   = glob("~{samplename}/results/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
     File? srst2                   = "~{samplename}/results/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
     #phoenix gamma
-    File gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
-    File blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.psl"
-    File gamma_hv_calls           = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
-    File blat_hv_calls            = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
-    File gamma_pf_calls           = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.gamma"
-    File blat_pf_calls            = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.psl"
+    File? gamma_ar_calls           = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
+    File? blat_ar_calls            = "~{samplename}/results/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.psl"
+    File? gamma_hv_calls           = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
+    File? blat_hv_calls            = "~{samplename}/results/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
+    File? gamma_pf_calls           = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.gamma"
+    File? blat_pf_calls            = "~{samplename}/results/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.psl"
     #phoenix output
-    File assembly_ratio_file      = "~{samplename}/results/~{samplename}/~{samplename}_Assembly_ratio_20230504.txt"
-    File gc_content_file          = "~{samplename}/results/~{samplename}/~{samplename}_GC_content_20230504.txt"
-    File summary_line             = "~{samplename}/results/~{samplename}/~{samplename}_summaryline.tsv"
-    File synopsis                 = "~{samplename}/results/~{samplename}/~{samplename}.synopsis"
-    File best_taxa_id             = "~{samplename}/results/~{samplename}/~{samplename}.tax"
+    File? assembly_ratio_file      = "~{samplename}/results/~{samplename}/~{samplename}_Assembly_ratio_20230504.txt"
+    File? gc_content_file          = "~{samplename}/results/~{samplename}/~{samplename}_GC_content_20230504.txt"
+    File  summary_line             = "~{samplename}/results/~{samplename}/~{samplename}_summaryline.tsv"
+    File  synopsis                 = "~{samplename}/results/~{samplename}/~{samplename}.synopsis"
+    File? best_taxa_id             = "~{samplename}/results/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File amrfinder_mutations      = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
+    File? amrfinder_mutations      = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
     File? amrfinder_taxa_match    = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
-    File amrfinder_hits           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    File? amrfinder_hits           = "~{samplename}/results/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = "~{samplename}/results/pipeline_info/software_versions.yml"
     File? multiqc_output          = "~{samplename}/results/multiqc/multiqc_report.html"
