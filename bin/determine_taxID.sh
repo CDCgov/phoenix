@@ -116,8 +116,8 @@ do_ANI() {
 	if [[ -s "${fastani_file}" ]]; then
 		header=$(head -n 1 "${fastani_file}")
 		info=$(tail -n 1 "${fastani_file}")
-		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
-		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
+		Genus=$(echo "${info}" | cut -d$'\t' -f3 | cut -d' ' -f1)
+		species=$(echo "${info}" | cut -d$'\t' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
 		confidence_index=$(echo "${info}" | cut -d'	' -f1)
 	else
 		echo "source file (${fastani_file}) is empty"
@@ -129,11 +129,9 @@ do_kraken2_assembly() {
 	source="kraken2_wtasmbld"
 #	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.top_kraken_hit.txt"
 	source_file="${weighted_kraken}"
-	#echo "${source}"
 	while IFS= read -r line  || [ -n "$line" ]; do
 		# Grab first letter of line (indicating taxonomic level)
 		first=${line::1}
-		echo $line
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken2, 3rd-true % of total reads, 4th-identifier)
 		if [ "${first}" = "s" ]
 		then
@@ -208,7 +206,7 @@ if [[ -z "${species_taxID}" ]]; then
 				genus_taxID="${taxID}"
 			fi
 		done
-    fi
+	fi
 fi
 
 # Check if genus was assigned as peptoclostridium and relabel it as Clostridium for downstream analyses relying on this older naming convention
