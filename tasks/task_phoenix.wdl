@@ -73,6 +73,9 @@ task phoenix {
       find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
       exit 1
     fi
+    #renaming 
+    mv ~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx ~{samplename}/phx_output/GRiPHin_Summary.xlsx
+    mv ~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx ~{samplename}/phx_output/GRiPHin_Summary.xlsx
 
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
@@ -157,8 +160,8 @@ task phoenix {
     String  qc_reason                         = read_string("QC_REASON")
     #summary files
     File full_results             = "~{samplename}.tar.gz"
-    File griphin_excel_summary    = "~{samplename}/phx_output/results_GRiPHin_Summary.xlsx"
-    File griphin_tsv_summary      = "~{samplename}/phx_output/results_GRiPHin_Summary.tsv"
+    File griphin_excel_summary    = "~{samplename}/phx_output/GRiPHin_Summary.xlsx"
+    File griphin_tsv_summary      = "~{samplename}/phx_output/GRiPHin_Summary.tsv"
     File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? raw_read1_html          = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
