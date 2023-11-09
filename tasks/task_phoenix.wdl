@@ -16,7 +16,8 @@ task phoenix {
   }
   command <<<
     date | tee DATE
-    VERSION="v2.1.0-dev"
+    VERSION="v2.1.0-dev" 
+    echo $VERISON | tee VERSION
 
     # Debug
     export TMP_DIR=$TMPDIR

@@ -8,6 +8,7 @@ task combine_phoenix_run {
   }
   command <<<
     VERSION="v2.1.0-dev"
+    echo $VERISON | tee VERSION
     date | tee DATE
 
     #download phoenix code to get the script from
