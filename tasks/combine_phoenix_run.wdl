@@ -15,9 +15,9 @@ task combine_phoenix_run {
     nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
 
     COUNTER=1
-    for i in $( find ./ -iname 'Phoenix_Summary.tsv'); do
+    for i in ~{phoenix_tsv_summaries}; do
       echo "found $i copying to Phoenix_Summary_$COUNTER.tsv"
-      cp $i ./hoenix_Summary_$COUNTER.tsv ;
+      cp $i ./Phoenix_Summary_$COUNTER.tsv ;
       COUNTER=$((COUNTER + 1))
     done
 
