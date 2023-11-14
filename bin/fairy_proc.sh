@@ -6,10 +6,10 @@
 # Usage: ./fairy_proc.sh -r reads_file -p $meta.id
 #
 # v.1.0.0 (07/13/2023)
-#
+# v.1.1.0 (10/13/2023)
 # Created by Maria Diaz (lex0@cdc.gov), additions by Jill Hagey (qpk9@cdc.gov) on 10/13/2023
 #
-#  Function to print out help blurb
+# Function to print out help blurb
 
 
 show_help () {
@@ -54,7 +54,13 @@ gzip -t $fname 2>> ${prefix}.txt
 
 full_name=$(basename "${fname}" .fastq.gz)
 #meta_id=$(basename "${fname}" .fastq.gz | cut -f1 -d"_")
-read=$(echo "${full_name}" | grep -oP "_R\d_" | cut -f2 -d"_")
+#get read number 
+read=$(echo "${full_name}" | grep -oP "R[1-2]{1}" | cut -f2 -d"_")
+#if the above line didn't capture the read number try some other options
+if [ -z "$read" ]
+then
+	read=$(echo "${full_name}" | grep -oP "R[1-2](1)" | cut -f2 -d"_")
+fi
 
 if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
 	#prefix=${prefix%%_*}
