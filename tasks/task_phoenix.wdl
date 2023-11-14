@@ -158,8 +158,8 @@ task phoenix {
     String  qc_reason                         = read_string("QC_REASON")
     #summary files
     File full_results             = "~{samplename}.tar.gz"
-    File griphin_excel_summary    = "~{samplename}/phx_output/GRiPHin_Summary.xlsx"
-    File griphin_tsv_summary      = "~{samplename}/phx_output/GRiPHin_Summary.tsv"
+    File griphin_excel_summary    = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx"
+    File griphin_tsv_summary      = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv"
     File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
     #phoenix fastqc - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? raw_read1_html          = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_1_fastqc.html"
