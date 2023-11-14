@@ -16,13 +16,20 @@ task combine_phoenix_run {
 
     COUNTER=1
     for i in $( find ./ -iname 'Phoenix_Summary.tsv'); do
-      cp $i ./Phoenix_Summary_$COUNTER.tsv ;
+      echo "found $i copying to Phoenix_Summary_$COUNTER.tsv"
+      cp $i ./hoenix_Summary_$COUNTER.tsv ;
       COUNTER=$((COUNTER + 1))
     done
 
     ## here ~{cdc} is the same as the busco argument
     python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{output_file} ~{cdc}
 
+    #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
+    if [ "$(wc -l <~{output_file})" -eq 1 ]; then
+      echo "file only contains a single line"
+      rm -r ~{output_file}
+    fi
+  
   >>>
   output {
     File    phoenix_tsv_summary = "~{output_file}"

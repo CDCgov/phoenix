@@ -16,8 +16,8 @@ task phoenix {
   }
   command <<<
     date | tee DATE
-    VERSION="v2.1.0-dev" 
-    echo $VERISON | tee VERSION
+    version="v2.1.0-dev" 
+    echo $version | tee VERSION
 
     # Debug
     export TMP_DIR=$TMPDIR
@@ -59,7 +59,7 @@ task phoenix {
       scaffold_ext=""
     fi
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $VERSION -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
