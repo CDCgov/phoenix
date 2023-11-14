@@ -12,7 +12,7 @@ task combine_phoenix_run {
     date | tee DATE
 
     #download phoenix code to get the script from
-    nextflow clone -r $VERSION ./$VERSION/
+    nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
 
     ## here ~{cdc} is the same as the busco argument
     python3 ./$VERSION/phoenix/bin/Create_phoenix_summary_tsv.py --out ~{output_file} ~{cdc}
