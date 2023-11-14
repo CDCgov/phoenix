@@ -15,7 +15,7 @@ task combine_phoenix_run {
     nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
 
     ## here ~{cdc} is the same as the busco argument
-    python3 ./$VERSION/phoenix/bin/Create_phoenix_summary_tsv.py --out ~{output_file} ~{cdc}
+    python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{output_file} ~{cdc}
 
   >>>
   output {
