@@ -428,8 +428,8 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 				checked_and_deduped_schemes.append(novel_allele_sets[0])
 				novel_allele_sets.pop(0)
 	elif len(novel_allele_sets) > 1:
-		for i in range(len(novel_allele_sets)-1,-1,-1):
-			print(len(novel_allele_sets), novel_allele_sets)
+		for i in range(len(novel_allele_sets)-1,0,-1):
+			print(len(novel_allele_sets), novel_allele_sets, i)
 			primary_db = novel_allele_sets[i][1]
 			primary_alleles = []
 			primary_source = novel_allele_sets[i][6]
