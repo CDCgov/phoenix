@@ -41,6 +41,7 @@ process DETERMINE_TOP_MASH_HITS {
     "${task.process}":
         Date of RefSeq Pull: \$(date +"%d-%m-%y")
         phoenix_base_container: ${container}
+        \$(${ica}sort_and_prep_dist.sh -V)
     END_VERSIONS
     """
 }

@@ -3,7 +3,7 @@
 #
 # Description: script to check for file integrity and log errors 
 #
-# Usage: ./fairy_proc.sh -r reads_file -p $meta.id
+# Usage: ./fairy_proc.sh -r reads_file -p $meta.id [-V show version]
 #
 # v.1.0.0 (07/13/2023)
 # v.1.1.0 (10/13/2023)
@@ -11,17 +11,20 @@
 #
 # Function to print out help blurb
 
+version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.1.0 (10/13/2023)
 
 show_help () {
-  echo "Usage: fairy_proc.sh args(* are required)
+  echo "Usage: fairy_proc.sh args(* are required) [-V show version]
     -r* fastq file
     -p* meta.id
+
+	version: ${version}
     "
 }
 
 # Parse command line options
 options_found=0
-while getopts ":1?r:p:b" option; do
+while getopts ":1?r:p:bV" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -38,6 +41,8 @@ while getopts ":1?r:p:b" option; do
     b)
       echo "Option -b triggered"
       busco="true";;
+	V)
+      show_version="True";;
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -46,6 +51,11 @@ while getopts ":1?r:p:b" option; do
       ;;
 	esac
 done
+
+if [[ "${show_version}" = "True" ]]; then
+	echo "fairy_proc.sh: ${version}"
+	exit
+fi
 
 sfx=".fastq.gz"
 #fname="${1}"

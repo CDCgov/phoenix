@@ -7,20 +7,21 @@
 #
 # Modules required: None
 #
-# v2.0 (08/15/2023)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+version="2.1" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 2.0 (8/15/2023)
+
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./determine_taxID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_X.dmp -m names_X.dmp [-r reads_kraken_report]"
+	echo "Usage is ./determine_taxID.sh -k weighted_kraken_report -s sample_name -f formatted_fastani_file -d nodes_X.dmp -m names_X.dmp [-r reads_kraken_report] [-V version]"
 	echo "Output is saved to /sample_name/sample_name.tax"
+	echo "version: ${version}"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?k:s:f:d:r:m:" option; do
+while getopts ":h?k:s:f:d:r:m:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -46,6 +47,8 @@ while getopts ":h?k:s:f:d:r:m:" option; do
 		m)
 			echo "Option -m triggered, argument = ${OPTARG}"
 			names=${OPTARG};;
+		V)
+			show_version="True";;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -59,6 +62,11 @@ done
 if [[ "${options_found}" -eq 0 ]]; then
 	echo "No options found"
 	show_help
+	exit
+fi
+
+if [[ "${show_version}" = "True" ]]; then
+	echo "determine_taxID.sh: ${version}"
 	exit
 fi
 
@@ -116,8 +124,8 @@ do_ANI() {
 	if [[ -s "${fastani_file}" ]]; then
 		header=$(head -n 1 "${fastani_file}")
 		info=$(tail -n 1 "${fastani_file}")
-		Genus=$(echo "${info}" | cut -d$'\t' -f3 | cut -d' ' -f1)
-		species=$(echo "${info}" | cut -d$'\t' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
+		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
+		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
 		confidence_index=$(echo "${info}" | cut -d'	' -f1)
 	else
 		echo "source file (${fastani_file}) is empty"
@@ -129,9 +137,11 @@ do_kraken2_assembly() {
 	source="kraken2_wtasmbld"
 #	source_file="${OUTDATADIR}/kraken2_weighted/${sample_name}.top_kraken_hit.txt"
 	source_file="${weighted_kraken}"
+	#echo "${source}"
 	while IFS= read -r line  || [ -n "$line" ]; do
 		# Grab first letter of line (indicating taxonomic level)
 		first=${line::1}
+		echo $line
 		# Assign taxonomic level value from 4th value in line (1st-classification level,2nd-% by kraken2, 3rd-true % of total reads, 4th-identifier)
 		if [ "${first}" = "s" ]
 		then
@@ -206,7 +216,7 @@ if [[ -z "${species_taxID}" ]]; then
 				genus_taxID="${taxID}"
 			fi
 		done
-	fi
+    fi
 fi
 
 # Check if genus was assigned as peptoclostridium and relabel it as Clostridium for downstream analyses relying on this older naming convention

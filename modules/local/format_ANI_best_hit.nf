@@ -39,6 +39,7 @@ process FORMAT_ANI {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container: ${container}
+        \$(${ica}ANI_best_hit_formatter.sh -V)
     END_VERSIONS
     """
 }
