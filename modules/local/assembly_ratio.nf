@@ -31,6 +31,7 @@ process CALCULATE_ASSEMBLY_RATIO {
     "${task.process}":
         NCBI Assembly Stats DB: $ncbi_database
         phoenix_base_container: ${container}
+        \$(${ica}calculate_assembly_ratio.sh -V)
     END_VERSIONS
     """
 }

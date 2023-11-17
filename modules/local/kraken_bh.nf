@@ -32,6 +32,7 @@ process KRAKEN_BEST_HIT {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container: ${container}
+        \$(${ica}kraken2_best_hit.sh -V)
     END_VERSIONS
     """
 }

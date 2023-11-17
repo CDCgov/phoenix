@@ -8,10 +8,9 @@
 #
 # Modules required: None
 #
-# v1.1 (03/22/2023)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov), edits by Jill Hagey (qpk9@cdc.gov)
-#
+
+version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.1 (03/22/2023)
 
 #  Function to print out help blurb
 show_help () {
@@ -45,6 +44,9 @@ show_help () {
     -1* amr_tsv_file
     -5 coverage
     -3
+    -V show version
+
+    version: ${version}
     "
 }
 
@@ -54,7 +56,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3" option; do
+while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -152,6 +154,8 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3" o
     3)
       echo "Option -3 triggered, argument = ${OPTARG}"
       internal_phoenix="true";;
+    V)
+      show_version="True";;
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -166,6 +170,11 @@ if [[ $terra = "terra" ]]; then
 	bc_path=/opt/conda/envs/phoenix/bin/bc
 else
 	bc_path=bc
+fi
+
+if [[ "${show_version}" = "True" ]]; then
+  echo "pipeline_stats_writer: ${version}"
+  exit
 fi
 
 #check coverage parameter if >30 use that number

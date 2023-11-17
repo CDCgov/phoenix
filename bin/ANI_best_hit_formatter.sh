@@ -3,34 +3,33 @@
 #
 # Description: Script to format ANI output to include more information on the top line
 #
-# Usage: ./ANI_best_hit_formatter.sh -e explicit_path_to_isolate_folder
+# Usage: ./ANI_best_hit_formatter.sh -a ani_file -n sample_name [-V show version]
 #
 # Output location: /sample_name/fastANI/
 #
 # Modules required: None
 #
-# V1.0 (06/03/2022)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
 
+version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (06/03/2022)
 
 #  Function to print out help blurb
 show_help () {
-	echo "./ANI_best_hit_formatter.sh -a ani_file -n sample_name"
+	echo "./ANI_best_hit_formatter.sh -a ani_file -n sample_name [-V show version]"
 	echo "required: -a = ani file"
+	echo "version: ${version}"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?a:n:d:t:" option; do
+while getopts ":h?a:n:d:t:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
 			echo "Invalid option found: ${OPTARG}"
-      show_help
-      exit 0
-      ;;
+			show_help
+			exit 0;;
 		a)
 			echo "Option -a triggered, argument = ${OPTARG}"
 			ani_file=${OPTARG};;
@@ -43,6 +42,9 @@ while getopts ":h?a:n:d:t:" option; do
 		t)
 			echo "Option -t triggered"
 			terra=${OPTARG};;
+		V)
+			show_version="True"
+			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -62,6 +64,11 @@ fi
 if [[ "${options_found}" -eq 0 ]]; then
 	echo "No options found"
 	show_help
+	exit
+fi
+
+if [[ "${show_version}" ]]; then
+	echo "ANI_best_hit_formatter.sh: ${version}"
 	exit
 fi
 

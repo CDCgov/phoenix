@@ -3,26 +3,25 @@
 #
 # Description: Grabs the best species match based on %/read hits from the kraken tool run. Simplified for nextflow inclusion
 #
-# Usage: ./kraken_best_hit.sh -i path_to_.list_file
+# Usage: ./kraken_best_hit.sh -i path_to_.list_file [-q count_file (reads or congtigs)] -n sample_name [-V show_version]
 #
 # Output location: same as input path_to_.list_file
 #
 # Modules required: None
 #
-# v1.0.3 (04/19/2022)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov)
-#
+
+version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0.3 (04/19/2022)
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./kraken_best_hit.sh -i path_to_list_file [-q count_file (reads or congtigs)] -n sample_name"
+	echo "Usage is ./kraken_best_hit.sh -i path_to_list_file [-q count_file (reads or congtigs)] -n sample_name [-V show_version]"
 	echo "Output is saved to folder where .list file exists"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?i:q:n:t:" option; do
+while getopts ":h?i:q:n:t:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -46,6 +45,9 @@ while getopts ":h?i:q:n:t:" option; do
 			echo "Option -t triggered"
 			terra=${OPTARG}
 			;;
+		V)
+			show_version="True"
+			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -66,6 +68,11 @@ if [[ $terra = "terra" ]]; then
 	bc_path=/opt/conda/envs/phoenix/bin/bc
 else
 	bc_path=bc
+fi
+
+if [[ "${show_version}" = "True" ]]; then
+	echo "kraken2_best_hit.sh: ${version}"
+	exit
 fi
 
 # Based upon standard naming protocols pulling last portion of path off should result in proper name

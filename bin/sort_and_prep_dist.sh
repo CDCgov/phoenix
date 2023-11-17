@@ -9,27 +9,26 @@
 #
 # Modules required: None
 #
-# v1.0.3 (04/19/2022)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov)
-#
+
+version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0.3 (04/19/2022)
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./sort_and_prep_dists.sh  -a assembly -x dists_file -d database_of_fastas_matching_dist_file_output"
+	echo "Usage is ./sort_and_prep_dists.sh  -a assembly -x dists_file -d database_of_fastas_matching_dist_file_output [-V show version]"
 	echo "Output is saved to folder where .list file exists"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?x:d:a:o:t:" option; do
+while getopts ":h?x:d:a:o:t:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
 			echo "Invalid option found: ${OPTARG}"
-      show_help
-      exit 0
-      ;;
+			show_help
+			exit 0
+			;;
 		x)
 			echo "Option -x triggered, argument = ${OPTARG}"
 			dist_file=${OPTARG}
@@ -46,6 +45,9 @@ while getopts ":h?x:d:a:o:t:" option; do
 			echo "Option -t triggered"
 			terra=${OPTARG}
 			;;
+		V)
+			show_version="True"
+			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -59,6 +61,11 @@ if [[ "${options_found}" -eq 0 ]]; then
 	echo "No argument supplied to best_hit_from_kraken_noconfig.sh, exiting"
 	show_help
 	exit 1
+fi
+
+if [[ "${show_version}" = "True}" ]]; then
+	echo "sort_and_prep.sh: ${version}"
+	exit
 fi
 
 # set the correct path for bc/wget - needed for terra

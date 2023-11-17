@@ -3,16 +3,16 @@
 #
 # Description: script to Compare local assembly to the expected assembly size based upon taxonomy file in directory or directly given
 #
-# Usage: ./calculate_assembly_ratio.sh -d path_to_database_file -q report.tsv -t tax_file -s sample_name [-f \"genus species\"]"
+# Usage: ./calculate_assembly_ratio.sh -d path_to_database_file -q report.tsv -t tax_file -s sample_name [-f \"genus species\"] -V version"
 #
 # Output location: Varies on contents
 #
 # Modules required: None
 #
-# v1.2 (08/14/2023)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov)
 #
+
+version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded bversioning. This version is equivalent to previous version 1.2 (08/14/2023) # 
 
 #  Function to print out help blurb
 show_help () {
@@ -23,11 +23,14 @@ show_help () {
 	echo "required: -x = tax file from output of determine_taxaID.sh"
 	echo "required: -s = sample_name"
 	echo "optional: -f = give a specific taxonomy to compare against in the database"
+	echo "optional: -V = print version and exit"
+	echo ""
+	echo "version: ${version}"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?d:q:x:f:s:t:" option; do
+while getopts ":h?d:q:x:f:s:t:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -55,6 +58,8 @@ while getopts ":h?d:q:x:f:s:t:" option; do
 		t)
 			echo "Option -t triggered"
 			terra=${OPTARG};;
+		V)
+			show_version="True";;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -76,6 +81,11 @@ if [[ $terra = "terra" ]]; then
 	bc_path=/opt/conda/envs/phoenix/bin/bc
 else
 	bc_path=bc
+fi
+
+if [[ "${show_version}" = "True" ]]; then
+	echo "calculate_assembly_ratio.sh: ${version}"
+	exit
 fi
 
 taxid="NA"

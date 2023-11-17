@@ -88,6 +88,7 @@ process GENERATE_PIPELINE_STATS_EXQC {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container: ${container}
+        \$(${ica}pipeline_stats_writer.sh -V)
     END_VERSIONS
     """
 }

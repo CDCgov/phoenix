@@ -100,6 +100,10 @@ process SCAFFOLD_COUNT_CHECK {
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container: ${container}
+        \$(${ica_bash}determine_taxID.sh -V)
+        \$(${ica_bash}pipeline_stats_writer.sh -V)
+        # hold for Phoenix_summary_line.py version output
+        # hold for edit_line_summary.py version output
     END_VERSIONS
     """
 }

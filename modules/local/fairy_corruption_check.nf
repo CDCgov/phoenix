@@ -39,6 +39,7 @@ process CORRUPTION_CHECK {
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container: ${container}
+        \$(${ica}fairy_proc.sh -V)
     END_VERSIONS
     """
 }

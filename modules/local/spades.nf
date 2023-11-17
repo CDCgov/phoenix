@@ -43,6 +43,9 @@ process SPADES {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
+        \$(${ica}beforespades.sh -V)
+        \$(${ica}afterspades.sh -V)
+        \$(${ica}pipeline_stats_writer_trimd.sh -V)
     END_VERSIONS
 
     # Set default to be that spades fails and doesn't create scaffolds or contigs
