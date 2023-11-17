@@ -7,21 +7,24 @@ workflow combine_phoenix_output {
     description: "A WDL wrapper to combine the output of a phoenix run."
   }
   input {
-    Array[File] phoenix_tsv_summaries
-    String? output_file
-    String? cdc
+    Array[File]? phoenix_tsv_summaries
+    Array[File]? griphin_summaries
+    String? phoenix_tsv_summary_name
+    String? griphin_summary_name
   }
   call combine_phoenix_run_nf.combine_phoenix_run {
     input:
-      phoenix_tsv_summaries = phoenix_tsv_summaries,
-      output_file         = output_file,
-      cdc                 = cdc
+      phoenix_tsv_summaries    = phoenix_tsv_summaries,
+      griphin_summaries        = griphin_summaries,
+      phoenix_tsv_summary_name = phoenix_tsv_summary_name,
+      griphin_xlxs_name        = griphin_xlsx_name
   }
   output {
     #phoenix summary output
-    File   phoenix_tsv_summary = combine_phoenix_run.phoenix_tsv_summary
-    String phoenix_version     = combine_phoenix_run.phoenix_version
-    String phoenix_docker      = combine_phoenix_run.phoenix_docker
-    String analysis_date       = combine_phoenix_run.analysis_date
+    File?  phoenix_tsv_summary  = combine_phoenix_run.phoenix_tsv_summary
+    File?  griphin_xlsx_summary = combine_phoenix_run.griphin_xlsx_summary
+    String phoenix_version      = combine_phoenix_run.phoenix_version
+    String phoenix_docker       = combine_phoenix_run.phoenix_docker
+    String analysis_date        = combine_phoenix_run.analysis_date
   }
 }
