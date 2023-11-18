@@ -28,12 +28,12 @@ task combine_phoenix_run {
       done
 
       ## here ~{cdc} is the same as the busco argument
-      python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{phoenix_summary_name} $cdc_phoenix
+      python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{phoenix_tsv_summary_name} $cdc_phoenix
 
       #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
-      if [ "$(wc -l <~{phoenix_summary_name})" -eq 1 ]; then
+      if [ "$(wc -l <~{phoenix_tsv_summary_name})" -eq 1 ]; then
         echo "file only contains a single line"
-        rm -r ~{phoenix_summary_name}
+        rm -r ~{phoenix_tsv_summary_name}
         exit 1
       fi
     fi
@@ -54,7 +54,7 @@ task combine_phoenix_run {
   
   >>>
   output {
-    File?   phoenix_tsv_summary  = "~{phoenix_summary_name}"
+    File?   phoenix_tsv_summary  = "~{phoenix_tsv_summary_name}"
     File?   griphin_xlsx_summary = "~{griphin_xlsx_name}"
     String  phoenix_version      = read_string("VERSION")
     String  phoenix_docker       = "quay.io/jvhagey/phoenix:2.0.2"
