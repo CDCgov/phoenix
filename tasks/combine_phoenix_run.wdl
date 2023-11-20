@@ -17,7 +17,7 @@ task combine_phoenix_run {
 
     #if phoenix tsv files were passed then combine them
     busco_array=()
-    if [ ! -z "~{phoenix_tsv_summaries[*]}" ]; then
+    if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ]; then
       COUNTER=1
       PHX_ARRAY=(~{sep=',' phoenix_tsv_summaries})
       for i in ${PHX_ARRAY//,/ }; do
@@ -57,7 +57,7 @@ task combine_phoenix_run {
     fi
 
     #if griphin xlsx files were passed then combine them
-    if [ ! -z "~{griphin_xlsx_summaries[*]}" ]; then
+    if [ ! -z "~{sep=',' griphin_xlsx_summaries}" ]; then
       COUNTER=1
       GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
       for i in ${GRIPHIN_ARRAY//,/ }; do
