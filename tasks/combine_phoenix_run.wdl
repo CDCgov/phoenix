@@ -25,7 +25,7 @@ task combine_phoenix_run {
         cp $i ./Phoenix_Summary_$COUNTER.tsv ;
         #check if this the phoenix summaries were run with CDC_PHOENIX or PHOENIX
         busco_check=$(head -n 1 Phoenix_Summary_$COUNTER.tsv | cut -d$'\t' -f9)
-        if [ busco_check=="BUSCO" ]; then
+        if [ "$busco_check" == "BUSCO" ]; then
           busco_array+=(true)
           cdc_phoenix="--busco"
         else
@@ -35,10 +35,10 @@ task combine_phoenix_run {
         COUNTER=$((COUNTER + 1))
       done
         # Check if all elements have the same boolean value
-        #printf prints each element of the array on a new line, then sorts and counts the unique lines using.
+        # printf prints each element of the array on a new line, then sorts and counts the unique lines using.
         if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
           echo "Values are the same."
-          ## here ~{cdc_phoenix} is the same as the busco argument
+          # here the variable cdc_phoenix is the same as the busco argument
           python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{phoenix_tsv_summary_name} $cdc_phoenix
         else
           echo "ERROR: Phoenix_Summary.tsv files are a mix of CDC_PHOENIX and PHOENIX outputs and they need to be the same."
@@ -63,7 +63,7 @@ task combine_phoenix_run {
         COUNTER=$((COUNTER + 1))
       done
 
-      ## here ~{cdc} is the same as the busco argument
+      ## combine griphin reports. in the script it determines if phx or cdc_phx was run.
       python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{griphin_xlsx_name}
     fi
   
