@@ -27,11 +27,13 @@ process CALCULATE_ASSEMBLY_RATIO {
     """
     ${ica}calculate_assembly_ratio.sh -d $ncbi_database -q $quast_report -x $taxa_file -s ${prefix} $terra
 
+    script_version=\$(${ica}calculate_assembly_ratio.sh -V)
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         NCBI Assembly Stats DB: $ncbi_database
         phoenix_base_container: ${container}
-        \$(${ica}calculate_assembly_ratio.sh -V)
+        \${script_version}
     END_VERSIONS
     """
 }

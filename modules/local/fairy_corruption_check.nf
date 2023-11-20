@@ -32,6 +32,8 @@ process CORRUPTION_CHECK {
     ${ica}fairy_proc.sh -r ${reads[0]} -p ${prefix} ${busco_parameter}
     ${ica}fairy_proc.sh -r ${reads[1]} -p ${prefix} ${busco_parameter}
 
+    script_version= \$(${ica}fairy_proc.sh -V)
+
     #making a copy of the summary file to pass to READ_COUNT_CHECKS to handle file names being the same
     cp ${prefix}_summary.txt ${prefix}_summary_old.txt
 
@@ -39,7 +41,7 @@ process CORRUPTION_CHECK {
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container: ${container}
-        \$(${ica}fairy_proc.sh -V)
+        \${script_version}
     END_VERSIONS
     """
 }

@@ -44,10 +44,12 @@ process GENERATE_PIPELINE_STATS_FAILURE {
         -5 $coverage \\
         $terra
 
+    script_version=\$(${ica}pipeline_stats_writer.sh -V)
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container: ${container}
-        \$(${ica}pipeline_stats_writer.sh -V)
+        \${script_version}
     END_VERSIONS
     """
 }

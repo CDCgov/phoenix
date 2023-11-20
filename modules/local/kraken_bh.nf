@@ -27,12 +27,14 @@ process KRAKEN_BEST_HIT {
     """
     ${ica}kraken2_best_hit.sh -i $kraken_summary -q $count_file -n ${prefix} $terra
 
+    script_version=\$(${ica}kraken2_best_hit.sh -V)
+
     mv ${prefix}.summary.txt ${prefix}.kraken2_${kraken_type}.top_kraken_hit.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container: ${container}
-        \$(${ica}kraken2_best_hit.sh -V)
+        \${script_version}
     END_VERSIONS
     """
 }

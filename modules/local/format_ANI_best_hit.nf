@@ -36,10 +36,12 @@ process FORMAT_ANI {
         ${ica}ANI_best_hit_formatter.sh -a ${ani_file} -n ${prefix} -d \${db_version} ${terra}
     fi
 
+    script_version=\$(${ica}ANI_best_hit_formatter.sh -V)
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container: ${container}
-        \$(${ica}ANI_best_hit_formatter.sh -V)
+        \${script_version}
     END_VERSIONS
     """
 }

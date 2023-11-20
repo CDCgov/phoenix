@@ -33,6 +33,8 @@ process DETERMINE_TOP_MASH_HITS {
 
     ${ica}sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -o reference_dir $terra
 
+    script_version=\$(${ica}sort_and_prep_dist.sh -V)
+
     if [[ ! -f ${sample_name}_best_MASH_hits.txt ]]; then
         echo "No MASH hit found" > ${sample_name}_best_MASH_hits.txt
     fi
@@ -41,7 +43,7 @@ process DETERMINE_TOP_MASH_HITS {
     "${task.process}":
         Date of RefSeq Pull: \$(date +"%d-%m-%y")
         phoenix_base_container: ${container}
-        \$(${ica}sort_and_prep_dist.sh -V)
+        \${script_version}
     END_VERSIONS
     """
 }

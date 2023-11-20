@@ -34,6 +34,8 @@ process FASTP_SINGLES {
         #Create psuedo file as empty aint cutting it
         ${ica}create_empty_fastp_json.sh -n ${prefix}
 
+        script_version=\$(${ica}create_empty_fastp_json.sh -V)
+
         touch "${prefix}_empty.html"
         touch ${prefix}.singles.fastq
         gzip ${prefix}.singles.fastq
@@ -71,7 +73,7 @@ process FASTP_SINGLES {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         fastp: \$(fastp --version 2>&1 | sed -e "s/fastp //g")
-        \$(${ica}create_empty_fastp_json.sh -V)
+        \${script_version}
     END_VERSIONS
     """
 }
