@@ -39,13 +39,16 @@ process SPADES {
     # preemptively create _summary_line.csv and .synopsis file in case spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
     ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
     ${ica}beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
+    bspades_version=\$(${ica}beforespades.sh -V)
+    pipestats_version=\$(${ica}pipeline_stats_writer_trimd.sh -V)
+    aspades_version=\$(${ica}afterspades.sh -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
-        \$(${ica}beforespades.sh -V)
-        \$(${ica}afterspades.sh -V)
-        \$(${ica}pipeline_stats_writer_trimd.sh -V)
+        \${bspades_version}
+        \${aspades_version}
+        \${pipestats_version}
     END_VERSIONS
 
     # Set default to be that spades fails and doesn't create scaffolds or contigs
