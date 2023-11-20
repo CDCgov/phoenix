@@ -33,9 +33,6 @@ process FASTP_SINGLES {
         # Both are empty, do nothing??? Nope we handle now
         #Create psuedo file as empty aint cutting it
         ${ica}create_empty_fastp_json.sh -n ${prefix}
-
-        script_version=\$(${ica}create_empty_fastp_json.sh -V)
-
         touch "${prefix}_empty.html"
         touch ${prefix}.singles.fastq
         gzip ${prefix}.singles.fastq
@@ -69,6 +66,8 @@ process FASTP_SINGLES {
             $args \\
             2> ${prefix}.fastp.log
     fi
+
+    script_version=\$(${ica}create_empty_fastp_json.sh -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
