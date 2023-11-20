@@ -16,19 +16,34 @@ task combine_phoenix_run {
     nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
 
     #if phoenix tsv files were passed then combine them
+    busco_array=()
     if [ ! -z ~{phoenix_tsv_summaries} ]; then
       COUNTER=1
       ARRAY=(~{sep=',' phoenix_tsv_summaries})
       for i in ${ARRAY//,/ }; do
         echo "found $i copying to Phoenix_Summary_$COUNTER.tsv"
         cp $i ./Phoenix_Summary_$COUNTER.tsv ;
-        COUNTER=$((COUNTER + 1))
         #check if this the phoenix summaries were run with CDC_PHOENIX or PHOENIX
-
+        busco_check=$(head -n 1 Phoenix_Summary_$COUNTER.tsv | cut -d$'\t' -f9)
+        if [ busco_check=="BUSCO" ]; then
+          busco_array+=(true)
+          cdc_phoenix="--busco"
+        else
+          busco_array+=(false)
+          cdc_phoenix=""
+        fi
+        COUNTER=$((COUNTER + 1))
       done
-
-      ## here ~{cdc} is the same as the busco argument
-      python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{phoenix_tsv_summary_name} $cdc_phoenix
+        # Check if all elements have the same boolean value
+        #printf prints each element of the array on a new line, then sorts and counts the unique lines using.
+        if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
+          echo "Values are the same."
+          ## here ~{cdc_phoenix} is the same as the busco argument
+          python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{phoenix_tsv_summary_name} $cdc_phoenix
+        else
+          echo "ERROR: Phoenix_Summary.tsv files are a mix of CDC_PHOENIX and PHOENIX outputs and they need to be the same."
+          exit 1
+        fi
 
       #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
       if [ "$(wc -l <~{phoenix_tsv_summary_name})" -eq 1 ]; then
@@ -49,7 +64,7 @@ task combine_phoenix_run {
       done
 
       ## here ~{cdc} is the same as the busco argument
-      python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{griphin_xlsx_name} ~{cdc}
+      python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{griphin_xlsx_name}
     fi
   
   >>>
