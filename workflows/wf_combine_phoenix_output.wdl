@@ -17,7 +17,7 @@ workflow combine_phoenix_output {
       phoenix_tsv_summaries              = phoenix_tsv_summaries,
       griphin_xlsx_summaries             = griphin_xlsx_summaries,
       combined_phoenix_tsv_summary_name  = combined_phoenix_tsv_summary_name,
-      combined_griphin_xlxs_summary_name = combined_griphin_xlsx_summary_name
+      combined_griphin_xlsx_summary_name = combined_griphin_xlsx_summary_name
   }
   output {
     #phoenix summary output
