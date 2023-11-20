@@ -3,7 +3,7 @@ version 1.0
 task combine_phoenix_run {
   input {
     Array[File]? phoenix_tsv_summaries
-    Array[File]? griphin_summaries
+    Array[File]? griphin_xlsx_summaries
     String? phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
     String? griphin_xlsx_name = "GRiPHin_Summary.xlsx"
   }
