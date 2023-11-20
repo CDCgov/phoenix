@@ -19,8 +19,8 @@ task combine_phoenix_run {
     busco_array=()
     if [ ! -z ~{phoenix_tsv_summaries} ]; then
       COUNTER=1
-      ARRAY=(~{sep=',' phoenix_tsv_summaries})
-      for i in ${ARRAY//,/ }; do
+      PHX_ARRAY=(~{sep=',' phoenix_tsv_summaries})
+      for i in ${PHX_ARRAY//,/ }; do
         echo "found $i copying to Phoenix_Summary_$COUNTER.tsv"
         cp $i ./Phoenix_Summary_$COUNTER.tsv ;
         #check if this the phoenix summaries were run with CDC_PHOENIX or PHOENIX
@@ -51,13 +51,16 @@ task combine_phoenix_run {
         rm -r ~{combined_phoenix_tsv_summary_name}
         exit 1
       fi
+    # if array is empty
+    else
+      echo "WARNING: No Phoenix_Summary.tsv files provided skipping Phoenix_Summary.tsv combining step."
     fi
 
     #if griphin xlsx files were passed then combine them
     if [ ! -z ~{griphin_xlsx_summaries} ]; then
       COUNTER=1
-      ARRAY=(~{sep=',' griphin_xlsx_summaries})
-      for i in ${ARRAY//,/ }; do
+      GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
+      for i in ${GRIPHIN_ARRAY//,/ }; do
         echo "found $i copying to GRiPHin_Summary_$COUNTER.xlsx"
         cp $i ./GRiPHin_Summary_$COUNTER.xlsx ;
         COUNTER=$((COUNTER + 1))
@@ -65,6 +68,10 @@ task combine_phoenix_run {
 
       ## combine griphin reports. in the script it determines if phx or cdc_phx was run.
       python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{combined_griphin_xlsx_summary_name}
+
+    # if array is empty
+    else
+      echo "WARNING: No Phoenix_Summary.tsv files provided skipping Phoenix_Summary.tsv combining step."
     fi
 
   >>>
