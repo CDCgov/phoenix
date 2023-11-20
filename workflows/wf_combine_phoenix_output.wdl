@@ -9,15 +9,15 @@ workflow combine_phoenix_output {
   input {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
-    String? phoenix_tsv_summary_name
-    String? griphin_xlsx_name
+    String? combined_phoenix_tsv_summary_name
+    String? combined_griphin_xlsx_summary_name
   }
   call combine_phoenix_run_nf.combine_phoenix_run {
     input:
-      phoenix_tsv_summaries    = phoenix_tsv_summaries,
-      griphin_xlsx_summaries   = griphin_xlsx_summaries,
-      phoenix_tsv_summary_name = phoenix_tsv_summary_name,
-      griphin_xlxs_name        = griphin_xlsx_name
+      phoenix_tsv_summaries              = phoenix_tsv_summaries,
+      griphin_xlsx_summaries             = griphin_xlsx_summaries,
+      combined_phoenix_tsv_summary_name  = combined_phoenix_tsv_summary_name,
+      combined_griphin_xlxs_summary_name = combined_griphin_xlsx_summary_name
   }
   output {
     #phoenix summary output

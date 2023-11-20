@@ -4,8 +4,8 @@ task combine_phoenix_run {
   input {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
-    String? phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
-    String? griphin_xlsx_name = "GRiPHin_Summary.xlsx"
+    String? combined_phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
+    String? combined_griphin_xlsx_summary_name = "GRiPHin_Summary.xlsx"
   }
   command <<<
     VERSION="v2.1.0-dev"
@@ -39,24 +39,24 @@ task combine_phoenix_run {
         if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
           echo "Values are the same."
           # here the variable cdc_phoenix is the same as the busco argument
-          python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{phoenix_tsv_summary_name} $cdc_phoenix
+          python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{combined_phoenix_tsv_summary_name} $cdc_phoenix
         else
           echo "ERROR: Phoenix_Summary.tsv files are a mix of CDC_PHOENIX and PHOENIX outputs and they need to be the same."
           exit 1
         fi
 
       #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
-      if [ "$(wc -l <~{phoenix_tsv_summary_name})" -eq 1 ]; then
+      if [ "$(wc -l <~{combined_phoenix_tsv_summary_name})" -eq 1 ]; then
         echo "file only contains a single line"
-        rm -r ~{phoenix_tsv_summary_name}
+        rm -r ~{combined_phoenix_tsv_summary_name}
         exit 1
       fi
     fi
 
     #if griphin xlsx files were passed then combine them
-    if [ ! -z ~{griphin_summaries} ]; then
+    if [ ! -z ~{griphin_xlsx_summaries} ]; then
       COUNTER=1
-      ARRAY=(~{sep=',' griphin_summaries})
+      ARRAY=(~{sep=',' griphin_xlsx_summaries})
       for i in ${ARRAY//,/ }; do
         echo "found $i copying to GRiPHin_Summary_$COUNTER.xlsx"
         cp $i ./GRiPHin_Summary_$COUNTER.xlsx ;
@@ -64,13 +64,13 @@ task combine_phoenix_run {
       done
 
       ## combine griphin reports. in the script it determines if phx or cdc_phx was run.
-      python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{griphin_xlsx_name}
+      python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{combined_griphin_xlsx_summary_name}
     fi
-  
+
   >>>
   output {
-    File?   phoenix_tsv_summary  = "~{phoenix_tsv_summary_name}"
-    File?   griphin_xlsx_summary = "~{griphin_xlsx_name}"
+    File?   phoenix_tsv_summary  = "~{combined_phoenix_tsv_summary_name}"
+    File?   griphin_xlsx_summary = "~{combined_griphin_xlsx_summary_name}"
     String  phoenix_version      = read_string("VERSION")
     String  phoenix_docker       = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date        = read_string("DATE")
