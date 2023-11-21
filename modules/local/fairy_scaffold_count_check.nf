@@ -65,7 +65,6 @@ process SCAFFOLD_COUNT_CHECK {
         # if the sample has no scaffolds left make the summaryline and synopsis file for it. 
         # get taxa ID
         ${ica_bash}determine_taxID.sh -r $kraken2_trimd_summary -s ${prefix} -d $nodes_file -m $names_file
-        
 
         #write synopsis file
         ${ica_bash}pipeline_stats_writer.sh -d ${prefix} -q ${prefix}.tax -5 $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
