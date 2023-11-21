@@ -65,13 +65,12 @@ process SCAFFOLD_COUNT_CHECK {
         # if the sample has no scaffolds left make the summaryline and synopsis file for it. 
         # get taxa ID
         ${ica_bash}determine_taxID.sh -r $kraken2_trimd_summary -s ${prefix} -d $nodes_file -m $names_file
-        dettaxid_version=\$(${ica_bash}determine_taxID.sh -V)
+        
 
         #write synopsis file
         ${ica_bash}pipeline_stats_writer.sh -d ${prefix} -q ${prefix}.tax -5 $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
         $kraken2_trimd_report $kraken2_trimd_summary_pipeline_stats $krona_trimd $terra
 
-        pipestats_version=\$(${ica_bash}pipeline_stats_writer.sh -V)
 
         # write summary_line file
         ${ica_python}Phoenix_summary_line.py -n ${prefix} -s ${prefix}.synopsis -x ${prefix}.tax -o ${prefix}_summaryline.tsv\\
@@ -99,6 +98,9 @@ process SCAFFOLD_COUNT_CHECK {
         fi
         cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
     fi
+
+    dettaxid_version=\$(${ica_bash}determine_taxID.sh -V)
+    pipestats_version=\$(${ica_bash}pipeline_stats_writer.sh -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
