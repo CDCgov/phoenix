@@ -11,7 +11,7 @@
 #
 # Function to print out help blurb
 
-version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.1.0 (10/13/2023)
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.1.0 (10/13/2023)
 
 show_help () {
   echo "Usage: fairy_proc.sh args(* are required) [-V show version]

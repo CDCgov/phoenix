@@ -13,7 +13,7 @@
 #
 # Created by Jill Hagey (qpk9@cdc.gov)
 
-version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (07/03/2022)
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (07/03/2022)
 
 # Parse command line options
 options_found=0

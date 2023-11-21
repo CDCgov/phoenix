@@ -13,7 +13,7 @@
 #
 #  Function to print out help blurb
 
-version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (07/03/2022)
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (07/03/2022)
 
 show_help () {
 	echo "Usage is ./beforeSpades.sh -d path_to_output -n report.tsv"
