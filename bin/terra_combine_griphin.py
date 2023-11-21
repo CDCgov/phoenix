@@ -259,7 +259,6 @@ def get_variables(file_list):
             print("Error: There are different coverage cut offs in files!")
             exit()
     #check the values are all the same
-    print(check_list)
     if len(set(check_list)) != 1:
         print("Error: Files are a mix of CDC and Not CDC versions of PHX!")
         exit()

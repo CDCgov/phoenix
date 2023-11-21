@@ -21,10 +21,10 @@ task combine_phoenix_run {
       COUNTER=1
       PHX_ARRAY=(~{sep=',' phoenix_tsv_summaries})
       for i in ${PHX_ARRAY//,/ }; do
-        echo "found $i copying to Phoenix_Summary_$COUNTER.tsv"
-        cp $i ./Phoenix_Summary_$COUNTER.tsv ;
+        echo "found $i copying to Phoenix_Summary_${COUNTER}.tsv"
+        cp $i ./Phoenix_Summary_${COUNTER}.tsv ;
         #check if the phoenix summaries were run with CDC_PHOENIX or PHOENIX. They need to be the same.
-        busco_check=$(head -n 1 Phoenix_Summary_$COUNTER.tsv | cut -d$'\t' -f9)
+        busco_check=$(head -n 1 Phoenix_Summary_${COUNTER}.tsv | cut -d$'\t' -f9)
         if [ "$busco_check" == "BUSCO" ]; then
           busco_array+=(true)
           cdc_phoenix="--busco"
@@ -61,7 +61,7 @@ task combine_phoenix_run {
       COUNTER=1
       GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
       for i in ${GRIPHIN_ARRAY//,/ }; do
-        echo "found $i copying to GRiPHin_$COUNTER_Summary.xlsx"
+        echo "found $i copying to GRiPHin_${COUNTER}_Summary.xlsx"
         cp $i ./GRiPHin_${COUNTER}_Summary.xlsx ;
         COUNTER=$((COUNTER + 1))
       done
@@ -69,9 +69,12 @@ task combine_phoenix_run {
       ## combine griphin reports. in the script it determines if phx or cdc_phx was run.
       python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{combined_griphin_xlsx_summary_name}
 
+      #check what files were created
+      ls
+
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
       if [ ! -s "~{combined_griphin_xlsx_summary_name}" ] && [ ! -f "~{combined_griphin_xlsx_summary_name}" ]; then
-        echo "ERROR: GRiPhin files were passed, but no combination file was made."
+        echo "ERROR: GRiPHin files were passed, but no combination file was made."
         exit 1
       fi
     # if array is empty
