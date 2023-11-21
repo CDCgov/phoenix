@@ -243,6 +243,7 @@ def get_variables(file_list):
     for file in file_list:
         df = pd.read_excel(file, header=1)
         df = df.dropna(axis=0,how='all')
+        print(df.columns)
         if "BUSCO_Lineage" in df.columns:
             phoenix = False
             check_list.append(phoenix)
@@ -259,6 +260,7 @@ def get_variables(file_list):
             print("Error: There are different coverage cut offs in files!")
             exit()
     #check the values are all the same
+    print(check_list)
     if len(set(check_list)) != 1:
         print("Error: Files are a mix of CDC and Not CDC versions of PHX!")
         exit()
