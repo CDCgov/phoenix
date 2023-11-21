@@ -101,7 +101,7 @@ def fix_ar_col_order(col_list):
 def write_excel(output_file, df, set_coverage, phoenix, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db):
     # exports the dataframe into excel file with specified name.
     # Create a Pandas Excel writer using XlsxWriter as the engine.
-    if output_file != None and output_file != "GRiPHin_Summary.xlsx":#check that its not "GRiPHin_Summary.xlsx"
+    if output_file != None:
         writer = pd.ExcelWriter((output_file + '_GRiPHin_Summary.xlsx'), engine='xlsxwriter')
     else:
         writer = pd.ExcelWriter(('GRiPHin_Summary.xlsx'), engine='xlsxwriter')
@@ -273,29 +273,20 @@ def get_column_counts(df):
     ar_df = ar_df.drop(['HV_Database'], axis=1)
     ar_max_col = int(len(ar_df.columns))
     ar_db = list(ar_df['AR_Database'].unique())
-    try:
-        ar_db.remove("GAMMA file not found")
-    except ValueError:
-        pass
+    ar_db.remove("GAMMA file not found")
     ar_db = ','.join(ar_db)
     # get hv number of columns
     hv_df = df.loc[:,'HV_Database':'Plasmid_Replicon_Database']
     hv_df = hv_df.drop(['Plasmid_Replicon_Database'], axis=1)
     hv_max_col = int(len(hv_df.columns))
     hv_db = list(hv_df['HV_Database'].unique())
-    try:
-        hv_db.remove("GAMMA file not found")
-    except ValueError:
-        pass
+    hv_db.remove("GAMMA file not found")
     hv_db = ','.join(hv_db)
     # get hv number of columns
     pf_df = df.loc[:,'Plasmid_Replicon_Database':]
     pf_max_col = int(len(pf_df.columns))
     pf_db = list(pf_df['Plasmid_Replicon_Database'].unique())
-    try:
-        pf_db.remove("GAMMA file not found")
-    except ValueError:
-        pass
+    pf_db.remove("GAMMA file not found")
     pf_db = ','.join(pf_db)
     return qc_max_col, ar_max_col, pf_max_col, hv_max_col, ar_df, pf_db, ar_db, hv_db
 
@@ -303,10 +294,6 @@ def main():
     args = parseArgs()
     # get files in the path
     file_list = glob.glob("*_Summary.xlsx")
-    # check that the file_list isn't empty
-    if len(file_list) == 0:
-        print("Error: No GRiPHin_Summary.xlsx files were found using *_Summary.xlsx!")
-        exit()
     set_coverage, phoenix = get_variables(file_list)
     df = combine_excels(file_list)
     qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, ar_df, pf_db, ar_db, hv_db = get_column_counts(df)

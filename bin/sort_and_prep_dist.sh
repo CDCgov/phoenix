@@ -63,7 +63,7 @@ if [[ "${options_found}" -eq 0 ]]; then
 	exit 1
 fi
 
-if [[ "${show_version}" = "True}" ]]; then
+if [[ "${show_version}" = "True" ]]; then
 	echo "sort_and_prep.sh: ${version}"
 	exit
 fi
