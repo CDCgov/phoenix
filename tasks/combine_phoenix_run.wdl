@@ -4,8 +4,10 @@ task combine_phoenix_run {
   input {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
+    Array[File]? griphin_tsv_summaries
     String? combined_phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
     String? combined_griphin_xlsx_summary_name = "GRiPHin_Summary.xlsx"
+    String? combined_griphin_tsv_summary_name = "GRiPHin_Summary.tsv"
   }
   command <<<
     VERSION="v2.1.0-dev"
@@ -66,15 +68,12 @@ task combine_phoenix_run {
         COUNTER=$((COUNTER + 1))
       done
 
-      ## combine griphin reports. in the script it determines if phx or cdc_phx was run.
+      ## combine griphin summaries. In the script it determines if phx or cdc_phx was run.
       python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{combined_griphin_xlsx_summary_name}
-
-      #check what files were created
-      ls
 
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
       if [ ! -s "~{combined_griphin_xlsx_summary_name}" ] && [ ! -f "~{combined_griphin_xlsx_summary_name}" ]; then
-        echo "ERROR: GRiPHin files were passed, but no combination file was made."
+        echo "ERROR: GRiPHin excel files were passed, but no combination file was made."
         exit 1
       fi
     # if array is empty
@@ -82,10 +81,35 @@ task combine_phoenix_run {
       echo "WARNING: No GRiPHin_Summary.xlsx files provided skipping GRiPHin_Summary.xlsx combining step."
     fi
 
+    #if griphin tsv files were passed then combine them
+    busco_gripin_array=()
+    if [ ! -z "~{sep=',' griphin_tsv_summaries}" ]; then
+      COUNTER=1
+      GRIPHIN_ARRAY_TSV=(~{sep=',' griphin_tsv_summaries})
+      for i in ${GRIPHIN_ARRAY_TSV//,/ }; do
+        echo "found $i copying to GRiPHin_${COUNTER}_Summary.tsv"
+        cp $i ./GRiPHin_${COUNTER}_Summary.tsv ;
+        COUNTER=$((COUNTER + 1))
+      done
+
+      ## combine griphin reports. In the script it determines if phx or cdc_phx was run.
+      python3 ./$VERSION/bin/terra_combine_griphin_tsv.py --out ~{combined_griphin_tsv_summary_name}
+
+      # If GRiPHin files were passed, but not a summary made at the end then throw an error
+      if [ ! -s "~{combined_griphin_tsv_summary_name}" ] && [ ! -f "~{combined_griphin_tsv_summary_name}" ]; then
+        echo "ERROR: GRiPHin tsv files were passed, but no combination file was made."
+        exit 1
+      fi
+    # if array is empty
+    else
+      echo "WARNING: No GRiPHin_Summary.tsv files provided skipping GRiPHin_Summary.tsv combining step."
+    fi
+
   >>>
   output {
     File?   phoenix_tsv_summary  = "~{combined_phoenix_tsv_summary_name}"
     File?   griphin_xlsx_summary = "~{combined_griphin_xlsx_summary_name}"
+    File?   griphin_tsv_summary  = "~{combined_griphin_tsv_summary_name}"
     String  phoenix_version      = read_string("VERSION")
     String  phoenix_docker       = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date        = read_string("DATE")
