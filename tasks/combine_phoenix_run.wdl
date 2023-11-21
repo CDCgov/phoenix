@@ -23,7 +23,7 @@ task combine_phoenix_run {
       for i in ${PHX_ARRAY//,/ }; do
         echo "found $i copying to Phoenix_Summary_$COUNTER.tsv"
         cp $i ./Phoenix_Summary_$COUNTER.tsv ;
-        #check if this the phoenix summaries were run with CDC_PHOENIX or PHOENIX
+        #check if the phoenix summaries were run with CDC_PHOENIX or PHOENIX. They need to be the same.
         busco_check=$(head -n 1 Phoenix_Summary_$COUNTER.tsv | cut -d$'\t' -f9)
         if [ "$busco_check" == "BUSCO" ]; then
           busco_array+=(true)
@@ -37,7 +37,7 @@ task combine_phoenix_run {
         # Check if all elements have the same boolean value
         # printf prints each element of the array on a new line, then sorts and counts the unique lines using.
         if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
-          echo "Values are the same."
+          echo "Phoenix_Summary.tsv files passed check for the same entry point. Starting to combine files."
           # here the variable cdc_phoenix is the same as the busco argument
           python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{combined_phoenix_tsv_summary_name} $cdc_phoenix
         else
@@ -62,7 +62,7 @@ task combine_phoenix_run {
       GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
       for i in ${GRIPHIN_ARRAY//,/ }; do
         echo "found $i copying to GRiPHin_$COUNTER_Summary.xlsx"
-        cp $i ./GRiPHin_$COUNTER_Summary.xlsx ;
+        cp $i ./GRiPHin_${COUNTER}_Summary.xlsx ;
         COUNTER=$((COUNTER + 1))
       done
 
