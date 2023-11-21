@@ -61,8 +61,8 @@ task combine_phoenix_run {
       COUNTER=1
       GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
       for i in ${GRIPHIN_ARRAY//,/ }; do
-        echo "found $i copying to GRiPHin_Summary_$COUNTER.xlsx"
-        cp $i ./GRiPHin_Summary_$COUNTER.xlsx ;
+        echo "found $i copying to GRiPHin_$COUNTER_Summary.xlsx"
+        cp $i ./GRiPHin_$COUNTER_Summary.xlsx ;
         COUNTER=$((COUNTER + 1))
       done
 
@@ -74,11 +74,9 @@ task combine_phoenix_run {
         echo "ERROR: GRiPhin files were passed, but no combination file was made."
         exit 1
       fi
-
-
     # if array is empty
     else
-      echo "WARNING: No Phoenix_Summary.tsv files provided skipping Phoenix_Summary.tsv combining step."
+      echo "WARNING: No GRiPHin_Summary.xlsx files provided skipping GRiPHin_Summary.xlsx combining step."
     fi
 
   >>>
