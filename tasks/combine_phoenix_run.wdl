@@ -3,17 +3,11 @@ version 1.0
 task combine_phoenix_run {
   input {
     Array[File]? phoenix_tsv_summaries
-<<<<<<< HEAD
     Array[File]? griphin_xlsx_summaries
     Array[File]? griphin_tsv_summaries
     String? combined_phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
     String? combined_griphin_xlsx_summary_name = "GRiPHin_Summary.xlsx"
     String? combined_griphin_tsv_summary_name = "GRiPHin_Summary.tsv"
-=======
-    Array[File]? griphin_summaries
-    String? phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
-    String? griphin_xlsx_name = "GRiPHin_Summary.xlsx"
->>>>>>> 72945a7dfeb7e68e21df20aa1f03218b6467181d
   }
   command <<<
     VERSION="v2.1.0-dev"
