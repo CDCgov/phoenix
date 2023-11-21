@@ -18,35 +18,53 @@ task combine_phoenix_run {
     nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
 
     #if phoenix tsv files were passed then combine them
-    if [ ! -z ~{phoenix_tsv_summaries} ]; then
+    busco_array=()
+    if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ]; then
       COUNTER=1
-      ARRAY=(~{sep=',' phoenix_tsv_summaries})
-      for i in ${ARRAY//,/ }; do
-        echo "found $i copying to Phoenix_Summary_$COUNTER.tsv"
-        cp $i ./Phoenix_Summary_$COUNTER.tsv ;
+      PHX_ARRAY=(~{sep=',' phoenix_tsv_summaries})
+      for i in ${PHX_ARRAY//,/ }; do
+        echo "found $i copying to Phoenix_Summary_${COUNTER}.tsv"
+        cp $i ./Phoenix_Summary_${COUNTER}.tsv ;
+        #check if the phoenix summaries were run with CDC_PHOENIX or PHOENIX. They need to be the same.
+        busco_check=$(head -n 1 Phoenix_Summary_${COUNTER}.tsv | cut -d$'\t' -f9)
+        if [ "$busco_check" == "BUSCO" ]; then
+          busco_array+=(true)
+          cdc_phoenix="--busco"
+        else
+          busco_array+=(false)
+          cdc_phoenix=""
+        fi
         COUNTER=$((COUNTER + 1))
-        #check if this the phoenix summaries were run with CDC_PHOENIX or PHOENIX
-
       done
-
-      ## here ~{cdc} is the same as the busco argument
-      python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{phoenix_tsv_summary_name} $cdc_phoenix
+        # Check if all elements have the same boolean value
+        # printf prints each element of the array on a new line, then sorts and counts the unique lines using.
+        if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
+          echo "Phoenix_Summary.tsv files passed check for the same entry point. Starting to combine files."
+          # here the variable cdc_phoenix is the same as the busco argument
+          python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{combined_phoenix_tsv_summary_name} $cdc_phoenix
+        else
+          echo "ERROR: Phoenix_Summary.tsv files are a mix of CDC_PHOENIX and PHOENIX outputs and they need to be the same."
+          exit 1
+        fi
 
       #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
-      if [ "$(wc -l <~{phoenix_tsv_summary_name})" -eq 1 ]; then
+      if [ "$(wc -l <~{combined_phoenix_tsv_summary_name})" -eq 1 ]; then
         echo "file only contains a single line"
-        rm -r ~{phoenix_tsv_summary_name}
+        rm -r ~{combined_phoenix_tsv_summary_name}
         exit 1
       fi
+    # if array is empty
+    else
+      echo "WARNING: No Phoenix_Summary.tsv files provided skipping Phoenix_Summary.tsv combining step."
     fi
 
     #if griphin xlsx files were passed then combine them
-    if [ ! -z ~{griphin_summaries} ]; then
+    if [ ! -z "~{sep=',' griphin_xlsx_summaries}" ]; then
       COUNTER=1
-      ARRAY=(~{sep=',' griphin_summaries})
-      for i in ${ARRAY//,/ }; do
-        echo "found $i copying to GRiPHin_Summary_$COUNTER.xlsx"
-        cp $i ./GRiPHin_Summary_$COUNTER.xlsx ;
+      GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
+      for i in ${GRIPHIN_ARRAY//,/ }; do
+        echo "found $i copying to GRiPHin_${COUNTER}_Summary.xlsx"
+        cp $i ./GRiPHin_${COUNTER}_Summary.xlsx ;
         COUNTER=$((COUNTER + 1))
       done
 
