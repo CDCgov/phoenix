@@ -101,7 +101,7 @@ def fix_ar_col_order(col_list):
 def write_excel(output_file, df, set_coverage, phoenix, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db):
     # exports the dataframe into excel file with specified name.
     # Create a Pandas Excel writer using XlsxWriter as the engine.
-    if output_file != None:
+    if output_file != None and output_file != "GRiPHin_Summary.xlsx":#check that its not "GRiPHin_Summary.xlsx"
         writer = pd.ExcelWriter((output_file + '_GRiPHin_Summary.xlsx'), engine='xlsxwriter')
     else:
         writer = pd.ExcelWriter(('GRiPHin_Summary.xlsx'), engine='xlsxwriter')
