@@ -8,21 +8,26 @@ workflow combine_phoenix_output {
   }
   input {
     Array[File]? phoenix_tsv_summaries
-    Array[File]? griphin_summaries
-    String? phoenix_tsv_summary_name
-    String? griphin_summary_name
+    Array[File]? griphin_xlsx_summaries
+    Array[File]? griphin_tsv_summaries
+    String? combined_phoenix_tsv_summary_name
+    String? combined_griphin_xlsx_summary_name
+    String? combined_griphin_tsv_summary_name
   }
   call combine_phoenix_run_nf.combine_phoenix_run {
     input:
-      phoenix_tsv_summaries    = phoenix_tsv_summaries,
-      griphin_summaries        = griphin_summaries,
-      phoenix_tsv_summary_name = phoenix_tsv_summary_name,
-      griphin_xlxs_name        = griphin_xlsx_name
+      phoenix_tsv_summaries              = phoenix_tsv_summaries,
+      griphin_xlsx_summaries             = griphin_xlsx_summaries,
+      griphin_tsv_summaries              = griphin_tsv_summaries,
+      combined_phoenix_tsv_summary_name  = combined_phoenix_tsv_summary_name,
+      combined_griphin_xlsx_summary_name = combined_griphin_xlsx_summary_name,
+      combined_griphin_tsv_summary_name  = combined_griphin_tsv_summary_name
   }
   output {
     #phoenix summary output
     File?  phoenix_tsv_summary  = combine_phoenix_run.phoenix_tsv_summary
     File?  griphin_xlsx_summary = combine_phoenix_run.griphin_xlsx_summary
+    File?  griphin_tsv_summary  = combine_phoenix_run.griphin_tsv_summary
     String phoenix_version      = combine_phoenix_run.phoenix_version
     String phoenix_docker       = combine_phoenix_run.phoenix_docker
     String analysis_date        = combine_phoenix_run.analysis_date
