@@ -243,7 +243,6 @@ def get_variables(file_list):
     for file in file_list:
         df = pd.read_excel(file, header=1)
         df = df.dropna(axis=0,how='all')
-        print(df.columns)
         if "BUSCO_Lineage" in df.columns:
             phoenix = False
             check_list.append(phoenix)
@@ -305,6 +304,10 @@ def main():
     args = parseArgs()
     # get files in the path
     file_list = glob.glob("*_Summary.xlsx")
+    # check that the file_list isn't empty
+    if len(file_list) == 0:
+        print("Error: No GRiPHin_Summary.xlsx files were found using *_Summary.xlsx!")
+        exit()
     set_coverage, phoenix = get_variables(file_list)
     df = combine_excels(file_list)
     qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, ar_df, pf_db, ar_db, hv_db = get_column_counts(df)
