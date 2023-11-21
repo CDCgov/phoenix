@@ -69,6 +69,13 @@ task combine_phoenix_run {
       ## combine griphin reports. in the script it determines if phx or cdc_phx was run.
       python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{combined_griphin_xlsx_summary_name}
 
+      # If GRiPHin files were passed, but not a summary made at the end then throw an error
+      if [ ! -s "~{combined_griphin_xlsx_summary_name}" ] && [ ! -f "~{combined_griphin_xlsx_summary_name}" ]; then
+        echo "ERROR: GRiPhin files were passed, but no combination file was made."
+        exit 1
+      fi
+
+
     # if array is empty
     else
       echo "WARNING: No Phoenix_Summary.tsv files provided skipping Phoenix_Summary.tsv combining step."
