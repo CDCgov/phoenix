@@ -133,7 +133,7 @@ def get_variables(file_list):
     return phoenix
 
 def write_combined_tsv(df, output):
-    if output != None:
+    if output != None and output != "GRiPHin_Summary.tsv":#check that its not "GRiPHin_Summary.tsv"
         output_file = output + '_GRiPHin_Summary.tsv'
     else:
         output_file = 'GRiPHin_Summary.tsv'
