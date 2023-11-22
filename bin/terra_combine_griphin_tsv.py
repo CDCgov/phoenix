@@ -115,14 +115,17 @@ def get_variables(file_list):
             qc_col = df['Minimum_QC_Issues']
             qc_col = qc_col.dropna(axis=0,how='all')
             cell_val = qc_col[qc_col.str.contains("coverage <")]
-            coverage = re.findall(r'coverage <\d+x', cell_val[0])
-            coverage_list.append(coverage[0])
-            #check that coverage is the same in all files
-            if len(set(coverage_list)) != 1:
-                print("Error: There are different coverage cut offs in files!")
-                exit()
+            if not cell_val.empty:
+                coverage = re.findall(r'coverage <\d+x', cell_val[0])
+                coverage_list.append(coverage[0])
+            else:
+                print("Warning: the coverage used to run {} could not be determined!".format(file))
         except AttributeError:
             print("Warning: the coverage used to run {} could not be determined!".format(file))
+    #check that coverage is the same in all files
+    if len(set(coverage_list)) != 1 and len(set(coverage_list)) != 0:
+        print("Error: There are different coverage cut offs in files!")
+        exit()
     #check the values are all the same
     if len(set(check_list)) != 1:
         print("Error: Files are a mix of CDC and Not CDC versions of PHX!")
