@@ -13,7 +13,7 @@
 #
 #  Function to print out help blurb
 
-version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (04/18/2023)
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (04/18/2023)
 
 show_help () {
 	echo "Usage is ./crate_empty_fastp_json.sh  -n sample_name [-V version]"

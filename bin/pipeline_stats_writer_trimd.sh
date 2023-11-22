@@ -10,7 +10,7 @@
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 
-version="2.0" # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (05/25/2022)
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (05/25/2022)
 
 #  Function to print out help blurb
 show_help () {
