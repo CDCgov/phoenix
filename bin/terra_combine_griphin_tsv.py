@@ -12,9 +12,14 @@ from itertools import chain
 ##Usage: >python Terra_combine_griphin_tsv.py -o Output_Report.tsv
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
+# Function to get the script version
+def get_version():
+    return "v1.0.0"
+
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a combined GRiPHin summary excel sheet')
     parser.add_argument('-o', '--out', dest='output_file', required=False, default=None, help='output file name')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
  
@@ -135,7 +140,7 @@ def write_combined_tsv(df, output):
 def main():
     args = parseArgs()
     # get files in the path
-    file_list = glob.glob("*GRiPHin_Summary.tsv")
+    file_list = glob.glob("*GRiPHin_*_Summary.tsv")
     # check that the file_list isn't empty
     if len(file_list) == 0:
         print("Error: No GRiPHin_Summary.tsv files were found using *GRiPHin_Summary.tsv!")
