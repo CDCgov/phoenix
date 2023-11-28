@@ -1,7 +1,8 @@
 process CALCULATE_ASSEMBLY_RATIO {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 27)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(taxa_file), path(quast_report)
@@ -23,7 +24,8 @@ process CALCULATE_ASSEMBLY_RATIO {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}calculate_assembly_ratio.sh -d $ncbi_database -q $quast_report -x $taxa_file -s ${prefix} $terra
 
@@ -31,7 +33,8 @@ process CALCULATE_ASSEMBLY_RATIO {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        NCBI Assembly Stats DB: $ncbi_database
+        NCBI_Assembly_Stats_DB: $ncbi_database
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
         \${script_version}
     END_VERSIONS

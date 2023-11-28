@@ -13,6 +13,10 @@ import argparse
 ##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -x Taxa_file -r Ratio_File -m MLST_File -u mutation_file -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File -k trimd_kraken -s synopsis_file -o Out_File
 ## Written by Rich Stanton (njr5@cdc.gov) and Jill Hagey (qpk9@cdc.gov)
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
     parser.add_argument('-n', '--name', required=True, help='sequence name')
@@ -30,6 +34,7 @@ def parseArgs(args=None):
     parser.add_argument('-s', '--stats', dest="stats", required=False, help='Pipeline Stats file synopsis file')
     parser.add_argument('-e', '--extended_qc', dest="extended_qc", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
     parser.add_argument('-o', '--out', required=True, help='output file name')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen

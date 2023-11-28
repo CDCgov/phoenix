@@ -37,6 +37,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed pipeline failure when prokka throws error for sample names being too long (Error: ID must <= 37 chars long) [#e48e01f](https://github.com/CDCgov/phoenix/commit/e48e01fbac298541f55e949e8e8f04396aa791e8). Now sample name length doesn't matter.  
 - Fixed bug where samples wouldn't end up in the `Phoenix_Output_Report.tsv` due to srst2 not finding any AR genes so the file wasn't created. Now blank file is created and remaining sample informatin is in the `Phoenix_Output_Report.tsv` [#2f52edc](https://github.com/CDCgov/phoenix/commit/2f52edc218716404b37a1e1470234e2aa32e82b3). This change only occured in `-entry CDC_PHOENIX`.  
 - Fixed issue where `cp` error was thrown when relative path was given for output directory [#0c0ca55](https://github.com/CDCgov/phoenix/commit/0c0ca554861b7da28567694adc0920a6d8046d5b) and [#d938a64](https://github.com/CDCgov/phoenix/commit/d938a6437f3e192dbe8af648c4400011fa0744e4).  
+- MLST PARALOGS for *Acinetobacter baumannii* are surpressed in GRiPHin report as they are...
 
 **Database Updates:**  
 - AMRFinder+ database is now static and included in the database folder [#a5d2d03](https://github.com/CDCgov/phoenix/commit/a5d2d03be4876c73b0d116d2a641c7319bf44df0). We removed the automatic updating for more control of the pipeline and lockdown to prepare for possible CLIA requirements.  
@@ -181,6 +182,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Implemented Enhancements:**  
 - Added handling for "unknown" assemblers in the scaffolds entry point so genomes can be downloaded from NCBI and run through PHoeNIx.  
+- New Terra workflow for combining `Phoenix_Summary.tsv`, `GRiPHin_Summary.tsv` and `GRiPHin_Summary.xlsx` of multiple runs into one file.  
+- `software_versions.yml` now contains versions for all custom scripts used in the pipeline to streamline its validation process and align it with CLIA requirements, ensuring smoother compliance.  
 
 **Output File Changes:**  
 - The default outdir phx produces was changed. If the user doesn't pass `--outdir`, the default was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
@@ -189,7 +192,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Fixed Bugs:**  
 - Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
 - `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite `--coverage` setting, changes made to respect `--coverage` flag.  
-- Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHX will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
+- Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHoeNIx will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
 - Corrected instance where, in some cases, an mlst scheme could not be determined that a proper out file was not created.  
 - Fixed issue where samples that failed SPAdes did not have `--coverage` parameter respected when generating synopsis file.  
 - Fixed `-entry CDC_SCAFFOLDS` providing incorrect headers (missing `BUSCO` and `BUSCO_DB`).  
@@ -200,13 +203,12 @@ Below are the list of changes to phx since is initial release. As fixes can take
       - If there are no reads or scaffolds left after filtering and read trimming steps, respectively.
 
 **Container Updates:**  
+- Containers are now called with their sha256 to streamline PHoeNIx's validation process and align it with CLIA requirements.  
 - Base container bummped up to v2.1.0  
-- Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up.  
-- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite `--coverage` setting, changes made to respect `--coverage` flag.  
-- Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHoeNIx will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
-- Correct instance where in some cases where an mlst scheme could not be determined that a proper out file was not created.  
-
-**Container Updates:**  
-- Base container bummped up to v2.1.0
+- containers updated to include developers bug fixes:  
+  - fastp: v0.23.2 to v0.23.4 [bug fixes](https://github.com/OpenGene/fastp/releases).  
+  - fastqc: v0.11.9 to v0.12.1 [bug fixes](https://github.com/s-andrews/FastQC/releases).  
+  - kraken2: v2.1.2 to v2.1.3 which has [improvements on efficiency and bug fixes](https://github.com/s-andrews/FastQC/releases).  
+  - fastani: v1.33 to v1.34 [bug fixes](https://github.com/ParBLiSS/FastANI/releases). Specifically, it fixed multi-threading output bugs. Output and interface of FastANI remains same as before.
 - Container for SRA entry steps `SRATOOLS_FASTERQDUMP` and `SRATOOLS_PREFETCH` was switched to a quay.io/biocontainers to address issues with the old container and ICA. The version of SRATools being used remains the same. [commit 68815e3](https://github.com/CDCgov/phoenix/commit/68815e3797c1944dcd0280ee658c79be90b63c0e#diff-cc23f3860dea73e90629539d540e72a7fc7cf9438de0e89eca1cc31a763c7b2b)  
 - srst2 container version stays the same, but added a fix to address issues related to handling grepping  of '(' and ')'. Hosting updated container on quay.io.

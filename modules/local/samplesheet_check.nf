@@ -1,7 +1,8 @@
 process SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 20)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     path samplesheet
@@ -16,7 +17,8 @@ process SAMPLESHEET_CHECK {
     else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}check_samplesheet.py \\
     $samplesheet \\
@@ -25,6 +27,8 @@ process SAMPLESHEET_CHECK {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
+        check_samplesheet.py: \$(${ica}check_samplesheet.py --version )
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
     """

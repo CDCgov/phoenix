@@ -4,16 +4,20 @@ import argparse
 import os
 from datetime import date
 
-## Output check for messages indicating read pairs
-## that do not match
-## Written by Maria Diaz
-## v.1.0.0
+## Output check for messages indicating read pairs that do not match
+## v1.0.0 Written by Maria Diaz edits to v2.0.0 by Jill Hagey
+
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', '--raw_read', dest="raw_read", required=True)
     parser.add_argument('-f', '--summary_file', dest="summary_file", required=True)
     parser.add_argument('-t', '--trimd_read', dest="trimd_read", default=None, required=False)
     parser.add_argument('-b', '--busco', dest="busco", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 ## Compare the GET_RAW_STATS module combined reads output

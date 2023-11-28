@@ -1,10 +1,8 @@
 process SRST2_AR {
     tag "${meta.id}"
     label 'process_medium'
-    //container 'staphb/srst2:0.2.0','quay.io/jvhagey/srst2:0.2.0':
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
-        'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
+    // 0.2.0
+    container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
 
     input:
     tuple val(meta), path(fastq_s), val(fairy_outcome)
@@ -24,9 +22,7 @@ process SRST2_AR {
     "${fairy_outcome[3]}" == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."
 
     script:
-    def args = task.ext.args ?: ""
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def read_s = meta.single_end ? "--input_se ${fastq_s}" : "--input_pe ${fastq_s[0]} ${fastq_s[1]}"
+    // options for running
     if (database_type=="gene") {
         database = "--gene_db ${db}"
     } else if (database_type=="mlst") {
@@ -43,6 +39,11 @@ process SRST2_AR {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    // define variables
+    def args = task.ext.args ?: ""
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def read_s = meta.single_end ? "--input_se ${fastq_s}" : "--input_pe ${fastq_s[0]} ${fastq_s[1]}"
+    def container = task.container.toString() - "quay.io/jvhagey/srst2@"
     """
     #adding python path for running srst2 on terra
     $terra
@@ -63,6 +64,7 @@ process SRST2_AR {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
+        srst2_container: ${container}
         AMR Combined Database: $db
     END_VERSIONS
 

@@ -1,7 +1,8 @@
 process READ_COUNT_CHECK {
     tag "${meta.id}"
     label 'process_medium'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 26)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(raw_read_counts), path(fairy_corrupt_outcome)
@@ -22,7 +23,8 @@ process READ_COUNT_CHECK {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def busco_parameter = busco_val ? "--busco" : ""
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # Output check for messages indicating read pairs that do not match
     ${ica}fairy.py -r ${raw_read_counts} -f ${fairy_corrupt_outcome} ${busco_parameter}
@@ -36,6 +38,8 @@ process READ_COUNT_CHECK {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
+        fairy.py: \$(${ica}fairy.py --version )
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
     """

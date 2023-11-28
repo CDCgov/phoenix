@@ -20,24 +20,21 @@ import sys
 #disable cache usage in the Python so __pycache__ isn't formed. If you don't do this using 'nextflow run cdcgov/phoenix...' a second time will causes and error
 sys.dont_write_bytecode = True
 import os
-#import glob
-#import math
 import copy
 import argparse
 import collections
-#import itertools as it
 #from pathlib import Path
 #import local_MLST_converter
 import xml.dom.minidom as xml
-#import urllib as url
-#import re
 #from urlparse import urlparse # this is for python2 line below is updated package for python3, Python3 needed for terra
 from urllib.parse import urlparse
 #import urllib.request
 from datetime import datetime
 from os import path
-#import subprocess
-#import ssl
+
+# Function to get the script version
+def get_version():
+    return "3.0.0"
 
 def parseArgs(args=None):
 	parser = argparse.ArgumentParser(description='Script to check MLST types for duplicate alleles and implications on final typing')
@@ -45,6 +42,7 @@ def parseArgs(args=None):
 	parser.add_argument('-s', '--srst2', required=False, help='srst2 input file')
 	parser.add_argument('-t', '--taxonomy', required=True, help='Location of taxonomy file to pull right scheme')
 	parser.add_argument('-d', '--mlst_database', required=True, help='Path to mlst db of db/pubmlst/schemes/ format')
+	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
 	return parser.parse_args()
 
 
@@ -559,7 +557,6 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 
 
 def main():
-	print("Parsing MLST file ...")
 	args = parseArgs()
 	profile_lines=[]
 	if args.input is not None:

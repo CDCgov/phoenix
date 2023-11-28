@@ -1,7 +1,8 @@
 process GET_TRIMD_STATS {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 30)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(fastp_trimd_json),
@@ -26,7 +27,8 @@ process GET_TRIMD_STATS {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def busco_parameter = busco_val ? "--busco" : ""
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}FastP_QC.py \\
       --trimmed_json ${fastp_trimd_json} \\
@@ -44,6 +46,9 @@ process GET_TRIMD_STATS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
+        fairy.py: \$( ${ica}fairy.py --version )
+        FastP_QC.py: \$(${ica}FastP_QC.py --version )
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
     """

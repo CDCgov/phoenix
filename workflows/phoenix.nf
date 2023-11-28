@@ -210,7 +210,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Combine bbmap log with the fairy outcome file
         scaffold_check_ch = BBMAP_REFORMAT.out.log.map{meta, log                -> [[id:meta.id], log]}\
-        .join(GET_RAW_STATS.out.outcome_to_edit.map{   meta, outcome_to_edit    -> [[id:meta.id], outcome_to_edit]},    by: [0])\
+        .join(GET_TRIMD_STATS.out.outcome_to_edit.map{   meta, outcome_to_edit  -> [[id:meta.id], outcome_to_edit]},    by: [0])\
         .join(GET_RAW_STATS.out.combined_raw_stats.map{meta, combined_raw_stats -> [[id:meta.id], combined_raw_stats]}, by: [0])\
         .join(GET_TRIMD_STATS.out.fastp_total_qc.map{  meta, fastp_total_qc     -> [[id:meta.id], fastp_total_qc]},     by: [0])\
         .join(KRAKEN2_TRIMD.out.report.map{            meta, report             -> [[id:meta.id], report]},             by: [0])\
@@ -379,8 +379,6 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        //first check if FORMAT_ANI.out.ani_best_hit is empty
-        //ani_best_hit_ch = FORMAT_ANI.out.ani_best_hit.ifEmpty()
         line_summary_ch = GET_TRIMD_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
         .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
@@ -395,7 +393,7 @@ workflow PHOENIX_EXTERNAL {
         .join(FORMAT_ANI.out.ani_best_hit.map{                           meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
 
         // Generate summary per sample that passed SPAdes
-        CREATE_SUMMARY_LINE(
+        CREATE_SUMMARY_LINE (
             line_summary_ch
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
@@ -418,13 +416,6 @@ workflow PHOENIX_EXTERNAL {
         .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] ))\
         .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
         .ifEmpty( [] )
-        /*/ collect the failed fairy summary lines
-        fairy_corrupt_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )
-        fairy_raw_summary_ch = GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] )
-        fairy_trimd_summary_ch = GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] )
-        fairy_scaff_summary_ch = SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] )
-        //add all fairy channels together
-        fairy_summary_ch = fairy_corrupt_summary_ch.combine(fairy_raw_summary_ch).combine(fairy_trimd_summary_ch).combine(fairy_scaff_summary_ch)*/
 
         // pulling it all together
         all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)

@@ -1,9 +1,8 @@
-def VERSION = '1.2' // Version information not provided by tool on CLI
-
 process KRAKENTOOLS_MAKEKREPORT {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 23)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(kraken_output), path(kraken2db_path)
@@ -20,7 +19,9 @@ process KRAKENTOOLS_MAKEKREPORT {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def krakentools_version = "1.2"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}make_kreport.py \\
         --input ${kraken_output} \\
@@ -31,7 +32,8 @@ process KRAKENTOOLS_MAKEKREPORT {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        krakentools_makekreport: $VERSION
+        krakentools: ${krakentools_version}
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
     """

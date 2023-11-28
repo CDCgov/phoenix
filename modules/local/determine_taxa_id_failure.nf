@@ -1,7 +1,8 @@
 process DETERMINE_TAXA_ID_FAILURE {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 26)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(k2_bh_summary), val(spades_outcome)
@@ -22,15 +23,20 @@ process DETERMINE_TAXA_ID_FAILURE {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}determine_taxID.sh -r $k2_bh_summary -s $meta.id -d $nodes_file -m $names_file
 
+    script_version=\$(${ica}determine_taxID.sh -V)
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        NCBI Taxonomy Nodes Reference File: $nodes_file
-        NCBI Taxonomy Names Reference File: $names_file
+        NCBI_Taxonomy_Nodes_Reference_File: $nodes_file
+        NCBI_Taxonomy_Names_Reference_File: $names_file
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
+        \${script_version}
     END_VERSIONS
     """
 }

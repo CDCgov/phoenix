@@ -1,7 +1,8 @@
 process GENERATE_PIPELINE_STATS {
     tag "${meta.id}"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 50)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(raw_qc), \
@@ -46,7 +47,8 @@ process GENERATE_PIPELINE_STATS {
     def k2_trim_report  = kraken2_trimd_report ? "-e $kraken2_trimd_report" : ""
     def k2_trim_summary = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
     def krona_trim      = krona_trimd ? "-g $krona_trimd" : ""
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}pipeline_stats_writer.sh \\
         $raw \\
@@ -77,6 +79,7 @@ process GENERATE_PIPELINE_STATS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
         \${script_version}
     END_VERSIONS

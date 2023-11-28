@@ -9,12 +9,12 @@ from re import search
 from itertools import chain
 
 ##Makes a summary tsv file when given a series of griphin tsv files
-##Usage: >python Terra_combine_griphin_tsv.py -o Output_Report.tsv
+##Usage: >python terra_combine_griphin_tsv.py -o Output_Report.tsv
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
 def get_version():
-    return "v1.0.0"
+    return "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a combined GRiPHin summary excel sheet')

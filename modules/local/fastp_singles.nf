@@ -1,7 +1,8 @@
 process FASTP_SINGLES {
     tag "$meta.id"
     label 'process_low'
-    container 'staphb/fastp:0.23.2'
+    // v0.23.4
+    container 'staphb/fastp@sha256:98bb2bb94bbce4104f7fbbdba72c33c827f5add7cf08cc59fd365c6d82ee4014'
 
     input:
     tuple val(meta), path(reads)
@@ -25,6 +26,7 @@ process FASTP_SINGLES {
     // define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "staphb/fastp@"
     """
     echo "Debugging: Emptiness of reads[0] and reads[1]" > debug_status.log
     if [[ ! -s ${reads[0]} ]] && [[ ! -s ${reads[1]} ]]; then
@@ -72,6 +74,7 @@ process FASTP_SINGLES {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         fastp: \$(fastp --version 2>&1 | sed -e "s/fastp //g")
+        fastp_container: ${container}
         \${script_version}
     END_VERSIONS
     """

@@ -173,7 +173,7 @@ else
 fi
 
 if [[ "${show_version}" = "True" ]]; then
-  echo "pipeline_stats_writer: ${version}"
+  echo "pipeline_stats_writer.sh: ${version}"
   exit
 fi
 

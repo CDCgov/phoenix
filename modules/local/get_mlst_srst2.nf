@@ -1,7 +1,8 @@
 process GET_MLST_SRST2 {
     tag "${meta.id}"
     label 'process_low'
-    container "quay.io/biocontainers/python:2.7--1"
+    // 2.7--1
+    container "quay.io/biocontainers/python@sha256:bf7656f00f9392b3bd8785571a088cdb7c933cae5716fc468471cf592eb5f128"
 
     input:
     tuple val(meta),  path(taxonomy), val(status), path(local_mlst_db)
@@ -26,7 +27,7 @@ process GET_MLST_SRST2 {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = task.container.toString() - "quay.io/biocontainers/python:"
+    def container_version = task.container.toString() - "quay.io/biocontainers/python@"
     """
     if [[ "${status[0]}" == "False" ]]; then
         genus="empty"
@@ -99,7 +100,9 @@ process GET_MLST_SRST2 {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: ${container_version}
+        local_MLST_converter.py: \$(${ica}local_MLST_converter.py --version )
+        python: \$(python --version | sed 's/Python //g')
+        python_container: ${container_version}
     END_VERSIONS
     """
 }

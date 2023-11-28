@@ -364,7 +364,7 @@ workflow SCAFFOLDS_EXQC {
         .join(FORMAT_ANI.out.ani_best_hit.map{                           meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
 
         // Generate summary per sample that passed SPAdes
-        CREATE_SUMMARY_LINE(
+        CREATE_SUMMARY_LINE (
             line_summary_ch
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)

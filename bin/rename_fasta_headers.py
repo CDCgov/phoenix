@@ -20,12 +20,17 @@ import os
 import argparse
 import re
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
 	parser = argparse.ArgumentParser(description='Script to rename contigs in assemblies')
 	parser.add_argument('-i', '--input', required=True, help='input fasta filename')
 	parser.add_argument('-o', '--output', required=True, help='output filename')
 	parser.add_argument('-n', '--name', dest="name", required=True, help='filename')
 	parser.add_argument('--reverse', help='returns formatted header to original', action='store_true')
+	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
 	return parser.parse_args()
 
 args=parseArgs()

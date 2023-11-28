@@ -1,7 +1,8 @@
 process FORMAT_ANI {
     tag "$meta.id"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 25)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(ani_file)
@@ -21,7 +22,8 @@ process FORMAT_ANI {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     line=\$(head -n1 ${ani_file})
     if [[ "\${line}" == "Mash/FastANI Error:"* ]]; then
@@ -40,6 +42,7 @@ process FORMAT_ANI {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
         \${script_version}
     END_VERSIONS

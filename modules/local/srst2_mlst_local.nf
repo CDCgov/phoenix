@@ -1,10 +1,8 @@
 process SRST2_MLST {
     tag "${meta.id}"
     label 'process_medium'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
-        'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
+    // 0.2.0
+    container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
 
     input:
     tuple val(meta), path(fastqs), path(getmlstout), path(alleles), path(profiles), val(status)
@@ -22,9 +20,7 @@ process SRST2_MLST {
     (task.ext.when == null || task.ext.when) //&& "${status[0]}" == "False"
 
     script:
-    def args = task.ext.args ?: ""
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
+    // set up terra variables
     if (params.terra==false) {
         terra = ""
         terra_exit = ""
@@ -34,6 +30,11 @@ process SRST2_MLST {
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    // define variables
+    def args = task.ext.args ?: ""
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
+    def container = task.container.toString() - "quay.io/jvhagey/srst2@"
     """
     #adding python path for running srst2 on terra
     $terra
@@ -141,6 +142,7 @@ process SRST2_MLST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
+        srst2_container: ${container}
     END_VERSIONS
 
     #revert python path back to main envs for running on terra

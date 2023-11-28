@@ -1,7 +1,8 @@
 process SRATOOLS_PREFETCH {
     tag "${sra_accession[0]}"
     label 'process_single'
-    container "quay.io/biocontainers/sra-tools:3.0.3--h87f3376_0"
+    // 3.0.3--h87f3376_0
+    container "quay.io/biocontainers/sra-tools@sha256:c9f92683e10091c3ef93066b1fcbdeeba89af49242ab778a9c8cc006f6be82a3"
 
     input:
     val(sra_accession)
@@ -11,6 +12,8 @@ process SRATOOLS_PREFETCH {
     path('versions.yml'), emit: versions
 
     script:
+    //define variables
+    def container = task.container.toString() - "quay.io/biocontainers/sra-tools@"
     """
     # fetch sras
     prefetch --verify yes ${sra_accession[0]}
@@ -21,6 +24,7 @@ process SRATOOLS_PREFETCH {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         sratools: \$(prefetch --version 2>&1 | sed 's/prefetch : //' | awk 'NF')
+        sratools_container: ${container}
     END_VERSIONS
     """
 }

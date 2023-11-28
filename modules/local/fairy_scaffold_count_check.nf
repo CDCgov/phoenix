@@ -1,7 +1,8 @@
 process SCAFFOLD_COUNT_CHECK {
     tag "${meta.id}"
     label 'process_medium'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 50)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(bbmap_log), path(fairy_read_count_outcome),
@@ -28,7 +29,7 @@ process SCAFFOLD_COUNT_CHECK {
     else { error "Please set params.terra to either \"true\" or \"false\"" }
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { 
-        ica_python = "" 
+        ica_python = ""
         ica_bash = ""
     } else if (params.ica==true) { 
         ica_python = "python ${workflow.launchDir}/bin/" 
@@ -46,7 +47,8 @@ process SCAFFOLD_COUNT_CHECK {
     def kraken2_trimd_report = kraken2_trimd_report_file ? "-e $kraken2_trimd_report_file" : ""
     def krona_trimd = krona_trimd_file ? "-g $krona_trimd_file" : ""
     def extended_qc_arg = extended_qc ? "--extended_qc" : ""
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     #checking that the output contains scaffolds still:
     if grep "Output:                 	0 reads (0.00%) 	0 bases (0.00%)" ${bbmap_log}; then
@@ -98,17 +100,19 @@ process SCAFFOLD_COUNT_CHECK {
         cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
     fi
 
+    #gettings script versions
     dettaxid_version=\$(${ica_bash}determine_taxID.sh -V)
     pipestats_version=\$(${ica_bash}pipeline_stats_writer.sh -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
         \${dettaxid_version}
         \${pipestats_version}
-        # hold for Phoenix_summary_line.py version output
-        # hold for edit_line_summary.py version output
+        Phoenix_summary_line.py: \$(${ica_python}Phoenix_summary_line.py --version )
+        edit_line_summary.py: \$(${ica_python}edit_line_summary.py --version )
     END_VERSIONS
     """
 }

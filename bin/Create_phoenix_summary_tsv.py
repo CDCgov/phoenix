@@ -11,10 +11,15 @@ import argparse
 ##Usage: >python Phoenix_Summary_tsv_06-10-22.py -o Output_Report.tsv 
 ## Written by Rich Stanton (njr5@cdc.gov), updates by Jill Hagey (qpk9@cdc.gov)
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet')
     parser.add_argument('-o', '--out', dest='output_file', required=True, help='output file name')
     parser.add_argument('-b', '--busco', action='store_true', help='parameter to know if busco was run')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
 

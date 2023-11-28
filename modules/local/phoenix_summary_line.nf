@@ -1,7 +1,8 @@
 process CREATE_SUMMARY_LINE {
     tag "${meta.id}"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 36)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(trimmed_qc_data_file), \
@@ -32,7 +33,8 @@ process CREATE_SUMMARY_LINE {
     def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
     def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
     def fastani_file    = fastani ? "-f $fastani" : ""
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}Phoenix_summary_line.py \\
         -q $quast_report \\
@@ -52,6 +54,9 @@ process CREATE_SUMMARY_LINE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+        Phoenix_summary_line.py: \$(${ica}Phoenix_summary_line.py --version )
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
     """

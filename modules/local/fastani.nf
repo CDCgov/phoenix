@@ -1,11 +1,8 @@
 process FASTANI {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/fastani:1.33'
-    //stageInMode "copy"
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/fastani:1.33--h0fdf51a_0' :
-        'quay.io/biocontainers/fastani:1.33--h0fdf51a_0' }"*/
+    // v1.34
+    container 'staphb/fastani@sha256:d2c1bf7f1792c7d371904e8744f1a974535f0814d29212b254411e78c1436f59'
 
     input:
     tuple val(meta), path(query), path(reference), path(reference_dir)
@@ -20,6 +17,7 @@ process FASTANI {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "staphb/fastani@"
     """
     line=\$(head -n1 ${reference})
     if [[ "\${line}" = "No MASH hit found" ]]; then
@@ -46,6 +44,7 @@ process FASTANI {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         fastani: \$(fastANI --version 2>&1 | sed 's/version//;')
+        fastani_container: ${container}
     END_VERSIONS
     """
 }

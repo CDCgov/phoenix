@@ -64,12 +64,12 @@ gzip -t $fname 2>> ${prefix}.txt
 
 full_name=$(basename "${fname}" .fastq.gz)
 #meta_id=$(basename "${fname}" .fastq.gz | cut -f1 -d"_")
-#get read number 
-read=$(echo "${full_name}" | grep -oP "R[1-2]{1}" | cut -f2 -d"_")
+#get read number - if SRR in name remove that as it will conflict with getting R1/R2 from string.
+read=$(echo "${full_name}" | sed -e 's/SRR//' | grep -oP "R[1-2]{1}" | cut -f2 -d"_")
 #if the above line didn't capture the read number try some other options
 if [ -z "$read" ]
 then
-	read=$(echo "${full_name}" | grep -oP "R[1-2](1)" | cut -f2 -d"_")
+	read=$(echo "${full_name}" | sed -e 's/SRR//' | grep -oP "R[1-2](1)" | cut -f2 -d"_")
 fi
 
 if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
@@ -156,4 +156,5 @@ if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
 	echo "ALERT: something to note, does not mean it is a poor-quality assembly."  >> "${sample_name}.synopsis"
 else
 	echo "PASSED: File ${prefix}_${read} is not corrupt." >> ${prefix}_summary.txt
+	echo "PASSED: File ${prefix}_${read} is not corrupt."
 fi

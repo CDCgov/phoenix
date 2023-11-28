@@ -1,7 +1,8 @@
 process SPADES {
     tag "$meta.id"
     label 'process_high_memory'
-    container 'staphb/spades:3.15.5'
+    // v3.15.5
+    container 'staphb/spades@sha256:b33f57d65cb63d631c6e3ba9b2a1c5a11ff4351475f38a1108ec61a5bf430077'
 
     input:
     tuple val(meta), path(reads), path(unpaired_reads), path(k2_bh_summary), \
@@ -35,6 +36,7 @@ process SPADES {
     def single_reads = "-s $unpaired_reads"
     def phred_offset = params.phred
     def extended_qc_arg = extended_qc ? "-c" : ""
+    def container = task.container.toString() - "staphb/spades@"
     """
     # preemptively create _summary_line.csv and .synopsis file in case spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
     ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
@@ -46,6 +48,7 @@ process SPADES {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
+        spades_container: ${container}
         \${bspades_version}
         \${aspades_version}
         \${pipestats_version}

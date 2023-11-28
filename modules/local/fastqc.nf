@@ -1,9 +1,8 @@
 process FASTQC {
     tag "${meta.id}"
     label 'process_medium'
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/fastqc:0.11.9--0' :
-        'quay.io/biocontainers/fastqc:0.11.9--0' }"
+    // v0.12.1
+    container 'staphb/fastqc@sha256:f5d8f72753269e0cee071fe198c89a59a1f8071445739b3398f7818f7cb039ae'
 
     input:
     tuple val(meta), path(reads), val(fairy_outcome)
@@ -19,6 +18,7 @@ process FASTQC {
 
     script:
     def args = task.ext.args ?: ''
+    def container = task.container.toString() - "staphb/fastqc@"
     // Add soft-links to original FastQs for consistent naming in pipeline
     def prefix = task.ext.prefix ?: "${meta.id}"
     if (meta.single_end) {
@@ -40,6 +40,7 @@ process FASTQC {
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             fastqc: \$( fastqc --version | sed -e "s/FastQC v//g" )
+            fastqc_container: ${container}
         END_VERSIONS
         """
     }

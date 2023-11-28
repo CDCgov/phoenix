@@ -7,9 +7,14 @@ import argparse
 ##Usage: >python edit_line_summary.py -i phoenix_summaryline.tsv
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Edits a PhoeNix summary line for samples that fail the scaffold count check.')
     parser.add_argument('-i', '--input', dest="file", required=False, help='PhoeNix summary line')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 def edit_line(file):

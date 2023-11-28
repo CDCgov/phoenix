@@ -15,10 +15,15 @@ import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
 from Bio import SeqIO
+from itertools import chain
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
 ## Written by Jill Hagey (qpk9@cdc.gov)
+
+# Function to get the script version
+def get_version():
+    return "2.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
@@ -30,6 +35,7 @@ def parseArgs(args=None):
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
     parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX, which is the default.')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen
@@ -238,7 +244,9 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
     alerts = ', '.join(alerts)
     return alerts
 
-def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning):
+def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
+                     assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,\
+                     MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage):
     """
     <1,000,000 total reads for each raw and trimmed reads - Total_Sequenced_reads
     % raw and trimmed reads with Q30 average for R1 (<90%) and R2 (<70%) - Q30_R1_percent, Q30_R2_percent
@@ -270,18 +278,18 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
     if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
         # sample_gc > (species_gc_mean + out_of_range_stdev)
         if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
-            warnings.append("GC% >2.58 stdev away from mean GC of {:.2f}%".format(float(gc_metrics[3])))
+            warnings.append("GC% >2.58 stdev away from mean GC of {:.2f}%.".format(float(gc_metrics[3])))
     if scaffolds != "Unknown" and Wt_asmbld_unclassified_percent != "Unknown" and Asmbld_Genus_percent != "Unknown":
         if int(scaffolds) > int(200) and int(scaffolds) < int(500): # between 200-500 
             warnings.append("High scaffold count 200-500 ({}).".format(int(scaffolds)))
         if float(Wt_asmbld_unclassified_percent) > float(30.00):
-            warnings.append(">{:.2f}% unclassifed scaffolds".format(int(30)))
+            warnings.append(">{:.2f}% unclassifed weighted scaffolds.".format(int(30)))
         if float(Asmbld_Genus_percent) <float(70.00):
             warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     elif scaffolds == "Unknown" and Wt_asmbld_unclassified_percent == "Unknown" and Asmbld_Genus_percent == "Unknown":
         warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
-        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
+        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them.".format(int(25))) 
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
         if genus == "Enterobacter" and MLST_scheme_1 == "ecloacae":
             pass
@@ -308,6 +316,14 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
             pass
         else:
             warnings.append("Check 2nd MLST scheme matches taxa IDed.")
+    if FastANI_ID != "Unknown":
+        if float(FastANI_ID) < float(95.00):
+            warnings.append("FastANI match is <95%.")
+        if float(FastANI_coverage) < float(90.00):
+            warnings.append("FastANI coverage is <90%.")
+    if busco_id != "Unknown":
+        if float(busco_id) < float(97.00):
+            warnings.append("BUSCO match is <97%.")
     #add in fastani warning
     warnings.append(fastani_warning)
     warnings = ', '.join(warnings).strip(", ")
@@ -803,7 +819,10 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         print("Warning: " + sample_name + "_combined.tsv not found")
         MLST_scheme_1 = MLST_scheme_2 = MLST_type_1 = MLST_type_2 = MLST_alleles_1 = MLST_alleles_2 = MLST_source_1 = MLST_source_2 = 'Unknown'
     try:
-        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent, Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning)
+        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
+                                    Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent,\
+                                    kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess,\
+                                    genus, fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2])
     except:
         warnings = ""
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
@@ -1006,12 +1025,21 @@ def add_srst2(ar_df, srst2_ar_df):
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\((.*)\).*').values.tolist() # get all ar drug names form column names
     sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
-    #sorted_drug_names = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))[1:])
+    # create list to add to
+    all_column_names = []
     # loop over each gene with the same drug its name
     for drug in sorted_drug_names:
         drug = "(" + drug + ")"
         column_list = sorted([col for col in ar_combined_df.columns if drug in col]) # get column names filtered for each drug name
         ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[column_list]], axis=1, sort=False) # setting column's order by combining dataframes
+        all_column_names.append(column_list)
+    # unnest list
+    all_column_names = list(chain(*all_column_names))
+    #add back AR_DB and WGS_ID to front of list
+    all_column_names.insert(0, "WGS_ID")
+    all_column_names.insert(0, "AR_Database")
+    # reorder columns - should be alphabetical by drug name and within drug name genes are alphabetically listed
+    ar_combined_ordered_df = ar_combined_ordered_df.reindex(all_column_names, axis=1)
     return ar_combined_ordered_df
 
 def big5_check(final_ar_df):
@@ -1172,7 +1200,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     orange_format = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': True})
     orange_format.set_border(1) # add back border so it matches the rest of the column names
     orange_format_nb = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': False})
-    # Apply a conditional format for checking coverage is between 40-100 in estimated coverage column. adding 2 to max row to account for headers
+    # Apply a conditional format for checking coverage is between set_coverage-100 in estimated coverage column. adding 2 to max row to account for headers
     worksheet.conditional_format('M3:M' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  str(set_coverage), 'format': yellow_format})
     worksheet.conditional_format('M3:M' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.

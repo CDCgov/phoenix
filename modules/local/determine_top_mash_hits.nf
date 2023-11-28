@@ -1,7 +1,8 @@
 process DETERMINE_TOP_MASH_HITS {
     tag "$meta.id"
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.1.0 - MUST manually change below (line 31)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(mash_dists), path(assembly_scaffolds), val(fairy_outcome)
@@ -27,7 +28,8 @@ process DETERMINE_TOP_MASH_HITS {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def sample_name = "${mash_dists}" - ".txt" //get full sample name with REFSEQ_DATE
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     mkdir reference_dir
 
@@ -41,7 +43,8 @@ process DETERMINE_TOP_MASH_HITS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        Date of RefSeq Pull: \$(date +"%d-%m-%y")
+        Date_of_RefSeq_Pull: \$(date +"%Y-%m-%d")
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
         \${script_version}
     END_VERSIONS

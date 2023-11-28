@@ -1,7 +1,8 @@
 process PROKKA {
     tag "$meta.id"
     label 'process_high'
-    container 'staphb/prokka:1.14.5'
+    // 1.14.5
+    container 'staphb/prokka@sha256:4ef8e13b87f6ba1bc79f599970ec25c60a80913ab0bc15c90171c9743e86994f'
 
     input:
     tuple val(meta), path(fasta), val(fairy_outcome)
@@ -32,6 +33,7 @@ process PROKKA {
     prefix   = task.ext.prefix ?: "${meta.id}"
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prodigal_opt = prodigal_tf ? "--prodigaltf ${prodigal_tf[0]}" : ""
+    def container = task.container.toString() - "staphb/prokka@"
     """
     # Main output unzipped formatted fasta headers lines
     FNAME=\$(basename ${fasta} .gz)
@@ -67,6 +69,7 @@ process PROKKA {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         prokka: \$(echo \$(prokka --version 2>&1) | sed 's/^.*prokka //')
+        prokka_container: ${container}
     END_VERSIONS
     """
 }

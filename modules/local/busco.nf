@@ -1,8 +1,8 @@
 process BUSCO {
     tag "$meta.id"
     label 'process_high'
-    //container "ezlabgva/busco:v5.4.0_dev_cv1"
-    container 'quay.io/biocontainers/busco:5.4.7--pyhdfd78af_0'
+    // 5.4.7--pyhdfd78af_0
+    container 'quay.io/biocontainers/busco@sha256:f5ef1f64076deb66ed015d0b6692619610eb1de22f0a9741bbf0ea8434d06404'
 
     input:
     tuple val(meta), path('tmp_input/*'), path(busco_lineages_path), // path to busco lineages - downloads if not set
@@ -28,6 +28,7 @@ process BUSCO {
     def busco_config = config_file ? "--config $config_file" : ''
     def busco_lineage = lineage.equals('auto') ? '--auto-lineage' : "--lineage_dataset ${lineage}"
     def busco_lineage_dir = busco_lineages_path ? "--offline --download_path ${busco_lineages_path}" : ''
+    def container = task.container.toString() - "quay.io/biocontainers/busco@"
     if (params.terra==false) {
         terra = ""
         terra_exit = ""
@@ -90,6 +91,7 @@ process BUSCO {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         busco: \$( busco --version 2>&1 | sed 's/^BUSCO //' )
+        busco_container: ${container}
     END_VERSIONS
 
     #revert python path back to main envs for running on terra
