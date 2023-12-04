@@ -19,17 +19,17 @@ task combine_phoenix_run {
 
     # create file name - has to be wdl var NOT bash as this will be and output
     if [ ! -z "~{combined_phoenix_tsv_prefix}" ]; then
-      String combined_phoenix_tsv_summary_name = ~{combined_phoenix_tsv_prefix} + "_Phoenix_Summary.tsv"
+      String combined_phoenix_tsv_summary_name = "~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
     else
       String combined_phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
     fi
     if [ ! -z "~{combined_griphin_xlsx_prefix}" ]; then
-      String combined_griphin_xlsx_summary_name = ~{combined_griphin_xlsx_prefix} + "_GRiPHin_Summary.xlsx"
+      String combined_griphin_xlsx_summary_name = "~{combined_griphin_xlsx_prefix}_GRiPHin_Summary.xlsx"
     else
       String combined_griphin_xlsx_summary_name = "GRiPHin_Summary.xlsx"
     fi
     if [ ! -z "~{combined_griphin_tsv_prefix}" ]; then
-      String combined_griphin_tsv_summary_name = ~{combined_griphin_tsv_prefix} + "_GRiPHin_Summary.tsv"
+      String combined_griphin_tsv_summary_name = "~{combined_griphin_tsv_prefix}_GRiPHin_Summary.tsv"
     else
       String combined_griphin_tsv_summary_name = "GRiPHin_Summary.tsv"
     fi
