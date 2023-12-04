@@ -20,6 +20,7 @@ task combine_phoenix_run {
     #if phoenix tsv files were passed then combine them
     busco_array=()
     if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ]; then
+      echo "Combining and creating ~{combined_phoenix_tsv_summary_name}"
       COUNTER=1
       PHX_ARRAY=(~{sep=',' phoenix_tsv_summaries})
       for i in ${PHX_ARRAY//,/ }; do
@@ -60,6 +61,7 @@ task combine_phoenix_run {
 
     #if griphin xlsx files were passed then combine them
     if [ ! -z "~{sep=',' griphin_xlsx_summaries}" ]; then
+      echo "Combining and creating ~{combined_griphin_xlsx_summary_name}"
       COUNTER=1
       GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
       for i in ${GRIPHIN_ARRAY//,/ }; do
@@ -72,7 +74,7 @@ task combine_phoenix_run {
       python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{combined_griphin_xlsx_summary_name}
 
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
-      if [ ! -s "~{combined_griphin_xlsx_summary_name}" ] && [ ! -f "~{combined_griphin_xlsx_summary_name}" ]; then
+      if [ ! -s "~{combined_griphin_xlsx_summary_name}" ]; then
         echo "ERROR: GRiPHin excel files were passed, but no combination file was made."
         ls
         exit 1
@@ -85,6 +87,7 @@ task combine_phoenix_run {
     #if griphin tsv files were passed then combine them
     busco_gripin_array=()
     if [ ! -z "~{sep=',' griphin_tsv_summaries}" ]; then
+      echo "Combining and creating ~{combined_griphin_tsv_summary_name}"
       COUNTER=1
       GRIPHIN_ARRAY_TSV=(~{sep=',' griphin_tsv_summaries})
       for i in ${GRIPHIN_ARRAY_TSV//,/ }; do
@@ -97,7 +100,7 @@ task combine_phoenix_run {
       python3 ./$VERSION/bin/terra_combine_griphin_tsv.py --out ~{combined_griphin_tsv_summary_name}
 
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
-      if [ ! -s "~{combined_griphin_tsv_summary_name}" ] && [ ! -f "~{combined_griphin_tsv_summary_name}" ]; then
+      if [ ! -s "~{combined_griphin_tsv_summary_name}" ]; then
         echo "ERROR: GRiPHin tsv files were passed, but no combination file was made."
         ls
         exit 1
@@ -107,13 +110,13 @@ task combine_phoenix_run {
       echo "WARNING: No GRiPHin_Summary.tsv files provided skipping GRiPHin_Summary.tsv combining step."
     fi
 
+  # series of checks to finish up
   #check at least one file type was passed, if not then fail.
   if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ] && [ ! -z "~{sep=',' griphin_xlsx_summaries}" ] && [ ! -z "~{sep=',' griphin_tsv_summaries}" ]; then
     echo "ERROR: No summary files were passed, please pick an array of files to combine."
     exit 1
-  fi
   #check that something was made. If no files were created fail to let to user know
-  if [ ! -s "~{combined_phoenix_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_xlsx_summary_name}" ]; then
+  elif [ ! -s "~{combined_phoenix_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_xlsx_summary_name}" ]; then
     echo "ERROR: No summary files were created something went wrong."
     ls
     exit 1
