@@ -17,19 +17,19 @@ task combine_phoenix_run {
     #download phoenix code to get the script from
     nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
 
-    # create file name - has to be wdl var NOT bash as this will be and output
+    # create file name depending on the user picked prefix
     if [ ! -z "~{combined_phoenix_tsv_prefix}" ]; then
-      combined_phoenix_tsv_summary_name="~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
+      combined_phoenix_tsv_summary_name="~{combined_phoenix_tsv_prefix}"
     else
       combined_phoenix_tsv_summary_name="Phoenix_Summary.tsv"
     fi
     if [ ! -z "~{combined_griphin_xlsx_prefix}" ]; then
-      combined_griphin_xlsx_summary_name="~{combined_griphin_xlsx_prefix}_GRiPHin_Summary.xlsx"
+      combined_griphin_xlsx_summary_name="~{combined_griphin_xlsx_prefix}"
     else
       combined_griphin_xlsx_summary_name="GRiPHin_Summary.xlsx"
     fi
     if [ ! -z "~{combined_griphin_tsv_prefix}" ]; then
-      combined_griphin_tsv_summary_name="~{combined_griphin_tsv_prefix}_GRiPHin_Summary.tsv"
+      combined_griphin_tsv_summary_name="~{combined_griphin_tsv_prefix}"
     else
       combined_griphin_tsv_summary_name="GRiPHin_Summary.tsv"
     fi
