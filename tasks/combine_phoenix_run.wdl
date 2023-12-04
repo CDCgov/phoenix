@@ -37,7 +37,7 @@ task combine_phoenix_run {
     #if phoenix tsv files were passed then combine them
     busco_array=()
     if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ]; then
-      echo "Combining and creating ~{combined_phoenix_tsv_summary_name}"
+      echo "Combining and creating ${combined_phoenix_tsv_summary_name}"
       COUNTER=1
       PHX_ARRAY=(~{sep=',' phoenix_tsv_summaries})
       for i in ${PHX_ARRAY//,/ }; do
@@ -59,16 +59,16 @@ task combine_phoenix_run {
         if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
           echo "Phoenix_Summary.tsv files passed check for the same entry point. Starting to combine files."
           # here the variable cdc_phoenix is the same as the busco argument
-          python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ~{combined_phoenix_tsv_summary_name} $cdc_phoenix
+          python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py --out ${combined_phoenix_tsv_summary_name} $cdc_phoenix
         else
           echo "ERROR: Phoenix_Summary.tsv files are a mix of CDC_PHOENIX and PHOENIX outputs and they need to be the same."
           exit 1
         fi
 
       #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
-      if [ "$(wc -l <~{combined_phoenix_tsv_summary_name})" -eq 1 ]; then
+      if [ "$(wc -l <${combined_phoenix_tsv_summary_name})" -eq 1 ]; then
         echo "ERROR: Phoenix_Summary.tsv only contains a single line. Combination failed."
-        rm -r ~{combined_phoenix_tsv_summary_name}
+        rm -r ${combined_phoenix_tsv_summary_name}
         exit 1
       fi
     # if array is empty
@@ -78,7 +78,7 @@ task combine_phoenix_run {
 
     #if griphin xlsx files were passed then combine them
     if [ ! -z "~{sep=',' griphin_xlsx_summaries}" ]; then
-      echo "Combining and creating ~{combined_griphin_xlsx_summary_name}"
+      echo "Combining and creating ${combined_griphin_xlsx_summary_name}"
       COUNTER=1
       GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
       for i in ${GRIPHIN_ARRAY//,/ }; do
@@ -88,10 +88,10 @@ task combine_phoenix_run {
       done
 
       ## combine griphin summaries. In the script it determines if phx or cdc_phx was run.
-      python3 ./$VERSION/bin/terra_combine_griphin.py --out ~{combined_griphin_xlsx_summary_name}
+      python3 ./$VERSION/bin/terra_combine_griphin.py --out ${combined_griphin_xlsx_summary_name}
 
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
-      if [ ! -s "~{combined_griphin_xlsx_summary_name}" ]; then
+      if [ ! -s "${combined_griphin_xlsx_summary_name}" ]; then
         echo "ERROR: GRiPHin excel files were passed, but no combination file was made."
         ls
         exit 1
@@ -104,7 +104,7 @@ task combine_phoenix_run {
     #if griphin tsv files were passed then combine them
     busco_gripin_array=()
     if [ ! -z "~{sep=',' griphin_tsv_summaries}" ]; then
-      echo "Combining and creating ~{combined_griphin_tsv_summary_name}"
+      echo "Combining and creating ${combined_griphin_tsv_summary_name}"
       COUNTER=1
       GRIPHIN_ARRAY_TSV=(~{sep=',' griphin_tsv_summaries})
       for i in ${GRIPHIN_ARRAY_TSV//,/ }; do
@@ -114,10 +114,10 @@ task combine_phoenix_run {
       done
 
       ## combine griphin reports. In the script it determines if phx or cdc_phx was run.
-      python3 ./$VERSION/bin/terra_combine_griphin_tsv.py --out ~{combined_griphin_tsv_summary_name}
+      python3 ./$VERSION/bin/terra_combine_griphin_tsv.py --out ${combined_griphin_tsv_summary_name}
 
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
-      if [ ! -s "~{combined_griphin_tsv_summary_name}" ]; then
+      if [ ! -s "${combined_griphin_tsv_summary_name}" ]; then
         echo "ERROR: GRiPHin tsv files were passed, but no combination file was made."
         ls
         exit 1
@@ -133,7 +133,7 @@ task combine_phoenix_run {
     echo "ERROR: No summary files were passed, please pick an array of files to combine."
     exit 1
   #check that something was made. If no files were created fail to let to user know
-  elif [ ! -s "~{combined_phoenix_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_xlsx_summary_name}" ]; then
+  elif [ ! -s "${combined_phoenix_tsv_summary_name}" ] && [ ! -s "${combined_griphin_tsv_summary_name}" ] && [ ! -s "${combined_griphin_xlsx_summary_name}" ]; then
     echo "ERROR: No summary files were created something went wrong."
     ls
     exit 1
@@ -141,9 +141,9 @@ task combine_phoenix_run {
 
   >>>
   output {
-    File?   phoenix_tsv_summary  = "~{combined_phoenix_tsv_summary_name}"
-    File?   griphin_xlsx_summary = "~{combined_griphin_xlsx_summary_name}"
-    File?   griphin_tsv_summary  = "~{combined_griphin_tsv_summary_name}"
+    File?   phoenix_tsv_summary  = "${combined_phoenix_tsv_summary_name}"
+    File?   griphin_xlsx_summary = "${combined_griphin_xlsx_summary_name}"
+    File?   griphin_tsv_summary  = "${combined_griphin_tsv_summary_name}"
     String  phoenix_version      = read_string("VERSION")
     String  phoenix_docker       = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date        = read_string("DATE")
