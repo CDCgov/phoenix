@@ -5,9 +5,9 @@ task combine_phoenix_run {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
     Array[File]? griphin_tsv_summaries
-    String? combined_phoenix_tsv_summary_name = "Phoenix_Summary.tsv"
-    String? combined_griphin_xlsx_summary_name = "GRiPHin_Summary.xlsx"
-    String? combined_griphin_tsv_summary_name = "GRiPHin_Summary.tsv"
+    String? combined_phoenix_tsv_prefix
+    String? combined_griphin_xlsx_prefix
+    String? combined_griphin_tsv_prefix
   }
   command <<<
     VERSION="v2.1.0-dev"
@@ -16,6 +16,23 @@ task combine_phoenix_run {
 
     #download phoenix code to get the script from
     nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
+
+    # create file name
+    if [ ! -z "~{combined_phoenix_tsv_prefix}" ]; then
+      combined_phoenix_tsv_summary_name="~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
+    else
+      combined_phoenix_tsv_summary_name="Phoenix_Summary.tsv"
+    fi
+    if [ ! -z "~{combined_griphin_xlsx_prefix}" ]; then
+      combined_griphin_xlsx_summary_name="~{combined_griphin_xlsx_prefix}_GRiPHin_Summary.xlsx"
+    else
+      combined_griphin_xlsx_summary_name="GRiPHin_Summary.xlsx"
+    fi
+    if [ ! -z "~{combined_griphin_tsv_prefix}" ]; then
+      combined_griphin_tsv_summary_name="~{combined_griphin_tsv_prefix}_GRiPHin_Summary.tsv"
+    else
+      combined_griphin_tsv_summary_name="GRiPHin_Summary.tsv"
+    fi
 
     #if phoenix tsv files were passed then combine them
     busco_array=()
