@@ -49,7 +49,7 @@ task combine_phoenix_run {
 
       #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
       if [ "$(wc -l <~{combined_phoenix_tsv_summary_name})" -eq 1 ]; then
-        echo "file only contains a single line"
+        echo "ERROR: Phoenix_Summary.tsv only contains a single line. Combination failed."
         rm -r ~{combined_phoenix_tsv_summary_name}
         exit 1
       fi
@@ -74,6 +74,7 @@ task combine_phoenix_run {
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
       if [ ! -s "~{combined_griphin_xlsx_summary_name}" ] && [ ! -f "~{combined_griphin_xlsx_summary_name}" ]; then
         echo "ERROR: GRiPHin excel files were passed, but no combination file was made."
+        ls
         exit 1
       fi
     # if array is empty
@@ -98,12 +99,25 @@ task combine_phoenix_run {
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
       if [ ! -s "~{combined_griphin_tsv_summary_name}" ] && [ ! -f "~{combined_griphin_tsv_summary_name}" ]; then
         echo "ERROR: GRiPHin tsv files were passed, but no combination file was made."
+        ls
         exit 1
       fi
     # if array is empty
     else
       echo "WARNING: No GRiPHin_Summary.tsv files provided skipping GRiPHin_Summary.tsv combining step."
     fi
+
+  #check at least one file type was passed, if not then fail.
+  if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ] && [ ! -z "~{sep=',' griphin_xlsx_summaries}" ] && [ ! -z "~{sep=',' griphin_tsv_summaries}" ]; then
+    echo "ERROR: No summary files were passed, please pick an array of files to combine."
+    exit 1
+  fi
+  #check that something was made. If no files were created fail to let to user know
+  if [ ! -s "~{combined_phoenix_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_tsv_summary_name}" ] && [ ! -s "~{combined_griphin_xlsx_summary_name}" ]; then
+    echo "ERROR: No summary files were created something went wrong."
+    ls
+    exit 1
+  fi
 
   >>>
   output {
