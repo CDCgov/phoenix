@@ -27,7 +27,7 @@ workflow combine_phoenix_output {
     #phoenix summary output
     File?  phoenix_tsv_summary  = combine_phoenix_run.phoenix_tsv_summary
     File?  griphin_xlsx_summary = combine_phoenix_run.griphin_xlsx_summary
-    File  griphin_tsv_summary  = combine_phoenix_run.griphin_tsv_summary
+    File?  griphin_tsv_summary  = combine_phoenix_run.griphin_tsv_summary
     String phoenix_version      = combine_phoenix_run.phoenix_version
     String phoenix_docker       = combine_phoenix_run.phoenix_docker
     String analysis_date        = combine_phoenix_run.analysis_date

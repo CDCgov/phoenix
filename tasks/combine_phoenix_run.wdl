@@ -149,7 +149,7 @@ task combine_phoenix_run {
   output {
     File?   phoenix_tsv_summary  = "~{if defined(combined_phoenix_tsv_prefix) then '~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv' else 'Phoenix_Summary.tsv'}"
     File?   griphin_xlsx_summary = "~{if defined(combined_griphin_xlsx_prefix) then '~{combined_griphin_xlsx_prefix}_GRiPHin_Summary.xlsx' else 'GRiPHin_Summary.xlsx'}"
-    File   griphin_tsv_summary  = "~{if defined(combined_griphin_tsv_prefix) then '~{combined_griphin_tsv_prefix}_GRiPHin_Summary.tsv' else 'GRiPHin_Summary.tsv'}"
+    File?   griphin_tsv_summary  = glob("*GRiPHin_Summary.tsv")[0]
     String  phoenix_version      = read_string("VERSION")
     String  phoenix_docker       = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date        = read_string("DATE")
