@@ -4,6 +4,10 @@ process SRST2_AR {
     // 0.2.0
     container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
 
+    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
+        'quay.io/biocontainers/srst2:0.2.0--py27_2'}"*/
+
     input:
     tuple val(meta), path(fastq_s), val(fairy_outcome)
     val(database_type)
@@ -48,7 +52,7 @@ process SRST2_AR {
     #adding python path for running srst2 on terra
     $terra
 
-    srst2.py \\
+    srst2 \\
         ${read_s} \\
         --threads $task.cpus \\
         --output ${prefix} \\
