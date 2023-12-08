@@ -29,12 +29,26 @@ process PROKKA {
     "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
+    //set up for terra
+    if (params.terra==false) {
+        terra_activate = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra_activate = "micromamba activate prokka"
+        terra_exit = "micromamba deactivate"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
+    //define variables
     def args = task.ext.args   ?: ''
     prefix   = task.ext.prefix ?: "${meta.id}"
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prodigal_opt = prodigal_tf ? "--prodigaltf ${prodigal_tf[0]}" : ""
     def container = task.container.toString() - "staphb/prokka@"
     """
+    #adding python path for running busco on terra
+    $terra_activate
+
     # Main output unzipped formatted fasta headers lines
     FNAME=\$(basename ${fasta} .gz)
     # Original copy of zipped input fasta
@@ -71,5 +85,8 @@ process PROKKA {
         prokka: \$(echo \$(prokka --version 2>&1) | sed 's/^.*prokka //')
         prokka_container: ${container}
     END_VERSIONS
+
+    #revert python path back to main envs for running on terra
+    $terra_exit
     """
 }

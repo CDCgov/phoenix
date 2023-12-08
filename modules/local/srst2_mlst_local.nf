@@ -22,11 +22,13 @@ process SRST2_MLST {
     script:
     // set up terra variables
     if (params.terra==false) {
-        terra = ""
+        terra_activate = ""
         terra_exit = ""
     } else if (params.terra==true) {
-        terra = "export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/"
-        terra_exit = "export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/"
+        terra_1 = "export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/"
+        terra_exit_1 = "export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/"
+        terra_activate = "micromamba activate srst2"
+        terra_exit = "micromamba deactivate"
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
@@ -37,7 +39,7 @@ process SRST2_MLST {
     def container = task.container.toString() - "quay.io/jvhagey/srst2@"
     """
     #adding python path for running srst2 on terra
-    $terra
+    $terra_activate
 
     echo "STATUS-IN: ${status[0]}"
     srst2_ran="False"

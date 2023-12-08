@@ -22,6 +22,15 @@ process AMRFINDERPLUS_RUN {
     if ( "${organism_param[0]}" != "No Match Found") {
         organism = "--organism ${organism_param[0]}"
     } else { organism = "" }
+    if (params.terra==false) {
+        terra_activate = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra_activate = "micromamba activate amrfinderplus"
+        terra_exit = "micromamba deactivate"
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     // define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -29,6 +38,9 @@ process AMRFINDERPLUS_RUN {
     //get name of amrfinder database file
     db_name = db.toString() - '.tar.gz'
     """
+    #adding python path for running srst2 on terra
+    $terra_activate
+
     if [[ $nuc_fasta = *.gz ]]; then
         NUC_FNAME=\$(basename ${nuc_fasta} .gz)
         gzip -c -d $nuc_fasta > \$NUC_FNAME
@@ -58,5 +70,8 @@ process AMRFINDERPLUS_RUN {
         amrfinderplus_db_version: \$(head $db_name/version.txt)
         amrfinderplus_container: ${container} 
     END_VERSIONS
+
+    #revert python path back to main envs for running on terra
+    $terra_exit
     """
 }
