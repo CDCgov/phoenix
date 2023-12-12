@@ -2,7 +2,13 @@ process SRST2_AR {
     tag "${meta.id}"
     label 'process_medium'
     // 0.2.0
-    container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
+    if (params.terra==false) {
+        container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
+    } else if (params.terra==true) {
+        containerOptions '-e ENV_NAME=srst2'
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
 
     /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
