@@ -22,12 +22,13 @@ process AMRFINDERPLUS_RUN {
     if ( "${organism_param[0]}" != "No Match Found") {
         organism = "--organism ${organism_param[0]}"
     } else { organism = "" }
+    //set up for terra
     if (params.terra==false) {
-        terra_activate = ""
+        terra = ""
         terra_exit = ""
     } else if (params.terra==true) {
-        terra_activate = "micromamba activate amrfinderplus"
-        terra_exit = "micromamba deactivate"
+        terra = "PATH=/opt/conda/envs/amrfinderplus/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/amrfinderplus/bin:||')"""
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
@@ -39,7 +40,7 @@ process AMRFINDERPLUS_RUN {
     db_name = db.toString() - '.tar.gz'
     """
     #adding python path for running srst2 on terra
-    $terra_activate
+    $terra
 
     if [[ $nuc_fasta = *.gz ]]; then
         NUC_FNAME=\$(basename ${nuc_fasta} .gz)

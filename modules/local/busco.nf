@@ -29,20 +29,19 @@ process BUSCO {
     def busco_lineage = lineage.equals('auto') ? '--auto-lineage' : "--lineage_dataset ${lineage}"
     def busco_lineage_dir = busco_lineages_path ? "--offline --download_path ${busco_lineages_path}" : ''
     def container = task.container.toString() - "quay.io/biocontainers/busco@"
+    //set up for terra
     if (params.terra==false) {
-        terra_activate = ""
+        terra = ""
         terra_exit = ""
     } else if (params.terra==true) {
-        terra_1 = "export PYTHONPATH=/opt/conda/envs/busco/lib/python3.7/site-packages/"
-        terra_exit_1 = "export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/"
-        terra_activate = "micromamba activate busco"
-        terra_exit = "micromamba deactivate"
+        terra = "PATH=/opt/conda/envs/busco/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/busco/bin:||')"""
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
     """
     #adding python path for running busco on terra
-    $terra_activate
+    $terra
 
     # Nextflow changes the container --entrypoint to /bin/bash (container default entrypoint: /usr/local/env-execute)
     # Check for container variable initialisation script and source it.

@@ -31,11 +31,11 @@ process PROKKA {
     script:
     //set up for terra
     if (params.terra==false) {
-        terra_activate = ""
+        terra = ""
         terra_exit = ""
     } else if (params.terra==true) {
-        terra_activate = "micromamba activate prokka"
-        terra_exit = "micromamba deactivate"
+        terra = "PATH=/opt/conda/envs/prokka/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/prokka/bin:||')"""
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
@@ -47,7 +47,7 @@ process PROKKA {
     def container = task.container.toString() - "staphb/prokka@"
     """
     #adding python path for running busco on terra
-    $terra_activate
+    $terra
 
     # Main output unzipped formatted fasta headers lines
     FNAME=\$(basename ${fasta} .gz)

@@ -2,13 +2,7 @@ process SRST2_AR {
     tag "${meta.id}"
     label 'process_medium'
     // 0.2.0
-    if (params.terra==false) {
-        container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
-    } else if (params.terra==true) {
-        containerOptions '-e ENV_NAME=srst2'
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
+    container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
 
     /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
@@ -41,11 +35,15 @@ process SRST2_AR {
         error "Please set meta.db to either \"gene\" or \"mlst\""
     }
     if (params.terra==false) {
-        terra_activate = ""
+        terra = ""
         terra_exit = ""
     } else if (params.terra==true) {
-        terra = "export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/"
-        terra_exit = "export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/"
+        terra = """export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/
+        PATH=/opt/conda/envs/srst2/bin:\$PATH
+        """
+        terra_exit = """export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/
+        PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/srst2/bin:||')"
+        """
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
