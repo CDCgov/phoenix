@@ -35,7 +35,7 @@ process PROKKA {
         terra_exit = ""
     } else if (params.terra==true) {
         terra = "PATH=/opt/conda/envs/prokka/bin:\$PATH"
-        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/prokka/bin:||')"""
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/prokka/bin:||')" """
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }

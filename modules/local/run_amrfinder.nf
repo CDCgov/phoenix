@@ -28,7 +28,7 @@ process AMRFINDERPLUS_RUN {
         terra_exit = ""
     } else if (params.terra==true) {
         terra = "PATH=/opt/conda/envs/amrfinderplus/bin:\$PATH"
-        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/amrfinderplus/bin:||')"""
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/amrfinderplus/bin:||')" """
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
