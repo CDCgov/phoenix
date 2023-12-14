@@ -62,7 +62,6 @@ def retrieve_mlst_nonovel(fullpath):
             #print("start new isolate: " + path.split("/")[len(path.split("/")) - 1] + "_combined.tsv")
             isolate_name = path.split("/")[len(path.split("/")) - 1]
             mlst_file = path + "/mlst/" + path.split("/")[len(path.split("/")) - 1] + "_combined.tsv"
-            print(mlst_file)
             file_content = pd.read_csv(mlst_file, delimiter='\t', header=0, usecols = ["Sample", "Source", "Pulled_on", "Database", "ST"])
             if file_content.empty:
                 isolate_mlst[isolate_name] = ""

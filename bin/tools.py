@@ -31,6 +31,8 @@ def rearrange_oxford_pasteur(df, indices):
         for index in indices:
             tmp = tmp + "MLST" + str(df["ST"][index]).strip() + "_" + df["Database"][index].strip().split("(")[1].strip(")") + ", "
         isolate_mlst[df["Sample"][0].strip()] = ",".join(tmp.rsplit(",", 1)[:-1])
+    if len(indices) >= 3:
+        isolate_mlst[df["Sample"][0].strip()] = "ERROR: Unexpected MLST results. Review ~/mlst/*_combined.tsv file!"
     return isolate_mlst
 
 

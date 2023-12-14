@@ -432,7 +432,7 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
-        if (ncbi_excel_creation == true) {
+        if (ncbi_excel_creation == true && params.create_ncbi_sheet == true) {
             // requiring files so that this process doesn't start until needed files are made. 
             required_files_ch = FASTP_TRIMD.out.reads.map{ meta, reads -> reads[0]}.collect().combine(DO_MLST.out.checked_MLSTs.map{ meta, checked_MLSTs -> checked_MLSTs}.collect()).combine(DETERMINE_TAXA_ID.out.taxonomy.map{ meta, taxonomy -> taxonomy}.collect())
 

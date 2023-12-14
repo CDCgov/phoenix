@@ -100,6 +100,12 @@
                     "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
                     "default": ""
                 },
+                "create_ncbi_sheet": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-keyboard",
+                    "description": "For labs who are part of ARLN you can pass this argument to generate partially filled out sheets for NCBI upload. This should still be reviewed PRIOR to upload. Only for -entry CDC_PHOENIX and -entry PHOENIX.",
+                    "default": "False"
+                },
                 "publish_dir_mode": {
                     "type": "string",
                     "default": "copy"

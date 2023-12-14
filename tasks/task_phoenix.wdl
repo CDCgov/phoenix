@@ -2,17 +2,18 @@ version 1.0
 
 task phoenix {
   input {
-    File?  read1
-    File?  read2
-    File?  input_assembly
-    String samplename
-    String kraken2db = "null"
-    String entry = "PHOENIX"
-    String scaffold_ext = ".scaffolds.fa.gz"
-    Int?   coverage = 30
-    Int    memory = 64
-    Int    cpu = 8
-    Int    disk_size = 100
+    File?   read1
+    File?   read2
+    File?   input_assembly
+    String  samplename
+    String  kraken2db = "null"
+    String  entry = "PHOENIX"
+    String  scaffold_ext = ".scaffolds.fa.gz"
+    Boolean create_ncbi_sheet = false
+    Int?    coverage = 30
+    Int     memory = 64
+    Int     cpu = 8
+    Int     disk_size = 100
   }
   command <<<
     date | tee DATE
@@ -25,6 +26,13 @@ task phoenix {
     env
 
     if [ ~{entry} == "SRA" ] || [ ~{entry} == "CDC_SRA" ]; then
+      #check create_ncbi_sheet isn't set to true
+      if [ ~{create_ncbi_sheet} == true ]; then
+        echo "create_ncbi_sheet set to true, but is invaild for SRA entry points. Ignoring argument."
+        create_ncbi_sheet_var = ""
+      else
+        create_ncbi_sheet_var = ""
+      fi
       # Make sample form
       echo "~{samplename}" > sample.csv
       # Run PHoeNIx
@@ -36,6 +44,13 @@ task phoenix {
       #set scaffold as blank variable
       scaffold_ext=""
     elif [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
+      #check create_ncbi_sheet isn't set to true
+      if [ ~{create_ncbi_sheet} == true ]; then
+        echo "create_ncbi_sheet set to true, but is invaild for SCAFFOLD entry points. Ignoring argument."
+        create_ncbi_sheet_var = ""
+      else
+        create_ncbi_sheet_var = ""
+      fi
       # Make sample form
       echo "sample,assembly" > sample.csv
       echo "~{samplename},~{input_assembly}" >> sample.csv
@@ -47,6 +62,12 @@ task phoenix {
       #set scaffold variable
       scaffold_ext="--scaffold_ext ~{scaffold_ext}"
     else
+      #check create_ncbi_sheet is set correctly
+      if [ ~{create_ncbi_sheet} == true ]; then
+        create_ncbi_sheet_var = "--create_ncbi_sheet"
+      else
+        create_ncbi_sheet_var = ""
+      fi
       # Make sample form
       echo "sample,fastq_1,fastq_2" > sample.csv
       echo "~{samplename},~{read1},~{read2}" >> sample.csv
@@ -59,7 +80,7 @@ task phoenix {
       scaffold_ext=""
     fi
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext $create_ncbi_sheet_var; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
