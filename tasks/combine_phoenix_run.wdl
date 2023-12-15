@@ -65,7 +65,7 @@ task combine_phoenix_run {
         if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
           echo "Phoenix_Summary.tsv files passed check for the same entry point. Starting to combine files."
           # here the variable cdc_phoenix is the same as the busco argument
-          python3 ./$VERSION/bin/Create_phoenix_summary_tsv.py $out_command $cdc_phoenix
+          python3 ./$version/bin/Create_phoenix_summary_tsv.py $out_command $cdc_phoenix
         else
           echo "ERROR: Phoenix_Summary.tsv files are a mix of CDC_PHOENIX and PHOENIX outputs and they need to be the same."
           exit 1
@@ -94,7 +94,7 @@ task combine_phoenix_run {
       done
 
       ## combine griphin summaries. In the script it determines if phx or cdc_phx was run.
-      python3 ./$VERSION/bin/terra_combine_griphin.py $out_griphin_xlsx_command
+      python3 ./$version/bin/terra_combine_griphin.py $out_griphin_xlsx_command
 
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
       if [ ! -s "${combined_griphin_xlsx_summary_name}" ]; then
@@ -120,7 +120,7 @@ task combine_phoenix_run {
       done
 
       ## combine griphin reports. In the script it determines if phx or cdc_phx was run.
-      python3 ./$VERSION/bin/terra_combine_griphin_tsv.py $out_griphin_tsv_command
+      python3 ./$version/bin/terra_combine_griphin_tsv.py $out_griphin_tsv_command
 
       # If GRiPHin files were passed, but not a summary made at the end then throw an error
       if [ ! -s "${combined_griphin_tsv_summary_name}" ]; then
