@@ -27,7 +27,7 @@ task phoenix {
 
     if [ ~{entry} == "SRA" ] || [ ~{entry} == "CDC_SRA" ]; then
       #check create_ncbi_sheet isn't set to true
-      if [ ~{create_ncbi_sheet} == true ]; then
+      if [[ "~{create_ncbi_sheet}" == "true" ]]; then
         echo "create_ncbi_sheet set to true, but is invaild for SRA entry points. Ignoring argument."
         create_ncbi_sheet_var = ""
       else
@@ -45,7 +45,7 @@ task phoenix {
       scaffold_ext=""
     elif [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
       #check create_ncbi_sheet isn't set to true
-      if [ ~{create_ncbi_sheet} == true ]; then
+      if [[ "~{create_ncbi_sheet}" == "true" ]]; then
         echo "create_ncbi_sheet set to true, but is invaild for SCAFFOLD entry points. Ignoring argument."
         create_ncbi_sheet_var = ""
       else
@@ -63,7 +63,7 @@ task phoenix {
       scaffold_ext="--scaffold_ext ~{scaffold_ext}"
     else
       #check create_ncbi_sheet is set correctly
-      if [ ~{create_ncbi_sheet} == true ]; then
+      if [[ "~{create_ncbi_sheet}" == "true" ]]; then
         create_ncbi_sheet_var = "--create_ncbi_sheet"
       else
         create_ncbi_sheet_var = ""
