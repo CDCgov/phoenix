@@ -103,6 +103,9 @@ workflow SRA {
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db ]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry SRA.' }
+
     // Check mandatory parameters
 
     //input on command line
@@ -132,6 +135,9 @@ workflow CDC_SRA {
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CDC_SRA.' }
 
     // Check mandatory parameters
 
@@ -163,6 +169,9 @@ workflow CDC_SRA {
 // WORKFLOW: Entry point to analyze scaffold file(s) and run everything after Spades
 //
 workflow SCAFFOLDS {
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry SCAFFOLDS.' }
+
     // Validate input parameters
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
@@ -201,6 +210,9 @@ workflow SCAFFOLDS {
 // WORKFLOW: Entry point to analyze scaffold file(s) and run everything after Spades
 //
 workflow CDC_SCAFFOLDS {
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CDC_SCAFFOLDS.' }
+
     // Validate input parameters
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
