@@ -5,7 +5,7 @@ task combine_phoenix_run {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
     Array[File]? griphin_tsv_summaries
-    String? combined_phoenix_tsv_prefix
+    String? combined_phoenix_tsv_prefix = ""
     String? combined_griphin_xlsx_prefix
     String? combined_griphin_tsv_prefix
   }
@@ -22,7 +22,7 @@ task combine_phoenix_run {
       out_command="--out ~{combined_phoenix_tsv_prefix}"
       combined_phoenix_tsv_summary_name="~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
     else
-      out_command=""
+      out_command="--out Phoenix_Summary.tsv"
       combined_phoenix_tsv_summary_name="Phoenix_Summary.tsv"
     fi
     if [ ! -z "~{combined_griphin_xlsx_prefix}" ]; then
