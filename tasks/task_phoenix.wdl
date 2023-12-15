@@ -2,18 +2,18 @@ version 1.0
 
 task phoenix {
   input {
-    File?   read1
-    File?   read2
-    File?   input_assembly
-    String  samplename
-    String  kraken2db = "null"
-    String  entry = "PHOENIX"
-    String  scaffold_ext = ".scaffolds.fa.gz"
-    Boolean create_ncbi_sheet = false
-    Int?    coverage = 30
-    Int     memory = 64
-    Int     cpu = 8
-    Int     disk_size = 100
+    File?    read1
+    File?    read2
+    File?    input_assembly
+    String   samplename
+    String   kraken2db = "null"
+    String   entry = "PHOENIX"
+    String   scaffold_ext = ".scaffolds.fa.gz"
+    Boolean? create_ncbi_sheet = false
+    Int?     coverage = 30
+    Int      memory = 64
+    Int      cpu = 8
+    Int      disk_size = 100
   }
   command <<<
     date | tee DATE
