@@ -15,17 +15,19 @@ workflow phoenix_workflow {
     String  entry
     Int?    coverage
     String? scaffold_ext
+    Boolean? create_ncbi_sheet
   }
   call phoenix_nf.phoenix {
     input:
-      read1          = read1,
-      read2          = read2,
-      input_assembly = input_assembly,
-      samplename     = samplename,
-      kraken2db      = kraken2db,
-      entry          = entry,
-      coverage       = coverage,
-      scaffold_ext   = scaffold_ext
+      read1             = read1,
+      read2             = read2,
+      input_assembly    = input_assembly,
+      samplename        = samplename,
+      kraken2db         = kraken2db,
+      entry             = entry,
+      coverage          = coverage,
+      scaffold_ext      = scaffold_ext,
+      create_ncbi_sheet = create_ncbi_sheet
   }
   output {
     #phoenix summary output values
