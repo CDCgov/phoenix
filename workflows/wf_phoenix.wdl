@@ -132,8 +132,11 @@ workflow phoenix_workflow {
     File? best_taxa_id             = phoenix.best_taxa_id             # tax
     #phoenix AMRFinder
     File? amrfinder_mutations      = phoenix.amrfinder_mutations      # all_mutations.tsv
-    File? amrfinder_taxa_match    = phoenix.amrfinder_taxa_match     # AMRFinder_Organism.csv
+    File? amrfinder_taxa_match     = phoenix.amrfinder_taxa_match     # AMRFinder_Organism.csv
     File? amrfinder_hits           = phoenix.amrfinder_hits           # all_genes.tsv
+    # NCBI files - optional
+    File? ncbi_biosample          = phoenix.ncbi_biosample            # BiosampleAttributes_Microbe.1.0.xlsx"
+    File? ncbi_sra_metadata       = phoenix.ncbi_sra_metadata         # Sra_Microbe.1.0.xlsx"
     #run files - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = phoenix.versions_file            # software_versions.yml"
     File? multiqc_output          = phoenix.multiqc_output           # multiqc_report.html"
