@@ -250,8 +250,11 @@ task phoenix {
     File? best_taxa_id             = "~{samplename}/phx_output/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
     File? amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
-    File? amrfinder_taxa_match    = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
+    File? amrfinder_taxa_match     = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
     File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    # NCBI files - optional
+    File? ncbi_biosample          = "~{samplename}/phx_output/BiosampleAttributes_Microbe.1.0.xlsx"
+    File? ncbi_sra_metadata       = "~{samplename}/phx_output/Sra_Microbe.1.0.xlsx"
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
     File? multiqc_output          = "~{samplename}/phx_output/multiqc/multiqc_report.html"

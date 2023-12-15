@@ -36,8 +36,9 @@ def get_taxa(taxa_file):
 
 def taxa_check(genus_match, species_match, gen_sp):
     # species and genus lists
-    species = ['Enterococcus_faecalis', 'Enterobacter_cloacae', 'Citrobacter_freundii', 'Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 
-    'Klebsiella_oxytoca', 'Streptococcus_pyogenes', 'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis', 'Serratia_marcescens'] # for v3.11 update
+    species = ['Enterococcus_faecalis', 'Enterobacter_cloacae', 'Enterobacter_asburiae', 'Citrobacter_freundii', 'Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 
+    'Klebsiella_oxytoca', 'Streptococcus_pyogenes', 'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis', 'Serratia_marcescens',
+    'Vibrio_vulfinicus', 'Vibrio_parahaemolyticus']
     genus = ['Salmonella']
     complex_genera = ['Acinetobacter', 'Escherichia', 'Klebsiella','Campylobacter', 'Shigella', 'Streptococcus', 'Burkholderia'] # for v3.11 update
     if gen_sp in species:
