@@ -135,8 +135,9 @@ task combine_phoenix_run {
 
   # series of checks to finish up
   #check at least one file type was passed, if not then fail.
-  if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ] && [ ! -z "~{sep=',' griphin_xlsx_summaries}" ] && [ ! -z "~{sep=',' griphin_tsv_summaries}" ]; then
+  if [ -z "~{sep=',' phoenix_tsv_summaries}" ] && [ -z "~{sep=',' griphin_xlsx_summaries}" ] && [ -z "~{sep=',' griphin_tsv_summaries}" ]; then
     echo "ERROR: No summary files were passed, please pick an array of files to combine."
+    ls
     exit 1
   #check that something was made. If no files were created fail to let to user know
   elif [ ! -s "${combined_phoenix_tsv_summary_name}" ] && [ ! -s "${combined_griphin_tsv_summary_name}" ] && [ ! -s "${combined_griphin_xlsx_summary_name}" ]; then
