@@ -15,7 +15,7 @@ task combine_phoenix_run {
     date | tee DATE
 
     #download phoenix code to get the script from
-    nextflow clone cdcgov/phoenix -r $VERSION ./$VERSION/
+    nextflow clone cdcgov/phoenix -r $version ./$version/
 
     # create file name depending on the user picked prefix
     if [ ! -z "~{combined_phoenix_tsv_prefix}" ]; then
