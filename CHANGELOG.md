@@ -176,7 +176,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Container Updates:**  
 - MLST version remains the same, but a custom database was added so that it no longer uses the database included in the software. Now hosted on quay.io.  
 
-## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (XX/XX/2023)
+## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (XX/XX/2024)
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.1.0...v2.0.2)
 
@@ -184,10 +184,21 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Added handling for "unknown" assemblers in the scaffolds entry point so genomes can be downloaded from NCBI and run through PHoeNIx.  
 - New Terra workflow for combining `Phoenix_Summary.tsv`, `GRiPHin_Summary.tsv` and `GRiPHin_Summary.xlsx` of multiple runs into one file.  
 - `software_versions.yml` now contains versions for all custom scripts used in the pipeline to streamline its validation process and align it with CLIA requirements, ensuring smoother compliance.  
+- AMRFinder+ species that are screened for point mutations was updated with *Enterobacter asburiae*, *Vibrio vulfinicus* and *Vibrio parahaemolyticus*.  
+- After extensive QC cut off review addtional warnings and minimum QC cut-offs were added:
+   - Minimum PASS/FAIL:
+     - >500 scaffolds
+     - FAIry (file integrity check) - see Fixed Bugs section below for details.
+   - Warnings:
+   - 200-500 scaffolds -> high, but not enough for failure
+     - Contamination checks: 
+        - <70% of reads/weighted scaffolds assigned to top geneus hit.
+        - Added weighted scaffold to kraken <30% unclassifed check (was just on reads before)
+        - Added weighted scaffold to kraken only 1 genera >25% of  assigned check (was just reads before)
 
 **Output File Changes:**  
-- The default outdir phx produces was changed. If the user doesn't pass `--outdir`, the default was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
-- The `phx_output/FAIry` folder will contain a `*_summaryline_failure.tsv` file for any isolate where file corruption was detected.
+- The default outdir phx produces was changed. If the user doesn't pass `--outdir`, the default was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report).  
+- The `phx_output/FAIry` folder will contain a `*_summaryline_failure.tsv` file for any isolate where file corruption was detected.  
 
 **Fixed Bugs:**  
 - Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
@@ -196,11 +207,11 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Corrected instance where, in some cases, an mlst scheme could not be determined that a proper out file was not created.  
 - Fixed issue where samples that failed SPAdes did not have `--coverage` parameter respected when generating synopsis file.  
 - Fixed `-entry CDC_SCAFFOLDS` providing incorrect headers (missing `BUSCO` and `BUSCO_DB`).  
-- Updated FAIry( file integrity check) to catch additional file integrity errors.
+- Updated FAIry (file integrity check) to catch additional file integrity errors.  
    - FAIry detects and reports when:  
       - Corrupt fastq files that prevents the completion of gzip and zcat and generate a synopsis file when needed.  
       - If R1/R2 fastqs that do not have equal number of reads in the files.  
-      - If there are no reads or scaffolds left after filtering and read trimming steps, respectively.
+      - If there are no reads or scaffolds left after filtering and read trimming steps, respectively.  
 
 **Container Updates:**  
 - Containers are now called with their sha256 to streamline PHoeNIx's validation process and align it with CLIA requirements.  
@@ -209,6 +220,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - fastp: v0.23.2 to v0.23.4 [bug fixes](https://github.com/OpenGene/fastp/releases).  
   - fastqc: v0.11.9 to v0.12.1 [bug fixes](https://github.com/s-andrews/FastQC/releases).  
   - kraken2: v2.1.2 to v2.1.3 which has [improvements on efficiency and bug fixes](https://github.com/s-andrews/FastQC/releases).  
-  - fastani: v1.33 to v1.34 [bug fixes](https://github.com/ParBLiSS/FastANI/releases). Specifically, it fixed multi-threading output bugs. Output and interface of FastANI remains same as before.
-- Container for SRA entry steps `SRATOOLS_FASTERQDUMP` and `SRATOOLS_PREFETCH` was switched to a quay.io/biocontainers to address issues with the old container and ICA. The version of SRATools being used remains the same. [commit 68815e3](https://github.com/CDCgov/phoenix/commit/68815e3797c1944dcd0280ee658c79be90b63c0e#diff-cc23f3860dea73e90629539d540e72a7fc7cf9438de0e89eca1cc31a763c7b2b)  
-- srst2 container version stays the same, but added a fix to address issues related to handling grepping  of '(' and ')'. Hosting updated container on quay.io.
+  - fastani: v1.33 to v1.34 [bug fixes](https://github.com/ParBLiSS/FastANI/releases). Specifically, it fixed multi-threading output bugs. Output and interface of FastANI remains same as before.  
+  - amrfinderplus: v3.11.11 to v3.11.26 which has [improvements on efficiency and bug fixes](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.11.26).  
+  - SRAtools v3.0.3 to 3.0.9 [updates and bug fixes](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md).  
+- Container for SRA entry steps `SRATOOLS_FASTERQDUMP` and `SRATOOLS_PREFETCH` was switched to a quay.io/biocontainers to address issues with the old container and ICA. [commit 68815e3](https://github.com/CDCgov/phoenix/commit/68815e3797c1944dcd0280ee658c79be90b63c0e#diff-cc23f3860dea73e90629539d540e72a7fc7cf9438de0e89eca1cc31a763c7b2b)  
+- The srst2 container version stays the same, but it is now in a custom container built from [commit `73f885f55c748644412ccbaacecf12a771d0cae9`](https://github.com/CDCgov/phoenix/blob/3a270a41ebee127a3fde9b50014ce377b026987b/Dockerfiles/Dockerfile_srst2#L57C58-L57C98) as there has been a bug fix for [rounding penalty to integer](https://github.com/katholt/srst2/commit/9eaedffb58c156e3b6c45c9273e163e2d401e792) without a new release. In addition, a fix was added to address issues related to [handling grepping  of '(' and ')'](https://github.com/CDCgov/phoenix/blob/3a270a41ebee127a3fde9b50014ce377b026987b/Dockerfiles/Dockerfile_srst2#L63). Hosting updated container on quay.io.  
