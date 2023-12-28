@@ -7,7 +7,6 @@ from decimal import *
 import pandas as pd
 import numpy as np
 import argparse
-import json
 import re
 from re import search
 import operator
@@ -244,7 +243,7 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
     alerts = ', '.join(alerts)
     return alerts
 
-def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
+def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
                      assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,\
                      MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage):
     """
@@ -259,6 +258,8 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_pe
     if scaffolds_entry == False:
         if Total_Trimmed_reads == "Unknown" or int(Total_Trimmed_reads) < int(1000000):
             warnings.append("<1,000,000 trimmed reads")
+        if Total_Raw_reads == "Unknown" or int(Total_Raw_reads) < int(1000000):
+            warnings.append("<1,000,000 raw reads")
         if Q30_R1_per == "Unknown" or float(Q30_R1_per) < float(90.00):
             warnings.append("Average Q30 of raw R1 reads <{:.2f}%".format(float(90.00)))
         if Q30_R2_per == "Unknown" or float(Q30_R2_per) < float(70.00):
@@ -819,7 +820,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         print("Warning: " + sample_name + "_combined.tsv not found")
         MLST_scheme_1 = MLST_scheme_2 = MLST_type_1 = MLST_type_2 = MLST_alleles_1 = MLST_alleles_2 = MLST_source_1 = MLST_source_2 = 'Unknown'
     try:
-        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
+        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
                                     Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent,\
                                     kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess,\
                                     genus, fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2])
