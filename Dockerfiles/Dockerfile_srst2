@@ -1,0 +1,67 @@
+FROM ubuntu:xenial
+
+# for easy upgrade later. ARG variables only persist at build time
+# Main package version
+ARG SRST2_VER=0.2.0
+
+# Dependency versions
+ARG BOWTIE2_VER=2.2.6-2
+ARG SAMTOOLS_VER=0.1.18
+
+LABEL base.image="ubuntu:xenial"
+LABEL dockerfile.version="1"
+LABEL software="SRST2"
+LABEL software.version="v0.2.0"
+LABEL description="Short Read Sequence Typing for Bacterial Pathogens"
+LABEL website="https://github.com/katholt/srst2"
+LABEL license="https://github.com/katholt/srst2/blob/master/LICENSE.txt"
+LABEL maintainer="Nicholas Vlachos"
+LABEL maintainer1.email="nvx4@cdc.gov"
+
+# install dependencies; cleanup apt garbage
+RUN apt-get update && apt-get install -y --no-install-recommends \
+python2.7 \
+python-scipy \
+python-biopython \
+make \
+libc6-dev \
+g++ \
+zlib1g-dev \
+build-essential \
+git \
+libx11-dev \
+xutils-dev \
+zlib1g-dev \
+bowtie2=${BOWTIE2_VER} \
+curl \
+libncurses5-dev \
+unzip \
+wget  \
+locate && \
+apt-get install -y \
+python-pip && \
+apt-get autoclean && rm -rf /var/lib/apt/lists/*
+
+# set PATH and perl local settings
+ENV LC_ALL=C.UTF-8
+
+# download pre-compiled binary; unzip; put binary in /usr/bin; make /data
+RUN curl -O -L https://sourceforge.net/projects/samtools/files/samtools/${SAMTOOLS_VER}/samtools-${SAMTOOLS_VER}.tar.bz2 && \
+tar xvfj samtools-${SAMTOOLS_VER}.tar.bz2 && \
+cd samtools-${SAMTOOLS_VER} && \
+make && \
+cp samtools /usr/local/bin && \
+cd
+
+# Install SRST2
+RUN pip install git+https://github.com/katholt/srst2.git@73f885f55c748644412ccbaacecf12a771d0cae9 --upgrade
+RUN mkdir /data
+
+# set working directory
+WORKDIR /data
+
+RUN sed -i '1502s/.*/\t\t\t\tcommand = "grep \\""+allele+"\\" "+fasta\n\t\t\t\theader_string = os.popen(command)/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
+# Handle to number of .'s
+RUN sed -i '453s/.*/\t\t\t\t\txm = re.search("^.*__.*__.*\..*__", pileup_file)\n\t\t\t\t\tif xm:\n\t\t\t\t\t\ttemp_allele=pileup_file.split("_")[4]\n\t\t\t\t\t\tper_counter = operator.countOf(temp_allele, ".")\n\t\t\t\t\t\tconsensus_outfile.write(">{0}.{1} {2}\\n".format(allele, consensus_type, pileup_file.split(".")[1 + per_counter].split("__")[1]))\n\t\t\t\t\telse:\n\t\t\t\t\t\tconsensus_outfile.write(">{0}.{1} {2}\\n".format(allele, consensus_type, pileup_file.split(".")[1].split("__")[1]))/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
+#Need to addres operator difference
+#RUN sed -i '25s/.*/import os, sys, re, collections\nimport operator as op/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
