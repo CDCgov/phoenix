@@ -5,7 +5,7 @@ task combine_phoenix_run {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
     Array[File]? griphin_tsv_summaries
-    String? combined_phoenix_tsv_prefix = ""
+    String? combined_phoenix_tsv_prefix
     String? combined_griphin_xlsx_prefix
     String? combined_griphin_tsv_prefix
   }
