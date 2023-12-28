@@ -72,7 +72,7 @@ task combine_phoenix_run {
         fi
 
       #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
-      if [ "$(wc -l <${combined_phoenix_tsv_summary_name})" -eq 1 ]; then
+      if [[ "$(wc -l <${combined_phoenix_tsv_summary_name})" -eq 1 ]]; then
         echo "ERROR: Phoenix_Summary.tsv only contains a single line. Combination failed."
         rm -r ${combined_phoenix_tsv_summary_name}
         exit 1

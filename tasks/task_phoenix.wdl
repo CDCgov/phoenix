@@ -64,7 +64,7 @@ task phoenix {
     echo $version
     echo $input_file
     echo $scaffold_ext
-    echo $create_ncbi_sheet_var
+    echo $create_ncbi_sheet
 
     if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet}; then
       # Everything finished, pack up the results and clean up
