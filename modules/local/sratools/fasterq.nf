@@ -1,8 +1,9 @@
 process SRATOOLS_FASTERQDUMP {
     tag "${meta.id}"
     label 'process_low'
-    // 3.0.3--h87f3376_0
-    container "quay.io/biocontainers/sra-tools@sha256:c9f92683e10091c3ef93066b1fcbdeeba89af49242ab778a9c8cc006f6be82a3"
+    // 3.0.3--h87f3376_0 "quay.io/biocontainers/sra-tools@sha256:c9f92683e10091c3ef93066b1fcbdeeba89af49242ab778a9c8cc006f6be82a3"
+    // 3.0.9--h9f5acd7_0
+    container "quay.io/biocontainers/sra-tools@sha256:bd3dafdfb9ad5f301b72c5fdbbcbf411b19c59e117eabe4209dc15546c851c37"
 
     input:
     tuple val(meta), path(sra_folder)
