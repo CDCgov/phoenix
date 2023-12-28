@@ -19,7 +19,7 @@ task combine_phoenix_run {
 
     # create file name depending on the user picked prefix
     if [ ! -z "~{combined_phoenix_tsv_prefix}" ]; then
-      out_command="--out ~{combined_phoenix_tsv_prefix}"
+      out_command="--out ~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
       combined_phoenix_tsv_summary_name="~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
     else
       out_command="--out Phoenix_Summary.tsv"
