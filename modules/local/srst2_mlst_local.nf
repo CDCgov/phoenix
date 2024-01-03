@@ -2,12 +2,7 @@ process SRST2_MLST {
     tag "${meta.id}"
     label 'process_medium'
     // 0.2.0
-    //container 'quay.io/jvhagey/srst2@sha256:9aeb09a6b5c0f2a6ecac9cc41dd2b2ce526fb28f7135e7db37400d6c88892f09'
     container 'quay.io/jvhagey/srst2@sha256:c53cc041efa44805936233065d3808f08807e8964c3052595a5d93a05784b041'
-
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
-        'quay.io/biocontainers/srst2:0.2.0--py27_2'}"*/
 
     input:
     tuple val(meta), path(fastqs), path(getmlstout), path(alleles), path(profiles), val(status)

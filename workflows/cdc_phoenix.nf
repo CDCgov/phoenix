@@ -271,9 +271,9 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
         if (params.busco_db_path != null) {
-            // Allow relative paths for krakendb argument
+            // Allow relative paths for busco_db_path argument
             busco_db_path = Channel.fromPath(params.busco_db_path, relative: true) 
-            // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it.
+            // Add in busco_db into the scaffolds channel so each scaffolds ch has a busco_db to go with it.
             busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}.combine(busco_db_path)\
             .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0]) 
         } else {

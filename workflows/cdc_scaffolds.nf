@@ -268,6 +268,8 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
         // Perform MLST steps on isolates (with srst2 on internal samples)
+        // 3rd input would normally be FASTP_TRIMD.out.reads, but since we have no reads we just pass something to get the meta_id and create an empty channel
+        // This is necessary as we need the meta.id information for the mid_srst2_ch in the subworkflow.
         DO_MLST (
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             SCAFFOLD_COUNT_CHECK.out.outcome, \
