@@ -62,7 +62,12 @@ process SRST2_AR {
     # create an empty fullgenes file if nothing was found, otherwise the pre-summary join fails silently
     short_DB=\$(basename ${db} .fasta)
     if [[ ! -f ${prefix}__fullgenes__\${short_DB}__results.txt ]]; then
-        touch ${prefix}__fullgenes__\${short_DB}__results.txt
+        #check if the file wasn't created due to failure or just not AR genes were found
+        if grep -e "failed gene detection" -e "failed" .command.err; then
+            echo "failed gene detection" > ${prefix}__fullgenes__\${short_DB}__results.txt
+        else
+            echo "No AR genes found" > ${prefix}__fullgenes__\${short_DB}__results.txt
+        fi
     fi
 
     cat <<-END_VERSIONS > versions.yml

@@ -245,7 +245,7 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
 
 def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
                      assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,\
-                     MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage):
+                     MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage, srst2_warning):
     """
     <1,000,000 total reads for each raw and trimmed reads - Total_Sequenced_reads
     % raw and trimmed reads with Q30 average for R1 (<90%) and R2 (<70%) - Q30_R1_percent, Q30_R2_percent
@@ -326,7 +326,11 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         if float(busco_id) < float(97.00):
             warnings.append("BUSCO match is <97%.")
     #add in fastani warning
-    warnings.append(fastani_warning)
+    if fastani_warning != None:
+        warnings.append(fastani_warning)
+    # add srst2 warning
+    if srst2_warning != None:
+        warnings.append(srst2_warning)
     warnings = ', '.join(warnings).strip(", ")
     return warnings
 
@@ -625,7 +629,7 @@ def parse_ani(fast_ani_file):
         scheme_guess = "NA NA"
         fastani_warning = "No hits with >=80% ANI."
     else:
-        fastani_warning = ""
+        fastani_warning = None
         ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
@@ -758,13 +762,28 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         df.index = [sample_name]
         hv_df = pd.concat([hv_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
-        srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
+        #handling for if srst2 quietly failed
+        srst2_failure_checks = ["failed gene detection","No AR genes found"]
+        with open(srst2_file, 'r') as file:
+            file_content = file.read()
+        if any(x in file_content for x in srst2_failure_checks):
+            if "No AR genes found" in file_content: # no warning needed, but do need to make dataframe empty to keep things moving
+                srst2_warning = None
+            else:
+                srst2_warning = "failed srst2 gene detection."
+            df = pd.DataFrame({'WGS_ID':[sample_name]})
+            df.index = [sample_name]
+            srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+        else:
+            srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
+            srst2_warning = None
     except (FileNotFoundError, pd.errors.EmptyDataError) : # second one for an empty dataframe - srst2 module creates a blank file
         if phoenix_entry == False: #supress warning when srst2 is not run
             print("Warning: " + sample_name + "__fullgenes__ResGANNCBI__*_srst2__results.txt not found")
         df = pd.DataFrame({'WGS_ID':[sample_name]})
         df.index = [sample_name]
         srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+        srst2_warning = None
     try:
         alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1], gc_metrics[0])
     except:
@@ -823,7 +842,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
                                     Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent,\
                                     kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess,\
-                                    genus, fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2])
+                                    genus, fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2], srst2_warning)
     except:
         warnings = ""
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
