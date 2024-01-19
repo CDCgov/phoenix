@@ -230,7 +230,7 @@ workflow PHOENIX_EXQC {
 
         // Combine bbmap log with the fairy outcome file
         scaffold_check_ch = BBMAP_REFORMAT.out.log.map{meta, log                -> [[id:meta.id], log]}\
-        .join(GET_TRIMD_STATS.out.outcome_to_edit.map{   meta, outcome_to_edit  -> [[id:meta.id], outcome_to_edit]},    by: [0])\
+        .join(GET_TRIMD_STATS.out.outcome_to_edit.map{ meta, outcome_to_edit    -> [[id:meta.id], outcome_to_edit]},    by: [0])\
         .join(GET_RAW_STATS.out.combined_raw_stats.map{meta, combined_raw_stats -> [[id:meta.id], combined_raw_stats]}, by: [0])\
         .join(GET_TRIMD_STATS.out.fastp_total_qc.map{  meta, fastp_total_qc     -> [[id:meta.id], fastp_total_qc]},     by: [0])\
         .join(KRAKEN2_TRIMD.out.report.map{            meta, report             -> [[id:meta.id], report]},             by: [0])\
@@ -504,7 +504,15 @@ workflow PHOENIX_EXQC {
         ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
         ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
         ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+        // add in phx output for multiqc modulea
         ch_multiqc_files = ch_multiqc_files.mix(FASTQCTRIMD.out.zip.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(FASTP_TRIMD.out.json.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(FASTP_SINGLES.out.json.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(BBDUK.out.log.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(QUAST.out.report_tsv.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(KRAKEN2_TRIMD.out.report.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(KRAKEN2_WTASMBLD.out.report.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(BUSCO.out.short_summaries_specific_txt.collect{it[1]}.ifEmpty([]))
 
         MULTIQC (
             ch_multiqc_files.collect()
