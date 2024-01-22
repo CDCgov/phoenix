@@ -17,7 +17,7 @@ def retrieve_taxo(fullpath):
             tax_file = path + "/" + path.split("/")[len(path.split("/")) - 1] + ".tax"
             file_content = pd.read_csv(tax_file, header=None).drop(0)
             for tax_level in list(file_content.values):
-                file_dict[tax_level[0].split(":")[0]] = tax_level[0].split(":")[1].strip()
+                file_dict[tax_level[0].split(":")[0]] = re.sub(r'\d', '', tax_level[0].split(":")[1].strip()).strip('\t')
             isolate_taxs[path.split("/")[len(path.split("/")) - 1]] = file_dict
         except FileNotFoundError:
             file_dict = {'D': '', 'P': '', 'C': '', 'O': '', 'F': '', 'G': '', 's': ''}

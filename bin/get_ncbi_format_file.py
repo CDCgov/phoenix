@@ -130,7 +130,7 @@ def fill_meta_values(meta_info_biosample, isolate_taxs, mlst_info_isolate, biopr
             project = check_project(isolate_taxs[isolate_name], bioprojects_taxo)
             meta_info_biosample[isolate_name].sampleContent['bioproject_accession'] = bioprojects_taxo[project]
         else:
-            meta_info_biosample[isolate_name].sampleContent['bioproject_accession'] = "blank"
+            meta_info_biosample[isolate_name].sampleContent['bioproject_accession'] = ""
         meta_info_biosample[isolate_name].sampleContent['*organism'] = isolate_taxs[isolate_name]['G'] + " " + isolate_taxs[isolate_name]['s']
         meta_info_biosample[isolate_name].sampleContent['strain'] = "missing"
         meta_info_biosample[isolate_name].sampleContent['isolate'] = isolate_name
