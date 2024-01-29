@@ -4,7 +4,7 @@ FROM mambaorg/micromamba:1.4.3
 LABEL base.image="mambaorg/micromamba:1.4.3"
 LABEL dockerfile.version="1"
 LABEL software="phoenix"
-LABEL software.version="2.0.0"
+LABEL software.version="2.1.0"
 LABEL description="PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens"
 LABEL website="https://github.com/cdcgov/phoenix/"
 LABEL license="https://github.com/CDCgov/phoenix/blob/main/LICENSE"
@@ -61,9 +61,8 @@ RUN pip install git+https://github.com/katholt/srst2.git@73f885f55c748644412ccba
 
 # Making edits to srst2 code to enable handling of () in ar gene names
 RUN sed -i '1502s/.*/\t\t\t\tcommand = "grep \\""+allele+"\\" "+fasta\n\t\t\t\theader_string = os.popen(command)/' /opt/conda/envs/srst2/lib/python2.7/site-packages/srst2/srst2.py
-# Handle to number of .'s
-RUN sed -i '453s/.*/\t\t\t\t\txm = re.search("^.*__.*__.*\..*__", pileup_file)\n\t\t\t\t\tif xm:\n\t\t\t\t\t\ttemp_allele=pileup_file.split("_")[4]\n\t\t\t\t\t\tper_counter = operator.countOf(temp_allele, ".")\n\t\t\t\t\t\tconsensus_outfile.write(">{0}.{1} {2}\\n".format(allele, consensus_type, pileup_file.split(".")[1 + per_counter].split("__")[1]))\n\t\t\t\t\telse:\n\t\t\t\t\t\tconsensus_outfile.write(">{0}.{1} {2}\\n".format(allele, consensus_type, pileup_file.split(".")[1].split("__")[1]))/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
-
+# fixing bug - similar to patch found here https://github.com/bioconda/bioconda-recipes/blob/d4454836e2b5f834d6c5bc35eaa2b1f9ee5c7e8a/recipes/srst2/srst_sample_name_v0.2.0.patch
+RUN sed -i '453s/.*/					sample_name = pileup_file[::-1].split("\.")[2]\.split("_")[0][::-1]\n\t\t\t\t\tconsensus_outfile\.write(">{0}\.{1} {2}\\n"\.format(allele, consensus_type, sample_name))/' /opt/conda/envs/srst2/lib/python2.7/site-packages/srst2/srst2.py
 #setting up stuff for BUSCO
 ENV AUGUSTUS_CONFIG_PATH=/opt/conda/envs/busco/config/
 

@@ -62,7 +62,5 @@ WORKDIR /data
 
 # Making edits to srst2 code to enable handling of () in ar gene names
 RUN sed -i '1502s/.*/\t\t\t\tcommand = "grep \\""+allele+"\\" "+fasta\n\t\t\t\theader_string = os.popen(command)/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
-# Handle to number of .'s
-RUN sed -i '453s/.*/\t\t\t\t\txm = re.search("^.*__.*__.*\..*__", pileup_file)\n\t\t\t\t\tif xm:\n\t\t\t\t\t\ttemp_allele=pileup_file.split("_")[4]\n\t\t\t\t\t\tper_counter = operator.countOf(temp_allele, ".")\n\t\t\t\t\t\tconsensus_outfile.write(">{0}.{1} {2}\\n".format(allele, consensus_type, pileup_file.split(".")[1 + per_counter].split("__")[1]))\n\t\t\t\t\telse:\n\t\t\t\t\t\tconsensus_outfile.write(">{0}.{1} {2}\\n".format(allele, consensus_type, pileup_file.split(".")[1].split("__")[1]))/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
-#Need to addres operator difference
-#RUN sed -i '25s/.*/import os, sys, re, collections\nimport operator as op/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
+# fixing bug - similar to patch found here https://github.com/bioconda/bioconda-recipes/blob/d4454836e2b5f834d6c5bc35eaa2b1f9ee5c7e8a/recipes/srst2/srst_sample_name_v0.2.0.patch
+RUN sed -i '453s/.*/					sample_name = pileup_file[::-1].split("\.")[2]\.split("_")[0][::-1]\n\t\t\t\t\tconsensus_outfile\.write(">{0}\.{1} {2}\\n"\.format(allele, consensus_type, sample_name))/' /usr/local/lib/python2.7/dist-packages/srst2/srst2.py
