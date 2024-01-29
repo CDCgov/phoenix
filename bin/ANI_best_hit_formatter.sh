@@ -101,7 +101,13 @@ else
 
 	# Pulling taxonomy from filename which was looked up. Can possibly be out of date. REFSEQ file will ALWAYS be current though
 	best_genus=$(echo "${best_file}" | cut -d'_' -f1)
-	best_species=$(echo "${best_file}" | cut -d'_' -f2)
+	# handling for if uncultured is in the organism genome file name
+	if [[ "${best_genus}" == "Uncultured" ]]; then
+		best_genus=$(echo "${best_file}" | cut -d'_' -f2)
+		best_species=$(echo "${best_file}" | cut -d'_' -f3)
+	else
+		best_species=$(echo "${best_file}" | cut -d'_' -f2)
+	fi
 	best_organism_guess="${best_genus} ${best_species}"
 
 	#Creates a line at the top of the file to show the best match in an easily readable format that matches the style on the MMB_Seq log
