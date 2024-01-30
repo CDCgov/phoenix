@@ -1,8 +1,8 @@
 process SRST2_MLST {
     tag "${meta.id}"
     label 'process_medium'
-    // 0.2.0
-    container 'quay.io/jvhagey/srst2@sha256:c53cc041efa44805936233065d3808f08807e8964c3052595a5d93a05784b041'
+    // 0.2.0_patched
+    container 'quay.io/jvhagey/srst2@sha256:d4a68baf84c8818b59f334989ccbeea044baf14a79aaf1bd95a1f24f69d0dc5b'
 
     input:
     tuple val(meta), path(fastqs), path(getmlstout), path(alleles), path(profiles), val(status)
@@ -146,7 +146,7 @@ process SRST2_MLST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
-        srst2_commit_with_edits: 73f885f55c748644412ccbaacecf12a771d0cae9
+        srst2_commit_patched: 73f885f55c748644412ccbaacecf12a771d0cae9
         srst2_container: ${container}
     END_VERSIONS
 
