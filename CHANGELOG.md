@@ -176,7 +176,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Container Updates:**  
 - MLST version remains the same, but a custom database was added so that it no longer uses the database included in the software. Now hosted on quay.io.  
 
-## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (XX/XX/2024)
+## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (02/XX/2024)
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.1.0...v2.0.2)
 
@@ -186,6 +186,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - `software_versions.yml` now contains versions for all custom scripts used in the pipeline to streamline its validation process and align it with CLIA requirements, ensuring smoother compliance.  
 - MultiQC now contains graphs and data from BBDuk, FastP, Quast and Kraken. BUSCO is also part of MultiQC if the entry point runs it (i.e. CDC_* entries).  
 - AMRFinder+ species that are screened for point mutations was updated with *Enterobacter asburiae*, *Vibrio vulfinicus* and *Vibrio parahaemolyticus*.  
+- Check was added to ensure only SRR numbers are passed to -entry `CDC_SRA` and `SRA`.  
 - After extensive QC cut off review addtional warnings and minimum QC cut-offs were added:
    - Minimum PASS/FAIL:
      - >500 scaffolds
@@ -203,6 +204,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Output File Changes:**  
 - The default outdir phx produces was changed. If the user doesn't pass `--outdir`, the default was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report).  
 - The `phx_output/FAIry` folder will contain a `*_summaryline_failure.tsv` file for any isolate where file corruption was detected.  
+- `*.tax` file had the NCBI assigned taxID added after the `:` for easy lookup.  
 
 **Fixed Bugs:**  
 - Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
@@ -230,4 +232,11 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - The srst2 container version stays the same, but it is now in a custom container built from [commit `73f885f55c748644412ccbaacecf12a771d0cae9`](https://github.com/CDCgov/phoenix/blob/3a270a41ebee127a3fde9b50014ce377b026987b/Dockerfiles/Dockerfile_srst2#L57C58-L57C98) as there has been a bug fix for a [rounding penalty to integer](https://github.com/katholt/srst2/commit/9eaedffb58c156e3b6c45c9273e163e2d401e792) without a new release. In addition, a fix was added to address issues related to [handling grepping  of '(' and ')'](https://github.com/CDCgov/phoenix/blob/3a270a41ebee127a3fde9b50014ce377b026987b/Dockerfiles/Dockerfile_srst2#L63). Hosting updated container on quay.io.  
 
 **Database Updates:**  
-- No updates have been made on PubMLST since last MLST database was created, thus NO CHANGES were made to the MLST container or its database.  
+- MLST database was pulled from PubMLST and updated on Jan 24th, 2024.  
+- The Plasmid Replicons database was updated to include [an update to the Enterobacteriales.fsa database](https://bitbucket.org/genomicepidemiology/plasmidfinder_db/commits/81c11f4f2209ff12cb74b486bad4c5ede54418ad).  
+- Curated AR gene database was updated on 2024-01-24 (yyyy-mm-dd) which includes:
+   - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
+      - Version [2023-11-15.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.11/)  
+   - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since the last time the database was created and contains updates since version [NT v6 July 2019](https://www.mediterranee-infection.com/acces-ressources/base-de-donnees/arg-annot-2/)  
+   - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)  
+      - Includes until 2024-01-28 [commit 97d1fe0cd0a119172037f6bdb29f8a1c7c6e6019](https://bitbucket.org/genomicepidemiology/resfinder_db/commits/branch/master)  
