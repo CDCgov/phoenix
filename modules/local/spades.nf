@@ -41,6 +41,7 @@ process SPADES {
     # preemptively create _summary_line.csv and .synopsis file in case spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
     ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
     ${ica}beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
+    #get version information
     bspades_version=\$(${ica}beforeSpades.sh -V)
     pipestats_version=\$(${ica}pipeline_stats_writer_trimd.sh -V)
     aspades_version=\$(${ica}afterSpades.sh -V)
@@ -58,7 +59,7 @@ process SPADES {
     spades_complete=run_failure,no_scaffolds,no_contigs
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
 
-    if [ -z \$(zcat $unpaired_reads) ]; then
+    if [[ -z \$(zcat $unpaired_reads) ]]; then
         spades.py \\
             $args \\
             --threads $task.cpus \\

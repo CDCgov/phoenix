@@ -81,7 +81,7 @@ fi
 #if the file exists and isn't empty check that the match is >80% otherwise throw an error.
 topline=$(head -n1 ${ani_file})
 percent_id=$(head -n1 ${ani_file} | cut -d$'\t' -f3)
-if (( $(echo "${percent_id} < 80" | bc -l) )); then
+if (( $(echo "${percent_id} < 80" | $bc_path -l) )); then
 	echo -e "Mash/FastANI Error: No hits above an ANI value >=80%" > "${sample_name}_${db_name}.fastANI.txt"
 else
 	sorted_ani=${ani_file//.txt/.sorted.txt}
