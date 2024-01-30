@@ -187,6 +187,27 @@ def base_output(output_path, sra, bio_attribute):
     df.to_excel(path_bio, index=False)
     df_sra = pd.DataFrame(tools.purify_dict(sra)).T.reset_index(drop=True)
     df_sra.to_excel(path_sra, index=False)
+    #add disclaimer
+    add_disclaimer(df, path_bio)
+    add_disclaimer(df_sra, path_sra)
+
+def add_disclaimer(df, input_excel):
+    # Load the Excel file using pandas ExcelWriter
+    with pd.ExcelWriter(input_excel, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False)
+        workbook  = writer.book
+        worksheet = writer.sheets['Sheet1']
+        # Add text to the cell
+        # Change the font color to red
+        red_format = workbook.add_format({'color': 'red', 'bold': True, 'text_wrap': True})
+        disclaimer_text = """For labs who are part of the Antimicrobial Resistance Laboratory Network (ARLN) you can pass this argument to generate partially filled out sheets for NCBI upload. This should still be reviewed PRIOR to upload. Only use with -entry CDC_PHOENIX and -entry PHOENIX. \
+As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, \
+including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov."""
+        # Determine the number of rows already filled
+        num_rows = df.shape[0] + 2
+        # Add text to the cell
+        worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+9), disclaimer_text, red_format)
+
 
 def base_function(isolate_full_path, sample_type, output, microbe_example, sra_metadata, osii_bioprojects, directory, griphin_summary):
     bioprojects_taxo = FileLoader().load_bioproject(osii_bioprojects)

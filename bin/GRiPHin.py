@@ -294,6 +294,8 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
         if genus == "Enterobacter" and MLST_scheme_1 == "ecloacae":
             pass
+        elif genus == "Klebsiella" and MLST_scheme_1 == "koxytoca" or "kpneumoniae":
+            pass
         elif genus == "Acinetobacter" and MLST_scheme_1.startswith("abaumannii"):
             pass
         elif genus == "Citrobacter" and MLST_scheme_1 == "cfreundii":
@@ -306,6 +308,8 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
             warnings.append("Check 1st MLST scheme matches taxa IDed.")
     if MLST_scheme_2 != "-" and not MLST_scheme_2.startswith(scheme_guess):
         if genus == "Enterobacter" and MLST_scheme_2 == "ecloacae":
+            pass
+        elif genus == "Klebsiella" and MLST_scheme_1 == "koxytoca" or "kpneumoniae":
             pass
         elif genus == "Acinetobacter" and MLST_scheme_2.startswith("abaumannii"):
             pass
@@ -1136,7 +1140,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     if 'GAMMA file not found' in pf_db:
         pf_db.remove("GAMMA file not found")
     pf_db = ",".join(pf_db)
-    return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db,
+    return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix):
     # Create a Pandas Excel writer using XlsxWriter as the engine.

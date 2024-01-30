@@ -97,7 +97,7 @@
                 "create_ncbi_sheet": {
                     "type": "boolean",
                     "fa_icon": "fas fa-keyboard",
-                    "description": "For labs who are part of ARLN you can pass this argument to generate partially filled out sheets for NCBI upload. This should still be reviewed PRIOR to upload. Only for -entry CDC_PHOENIX and -entry PHOENIX.",
+                    "description": "For labs who are part of the Antimicrobial Resistance Laboratory Network (ARLN) you can pass this argument to generate partially filled out sheets for NCBI upload. This should still be reviewed PRIOR to upload. Only use with -entry CDC_PHOENIX and -entry PHOENIX. As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov.",
                     "default": "False"
                 },
                 "email": {
