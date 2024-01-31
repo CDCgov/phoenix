@@ -200,14 +200,10 @@ def add_disclaimer(df, input_excel, input_sheet_name):
         # getting values to set column widths automatically
         for idx, col in enumerate(df):  # loop through all columns
             series = df[col]
-            #print(series)  # uncomment this to see what the issue is with the "mad" error
-            if col == "Parent_Folder": #name is real long due to path so just making the width of the column header
-                max_len = len("Parent_Folder")
-            else:
-                max_len = max((
-                series.astype(str).map(len).max(),  # len of largest item
-                    len(str(series.name))  # len of column name/header
-                    )) + 1  # adding a little extra space
+            max_len = max((
+            series.astype(str).map(len).max(),  # len of largest item
+                len(str(series.name))  # len of column name/header
+                )) + 1  # adding a little extra space
             worksheet.set_column(idx, idx, max_len)  # set column width
         # Add text to the cell
         # Change the font color to red
