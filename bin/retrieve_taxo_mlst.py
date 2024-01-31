@@ -66,12 +66,12 @@ def retrieve_mlst_nonovel(fullpath):
             if file_content.empty:
                 isolate_mlst[isolate_name] = ""
             else:
-                # check "Novel", "-"
+                # check "Novel", "-", "Missing"
                 if file_content["Database"][0] == '-':
                     file_content = file_content.drop(file_content[(file_content["Database"] == '-')].index)
-                result = file_content.astype(str).apply(lambda x: x.str.contains("Novel", case=False)).values.flatten()
+                result = file_content.astype(str).apply(lambda x: x.str.contains("Novel|Missing", case=False)).values.flatten()
                 if result.any():
-                    file_content = file_content.drop(file_content.index[file_content["ST"].str.contains("Novel")]).reset_index(drop=True)
+                    file_content = file_content.drop(file_content.index[file_content["ST"].str.contains("Novel|Missing", case=False)]).reset_index(drop=True)
                 if file_content.shape[0] == 0:
                     isolate_mlst[isolate_name] = ""
                 else:
