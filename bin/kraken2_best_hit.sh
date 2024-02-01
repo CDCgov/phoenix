@@ -181,7 +181,7 @@ while IFS= read -r line  || [ -n "$line" ]; do
 	elif [ "${classification}" = "G" ]; then
 		current_genus=${description^}
 	# Grabs all read info (identifier, reads and percent) for best species level entry
-	elif [ "${classification}" = "S" ] && [ "${reads}" -gt "${species_reads}" ] && [ "${current_genus}" = "${top_genus}"]; then
+	elif [ "${classification}" = "S" ] && [ "${reads}" -gt "${species_reads}" ] && [ "${current_genus}" = "${top_genus}" ]; then
 		echo "Old: ${species}-${species_reads}"
 		gs=(${description^})
 		species=${gs[@]:1}
