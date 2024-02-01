@@ -146,14 +146,14 @@ def fill_sra(sra, seq_machine_isolate):
     for key, value in sra.items():
         sra[key].sampleContent['sample_name'] = key
         sra[key].sampleContent['library_ID'] = key
-        sra[key].sampleContent['title'] = "Illumina sequencing of " + key
+        sra[key].sampleContent['title'] = "Illumina whole-genome sequencing of " + key
         sra[key].sampleContent['library_strategy'] = "WGS"
         sra[key].sampleContent['library_source'] = "GENOMIC"
         sra[key].sampleContent['library_selection'] = "RANDOM"
         sra[key].sampleContent['library_layout'] = "paired"
         sra[key].sampleContent['platform'] = "ILLUMINA"
-        sra[key].sampleContent['instrument_model'] = "Illumina " + seq_machine_isolate[key]
-        sra[key].sampleContent['design_description'] = "Illumina " + seq_machine_isolate[key] + " paired-end reads"
+        sra[key].sampleContent['instrument_model'] = ""
+        sra[key].sampleContent['design_description'] = ""
         sra[key].sampleContent['filetype'] = "fastq"
         sra[key].sampleContent['filename'] = key + "_R1_001.fastq.gz"
         sra[key].sampleContent['filename2'] = key + "_R2_001.fastq.gz"
@@ -188,25 +188,39 @@ def base_output(output_path, sra, bio_attribute):
     df_sra = pd.DataFrame(tools.purify_dict(sra)).T.reset_index(drop=True)
     df_sra.to_excel(path_sra, index=False)
     #add disclaimer
-    add_disclaimer(df, path_bio)
-    add_disclaimer(df_sra, path_sra)
+    add_disclaimer(df, path_bio, "Sheet1")
+    add_disclaimer(df_sra, path_sra, "SRA_data")
 
-def add_disclaimer(df, input_excel):
+def add_disclaimer(df, input_excel, input_sheet_name):
     # Load the Excel file using pandas ExcelWriter
     with pd.ExcelWriter(input_excel, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='Sheet1', index=False)
+        df.to_excel(writer, sheet_name=input_sheet_name, index=False)
         workbook  = writer.book
-        worksheet = writer.sheets['Sheet1']
+        worksheet = writer.sheets[input_sheet_name]
+        # getting values to set column widths automatically
+        for idx, col in enumerate(df):  # loop through all columns
+            series = df[col]
+            max_len = max((
+            series.astype(str).map(len).max(),  # len of largest item
+                len(str(series.name))  # len of column name/header
+                )) + 1  # adding a little extra space
+            worksheet.set_column(idx, idx, max_len)  # set column width
         # Add text to the cell
         # Change the font color to red
         red_format = workbook.add_format({'color': 'red', 'bold': True, 'text_wrap': True})
-        disclaimer_text = """For labs who are part of the Antimicrobial Resistance Laboratory Network (ARLN) you can pass this argument to generate partially filled out sheets for NCBI upload. This should still be reviewed PRIOR to upload. Only use with -entry CDC_PHOENIX and -entry PHOENIX. \
-As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, \
+        # Change the font color to orange
+        orange_format = workbook.add_format({'color': 'orange', 'bold': True, 'text_wrap': True})
+        delete_warning = """Do the following before upload:
+1. Delete this row and the rows below!
+2. Fill out 'design_description' column with a short description of our library prep info and any other pertinent information. Ex: Sequenced using Nextera XT library prep kit, 2 x 250.
+3. Fill out 'instrument_model' column with your illumina model type and number (if it has one). Ex: Illumina HiSeq 1500."""
+        disclaimer_text = """As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, \
 including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov."""
         # Determine the number of rows already filled
         num_rows = df.shape[0] + 2
         # Add text to the cell
-        worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+9), disclaimer_text, red_format)
+        worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), delete_warning, orange_format)
+        worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
 
 
 def base_function(isolate_full_path, sample_type, output, microbe_example, sra_metadata, osii_bioprojects, directory, griphin_summary):
