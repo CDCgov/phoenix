@@ -173,11 +173,15 @@ while IFS= read -r line  || [ -n "$line" ]; do
 		family_reads=${reads}
 	# Grabs all read info (identifier, reads and percent) for best genus level entry
 	elif [ "${classification}" = "G" ] && [ "${reads}" -gt "${genus_reads}" ]; then
-		genus=${description^}
+		current_genus=${description^}
 		genus_percent=${percent}
 		genus_reads=${reads}
+		top_genus=${description^}
+	# Need to check if still within top genus sub data
+	elif [ "${classification}" = "G" ]; then
+		current_genus=${description^}
 	# Grabs all read info (identifier, reads and percent) for best species level entry
-	elif [ "${classification}" = "S" ] && [ "${reads}" -gt "${species_reads}" ]; then
+	elif [ "${classification}" = "S" ] && [ "${reads}" -gt "${species_reads}" ] && [ "${current_genus}" = "${top_genus}"]; then
 		echo "Old: ${species}-${species_reads}"
 		gs=(${description^})
 		species=${gs[@]:1}
@@ -249,7 +253,7 @@ fi
 # echo -e "U: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
 
 ###With headers
-echo -e "Taxon level	Match percentage	Taxa\nU: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
+echo -e "Taxon level	Match percentage	Taxa\nU: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${top_genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
 
 
 #Script exited gracefully (unless something else inside failed)
