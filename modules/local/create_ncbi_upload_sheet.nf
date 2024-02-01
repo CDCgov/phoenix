@@ -12,7 +12,7 @@ process CREATE_NCBI_UPLOAD_SHEET {
     path(griphin_tsv_report)
 
     output:
-    path("Sra_Microbe.1.0.xlsx"),                 emit: ncbi_samplesheet
+    path("Sra_Microbe.1.0.xlsx"),                 emit: ncbi_sra
     path("BiosampleAttributes_Microbe.1.0.xlsx"), emit: ncbi_biosample
     path("versions.yml"),                         emit: versions
 
