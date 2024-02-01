@@ -34,7 +34,6 @@ include { PHOENIX_EXQC           } from './workflows/cdc_phoenix'
 include { SCAFFOLDS_EXTERNAL     } from './workflows/scaffolds'
 include { SCAFFOLDS_EXQC         } from './workflows/cdc_scaffolds'
 include { SRA_PREP               } from './workflows/sra_prep'
-include { CLIA_INTERNAL          } from './workflows/clia'
 
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
