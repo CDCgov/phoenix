@@ -477,10 +477,16 @@ workflow PHOENIX_EXTERNAL {
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
         mlst             = DO_MLST.out.checked_MLSTs
-        amrfinder_report = AMRFINDERPLUS_RUN.out.report
+        amrfinder_output = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
         summary_report   = GATHER_SUMMARY_LINES.out.summary_report
-    
+        //output for phylophoenix
+        griphin_tsv      = GRIPHIN.out.griphin_report
+        griphin_excel    = GRIPHIN.out.griphin_tsv_report
+        dir_samplesheet  = GRIPHIN.out.converted_samplesheet
+        //output for ncbi upload 
+        ncbi_sra_sheet       = CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra
+        ncbi_biosample_sheet = CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample
 }
 
 /*
