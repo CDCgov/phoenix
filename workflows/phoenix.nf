@@ -485,8 +485,8 @@ workflow PHOENIX_EXTERNAL {
         griphin_excel    = GRIPHIN.out.griphin_tsv_report
         dir_samplesheet  = GRIPHIN.out.converted_samplesheet
         //output for ncbi upload 
-        ncbi_sra_sheet       = CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra
-        ncbi_biosample_sheet = CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample
+        ncbi_sra_sheet       = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra : null
+        ncbi_biosample_sheet = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample : null
 }
 
 /*
