@@ -422,9 +422,9 @@ workflow SCAFFOLDS_EXQC {
     emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         mlst             = DO_MLST.out.checked_MLSTs
-        amrfinder_report = AMRFINDERPLUS_RUN.out.report
+        amrfinder_output = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
-        summary_report   = GATHER_SUMMARY_LINES.out.summary_report
+        phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
 }
 
 /*

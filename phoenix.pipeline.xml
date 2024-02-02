@@ -54,6 +54,12 @@ All files will be staged in workflow.launchDir</pd:description>
                     <pd:integerType/>
                     <pd:value>30</pd:value>
                 </pd:parameter>
+                <pd:parameter code="create_ncbi_sheet" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>create_ncbi_sheet</pd:label>
+                    <pd:description>Pass this argument to generate partially filled out excel sheets for NCBI upload. This should still be reviewed PRIOR to upload. Only use with -entry CDC_PHOENIX and -entry PHOENIX. As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov.</pd:description>
+                    <pd:booleanType/>
+                    <pd:value>false</pd:value>
+                </pd:parameter>
             </pd:tool>
         </pd:step>
         <pd:step execution="MANDATORY" code="scaffolds entry parameters">

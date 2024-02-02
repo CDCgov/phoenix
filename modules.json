@@ -1,6 +1,6 @@
 {
-    "name": "nf-core/quaisar",
-    "homePage": "https://github.com/nf-core/quaisar",
+    "name": "cdcgov/phoenix",
+    "homePage": "https://github.com/cdcgov/phoenix",
     "repos": {
         "nf-core/modules": {
             "amrfinderplus/run": {

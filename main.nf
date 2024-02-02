@@ -200,7 +200,7 @@ workflow CDC_SRA {
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
         mlst             = PHOENIX_EXQC.out.mlst
-        amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXQC.out.amrfinder_output
         gamma_ar         = PHOENIX_EXQC.out.gamma_ar
         phx_summary      = PHOENIX_EXQC.out.phx_summary
         //output for phylophoenix
@@ -251,7 +251,7 @@ workflow SCAFFOLDS {
     emit:
         scaffolds        = SCAFFOLDS_EXTERNAL.out.scaffolds
         mlst             = SCAFFOLDS_EXTERNAL.out.mlst
-        amrfinder_report = SCAFFOLDS_EXTERNAL.out.amrfinder_report
+        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
         gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
         phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
 }
@@ -294,7 +294,7 @@ workflow CDC_SCAFFOLDS {
     emit:
         scaffolds        = SCAFFOLDS_EXQC.out.scaffolds
         mlst             = SCAFFOLDS_EXQC.out.mlst
-        amrfinder_report = SCAFFOLDS_EXQC.out.amrfinder_report
+        amrfinder_output = SCAFFOLDS_EXQC.out.amrfinder_output
         gamma_ar         = SCAFFOLDS_EXQC.out.gamma_ar
         phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }

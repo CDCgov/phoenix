@@ -479,7 +479,7 @@ workflow PHOENIX_EXTERNAL {
         mlst             = DO_MLST.out.checked_MLSTs
         amrfinder_output = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
-        summary_report   = GATHER_SUMMARY_LINES.out.summary_report
+        phx_summary     = GATHER_SUMMARY_LINES.out.summary_report
         //output for phylophoenix
         griphin_tsv      = GRIPHIN.out.griphin_report
         griphin_excel    = GRIPHIN.out.griphin_tsv_report

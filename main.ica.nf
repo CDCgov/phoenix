@@ -56,9 +56,16 @@ workflow PHOENIX {
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
         mlst             = PHOENIX_EXTERNAL.out.mlst
-        amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
         gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
-        summary_report   = PHOENIX_EXTERNAL.out.summary_report
+        phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
+        //output for ncbi upload 
+        ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_sra_sheet : null
+        ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_biosample_sheet : null
 }
 
 //
@@ -83,9 +90,16 @@ workflow CDC_PHOENIX {
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
         mlst             = PHOENIX_EXQC.out.mlst
-        amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXQC.out.amrfinder_output
         gamma_ar         = PHOENIX_EXQC.out.gamma_ar
-        summary_report   = PHOENIX_EXQC.out.summary_report
+        phx_summary      = PHOENIX_EXQC.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXQC.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXQC.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXQC.out.dir_samplesheet
+        //output for ncbi upload 
+        ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXQC.out.ncbi_sra_sheet : null
+        ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXQC.out.ncbi_biosample_sheet : null
 }
 
 /*
@@ -118,9 +132,13 @@ workflow SRA {
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
         mlst             = PHOENIX_EXTERNAL.out.mlst
-        amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
         gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
-        summary_report   = PHOENIX_EXTERNAL.out.summary_report
+        phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
 }
 
 //
@@ -148,9 +166,13 @@ workflow CDC_SRA {
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
         mlst             = PHOENIX_EXQC.out.mlst
-        amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXQC.out.amrfinder_output
         gamma_ar         = PHOENIX_EXQC.out.gamma_ar
-        summary_report   = PHOENIX_EXQC.out.summary_report
+        phx_summary      = PHOENIX_EXQC.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXQC.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXQC.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXQC.out.dir_samplesheet
 }
 
 /*
@@ -192,9 +214,9 @@ workflow SCAFFOLDS {
     emit:
         scaffolds        = SCAFFOLDS_EXTERNAL.out.scaffolds
         mlst             = SCAFFOLDS_EXTERNAL.out.mlst
-        amrfinder_report = SCAFFOLDS_EXTERNAL.out.amrfinder_report
+        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
         gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
-        summary_report   = SCAFFOLDS_EXTERNAL.out.summary_report
+        phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
 }
 
 //
@@ -232,9 +254,9 @@ workflow CDC_SCAFFOLDS {
     emit:
         scaffolds        = SCAFFOLDS_EXQC.out.scaffolds
         mlst             = SCAFFOLDS_EXQC.out.mlst
-        amrfinder_report = SCAFFOLDS_EXQC.out.amrfinder_report
+        amrfinder_output = SCAFFOLDS_EXQC.out.amrfinder_output
         gamma_ar         = SCAFFOLDS_EXQC.out.gamma_ar
-        summary_report   = SCAFFOLDS_EXQC.out.summary_report
+        phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
 
 /*
