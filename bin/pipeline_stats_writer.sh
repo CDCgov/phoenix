@@ -51,8 +51,9 @@ show_help () {
 }
 
 kraken2_unclass_flag=30
+kraken2_top_hit_threshold=70
 kraken2_contamination_threshold=25
-ani_coverage_threshold=80
+ani_coverage_threshold=90
 
 # Parse command line options
 options_found=0
@@ -425,7 +426,7 @@ if [[ "${run_type}" == "all" ]]; then
 		genuspre=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f3 | xargs echo)
 		speciespre=$(sed -n '9p' "${kraken2_trimd_summary}" | cut -d' ' -f3- | xargs echo)
 		speciesprepercent=$(sed -n '9p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
-        genusprepercent=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
+		genusprepercent=$(sed -n '8p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
 
     ### Prepping for header addition
     #unclass=$(sed -n '2p' "${kraken2_trimd_summary}" | cut -d' ' -f2 | xargs echo)
@@ -525,7 +526,6 @@ else
 fi
 
 
-
 #Check short scaffolds reduction script
 if [[ -s "${trimmed_assembly}" ]]; then
 	# Count the number of '>' still remaining after trimming the contig file
@@ -538,11 +538,14 @@ if [[ -s "${trimmed_assembly}" ]]; then
 	#echo "${full_longies}"
 	if [[ "${full_longies}" -le 200 ]]; then
 		printf "%-30s: %-8s : %s\\n" "SCAFFOLD_TRIM" "SUCCESS" "${full_longies} scaffolds remain. ${full_shorties} were removed due to shortness"  >> "${sample_name}.synopsis"
-	else
+	elif [[ "${full_longies}" -gt 200 ]] && [[ "${full_longies}" -le 500 ]]; then
 		printf "%-30s: %-8s : %s\\n" "SCAFFOLD_TRIM" "WARNING" "${full_longies} scaffolds remain which is high. ${full_shorties} were removed due to shortness"  >> "${sample_name}.synopsis"
 		if [[ "${status}" == "SUCCESS" ]] || [[ "${status}" = "ALERT" ]]; then
 			status="WARNING"
 		fi
+  else
+		printf "%-30s: %-8s : %s\\n" "SCAFFOLD_TRIM" "FAILED" "${full_longies} scaffolds remain which too is high. ${full_shorties} were removed due to shortness"  >> "${sample_name}.synopsis"
+		status="FAILED"
 	fi
 else
 	printf "%-30s: %-8s : %s\\n" "SCAFFOLD_TRIM" "FAILED" "${sample_name}.filtered.scaffolds.fa.gz not found"  >> "${sample_name}.synopsis"
@@ -983,11 +986,11 @@ if [[ "${internal_phoenix}" == "true" ]]; then
       done < "${busco_summary}"
       BUSCO_organism=$(sed 's/_odb[0-9]\+//' <<< $db)
       percent_BUSCO_present=$($bc_path<<<"${found_buscos}*100/${total_buscos}")
-      if [[ "${percent_BUSCO_present}" -gt 90 ]]; then
+      if [[ "${percent_BUSCO_present}" -gt 97 ]]; then
         printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "SUCCESS" "${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos}) (Target:90%)"  >> "${sample_name}.synopsis"
       else
-        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "FAILED" "only ${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos}) (Target:90%)"  >> "${sample_name}.synopsis"
-        status="FAILED"
+        printf "%-30s: %-8s : %s\\n" "BUSCO_${db^^}" "WARNING" "only ${percent_BUSCO_present}% of expected core genes for ${BUSCO_organism} found (${found_buscos}/${total_buscos}) (Target:90%)"  >> "${sample_name}.synopsis"
+        status="WARNING"
       fi
     # If the busco summary file does not exist
   else
@@ -1020,12 +1023,12 @@ if [[ -s "${formatted_fastANI}" ]]; then
     else
       if [[ "${percent_match}" -lt 95 ]]; then
         if [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
-          printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "% Identity(${percent_match}%) and % coverage(${coverage_match}%) is too low. ${fastANI_info}"  >> "${sample_name}.synopsis"
+          printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "WARNING" "% Identity(${percent_match}%) and % coverage(${coverage_match}%) is too low. ${fastANI_info}"  >> "${sample_name}.synopsis"
         else
-          printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "% Identity(${percent_match}%) is too low: ${fastANI_info}"  >> "${sample_name}.synopsis"
+          printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "WARNING" "% Identity(${percent_match}%) is too low: ${fastANI_info}"  >> "${sample_name}.synopsis"
         fi
       elif [[ "${coverage_match}" -lt ${ani_coverage_threshold} ]]; then
-        printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "FAILED" "% coverage is too low (${coverage_match}%). ${fastANI_info}"  >> "${sample_name}.synopsis"
+        printf "%-30s: %-8s : %s\\n" "FASTANI_REFSEQ" "WARNING" "% coverage is too low (${coverage_match}%). ${fastANI_info}"  >> "${sample_name}.synopsis"
       fi
     fi
   fi
