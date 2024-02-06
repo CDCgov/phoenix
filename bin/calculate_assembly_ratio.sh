@@ -184,7 +184,8 @@ while IFS='' read -r line; do
 	IFS=$'\t' read -a arr_line <<< "$line"
 	#echo "${arr_line}"
 	#echo  "${genus} ${species} vs ${arr_line[0]}"
-	if [[ "${genus} ${species}" = "${arr_line[0]}" ]]; then
+	# convert all variables to all lowercase for a case agnostic search
+	if [[ "${genus,,} ${species,,}" = "${arr_line[0],,}" ]]; then
 		# if sp. is in the name then 
 		taxid="${arr_line[19]}"
 		if [ "${taxid}" = -2 ]; then
