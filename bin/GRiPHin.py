@@ -637,7 +637,10 @@ def parse_ani(fast_ani_file):
         ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
-        organism = ani_df["Organism"][0]
+        organism = ani_df["Organism"][0].replace("-chromosome", "")
+        #if sp. is followed by anything other than a space add it.
+        if "sp." in organism and re.search(r'sp\.\S', organism):
+            organism = organism.replace("sp.","sp. ")
         source_file = ani_df["Source File"][0]
         #Species_Support = str(ID) + "%ID-" + str(coverage) + "%COV-" + organism + "(" + source_file + ")" #old way of reporting
         FastANI_output_list = [source_file, ID, coverage, organism]

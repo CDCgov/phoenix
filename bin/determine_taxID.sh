@@ -180,10 +180,14 @@ do_kraken2_reads() {
 # Start the program by checking ALL sources
 Check_source 0
 
-
 # Check if species was assigned and get starting taxID
 if [[ -n ${species} ]]; then
-	species=$(echo ${species} | tr -d [:space:])
+	species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )
+	# Check if the string contains "sp."
+	if [[ $species == *sp.* ]]; then
+		# If yes, add a space after "sp."
+		species="${species/sp./sp. }"
+	fi
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
 	#echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
 	IFS=$'\n'
@@ -197,7 +201,23 @@ if [[ -n ${species} ]]; then
 			genus_taxID="Not_needed,species_found"
 		fi
 	done
+	if [[ "${genus_taxID}" != "Not_needed,species_found" ]]; then
+		echo "No species match found converting - to space and trying again."
+		species="${species//-/ }"
+		echo $species
+		for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
+			taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
+			name=$(echo "${name_line}" | cut -d$'\t' -f3)
+			unique_name=$(echo "${name_line}" | cut -d$'\t' -f5)
+			name_class=$(echo "${name_line}" | cut -d$'\t' -f7)
+			if [[ "${name_class}" = "scientific name" ]]; then
+				species_taxID="${taxID}"
+				genus_taxID="Not_needed,species_found"
+			fi
+		done
+	fi
 fi
+
 
 # See if we can at least start at genus level to fill in upper taxonomy
 if [[ -z "${species_taxID}" ]]; then
@@ -284,7 +304,11 @@ while [[ ${counter} -lt "${max_counter}" ]]; do
 done
 
 if [[ "${tax_name_list[species]}" != "Unknown" ]]; then
-	tax_name_list[species]=$(echo ${tax_name_list[species],,} | cut -d' ' -f2-)
+	if [[ $species == *sp.* ]]; then
+		tax_name_list[species]=$(echo ${tax_name_list[species]} | cut -d' ' -f2-)
+	else
+		tax_name_list[species]=$(echo ${tax_name_list[species],,} | cut -d' ' -f2-)
+	fi
 fi
 
 #for i in "${!tax_name_list[@]}"; do
