@@ -10,26 +10,26 @@ workflow combine_phoenix_output {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
     Array[File]? griphin_tsv_summaries
-    Array[File]? ncbi_biosample_attributes_excel_files
+    Array[File]? ncbi_biosample_excel_files
     Array[File]? ncbi_sra_excel_files
     String? combined_phoenix_tsv_prefix
     String? combined_griphin_xlsx_prefix
     String? combined_griphin_tsv_prefix
     String? combined_ncbi_biosample_xlsx_prefix
-    String? combined_sra_biosample_xlsx_prefix
+    String? combined_ncbi_sra_xlsx_prefix
   }
   call combine_phoenix_run_nf.combine_phoenix_run {
     input:
-      phoenix_tsv_summaries              = phoenix_tsv_summaries,
-      griphin_xlsx_summaries             = griphin_xlsx_summaries,
-      griphin_tsv_summaries              = griphin_tsv_summaries,
-      ncbi_biosample_attributes_excel_files = ncbi_biosample_attributes_excel_files,
-      ncbi_sra_excel_files = ncbi_sra_excel_files,
-      combined_phoenix_tsv_prefix  = combined_phoenix_tsv_prefix,
-      combined_griphin_xlsx_prefix = combined_griphin_xlsx_prefix,
-      combined_griphin_tsv_prefix  = combined_griphin_tsv_prefix,
+      phoenix_tsv_summaries               = phoenix_tsv_summaries,
+      griphin_xlsx_summaries              = griphin_xlsx_summaries,
+      griphin_tsv_summaries               = griphin_tsv_summaries,
+      ncbi_biosample_excel_files          = ncbi_biosample_excel_files,
+      ncbi_sra_excel_files                = ncbi_sra_excel_files,
+      combined_phoenix_tsv_prefix         = combined_phoenix_tsv_prefix,
+      combined_griphin_xlsx_prefix        = combined_griphin_xlsx_prefix,
+      combined_griphin_tsv_prefix         = combined_griphin_tsv_prefix,
       combined_ncbi_biosample_xlsx_prefix = combined_ncbi_biosample_xlsx_prefix,
-      combined_sra_biosample_xlsx_prefix = combined_sra_biosample_xlsx_prefix
+      combined_ncbi_sra_xlsx_prefix       = combined_ncbi_sra_xlsx_prefix
   }
   output {
     #phoenix summary output

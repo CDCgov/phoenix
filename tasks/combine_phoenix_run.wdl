@@ -5,13 +5,13 @@ task combine_phoenix_run {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
     Array[File]? griphin_tsv_summaries
-    Array[File]? ncbi_biosample_attributes_excel_files
+    Array[File]? ncbi_biosample_excel_files
     Array[File]? ncbi_sra_excel_files
     String? combined_phoenix_tsv_prefix
     String? combined_griphin_xlsx_prefix
     String? combined_griphin_tsv_prefix
     String? combined_ncbi_biosample_xlsx_prefix
-    String? combined_sra_biosample_xlsx_prefix
+    String? combined_ncbi_sra_xlsx_prefix
   }
   command <<<
     version="v2.1.0-dev"
@@ -43,16 +43,16 @@ task combine_phoenix_run {
       out_griphin_tsv_command=""
       combined_griphin_tsv_summary_name="GRiPHin_Summary.tsv"
     fi
-    if [ ! -z "~{combined_sra_biosample_xlsx_prefix}" ]; then
-      out_ncbi_sra_command="--sra_output ~{combined_sra_biosample_xlsx_prefix}"
-      combined_ncbi_sra_summary_name="~{combined_sra_biosample_xlsx_prefix}_Sra_Microbe.xlsx"
+    if [ ! -z "~{combined_ncbi_sra_xlsx_prefix}" ]; then
+      out_ncbi_sra_command="--sra_output ~{combined_ncbi_sra_xlsx_prefix}"
+      combined_ncbi_sra_summary_name="~{combined_ncbi_sra_xlsx_prefix}_Sra_Microbe.xlsx"
     else
       out_ncbi_sra_command=""
       combined_ncbi_sra_summary_name="Sra_Microbe.xlsx"
     fi
-    if [ ! -z "~{ncbi_biosample_attributes_excel_files}" ]; then
-      out_ncbi_biosample_command="--biosample_output ~{ncbi_biosample_attributes_excel_files}"
-      combined_ncbi_biosample_summary_name="~{ncbi_biosample_attributes_excel_files}_BiosampleAttributes_Microbe.1.0.xlsx"
+    if [ ! -z "~{combined_ncbi_biosample_xlsx_prefix}" ]; then
+      out_ncbi_biosample_command="--biosample_output ~{combined_ncbi_biosample_xlsx_prefix}"
+      combined_ncbi_biosample_summary_name="~{combined_ncbi_biosample_xlsx_prefix}_BiosampleAttributes_Microbe.1.0.xlsx"
     else
       out_ncbi_biosample_command=""
       combined_ncbi_biosample_summary_name="BiosampleAttributes_Microbe.1.0.xlsx"
@@ -151,11 +151,11 @@ task combine_phoenix_run {
       echo "WARNING: No GRiPHin_Summary.tsv files provided skipping GRiPHin_Summary.tsv combining step."
     fi
 
-  if [ ! -z "~{sep=',' ncbi_biosample_attributes_excel_files}" ] | [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
-    if [ ! -z "~{sep=',' ncbi_biosample_attributes_excel_files}" ]; then
+  if [ ! -z "~{sep=',' ncbi_biosample_excel_files}" ] | [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
+    if [ ! -z "~{sep=',' ncbi_biosample_excel_files}" ]; then
         echo "Combining and creating ${combined_ncbi_biosample_summary_name}"
         COUNTER=1
-        BIOSAMPLE_ARRAY_EXCEL=(~{sep=',' ncbi_biosample_attributes_excel_files})
+        BIOSAMPLE_ARRAY_EXCEL=(~{sep=',' ncbi_biosample_excel_files})
         for i in ${BIOSAMPLE_ARRAY_EXCEL//,/ }; do
           echo "found $i copying to BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx"
           cp $i ./BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx ;
@@ -178,12 +178,12 @@ task combine_phoenix_run {
 
   # series of checks to finish up
   #check at least one file type was passed, if not then fail.
-  if [ -z "~{sep=',' phoenix_tsv_summaries}" ] && [ -z "~{sep=',' griphin_xlsx_summaries}" ] && [ -z "~{sep=',' griphin_tsv_summaries}" ]; then
+  if [ -z "~{sep=',' phoenix_tsv_summaries}" ] && [ -z "~{sep=',' griphin_xlsx_summaries}" ] && [ -z "~{sep=',' griphin_tsv_summaries}" ] && [ -z "~{sep=',' ncbi_sra_excel_files}" ] && [ -z "~{sep=',' ncbi_biosample_excel_files}" ]; then
     echo "ERROR: No summary files were passed, please pick an array of files to combine."
     ls
     exit 1
   #check that something was made. If no files were created fail to let to user know
-  elif [ ! -s "${combined_phoenix_tsv_summary_name}" ] && [ ! -s "${combined_griphin_tsv_summary_name}" ] && [ ! -s "${combined_griphin_xlsx_summary_name}" ]; then
+  elif [ ! -s "${combined_phoenix_tsv_summary_name}" ] && [ ! -s "${combined_griphin_tsv_summary_name}" ] && [ ! -s "${combined_griphin_xlsx_summary_name}" ] && [ ! -s "${combined_ncbi_sra_summary_name}" ] && [ ! -s "${combined_ncbi_biosample_summary_name}" ]; then
     echo "ERROR: No summary files were created something went wrong."
     ls
     exit 1
