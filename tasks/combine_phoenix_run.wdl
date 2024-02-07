@@ -5,9 +5,13 @@ task combine_phoenix_run {
     Array[File]? phoenix_tsv_summaries
     Array[File]? griphin_xlsx_summaries
     Array[File]? griphin_tsv_summaries
+    Array[File]? ncbi_biosample_attributes_excel_files
+    Array[File]? ncbi_sra_excel_files
     String? combined_phoenix_tsv_prefix
     String? combined_griphin_xlsx_prefix
     String? combined_griphin_tsv_prefix
+    String? combined_ncbi_biosample_xlsx_prefix
+    String? combined_sra_biosample_xlsx_prefix
   }
   command <<<
     version="v2.1.0-dev"
@@ -39,6 +43,16 @@ task combine_phoenix_run {
       out_griphin_tsv_command=""
       combined_griphin_tsv_summary_name="GRiPHin_Summary.tsv"
     fi
+    if [ ! -z "~{combined_sra_biosample_xlsx_prefix}" ]; then
+      $out_ncbi_sra_command="--sra_output ~{combined_sra_biosample_xlsx_prefix}"
+    else
+      $out_ncbi_sra_command=""
+    fi
+    if [ ! -z "~{combined_sra_biosample_xlsx_prefix}" ]; then
+      $out_ncbi_biosample_command="--biosample_output ~{combined_sra_biosample_xlsx_prefix}"
+    else
+      $out_ncbi_biosample_command=""
+    fi 
 
     #if phoenix tsv files were passed then combine them
     busco_array=()
@@ -133,6 +147,31 @@ task combine_phoenix_run {
       echo "WARNING: No GRiPHin_Summary.tsv files provided skipping GRiPHin_Summary.tsv combining step."
     fi
 
+  if [ ! -z "~{sep=',' ncbi_biosample_attributes_excel_files}" ] | [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
+    if [ ! -z "~{sep=',' ncbi_biosample_attributes_excel_files}" ]; then
+        echo "Combining and creating ${ncbi_biosample_attributes_excel_files}"
+        COUNTER=1
+        BIOSAMPLE_ARRAY_EXCEL=(~{sep=',' ncbi_biosample_attributes_excel_files})
+        for i in ${BIOSAMPLE_ARRAY_EXCEL//,/ }; do
+          echo "found $i copying to BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx"
+          cp $i ./BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx ;
+          COUNTER=$((COUNTER + 1))
+        done
+    elif [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
+        echo "Combining and creating ${ncbi_sra_excel_files}"
+        COUNTER=1
+        SRA_ARRAY_EXCEL=(~{sep=',' ncbi_sra_excel_files})
+        for i in ${SRA_ARRAY_EXCEL//,/ }; do
+          echo "found $i copying to Sra_${COUNTER}_Microbe.xlsx"
+          cp $i ./Sra_${COUNTER}_Microbe.1.0.xlsx ;
+          COUNTER=$((COUNTER + 1))
+        done
+    fi
+    ## combine sra excel files. In the script it determines if phx or cdc_phx was run.
+    python3 ./$version/bin/terra_combine_ncbi_excel.py $out_ncbi_biosample_command $out_ncbi_sra_command
+  fi
+
+
   # series of checks to finish up
   #check at least one file type was passed, if not then fail.
   if [ -z "~{sep=',' phoenix_tsv_summaries}" ] && [ -z "~{sep=',' griphin_xlsx_summaries}" ] && [ -z "~{sep=',' griphin_tsv_summaries}" ]; then
@@ -148,12 +187,14 @@ task combine_phoenix_run {
 
   >>>
   output {
-    File?   phoenix_tsv_summary  = glob("*Phoenix_Summary.tsv")[0]
-    File?   griphin_xlsx_summary = glob("*GRiPHin_Summary.xlsx")[0]
-    File?   griphin_tsv_summary  = glob("*GRiPHin_Summary.tsv")[0]
-    String  phoenix_version      = read_string("VERSION")
-    String  phoenix_docker       = "quay.io/jvhagey/phoenix:2.0.2"
-    String  analysis_date        = read_string("DATE")
+    File?   phoenix_tsv_summary     = glob("*Phoenix_Summary.tsv")[0]
+    File?   griphin_xlsx_summary    = glob("*GRiPHin_Summary.xlsx")[0]
+    File?   griphin_tsv_summary     = glob("*GRiPHin_Summary.tsv")[0]
+    File?   biosample_excel_summary = glob("*BiosampleAttributes_Microbe.1.0.xlsx")[0]
+    File?   sra_excel_summary       = glob("*Sra_Microbe.xlsx")[0]
+    String  phoenix_version         = read_string("VERSION")
+    String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.0.2"
+    String  analysis_date           = read_string("DATE")
   }
   runtime {
     docker: "quay.io/jvhagey/phoenix:2.0.2"
