@@ -153,7 +153,7 @@ task combine_phoenix_run {
 
   if [ ! -z "~{sep=',' ncbi_biosample_attributes_excel_files}" ] | [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
     if [ ! -z "~{sep=',' ncbi_biosample_attributes_excel_files}" ]; then
-        echo "Combining and creating ${ncbi_biosample_attributes_excel_files}"
+        echo "Combining and creating ${combined_ncbi_biosample_summary_name}"
         COUNTER=1
         BIOSAMPLE_ARRAY_EXCEL=(~{sep=',' ncbi_biosample_attributes_excel_files})
         for i in ${BIOSAMPLE_ARRAY_EXCEL//,/ }; do
@@ -162,7 +162,7 @@ task combine_phoenix_run {
           COUNTER=$((COUNTER + 1))
         done
     elif [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
-        echo "Combining and creating ${ncbi_sra_excel_files}"
+        echo "Combining and creating ${combined_ncbi_sra_summary_name}"
         COUNTER=1
         SRA_ARRAY_EXCEL=(~{sep=',' ncbi_sra_excel_files})
         for i in ${SRA_ARRAY_EXCEL//,/ }; do
