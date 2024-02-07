@@ -62,21 +62,26 @@ def add_disclaimer(input_excel, input_sheet_name):
         red_format = workbook.add_format({'color': 'red', 'bold': True, 'text_wrap': True})
         # Change the font color to orange
         orange_format = workbook.add_format({'color': 'orange', 'bold': True, 'text_wrap': True})
-        delete_warning = """Do the following before upload:
+        biosample_delete_warning = """Do the following before upload:
+1. Delete this row and the rows below!
+2. At minimum fill out the following columns: 
+    - Host: e.g., Homo sapiens, animal, environmental, other
+    - Collection Date: Specimen collection year only"""
+        sra_delete_warning = """Do the following before upload:
 1. Delete this row and the rows below!
 2. Fill out 'design_description' column with a short description of our library prep info and any other pertinent information. Ex: Sequenced using Nextera XT library prep kit, 2 x 250.
 3. Fill out 'instrument_model' column with your illumina model type and number (if it has one). Ex: Illumina HiSeq 1500."""
-        disclaimer_text = """As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, \
+        disclaimer_text = """As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) that is auto populated in this sheet unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, \
 including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov."""
         # Determine the number of rows already filled
         num_rows = df.shape[0] + 2
         # Add text to the cell
         if input_sheet_name == "SRA_data":
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), sra_delete_warning, orange_format)
             worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
         else:
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), disclaimer_text, red_format)
-
+            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), biosample_delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
 
 def main():
     args = parseArgs()
@@ -96,7 +101,7 @@ def main():
         print("No BiosampleAttributes_Microbe.1.0.xlsx files were found, you need to pass at least one!")
         exit()
     if len(sra_list) != 0:
-        print(str(len(biosample_list)) + " Sra_Microbe.xlsx files were found using Sra_*_Microbe.xlsx!")
+        print(str(len(sra_list)) + " Sra_Microbe.xlsx files were found using Sra_*_Microbe.xlsx!")
         if args.sra_output != "Sra_Microbe.xlsx":
             final_file = args.sra_output + "_Sra_Microbe.xlsx"
         else:

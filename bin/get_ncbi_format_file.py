@@ -132,13 +132,13 @@ def fill_meta_values(meta_info_biosample, isolate_taxs, mlst_info_isolate, biopr
         else:
             meta_info_biosample[isolate_name].sampleContent['bioproject_accession'] = ""
         meta_info_biosample[isolate_name].sampleContent['*organism'] = isolate_taxs[isolate_name]['G'] + " " + isolate_taxs[isolate_name]['s']
-        meta_info_biosample[isolate_name].sampleContent['strain'] = "missing"
+        meta_info_biosample[isolate_name].sampleContent['strain'] = ""
         meta_info_biosample[isolate_name].sampleContent['isolate'] = isolate_name
         meta_info_biosample[isolate_name].sampleContent['host'] = ""
         meta_info_biosample[isolate_name].sampleContent['isolation_source'] = ""
         meta_info_biosample[isolate_name].sampleContent['*collection_date'] = ""
-        meta_info_biosample[isolate_name].sampleContent['*geo_loc_name'] = ""
-        meta_info_biosample[isolate_name].sampleContent['*sample_type'] = ""
+        meta_info_biosample[isolate_name].sampleContent['*geo_loc_name'] = "USA"
+        meta_info_biosample[isolate_name].sampleContent['*sample_type'] = "whole organism"
         meta_info_biosample[isolate_name].sampleContent['MLST'] = mlst_info_isolate[isolate_name]
     return meta_info_biosample
 
@@ -210,20 +210,26 @@ def add_disclaimer(df, input_excel, input_sheet_name):
         red_format = workbook.add_format({'color': 'red', 'bold': True, 'text_wrap': True})
         # Change the font color to orange
         orange_format = workbook.add_format({'color': 'orange', 'bold': True, 'text_wrap': True})
-        delete_warning = """Do the following before upload:
+        biosample_delete_warning = """Do the following before upload:
+1. Delete this row and the rows below!
+2. At minimum fill out the following columns: 
+    - Host: e.g., Homo sapiens, animal, environmental, other
+    - Collection Date: Specimen collection year only"""
+        sra_delete_warning = """Do the following before upload:
 1. Delete this row and the rows below!
 2. Fill out 'design_description' column with a short description of our library prep info and any other pertinent information. Ex: Sequenced using Nextera XT library prep kit, 2 x 250.
 3. Fill out 'instrument_model' column with your illumina model type and number (if it has one). Ex: Illumina HiSeq 1500."""
-        disclaimer_text = """As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, \
+        disclaimer_text = """As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) that is auto populated in this sheet unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, \
 including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov."""
         # Determine the number of rows already filled
         num_rows = df.shape[0] + 2
         # Add text to the cell
         if input_sheet_name == "SRA_data":
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), sra_delete_warning, orange_format)
             worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
         else:
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), disclaimer_text, red_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), biosample_delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
 
 
 def base_function(isolate_full_path, sample_type, output, microbe_example, sra_metadata, osii_bioprojects, directory, griphin_summary):

@@ -151,28 +151,53 @@ task combine_phoenix_run {
       echo "WARNING: No GRiPHin_Summary.tsv files provided skipping GRiPHin_Summary.tsv combining step."
     fi
 
-  if [ ! -z "~{sep=',' ncbi_biosample_excel_files}" ] | [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
-    if [ ! -z "~{sep=',' ncbi_biosample_excel_files}" ]; then
-        echo "Combining and creating ${combined_ncbi_biosample_summary_name}"
-        COUNTER=1
-        BIOSAMPLE_ARRAY_EXCEL=(~{sep=',' ncbi_biosample_excel_files})
-        for i in ${BIOSAMPLE_ARRAY_EXCEL//,/ }; do
-          echo "found $i copying to BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx"
-          cp $i ./BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx ;
-          COUNTER=$((COUNTER + 1))
-        done
-    elif [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
-        echo "Combining and creating ${combined_ncbi_sra_summary_name}"
-        COUNTER=1
-        SRA_ARRAY_EXCEL=(~{sep=',' ncbi_sra_excel_files})
-        for i in ${SRA_ARRAY_EXCEL//,/ }; do
-          echo "found $i copying to Sra_${COUNTER}_Microbe.xlsx"
-          cp $i ./Sra_${COUNTER}_Microbe.1.0.xlsx ;
-          COUNTER=$((COUNTER + 1))
-        done
+  #if ncbi biosampe excel files were passed then combine them
+  if [ ! -z "~{sep=',' ncbi_biosample_excel_files}" ]; then
+    echo "Combining and creating ${combined_ncbi_biosample_summary_name}"
+    COUNTER=1
+    BIOSAMPLE_ARRAY_EXCEL=(~{sep=',' ncbi_biosample_excel_files})
+    for i in ${BIOSAMPLE_ARRAY_EXCEL//,/ }; do
+      echo "found $i copying to BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx"
+      cp $i ./BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx ;
+      COUNTER=$((COUNTER + 1))
+    done
+
+    ## combine ncbi biosample excel files. In the script it determines if phx or cdc_phx was run.
+    python3 ./$version/bin/terra_combine_ncbi_excel.py $out_ncbi_biosample_command
+
+    # If NCBI biosample files were passed, but not a summary made at the end then throw an error
+    if [ ! -s "${combined_ncbi_biosample_summary_name}" ]; then
+      echo "ERROR: BiosampleAttributes_Microbe.1.0.xlsx files were passed, but no combination file was made."
+      ls
+      exit 1
     fi
+  # if array is empty
+  else
+    echo "WARNING: No NCBI excel files provided skipping NCBI excel combining steps."
+  fi
+
+  if [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
+    echo "Combining and creating ${combined_ncbi_sra_summary_name}"
+    COUNTER=1
+    SRA_ARRAY_EXCEL=(~{sep=',' ncbi_sra_excel_files})
+    for i in ${SRA_ARRAY_EXCEL//,/ }; do
+      echo "found $i copying to Sra_${COUNTER}_Microbe.xlsx"
+      cp $i ./Sra_${COUNTER}_Microbe.1.0.xlsx ;
+      COUNTER=$((COUNTER + 1))
+    done
+
     ## combine sra excel files. In the script it determines if phx or cdc_phx was run.
-    python3 ./$version/bin/terra_combine_ncbi_excel.py $out_ncbi_biosample_command $out_ncbi_sra_command
+    python3 ./$version/bin/terra_combine_ncbi_excel.py $out_ncbi_sra_command
+
+    # If NCBI biosample files were passed, but not a summary made at the end then throw an error
+    if [ ! -s "${combined_ncbi_sra_summary_name}" ]; then
+      echo "ERROR: Sra_Microbe.xlsx files were passed, but no combination file was made."
+      ls
+      exit 1
+    fi
+  # if array is empty
+  else
+    echo "WARNING: No NCBI excel files provided skipping NCBI excel combining steps."
   fi
 
 
