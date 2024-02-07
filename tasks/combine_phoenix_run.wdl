@@ -44,14 +44,18 @@ task combine_phoenix_run {
       combined_griphin_tsv_summary_name="GRiPHin_Summary.tsv"
     fi
     if [ ! -z "~{combined_sra_biosample_xlsx_prefix}" ]; then
-      $out_ncbi_sra_command="--sra_output ~{combined_sra_biosample_xlsx_prefix}"
+      out_ncbi_sra_command="--sra_output ~{combined_sra_biosample_xlsx_prefix}"
+      combined_ncbi_sra_summary_name="~{combined_sra_biosample_xlsx_prefix}_Sra_Microbe.xlsx"
     else
-      $out_ncbi_sra_command=""
+      out_ncbi_sra_command=""
+      combined_ncbi_sra_summary_name="Sra_Microbe.xlsx"
     fi
-    if [ ! -z "~{combined_sra_biosample_xlsx_prefix}" ]; then
-      $out_ncbi_biosample_command="--biosample_output ~{combined_sra_biosample_xlsx_prefix}"
+    if [ ! -z "~{ncbi_biosample_attributes_excel_files}" ]; then
+      out_ncbi_biosample_command="--biosample_output ~{ncbi_biosample_attributes_excel_files}"
+      combined_ncbi_biosample_summary_name="~{ncbi_biosample_attributes_excel_files}_BiosampleAttributes_Microbe.1.0.xlsx"
     else
-      $out_ncbi_biosample_command=""
+      out_ncbi_biosample_command=""
+      combined_ncbi_biosample_summary_name="BiosampleAttributes_Microbe.1.0.xlsx"
     fi 
 
     #if phoenix tsv files were passed then combine them
