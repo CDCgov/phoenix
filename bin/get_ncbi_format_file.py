@@ -219,8 +219,11 @@ including from the Antimicrobial Resistance Laboratory Network (AR Lab Network),
         # Determine the number of rows already filled
         num_rows = df.shape[0] + 2
         # Add text to the cell
-        worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), delete_warning, orange_format)
-        worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
+        if input_sheet_name == "SRA_data":
+            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
+        else:
+            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), disclaimer_text, red_format)
 
 
 def base_function(isolate_full_path, sample_type, output, microbe_example, sra_metadata, osii_bioprojects, directory, griphin_summary):
