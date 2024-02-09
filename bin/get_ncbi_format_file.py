@@ -60,6 +60,8 @@ def load_bio_projects(sample_type, isolate_list_path, microbe_example):
         df = pd.read_excel(microbe_example, header=None, sheet_name='Microbe.1.0')
         index = df.index[df.apply(lambda x: all(keyword in str(x.iloc[:]) for keyword in ["sample_name", "sample_title"]), axis=1)]
         columns = list(df.iloc[index.values].values[0])
+        print(df)
+        print(columns)
         for isolate in isolate_names:
             sample_id = isolate
             sample = {}
