@@ -45,6 +45,9 @@ def get_isolate_dirs(directory, griphin_summary):
     skip_list = skip_list_dirs + failed_id_list
     # remove bad directories from list
     dirs_cleaned = [val for val in filtered_dirs if not any(str(bad_val) in str(val) for bad_val in skip_list)] #remove unwanted files
+    if len(dirs_cleaned) == 0:
+        print("No samples in this run passed QC in the GRiPHin Summary, thus no NCBI sheet will be written.")
+        exit()
     try: #if there are numbers in the name then use that to sort
         dirs_sorted=sorted(dirs_cleaned, key=lambda x: int("".join([i for i in x if i.isdigit()])))
     except: #if no numbers then use only alphabetically
@@ -62,8 +65,6 @@ def load_bio_projects(sample_type, isolate_list_path, microbe_example):
         #columns = list(df.iloc[index.values].values[0])
         # Remove newline characters from column names
         columns = df.columns
-        print(df)
-        print(columns)
         for isolate in isolate_names:
             sample_id = isolate
             sample = {}
@@ -187,16 +188,12 @@ def base_output(output_path, sra, sra_columns, bio_attribute, biosample_columns)
     path_bio = path + "/BiosampleAttributes_Microbe.1.0.xlsx"
     path_sra = path + "/Sra_Microbe.1.0.xlsx"
     df_biosample = pd.DataFrame(tools.purify_dict(bio_attribute)).T.reset_index(drop=True)
-    print(df_biosample)
-    print(biosample_columns)
-    # Remove newline characters from column names
-    biosample_columns = [col.replace('\n', '') for col in biosample_columns]
     #make sure the column order is correct
-    df_biosample[biosample_columns]
+    df_biosample = df_biosample[biosample_columns]
     df_biosample.to_excel(path_bio, index=False)
     df_sra = pd.DataFrame(tools.purify_dict(sra)).T.reset_index(drop=True)
     #make sure the column order is correct
-    df_sra[sra_columns]
+    df_sra = df_sra[sra_columns]
     df_sra.to_excel(path_sra, index=False)
     #add disclaimer
     add_disclaimer(df_biosample, path_bio, "Sheet1")
