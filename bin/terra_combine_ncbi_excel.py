@@ -21,7 +21,7 @@ def get_version():
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a combined NCBI summary excel sheet')
     parser.add_argument('--biosample_output', dest='biosample_output', required=False, default="BiosampleAttributes_Microbe.1.0.xlsx", help='prefix for biosample final file.')
-    parser.add_argument('--sra_output', dest='sra_output', required=False, default="Sra_Microbe.xlsx", help='prefix for sra final file.')
+    parser.add_argument('--sra_output', dest='sra_output', required=False, default="Sra_Microbe.1.0.xlsx", help='prefix for sra final file.')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
@@ -116,15 +116,15 @@ def main():
         print("No BiosampleAttributes_Microbe.1.0.xlsx files were found, you need to pass at least one!")
         exit()
     if len(sra_list) != 0:
-        print(str(len(sra_list)) + " Sra_Microbe.xlsx files were found using Sra_*_Microbe.xlsx!")
-        if args.sra_output != "Sra_Microbe.xlsx":
-            final_file = args.sra_output + "_Sra_Microbe.xlsx"
+        print(str(len(sra_list)) + " Sra_Microbe.1.0.xlsx files were found using Sra_*_Microbe.1.0.xlsx!")
+        if args.sra_output != "Sra_Microbe.1.0.xlsx":
+            final_file = args.sra_output + "_Sra_Microbe.1.0.xlsx"
         else:
             final_file = args.sra_output
         combine_second_rows(sra_list, final_file)
         add_disclaimer(final_file, "SRA_data")
     else:
-        print("No Sra_Microbe.xlsx files were found, you need to pass at least one!")
+        print("No Sra_Microbe.1.0.xlsx files were found, you need to pass at least one!")
         exit()
 
 

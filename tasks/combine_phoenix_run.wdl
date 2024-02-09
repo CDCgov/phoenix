@@ -45,10 +45,10 @@ task combine_phoenix_run {
     fi
     if [ ! -z "~{combined_ncbi_sra_xlsx_prefix}" ]; then
       out_ncbi_sra_command="--sra_output ~{combined_ncbi_sra_xlsx_prefix}"
-      combined_ncbi_sra_summary_name="~{combined_ncbi_sra_xlsx_prefix}_Sra_Microbe.xlsx"
+      combined_ncbi_sra_summary_name="~{combined_ncbi_sra_xlsx_prefix}_Sra_Microbe.1.0.xlsx"
     else
       out_ncbi_sra_command=""
-      combined_ncbi_sra_summary_name="Sra_Microbe.xlsx"
+      combined_ncbi_sra_summary_name="Sra_Microbe.1.0.xlsx"
     fi
     if [ ! -z "~{combined_ncbi_biosample_xlsx_prefix}" ]; then
       out_ncbi_biosample_command="--biosample_output ~{combined_ncbi_biosample_xlsx_prefix}"
@@ -191,7 +191,7 @@ task combine_phoenix_run {
 
     # If NCBI biosample files were passed, but not a summary made at the end then throw an error
     if [ ! -s "${combined_ncbi_sra_summary_name}" ]; then
-      echo "ERROR: Sra_Microbe.xlsx files were passed, but no combination file was made."
+      echo "ERROR: Sra_Microbe.1.0.xlsx files were passed, but no combination file was made."
       ls
       exit 1
     fi
@@ -220,7 +220,7 @@ task combine_phoenix_run {
     File?   griphin_xlsx_summary    = glob("*GRiPHin_Summary.xlsx")[0]
     File?   griphin_tsv_summary     = glob("*GRiPHin_Summary.tsv")[0]
     File?   biosample_excel_summary = glob("*BiosampleAttributes_Microbe.1.0.xlsx")[0]
-    File?   sra_excel_summary       = glob("*Sra_Microbe.xlsx")[0]
+    File?   sra_excel_summary       = glob("*Sra_Microbe.1.0.xlsx")[0]
     String  phoenix_version         = read_string("VERSION")
     String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date           = read_string("DATE")
