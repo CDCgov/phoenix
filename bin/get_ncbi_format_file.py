@@ -67,7 +67,7 @@ def load_bio_projects(sample_type, isolate_list_path, microbe_example):
                 sample[column_name] = ""
             sample_meta = metainfo(sample)
             metafile[sample_id] = sample_meta
-    return metafile
+    return metafile, columns
 
 def ncbi_excel_loader(biosample_example_path, isolate_list_path,):
     isolate_names = tools.extract_string(isolate_list_path, "/")
@@ -102,7 +102,7 @@ def load_sra(ncbi_project_type, isolate_list_path, sra_metadata):
                 sample[column_name] = ""
             sample_meta = metainfo(sample)
             srameta[sample_id] = sample_meta
-    return srameta
+    return srameta, columns
 
 def check_project(one_isoalte_taxo, bioprojects_taxo):
     flag = False
@@ -176,19 +176,23 @@ def check_input(input):
     else:
         return flag
 
-def base_output(output_path, sra, bio_attribute):
+def base_output(output_path, sra, sra_columns, bio_attribute, biosample_columns):
     path = output_path
     if not os.path.exists(path):
         # Create the directory
         os.makedirs(path)
     path_bio = path + "/BiosampleAttributes_Microbe.1.0.xlsx"
     path_sra = path + "/Sra_Microbe.1.0.xlsx"
-    df = pd.DataFrame(tools.purify_dict(bio_attribute)).T.reset_index(drop=True)
-    df.to_excel(path_bio, index=False)
+    df_biosample = pd.DataFrame(tools.purify_dict(bio_attribute)).T.reset_index(drop=True)
+    #make sure the column order is correct
+    df_biosample[biosample_columns]
+    df_biosample.to_excel(path_bio, index=False)
     df_sra = pd.DataFrame(tools.purify_dict(sra)).T.reset_index(drop=True)
+    #make sure the column order is correct
+    df_sra[sra_columns]
     df_sra.to_excel(path_sra, index=False)
     #add disclaimer
-    add_disclaimer(df, path_bio, "Sheet1")
+    add_disclaimer(df_biosample, path_bio, "Sheet1")
     add_disclaimer(df_sra, path_sra, "SRA_data")
 
 def add_disclaimer(df, input_excel, input_sheet_name):
@@ -231,8 +235,8 @@ including from the Antimicrobial Resistance Laboratory Network (AR Lab Network),
             worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+4), sra_delete_warning, orange_format)
             worksheet.merge_range('A' + str(num_rows+5) + ':J' + str(num_rows+8), disclaimer_text, red_format)
         else:
-            worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+7), biosample_delete_warning, orange_format)
-            worksheet.merge_range('A' + str(num_rows+8) + ':J' + str(num_rows+11), disclaimer_text, red_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+8), biosample_delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+9) + ':J' + str(num_rows+12), disclaimer_text, red_format)
 
 
 def base_function(isolate_full_path, sample_type, output, microbe_example, sra_metadata, osii_bioprojects, directory, griphin_summary):
@@ -241,14 +245,14 @@ def base_function(isolate_full_path, sample_type, output, microbe_example, sra_m
         determined_isolate_full_path = get_isolate_dirs(directory, griphin_summary)
     else:
         determined_isolate_full_path = isolate_full_path
-    biosample = load_bio_projects(sample_type, determined_isolate_full_path, microbe_example)
+    biosample, biosample_columns = load_bio_projects(sample_type, determined_isolate_full_path, microbe_example)
     tax_info_isolate = retrieve_taxo_mlst.retrieve_taxo(determined_isolate_full_path)
     mlst_info_isolate = retrieve_taxo_mlst.retrieve_mlst_nonovel(determined_isolate_full_path)
     seq_machine_isolate = retrieve_taxo_mlst.retrieve_instrument_model(determined_isolate_full_path)
     fill_meta_values(biosample, tax_info_isolate, mlst_info_isolate, bioprojects_taxo)
-    sra = load_sra(sample_type, determined_isolate_full_path, sra_metadata)
+    sra, sra_columns = load_sra(sample_type, determined_isolate_full_path, sra_metadata)
     fill_sra(sra, seq_machine_isolate)
-    base_output(output, sra, biosample)
+    base_output(output, sra, sra_columns, biosample, biosample_columns)
 
 def manage_functions(input_file, sample_type, output, microbe_example, sra_metadata, osii_bioprojects, directory, griphin_summary):
     # case 1: providing the full path of isolates in csv file

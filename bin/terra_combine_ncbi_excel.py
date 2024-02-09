@@ -10,8 +10,8 @@ import re
 from re import search
 from itertools import chain
 
-##Makes a summary Excel file when given a series of griphin xlsx files
-##Usage: >python terra_combine_griphin.py -o Output_Report.xlsx
+##Makes a summary Excel file when given a series of ncbi excel files produced by PHoeNIx using --create_ncbi_sheet
+##Usage: >python terra_combine_ncbi_excel.py --sra_output <sra_excel_prefix> --biosample_output <biosample_excel_prefix>
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
@@ -45,18 +45,14 @@ def combine_second_rows(excel_files, final_file):
     # remove invalid files from list
     valid_excel_files = [file for file in excel_files if file not in invalid_files]
 
+    #combine each row to a combined dataframe
     for file in valid_excel_files:
         df = pd.read_excel(file, header=0, nrows=1)
         combined_second_rows = pd.concat([df, combined_second_rows], ignore_index=True, axis=0)
+        combined_second_rows = combined_second_rows[list(header_df.columns)]
 
-    # Read the second row of each Excel file and store it in a list comprehension
-    #valid_second_rows = [pd.read_excel(file, header=0, nrows=2).assign(File=file) for file in excel_files if not pd.read_excel(file, header=1, nrows=1).isna().all().all()]
-
-    if len(valid_excel_files) > 0:  # Check if there are any valid second rows
-        print("No valid second rows found in any file.")
-
-    print(combined_second_rows)
-    #print(header_df.columns)
+    if len(valid_excel_files) < 0:  # Check if there are any valid second rows
+        print("No valid second rows found in any {} file.".format(file_type))
 
     # Write the combined second rows along with the header to a new Excel file
     combined_second_rows.to_excel(final_file, index=False,header=list(header_df.columns))
