@@ -57,11 +57,11 @@ def load_bio_projects(sample_type, isolate_list_path, microbe_example):
     metafile = {}
     if "Microbe" in sample_type or "microbe" in sample_type:
         #biosample_example_path = os.path.join(os.path.dirname(__file__), microbe_example)
-        df = pd.read_excel(microbe_example, header=None, sheet_name='Microbe.1.0')
-        index = df.index[df.apply(lambda x: all(keyword in str(x.iloc[:]) for keyword in ["sample_name", "sample_title"]), axis=1)]
-        columns = list(df.iloc[index.values].values[0])
-        print(df)
-        print(columns)
+        df = pd.read_excel(microbe_example, header=0, sheet_name='Microbe.1.0', comment='#')
+        #index = df.index[df.apply(lambda x: all(keyword in str(x.iloc[:]) for keyword in ["sample_name", "sample_title"]), axis=1)]
+        #columns = list(df.iloc[index.values].values[0])
+        # Remove newline characters from column names
+        columns = df.columns
         for isolate in isolate_names:
             sample_id = isolate
             sample = {}
@@ -71,12 +71,11 @@ def load_bio_projects(sample_type, isolate_list_path, microbe_example):
             metafile[sample_id] = sample_meta
     return metafile, columns
 
-def ncbi_excel_loader(biosample_example_path, isolate_list_path,):
+def ncbi_excel_loader(biosample_example_path, isolate_list_path):
     isolate_names = tools.extract_string(isolate_list_path, "/")
     metafile = {}
     df = pd.read_excel(biosample_example_path, header=None, sheet_name='Microbe.1.0')
-    index = df.index[
-        df.apply(lambda x: all(keyword in str(x.iloc[:]) for keyword in ["sample_name", "sample_title"]), axis=1)]
+    index = df.index[df.apply(lambda x: all(keyword in str(x.iloc[:]) for keyword in ["sample_name", "sample_title"]), axis=1)]
     columns = list(df.iloc[index.values].values[0])
     for isolate in isolate_names:
         sample_id = isolate
