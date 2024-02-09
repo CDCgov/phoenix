@@ -62,6 +62,8 @@ def load_bio_projects(sample_type, isolate_list_path, microbe_example):
         #columns = list(df.iloc[index.values].values[0])
         # Remove newline characters from column names
         columns = df.columns
+        print(df)
+        print(columns)
         for isolate in isolate_names:
             sample_id = isolate
             sample = {}
@@ -185,6 +187,10 @@ def base_output(output_path, sra, sra_columns, bio_attribute, biosample_columns)
     path_bio = path + "/BiosampleAttributes_Microbe.1.0.xlsx"
     path_sra = path + "/Sra_Microbe.1.0.xlsx"
     df_biosample = pd.DataFrame(tools.purify_dict(bio_attribute)).T.reset_index(drop=True)
+    print(df_biosample)
+    print(biosample_columns)
+    # Remove newline characters from column names
+    biosample_columns = [col.replace('\n', '') for col in biosample_columns]
     #make sure the column order is correct
     df_biosample[biosample_columns]
     df_biosample.to_excel(path_bio, index=False)
