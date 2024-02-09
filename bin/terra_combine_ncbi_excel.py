@@ -29,18 +29,37 @@ def parseArgs(args=None):
 def combine_second_rows(excel_files, final_file):
     # Read the header from the first Excel file
     header_df = pd.read_excel(excel_files[0], header=0, nrows=0)
+    file_type = excel_files[0].split('_')[0]
 
     # Initialize an empty DataFrame to store combined second rows
     combined_second_rows = pd.DataFrame()
 
-    # Iterate through each Excel file
-    for file in excel_files:
-        # Read the second row of the Excel file into a DataFrame
-        second_rows = [pd.read_excel(file, header=0, nrows=1) for file in excel_files]
-        # Concatenate the second rows
-        combined_second_rows = pd.concat(second_rows, ignore_index=True)
-        # Write the combined second rows along with the header to a new Excel file
-        combined_second_rows.to_excel(final_file, index=False, header=list(header_df.columns))
+    # Identify invalid files where all columns in the second row contain NaN values
+    invalid_files = [file for file in excel_files if pd.read_excel(file, header=1, nrows=1).isna().all().all()]
+    #print results of screening for na columns
+    if invalid_files:
+        print("{} files with all NaN columns:".format(file_type), invalid_files)
+    else:
+        print("No {} files found with all NaN columns.".format(file_type))
+
+    # remove invalid files from list
+    valid_excel_files = [file for file in excel_files if file not in invalid_files]
+
+    for file in valid_excel_files:
+        df = pd.read_excel(file, header=0, nrows=1)
+        combined_second_rows = pd.concat([df, combined_second_rows], ignore_index=True, axis=0)
+
+    # Read the second row of each Excel file and store it in a list comprehension
+    #valid_second_rows = [pd.read_excel(file, header=0, nrows=2).assign(File=file) for file in excel_files if not pd.read_excel(file, header=1, nrows=1).isna().all().all()]
+
+    if len(valid_excel_files) > 0:  # Check if there are any valid second rows
+        print("No valid second rows found in any file.")
+
+    print(combined_second_rows)
+    #print(header_df.columns)
+
+    # Write the combined second rows along with the header to a new Excel file
+    combined_second_rows.to_excel(final_file, index=False,header=list(header_df.columns))
 
 def add_disclaimer(input_excel, input_sheet_name):
     df = pd.read_excel(input_excel, header=0)

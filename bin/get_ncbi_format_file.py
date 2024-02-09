@@ -214,7 +214,10 @@ def add_disclaimer(df, input_excel, input_sheet_name):
 1. Delete this row and the rows below!
 2. At minimum fill out the following columns: 
     - Host: e.g., Homo sapiens, animal, environmental, other
-    - Collection Date: Specimen collection year only"""
+    - Collection Date: Specimen collection year only
+    - Isolate Source: Specimen source. 
+        * Homo sapiens or animal: blood, urine, etc
+        * environmental: device or surface """
         sra_delete_warning = """Do the following before upload:
 1. Delete this row and the rows below!
 2. Fill out 'design_description' column with a short description of our library prep info and any other pertinent information. Ex: Sequenced using Nextera XT library prep kit, 2 x 250.
@@ -225,11 +228,11 @@ including from the Antimicrobial Resistance Laboratory Network (AR Lab Network),
         num_rows = df.shape[0] + 2
         # Add text to the cell
         if input_sheet_name == "SRA_data":
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), sra_delete_warning, orange_format)
-            worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+4), sra_delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+5) + ':J' + str(num_rows+8), disclaimer_text, red_format)
         else:
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), biosample_delete_warning, orange_format)
-            worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+7), biosample_delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+8) + ':J' + str(num_rows+11), disclaimer_text, red_format)
 
 
 def base_function(isolate_full_path, sample_type, output, microbe_example, sra_metadata, osii_bioprojects, directory, griphin_summary):
