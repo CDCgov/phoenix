@@ -114,8 +114,8 @@ workflow phoenix_workflow {
     File? quast_summary            = phoenix.quast_summary            # _report.tsv
     File? mlst_tsv                 = phoenix.mlst_tsv                 # .tsv
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
-    Array[File?] busco_generic    = phoenix.busco_generic            # short_summary.generic.*.filtered.scaffolds.fa.txt"
-    Array[File?] busco_specific   = phoenix.busco_specific           # short_summary.specific.*.filtered.scaffolds.fa.txt"
+    Array[File]? busco_generic    = phoenix.busco_generic            # short_summary.generic.*.filtered.scaffolds.fa.txt"
+    Array[File]? busco_specific   = phoenix.busco_specific           # short_summary.specific.*.filtered.scaffolds.fa.txt"
     File? srst2                   = phoenix.srst2                    # __fullgenes__ResGANNCBI_20210507_srst2__results.txt"
     #phoenix gamma
     File? gamma_ar_calls           = phoenix.gamma_ar_calls           # ResGANNCBI_20210507_srst2.gamma
