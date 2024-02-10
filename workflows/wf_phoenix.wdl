@@ -38,10 +38,10 @@ workflow phoenix_workflow {
     String  qc_outcome                        = phoenix.qc_outcome
     String  warning_count                     = phoenix.warning_count
     String  estimated_coverage                = phoenix.estimated_coverage #make string for cases where it's "unknown"
-    Int     genome_length                     = phoenix.genome_length
+    String  genome_length                     = phoenix.genome_length #make string for cases where it's "unknown"
     String  assembly_ratio                    = phoenix.assembly_ratio
-    Int     scaffold_count                    = phoenix.scaffold_count
-    Float   gc_percent                        = phoenix.gc_percent
+    String  scaffold_count                    = phoenix.scaffold_count #make string for cases where it's "unknown"
+    String  gc_percent                        = phoenix.gc_percent #make string for cases where it's "unknown"
     String  busco                             = phoenix.busco
     String  busco_db                          = phoenix.busco_db
     String  species                           = phoenix.species
