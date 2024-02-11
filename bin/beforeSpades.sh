@@ -9,29 +9,31 @@
 #
 # Modules required: None
 #
-# V1.0 (07/03/2022)
-#
 # Created by Jill Hagey (qpk9@cdc.gov)
 #
 #  Function to print out help blurb
+
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (07/03/2022)
+
 show_help () {
 	echo "Usage is ./beforeSpades.sh -d path_to_output -n report.tsv"
 	echo "required: -d = path to specific sorted database with statistics related to entries from NCBI"
 	echo "required: -n = sample name of file"
 	echo "required: -k = kraken trimmed best hit summary"
 	echo "required: -s = synopsis file"
+	echo "optional: -V = show version"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?d:n:k:s:c" option; do
+while getopts ":h?d:n:k:s:cV" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
 			echo "Invalid option found: ${OPTARG}"
-      show_help
-      exit 0
-      ;;
+			show_help
+			exit 0
+			;;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
 			output_path=${OPTARG};;
@@ -47,6 +49,8 @@ while getopts ":h?d:n:k:s:c" option; do
 		c)
 			echo "Option -c triggered"
 			cdc_extended_qc="true";;
+		V)
+			show_version="True";;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -55,6 +59,11 @@ while getopts ":h?d:n:k:s:c" option; do
 			;;
 	esac
 done
+
+if [[ "${show_version}" = "True" ]]; then
+	echo "beforespades.sh: ${version}"
+	exit
+fi
 
 genus=$(grep -R 'G:' $k2_bh_summary | cut -d ' ' -f3 | tr -d '\n')
 gpercent=$(grep -R 'G:' $k2_bh_summary | cut -d ' ' -f2 | tr -d '\n')

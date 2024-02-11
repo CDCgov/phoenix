@@ -20,12 +20,17 @@ import os
 import argparse
 import re
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
 	parser = argparse.ArgumentParser(description='Script to rename contigs in assemblies')
 	parser.add_argument('-i', '--input', required=True, help='input fasta filename')
 	parser.add_argument('-o', '--output', required=True, help='output filename')
 	parser.add_argument('-n', '--name', dest="name", required=True, help='filename')
 	parser.add_argument('--reverse', help='returns formatted header to original', action='store_true')
+	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
 	return parser.parse_args()
 
 args=parseArgs()
@@ -113,6 +118,19 @@ def trycycler_rename(input_file, name, output):
 		sequences.append(record)
 	SeqIO.write(sequences, output, "fasta")
 
+def unknown_rename(input_file, output, name):
+	"""
+	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#)
+	"""
+	sequences = []
+	count = 0
+	for record in SeqIO.parse(input_file,"fasta"):
+		record.id = name + "_" + str(count) + "_length_" + str(len(record.seq))
+		record.description = ""
+		sequences.append(record)
+		count = count + 1
+	SeqIO.write(sequences, output, "fasta")
+
 def detect_assemblier(input_file, name):
 	for record in SeqIO.parse(input_file,"fasta"):
 		if record.id.startswith("contig00001"):
@@ -130,7 +148,7 @@ def detect_assemblier(input_file, name):
 		elif record.id.startswith(name + "_1_length_"):
 			assembler = "correct name"
 		else: # if none of these then leave blank for error to be reported
-			assembler = ""
+			assembler = "Unknown"
 		break # we only need to do this for the first record
 	return assembler
 
@@ -157,6 +175,8 @@ def main():
 		trycycler_rename(args.input, args.name, args.output)
 	elif assembler == "correct name": # if the name looks like the correct scheme then just rename and move on
 		rename_file(args.input, args.output)
+	elif assembler == "Unknown": # if the name isn't recogized then
+		unknown_rename(args.input, args.output, args.name)
 	else:
 		print("ERROR: The assembler used could not be determined. PHoeNIx supports assemblies from either Skesa, Shovill, SPAdes, Unicycler,Trycycler and Flye. If you used one of these open a github issue to report the problem.")
 

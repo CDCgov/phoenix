@@ -8,14 +8,13 @@
 #
 # Modules required: None
 #
-# v1.0 (05/25/2022)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov)
-#
+
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (05/25/2022)
 
 #  Function to print out help blurb
 show_help () {
-  echo "Usage: pipeline_stats_writer.sh args(* are required)
+  echo "Usage: pipeline_stats_writer.sh args(* are required) [-V]
     -a raw_read_counts.txt
     -b total_read_counts.txt
     -c removed_adapter_R1.fastq.gz
@@ -23,6 +22,10 @@ show_help () {
     -e kraken2_trimd_report
     -f kraken2_trimd_summary
     -g krona_trimd.html
+    -x srst2_file
+    -V show version
+
+    version: ${version}
     "
 }
 
@@ -32,7 +35,7 @@ ani_coverage_threshold=80
 
 # Parse command line options
 options_found=0
-while getopts ":1?a:b:c:d:e:f:g:x:" option; do
+while getopts ":1?a:b:c:d:e:f:g:x:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -64,6 +67,8 @@ while getopts ":1?a:b:c:d:e:f:g:x:" option; do
     x)
       #echo "Option -w triggered, argument = ${OPTARG}"
       srst2_file=${OPTARG};;
+    V)
+      show_version="True";;
     :)
       echo "Option -${OPTARG} requires as argument";;
     1)
@@ -77,6 +82,11 @@ if [[ "${options_found}" -eq 0 ]]; then
 	echo "No options found"
 	show_help
 	exit
+fi
+
+if [[ "${show_version}" = "True" ]]; then
+  echo "pipeline_stats_writer_trimd.sh: ${version}"
+  exit
 fi
 
  # Checks for proper argumentation

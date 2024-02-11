@@ -12,21 +12,35 @@
             "description": "Define where the pipeline should find input data and save output data.",
             "required": [],
             "properties": {
-                "input": {
-                    "type": "string",
-                    "format": "file-path",
-                    "mimetype": "text/csv",
-                    "pattern": "^\\S+\\.csv$",
-                    "schema": "assets/schema_input.json",
-                    "description": "Path to comma-separated file containing information about the samples in the experiment.",
-                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/quaisar/usage#samplesheet-input). You use this with entries PHOENIX, CDC_PHOENIX, SCAFFOLDS, and CDC_SCAFFOLDS.",
-                    "fa_icon": "fas fa-file-csv"
-                },
                 "kraken2db": {
                     "type": "string",
                     "fa_icon": "fas fa-database",
-                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktax_map.k2 files.",
+                    "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktaxonomy.tsv files. You can pass a decompressed folder or in its compressed '.tar.gz' form. The database can be downloaded from https://benlangmead.github.io/aws-indexes/k2 . You must use a database created after 3/14/2023.",
                     "default": "kraken-db"
+                }
+            }
+        },
+        "Required_phx_and_scaffold_input": {
+            "type": "string",
+            "format": "file-path",
+            "mimetype": "text/csv",
+            "pattern": "^\\S+\\.csv$",
+            "schema": "assets/schema_input.json",
+            "description": "Path to comma-separated file containing information about the samples in the experiment.",
+            "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row. See [usage docs](https://nf-co.re/quaisar/usage#samplesheet-input). You use this with entries PHOENIX, CDC_PHOENIX, SCAFFOLDS, and CDC_SCAFFOLDS.",
+            "fa_icon": "fas fa-file-csv"
+        },
+        "Required_sra_options": {
+            "title": "Options for -entry SRA and CDC_SRA",
+            "type": "object",
+            "fa_icon": "fas fa-file-csv",
+            "description": "Define where the pipeline should find input scaffolds.",
+            "properties": {
+                "input_sra": {
+                    "type": "string",
+                    "description": "Path to a csv file that has one SRR number per line.",
+                    "default": "null",
+                    "fa_icon": "fas fa-folder-open"
                 }
             }
         },
@@ -47,20 +61,6 @@
                     "fa_icon": "fas fa-keyboard",
                     "description": "String that is the FULL extention of the scaffolds files you wish to input. A regrex of this extension (ex. *.scaffolds.fa.gz) will then be used. Assemblies must end in '.fa.gz' or '.fasta.gz'.",
                     "default": ".scaffolds.fa.gz"
-                }
-            }
-        },
-        "Required_sra_options": {
-            "title": "Options for -entry SRA and CDC_SRA",
-            "type": "object",
-            "fa_icon": "fas fa-file-csv",
-            "description": "Define where the pipeline should find input scaffolds.",
-            "properties": {
-                "input_sra": {
-                    "type": "string",
-                    "description": "Path to a csv file that has one SRR number per line.",
-                    "default": "null",
-                    "fa_icon": "fas fa-folder-open"
                 }
             }
         },
@@ -99,6 +99,12 @@
                     "fa_icon": "fas fa-keyboard",
                     "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
                     "default": ""
+                },
+                "create_ncbi_sheet": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-keyboard",
+                    "description": "For labs who are part of ARLN you can pass this argument to generate partially filled out sheets for NCBI upload. This should still be reviewed PRIOR to upload. Only for -entry CDC_PHOENIX and -entry PHOENIX.",
+                    "default": "False"
                 },
                 "publish_dir_mode": {
                     "type": "string",

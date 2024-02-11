@@ -1,8 +1,10 @@
 reports:
   "multiqc/multiqc_report.html":
     display: "MultiQC HTML report"
-  "Phoenix_Output_Report.tsv":
-    display: "PHoeNIx output report"
+  "Phoenix_Summary.tsv":
+    display: "PHoeNIx summary"
+  "GRiPHin_Summary.tsv":
+    display: "PHoeNIx additional summary with AMR gene coverage,%ID information."
   "*.synopsis":
     display: "Summary of stats for the an individual sample"
     mimeType: text/plain
@@ -27,11 +29,11 @@ reports:
     display: "BBmap log from filtering <500bp contigs"
   "**/mlst/*.tsv":
     display: "MLST"
-  "**/quast/*_report.tsv":
+  "**/quast/*_summary.tsv ":
     display: "Quast report"
-  "**/kraken2_asmbld_weighted/*.wtasmbld_summary.txt":
+  "**/kraken2_asmbld_weighted/*..kraken2_wtasmbld.top_kraken_hit.txt":
     display: "Best hit from kraken2 on weighted scaffolds"
-  "**/kraken2_trimd/*.trimd_summary.txt":
+  "**/kraken2_trimd/*..kraken2_trimd.top_kraken_hit.txt":
     display: "Best hit from kraken2 on trimmed reads"
   "**/ANI/*.fastANI.txt":
     display: "List of matches from FastANI. The top match information is the first line of the file."

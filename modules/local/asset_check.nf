@@ -1,6 +1,7 @@
 process ASSET_CHECK {
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
+    // base_v2.1.0 - MUST manually change below (line 21)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     path(zipped_sketch)
@@ -17,7 +18,8 @@ process ASSET_CHECK {
     task.ext.when == null || task.ext.when
 
     script:
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     if [[ ${zipped_sketch} = *.gz ]]
     then
@@ -50,6 +52,7 @@ process ASSET_CHECK {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
     """

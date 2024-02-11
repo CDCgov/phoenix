@@ -1,7 +1,8 @@
 process CREATE_SUMMARY_LINE {
     tag "${meta.id}"
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
+    // base_v2.1.0 - MUST manually change below (line 36)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     tuple val(meta), path(trimmed_qc_data_file), \
@@ -22,14 +23,20 @@ process CREATE_SUMMARY_LINE {
     path("versions.yml")     , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    if (params.ica==false) { ica = "" } 
+    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
+    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
     def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
     def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
     def fastani_file    = fastani ? "-f $fastani" : ""
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.1.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    Phoenix_summary_line.py \\
+    ${ica}Phoenix_summary_line.py \\
         -q $quast_report \\
         $trimmed_qc_data \\
         -a $ar_gamma_file \\
@@ -47,6 +54,9 @@ process CREATE_SUMMARY_LINE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+        python: \$(python --version | sed 's/Python //g')
+        Phoenix_summary_line.py: \$(${ica}Phoenix_summary_line.py --version )
+        phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
     """

@@ -9,11 +9,16 @@ import re
 ## Usage: >python get_taxa_for_amrfinder.py -t tax_file -m mutation_tab_file -o out_File
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
     """Takes in a taxa file and creates a file with the taxa found"""
-    parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
+    parser = argparse.ArgumentParser(description='Script to generate a PHoeNIx summary line')
     parser.add_argument('-t', '--taxa', dest="taxa_file", required=True, help='.tax file that comes from determine_taxID.sh')
     parser.add_argument('-o', '--output', dest="output", required=True, help='name of output file')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 def get_taxa(taxa_file):
@@ -31,8 +36,9 @@ def get_taxa(taxa_file):
 
 def taxa_check(genus_match, species_match, gen_sp):
     # species and genus lists
-    species = ['Enterococcus_faecalis', 'Enterobacter_cloacae', 'Citrobacter_freundii', 'Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 
-    'Klebsiella_oxytoca', 'Streptococcus_pyogenes', 'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis', 'Serratia_marcescens'] # for v3.11 update
+    species = ['Enterococcus_faecalis', 'Enterobacter_cloacae', 'Enterobacter_asburiae', 'Citrobacter_freundii', 'Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 
+    'Klebsiella_oxytoca', 'Streptococcus_pyogenes', 'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis', 'Serratia_marcescens',
+    'Vibrio_vulfinicus', 'Vibrio_parahaemolyticus']
     genus = ['Salmonella']
     complex_genera = ['Acinetobacter', 'Escherichia', 'Klebsiella','Campylobacter', 'Shigella', 'Streptococcus', 'Burkholderia'] # for v3.11 update
     if gen_sp in species:

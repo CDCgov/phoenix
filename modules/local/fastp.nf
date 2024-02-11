@@ -1,7 +1,8 @@
 process FASTP {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/fastp:0.23.2'
+    // v0.23.4
+    container 'staphb/fastp@sha256:98bb2bb94bbce4104f7fbbdba72c33c827f5add7cf08cc59fd365c6d82ee4014'
 
     input:
     tuple val(meta), path(reads)
@@ -22,6 +23,7 @@ process FASTP {
 
     script:
     def args = task.ext.args ?: ''
+    def container = task.container.toString() - "staphb/fastp@"
     // Added soft-links to original fastqs for consistent naming in MultiQC
     def prefix = task.ext.prefix ?: "${meta.id}"
     if (meta.single_end) {
@@ -65,6 +67,7 @@ process FASTP {
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             fastp: \$(fastp --version 2>&1 | sed -e "s/fastp //g")
+            fastp_container: ${container}
         END_VERSIONS
         """
     }

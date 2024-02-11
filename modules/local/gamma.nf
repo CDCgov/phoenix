@@ -1,13 +1,11 @@
 process GAMMA {
     tag "$meta.id"
     label 'process_high'
-    container 'staphb/gamma:2.2'
-    /*container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/gamma%3A2.1--hdfd78af_0':
-        'quay.io/biocontainers/gamma:2.1--hdfd78af_0' }" */
+    // v2.2 -- have to manually edit below (line 25)!!!
+    container 'staphb/gamma@sha256:60d8ac58e016349a856fb7b443dd422ba69bae3f40e0dad83460d25ecf71101e'
 
     input:
-    tuple val(meta), path(fasta)
+    tuple val(meta), path(fasta), val(fairy_outcome)
     path(db)
 
     output:
@@ -18,12 +16,14 @@ process GAMMA {
     path "versions.yml"                             , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if there are scaffolds left after filtering
+    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = task.container.toString() - "staphb/gamma:"
+    def gamma_version = 2.2
+    def container_version = task.container.toString() - "staphb/gamma@"
     """
     db_name=\$(echo $db | sed 's:.*/::' | sed 's/.fasta//')
     if [[ ${fasta} == *.gz ]]
@@ -45,7 +45,8 @@ process GAMMA {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        gamma: ${container_version}
+        gamma: ${gamma_version}
+        gamma_container: ${container_version}
         Database: $db
     END_VERSIONS
     """

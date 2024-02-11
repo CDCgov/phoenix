@@ -1,7 +1,9 @@
 process SRATOOLS_FASTERQDUMP {
     tag "${meta.id}"
     label 'process_low'
-    container "https://depot.galaxyproject.org/singularity/sra-tools%3A3.0.3--h87f3376_0"
+    // 3.0.3--h87f3376_0 "quay.io/biocontainers/sra-tools@sha256:c9f92683e10091c3ef93066b1fcbdeeba89af49242ab778a9c8cc006f6be82a3"
+    // 3.0.9--h9f5acd7_0
+    container "quay.io/biocontainers/sra-tools@sha256:bd3dafdfb9ad5f301b72c5fdbbcbf411b19c59e117eabe4209dc15546c851c37"
 
     input:
     tuple val(meta), path(sra_folder)
@@ -11,8 +13,10 @@ process SRATOOLS_FASTERQDUMP {
     path("versions.yml"),                  emit: versions
 
     script:
+    //define variables
     def args = task.ext.args ?: ''
     def srr_number = sra_folder.toString() - "_Folder"
+    def container = task.container.toString() - "quay.io/biocontainers/sra-tools@"
     """
     # change folder name back for fasterq-dump to find
     mv ${sra_folder} ${srr_number}
@@ -28,6 +32,7 @@ process SRATOOLS_FASTERQDUMP {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         sratools: \$(fasterq-dump --version 2>&1 | sed 's/fasterq-dump : //' | awk 'NF' )
+        sratools_container: ${container}
     END_VERSIONS
     """
 }

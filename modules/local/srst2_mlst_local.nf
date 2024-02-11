@@ -1,10 +1,8 @@
 process SRST2_MLST {
     tag "${meta.id}"
     label 'process_medium'
-
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/srst2%3A0.2.0--py27_2':
-        'quay.io/biocontainers/srst2:0.2.0--py27_2'}"
+    // 0.2.0_patched
+    container 'quay.io/jvhagey/srst2@sha256:d4a68baf84c8818b59f334989ccbeea044baf14a79aaf1bd95a1f24f69d0dc5b'
 
     input:
     tuple val(meta), path(fastqs), path(getmlstout), path(alleles), path(profiles), val(status)
@@ -22,18 +20,25 @@ process SRST2_MLST {
     (task.ext.when == null || task.ext.when) //&& "${status[0]}" == "False"
 
     script:
-    def args = task.ext.args ?: ""
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
+    // set up terra variables
     if (params.terra==false) {
         terra = ""
         terra_exit = ""
     } else if (params.terra==true) {
-        terra = "export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/"
-        terra_exit = "export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/"
+        terra = """export PYTHONPATH=/opt/conda/envs/srst2/lib/python2.7/site-packages/
+        PATH=/opt/conda/envs/srst2/bin:\$PATH
+        """
+        terra_exit = """export PYTHONPATH=/opt/conda/envs/phoenix/lib/python3.7/site-packages/
+        PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/srst2/bin:||')"
+        """
     } else {
         error "Please set params.terra to either \"true\" or \"false\""
     }
+    // define variables
+    def args = task.ext.args ?: ""
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
+    def container = task.container.toString() - "quay.io/jvhagey/srst2@"
     """
     #adding python path for running srst2 on terra
     $terra
@@ -141,6 +146,8 @@ process SRST2_MLST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         srst2: \$(echo \$(srst2 --version 2>&1) | sed 's/srst2 //' )
+        srst2_commit_patched: 73f885f55c748644412ccbaacecf12a771d0cae9
+        srst2_container: ${container}
     END_VERSIONS
 
     #revert python path back to main envs for running on terra

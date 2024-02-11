@@ -1,11 +1,12 @@
 process BBDUK {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/bbtools:39.01'
+    //v39.01
+    container 'staphb/bbtools@sha256:161b0e1e198110b7edff8084ae9854d84eb32789d0fd62c7ced302078911c9d7'
 
     input:
-    tuple val(meta), path(reads)
-    path contaminants
+    tuple val(meta), path(reads), val(fairy_outcome)
+    path(contaminants)
 
     output:
     tuple val(meta), path('*.fastq.gz'), emit: reads
@@ -13,7 +14,8 @@ process BBDUK {
     path "versions.yml"                , emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
+    "${fairy_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt." && "${fairy_outcome[2]}" == "PASSED: Read pairs for ${meta.id} are equal."
 
     script:
     def args = task.ext.args ?: ''
@@ -22,6 +24,7 @@ process BBDUK {
     def trimmed  = meta.single_end ? "out=${prefix}.fastq.gz" : "out1=${prefix}_cleaned_1.fastq.gz out2=${prefix}_cleaned_2.fastq.gz"
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
+    def container = task.container.toString() - "staphb/bbtools@"
     """
     maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
     bbduk.sh \\
@@ -36,6 +39,7 @@ process BBDUK {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         bbmap: \$(bbversion.sh)
+        bbmap_container: ${container}
     END_VERSIONS
     """
 }

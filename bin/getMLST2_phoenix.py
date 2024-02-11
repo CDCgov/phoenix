@@ -22,6 +22,10 @@ import re, os, glob
 from urlparse import urlparse
 import ssl
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parse_args():
 	parser = ArgumentParser(description='Download MLST datasets by species'
 										'from pubmlst.org.')
@@ -40,7 +44,7 @@ def parse_args():
 						action="store_true",
 						default = False,
 						help = 'Flage to force downloading of specific scheme name (e.g. "Clostridium difficile")')
-
+	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
 	return parser.parse_args()
 
 # test if a node is an Element and that it has a specific tag name

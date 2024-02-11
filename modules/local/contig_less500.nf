@@ -1,7 +1,8 @@
 process BBMAP_REFORMAT {
     tag "$meta.id"
     label 'process_medium'
-    container 'staphb/bbtools:39.01'
+    //v39.01
+    container 'staphb/bbtools@sha256:161b0e1e198110b7edff8084ae9854d84eb32789d0fd62c7ced302078911c9d7'
 
     input:
     tuple val(meta), path(reads)
@@ -21,6 +22,7 @@ process BBMAP_REFORMAT {
     def trimmed  = "out=${prefix}.filtered.scaffolds.fa.gz"
     def minlength = params.minlength
     def maxmem = task.memory.toGiga()-(task.attempt*9) // keep heap mem low so and rest of mem is for java expansion.
+    def container = task.container.toString() - "staphb/bbtools@"
     """
     maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
     reformat.sh \\
@@ -35,6 +37,7 @@ process BBMAP_REFORMAT {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         bbmap: \$(bbversion.sh)
+        bbmap_container: ${container}
     END_VERSIONS
     """
 }

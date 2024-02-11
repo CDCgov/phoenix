@@ -10,10 +10,15 @@ import argparse
 import pandas as pd
 import glob
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a complete PhoeNix paired reads samplesheet')
     parser.add_argument('-d', '--directory', required=True, dest='directory', help='Will create a samplesheet for all samples in the directory.')
     parser.add_argument('-s', '--use_srr', dest='use_srr', default=False, action='store_true', help='Will create a samplesheet for all samples in the directory.')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 def write_samplesheet(directory, metadata_df, duplicates, use_srr) :

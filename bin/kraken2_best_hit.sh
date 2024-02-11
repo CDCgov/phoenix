@@ -3,26 +3,25 @@
 #
 # Description: Grabs the best species match based on %/read hits from the kraken tool run. Simplified for nextflow inclusion
 #
-# Usage: ./kraken_best_hit.sh -i path_to_.list_file
+# Usage: ./kraken_best_hit.sh -i path_to_.list_file [-q count_file (reads or congtigs)] -n sample_name [-V show_version]
 #
 # Output location: same as input path_to_.list_file
 #
 # Modules required: None
 #
-# v1.0.3 (04/19/2022)
-#
 # Created by Nick Vlachos (nvx4@cdc.gov)
-#
+
+version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0.3 (04/19/2022)
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ./kraken_best_hit.sh -i path_to_list_file [-q count_file (reads or congtigs)] -n sample_name"
+	echo "Usage is ./kraken_best_hit.sh -i path_to_list_file [-q count_file (reads or congtigs)] -n sample_name [-V show_version]"
 	echo "Output is saved to folder where .list file exists"
 }
 
 # Parse command line options
 options_found=0
-while getopts ":h?i:q:n:t:" option; do
+while getopts ":h?i:q:n:t:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -46,6 +45,9 @@ while getopts ":h?i:q:n:t:" option; do
 			echo "Option -t triggered"
 			terra=${OPTARG}
 			;;
+		V)
+			show_version="True"
+			;;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -66,6 +68,11 @@ if [[ $terra = "terra" ]]; then
 	bc_path=/opt/conda/envs/phoenix/bin/bc
 else
 	bc_path=bc
+fi
+
+if [[ "${show_version}" = "True" ]]; then
+	echo "kraken2_best_hit.sh: ${version}"
+	exit
 fi
 
 # Based upon standard naming protocols pulling last portion of path off should result in proper name
@@ -166,11 +173,15 @@ while IFS= read -r line  || [ -n "$line" ]; do
 		family_reads=${reads}
 	# Grabs all read info (identifier, reads and percent) for best genus level entry
 	elif [ "${classification}" = "G" ] && [ "${reads}" -gt "${genus_reads}" ]; then
-		genus=${description^}
+		current_genus=${description^}
 		genus_percent=${percent}
 		genus_reads=${reads}
+		top_genus=${description^}
+	# Need to check if still within top genus sub data
+	elif [ "${classification}" = "G" ]; then
+		current_genus=${description^}
 	# Grabs all read info (identifier, reads and percent) for best species level entry
-	elif [ "${classification}" = "S" ] && [ "${reads}" -gt "${species_reads}" ]; then
+	elif [ "${classification}" = "S" ] && [ "${reads}" -gt "${species_reads}" ] && [ "${current_genus}" = "${top_genus}" ]; then
 		echo "Old: ${species}-${species_reads}"
 		gs=(${description^})
 		species=${gs[@]:1}
@@ -242,7 +253,7 @@ fi
 # echo -e "U: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
 
 ###With headers
-echo -e "Taxon level	Match percentage	Taxa\nU: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
+echo -e "Taxon level	Match percentage	Taxa\nU: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${top_genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
 
 
 #Script exited gracefully (unless something else inside failed)

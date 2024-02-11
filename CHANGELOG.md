@@ -21,20 +21,23 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - `Phoenix_Output_Report.tsv` now has antibiotic genes and plasmid markers filtered to ensure quality [#d0fa32c](https://github.com/CDCgov/phoenix/commit/d0fa32c511a21b21366651b28dfb1539f800e262).  
    - Plasmid markers require >=60% length and >=98% identity to be reported  
    - Antibiotic Genes require >=90% length and >=98% identity to be reported  
-- AMRFinder+ point mutation are now included in `Phoenix_Output_Report.tsv` under the column `AMRFinder_Point_Mutations`.  
+- AMRFinder+ point mutation are now included in `Phoenix_Output_Report.tsv` under the column `AMRFinder_Point_Mutations`.
+- In determine_taxID.sh, Upper taxonomy lineage now uses NCBI names and nodes files for the ability to assign nearly all possible taxonomies compared to the very limited options with the previous taxes.csv file  
 
 **Output File Changes:**  
 - Removed spaces in header of `*_all_genes.tsv` file from AMRFinder+ output and replace with underscore to allow for more friendly parsing [#fd048d1](https://github.com/CDCgov/phoenix/commit/fd048d1a54ca262617eeef32d85cd4f47650af23).  
 - Fixed error causing PROKKA output to not be in Annotation folder [#d014aa0](https://github.com/CDCgov/phoenix/commit/d014aa00b27c1fa9e2d1b1151bc7f6c44d8a82b3).  
 - Added headers to 2 files: `*.fastANI.txt` and `*.wtasmbld_summary.txt`.  
 - Also, added headers to `phoenix_line_summary.tsv` see [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#sample-specific-files) for details.  
-- MLST final output that includes different headers and organization was renamed to `*_combined.tsv` which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags.  
+- MLST final output that includes different headers and organization was renamed to `*_combined.tsv` which includes srst2 types, if appicable, paralog tags, and any extra allele/profile tags.
+- Taxonomy file now includes NCBI TaxID at each standard level. Example species line would like like this "s:287 aeruginosa"  
 
 **Fixed Bugs:**  
 - Edit to allow nf-tower to work [#b21d61f](https://github.com/CDCgov/phoenix/commit/b21d61f269212311737dffecd54664d7c8019f09)  
 - Fixed pipeline failure when prokka throws error for sample names being too long (Error: ID must <= 37 chars long) [#e48e01f](https://github.com/CDCgov/phoenix/commit/e48e01fbac298541f55e949e8e8f04396aa791e8). Now sample name length doesn't matter.  
 - Fixed bug where samples wouldn't end up in the `Phoenix_Output_Report.tsv` due to srst2 not finding any AR genes so the file wasn't created. Now blank file is created and remaining sample informatin is in the `Phoenix_Output_Report.tsv` [#2f52edc](https://github.com/CDCgov/phoenix/commit/2f52edc218716404b37a1e1470234e2aa32e82b3). This change only occured in `-entry CDC_PHOENIX`.  
 - Fixed issue where `cp` error was thrown when relative path was given for output directory [#0c0ca55](https://github.com/CDCgov/phoenix/commit/0c0ca554861b7da28567694adc0920a6d8046d5b) and [#d938a64](https://github.com/CDCgov/phoenix/commit/d938a6437f3e192dbe8af648c4400011fa0744e4).  
+- MLST PARALOGS for *Acinetobacter baumannii* are surpressed in GRiPHin report as they are...
 
 **Database Updates:**  
 - AMRFinder+ database is now static and included in the database folder [#a5d2d03](https://github.com/CDCgov/phoenix/commit/a5d2d03be4876c73b0d116d2a641c7319bf44df0). We removed the automatic updating for more control of the pipeline and lockdown to prepare for possible CLIA requirements.  
@@ -150,12 +153,12 @@ Below are the list of changes to phx since is initial release. As fixes can take
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.0.1...v2.0.2)
 
 **Implemented Enhancements:**  
-- Added handling for -entry `SCAFFOLDS` and `CDC_SCAFFOLDS` to accept assemblies from tricylcer and flye.  
+- Added handling for -entry `SCAFFOLDS` and `CDC_SCAFFOLDS` to accept assemblies from tricylcer and flye [commit 31cb573](https://github.com/CDCgov/phoenix/commit/31cb573f1945b5bb955fb48f5f1856857f157799).  
 - Added tsv version of GRiPHin_Summary.xlsx  
 
 **Output File Changes:**  
-- GRiPHin_samplesheet.csv changed to Directory_samplesheet.csv  
-- In response to feedback from compliance program, "report" is being replaced by "summary" in file names to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report). 
+- GRiPHin_samplesheet.csv changed to Directory_samplesheet.csv [commit b39d8d7](https://github.com/CDCgov/phoenix/commit/b39d8d706ccdd6a22de636bdd20b7cf188ae98f0)  
+- In response to feedback from compliance program, "report" is being replaced by "summary" in file names to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report) [commit b39d8d7](https://github.com/CDCgov/phoenix/commit/b39d8d706ccdd6a22de636bdd20b7cf188ae98f0)  
   - GRiPHin_Report.xlsx changed to GRiPHin_Summary.xlsx  
   - Phoenix_Output_Report.tsv changed to Phoenix_Summary.tsv  
   - quast/${samplename}_report.txt changed to quast/${samplename}_summary.tsv  
@@ -174,3 +177,68 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - MLST version remains the same, but a custom database was added so that it no longer uses the database included in the software. Now hosted on quay.io.  
 - Bumped up base container (v2.0.2) to have openpyxl module.  
 
+## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (02/09/2024)
+
+[Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.1.0...v2.0.2)
+
+**Implemented Enhancements:**  
+- Added handling for "unknown" assemblers in the scaffolds entry point so genomes can be downloaded from NCBI and run through PHoeNIx.  
+- New Terra workflow for combining `Phoenix_Summary.tsv`, `GRiPHin_Summary.tsv` and `GRiPHin_Summary.xlsx` of multiple runs into one file.  
+- `software_versions.yml` now contains versions for all custom scripts used in the pipeline to streamline its validation process and align it with CLIA requirements, ensuring smoother compliance.  
+- MultiQC now contains graphs and data from BBDuk, FastP, Quast and Kraken. BUSCO is also part of MultiQC if the entry point runs it (i.e. CDC_* entries).  
+- AMRFinder+ species that are screened for point mutations was updated with *Enterobacter asburiae*, *Vibrio vulfinicus* and *Vibrio parahaemolyticus*.  
+- Check was added to ensure only SRR numbers are passed to -entry `CDC_SRA` and `SRA`.  
+- After extensive QC cut off review addtional warnings and minimum QC cut-offs were added:
+   - Minimum PASS/FAIL:
+     - >500 scaffolds
+     - FAIry (file integrity check) - see Fixed Bugs section below for details.
+   - Warnings:
+     - 200-500 scaffolds -> high, but not enough for failure
+     - Taxa Quality Checks:
+        - FastANI Coverage <90% and Match <95%
+        - For entries BUSCO <97% 
+     - Contamination Checks: 
+        - <70% of reads/weighted scaffolds assigned to top geneus hit.
+        - Added weighted scaffold to kraken <30% unclassifed check (was just on reads before)
+        - Added weighted scaffold to kraken only 1 genera >25% of assigned check (was just reads before)
+
+**Output File Changes:**  
+- The default outdir phx produces was changed. If the user doesn't pass `--outdir`, the default was changed from `results` to `phx_output`. This was changed in response to feedback from compliance program, to avoid confusion regarding the difference between public health results (i.e. summary) and diagnostic results (i.e. report).  
+- The `phx_output/FAIry` folder will contain a `*_summaryline_failure.tsv` file for any isolate where file corruption was detected.  
+- `*.tax` file had the NCBI assigned taxID added after the `:` for easy lookup.  
+
+**Fixed Bugs:**  
+- Updated `tower.yml` file to reflect file name changes in v2.0.2. This will enable nf-tower reports to properly show up. [commit e1b2b91](https://github.com/CDCgov/phoenix/commit/e1b2b912db48a55ba196f0038e5520372bb7e633)  
+- `GRiPHin_Summary.xlsx` was highlighting coverage outside 40-100x despite `--coverage` setting, changes made to respect `--coverage` flag.  
+- Added a fix to handle when auto select by the mlst script chooses the wrong taxonomy. PHoeNIx will force a rerun in cases where the taxonomy is known but initial mlst is run against incorrect scheme. Known instances found so far include: *E. coli* (Pasteur) being incorrectly indentified as *Aeromonas* and *E. coli* (Pasteur) being identified as *Klebsiella*. The scoring in the MLST program was updated and can now cause lower count perfect hits (e.g. 6 of 6 *Aeromonas* genes at 100%) to be scored higher than novel correct hits (e.g. 7 of 8 at 100%, 1 novel gene).  
+- Corrected instance where, in some cases, an mlst scheme could not be determined that a proper out file was not created.
+- Fixed issue with MLST where certain characters in filename would cause array index out of bounds error  
+- Fixed issue where samples that failed SPAdes did not have `--coverage` parameter respected when generating synopsis file.  
+- Fixed `-entry CDC_SCAFFOLDS` providing incorrect headers (missing `BUSCO` and `BUSCO_DB`).  
+- Updated FAIry (file integrity check) to catch additional file integrity errors.  
+   - FAIry detects and reports when:  
+      - Corrupt fastq files that prevents the completion of gzip and zcat and generate a synopsis file when needed.  
+      - If R1/R2 fastqs that do not have equal number of reads in the files.  
+      - If there are no reads or scaffolds left after filtering and read trimming steps, respectively.  
+
+**Container Updates:**  
+- Containers are now called with their sha256 to streamline PHoeNIx's validation process and align it with CLIA requirements.  
+- Containers updated to include developers bug fixes:  
+  - fastp: v0.23.2 to v0.23.4 [bug fixes](https://github.com/OpenGene/fastp/releases).  
+  - fastqc: v0.11.9 to v0.12.1 [bug fixes](https://github.com/s-andrews/FastQC/releases).  
+  - kraken2: v2.1.2 to v2.1.3 which has [improvements on efficiency and bug fixes](https://github.com/s-andrews/FastQC/releases).  
+  - fastani: v1.33 to v1.34 [bug fixes](https://github.com/ParBLiSS/FastANI/releases). Specifically, it fixed multi-threading output bugs. Output and interface of FastANI remains same as before.  
+  - amrfinderplus: v3.11.11 to v3.11.26 which has [improvements on efficiency and bug fixes](https://github.com/ncbi/amr/releases/tag/amrfinder_v3.11.26).  
+  - SRAtools v3.0.3 to 3.0.9 [updates and bug fixes](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md).  
+- Container for SRA entry steps `SRATOOLS_FASTERQDUMP` and `SRATOOLS_PREFETCH` was switched to a quay.io/biocontainers to address issues with the old container and ICA. [commit 68815e3](https://github.com/CDCgov/phoenix/commit/68815e3797c1944dcd0280ee658c79be90b63c0e#diff-cc23f3860dea73e90629539d540e72a7fc7cf9438de0e89eca1cc31a763c7b2b)  
+- The srst2 container version stays the same, but it is now in a custom container built from [commit `73f885f55c748644412ccbaacecf12a771d0cae9`](https://github.com/CDCgov/phoenix/blob/3a270a41ebee127a3fde9b50014ce377b026987b/Dockerfiles/Dockerfile_srst2#L57C58-L57C98) as there has been a bug fix for a [rounding penalty to integer](https://github.com/katholt/srst2/commit/9eaedffb58c156e3b6c45c9273e163e2d401e792) without a new release. In addition, a fix was added to address issues related to [handling grepping  of '(' and ')'](https://github.com/CDCgov/phoenix/blob/3a270a41ebee127a3fde9b50014ce377b026987b/Dockerfiles/Dockerfile_srst2#L63). Hosting updated container on quay.io.  
+
+**Database Updates:**  
+- MLST database was pulled from PubMLST and updated on Jan 24th, 2024.  
+- The Plasmid Replicons database was updated to include [an update to the Enterobacteriales.fsa database](https://bitbucket.org/genomicepidemiology/plasmidfinder_db/commits/81c11f4f2209ff12cb74b486bad4c5ede54418ad).  
+- Curated AR gene database was updated on 2024-01-24 (yyyy-mm-dd) which includes:
+   - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
+      - Version [2023-11-15.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.11/)  
+   - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since the last time the database was created and contains updates since version [NT v6 July 2019](https://www.mediterranee-infection.com/acces-ressources/base-de-donnees/arg-annot-2/)  
+   - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)  
+      - Includes until 2024-01-28 [commit 97d1fe0cd0a119172037f6bdb29f8a1c7c6e6019](https://bitbucket.org/genomicepidemiology/resfinder_db/commits/branch/master)  

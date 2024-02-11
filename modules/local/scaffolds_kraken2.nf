@@ -1,7 +1,8 @@
 process SCAFFOLDS_KRAKEN2 {
     tag "$meta.id"
     label 'process_high'
-    container 'staphb/kraken2:2.1.2-no-db'
+    // v2.1.3
+    container 'staphb/kraken2@sha256:53aee35987059ae177301e6bdeceb1524a4bcf7b0eb0ef0842d8578b6bf1a5ee'
 
     input:
     tuple val(meta), path(reads)
@@ -30,7 +31,7 @@ process SCAFFOLDS_KRAKEN2 {
     def unclassified_command = save_output_fastqs ? "--unclassified-out ${unclassified}" : ""
     def readclassification_command = save_reads_assignment ? "--output ${prefix}.kraken2_${kraken_type}.classifiedreads.txt" : ""
     def compress_reads_command = save_output_fastqs ? "gzip *.fa" : ""
-
+    def container = task.container.toString() - "staphb/kraken2@"
     """
     kraken2 \\
         --db $db \\
@@ -50,6 +51,7 @@ process SCAFFOLDS_KRAKEN2 {
     "${task.process}":
         kraken2: \$(echo \$(kraken2 --version 2>&1) | sed 's/^.*Kraken version //; s/ .*\$//')
         kraken2db: $db
+        kraken2_container: ${container}
     END_VERSIONS
     """
 }

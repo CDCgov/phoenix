@@ -13,6 +13,10 @@ import argparse
 ##Usage: >python Phoenix_Summary_Line_06-10-22.py -n Sequence_Name -t Trimmed_QC_Data_File -x Taxa_file -r Ratio_File -m MLST_File -u mutation_file -q Quast_File -a AR_GAMMA_File -v Hypervirulence_GAMMA_File -k trimd_kraken -s synopsis_file -o Out_File
 ## Written by Rich Stanton (njr5@cdc.gov) and Jill Hagey (qpk9@cdc.gov)
 
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
     parser.add_argument('-n', '--name', required=True, help='sequence name')
@@ -30,6 +34,7 @@ def parseArgs(args=None):
     parser.add_argument('-s', '--stats', dest="stats", required=False, help='Pipeline Stats file synopsis file')
     parser.add_argument('-e', '--extended_qc', dest="extended_qc", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
     parser.add_argument('-o', '--out', required=True, help='output file name')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen
@@ -315,9 +320,9 @@ def Get_Taxa_Source(taxa_file, fastani):
         lines = f.readlines()
         for line in lines:
             if line.startswith("G:"):
-                genus = line.replace("G:	","").strip('\n')
+                genus = line.split('\t')[1].strip('\n')
             if line.startswith("s:"):
-                species = line.replace("s:	","").strip('\n')
+                species = line.split('\t')[1].strip('\n')
         Species = genus + " " + species
     return taxa_source, percent_match, Species, fastani_coverage
 
@@ -364,6 +369,7 @@ def Get_BUSCO_Gene_Count(stats):
         #ratio = split_list[2].split(' ')[9].rstrip('\n')
         lineage="_".join(split_list[0].split("_")[-2:]).strip()
         percent=str(split_list[2].split("%")[0].strip())+"%"
+        percent = re.sub("only ", "", percent)
         ratio="("+str(split_list[2].split("(")[1].strip())
         busco_line = percent + ' ' + ratio
     busco_file = True

@@ -5,7 +5,74 @@ report_comment: >
 report_section_order:
     software_versions:
         order: -1000
-    nf-core-quaisar-summary:
+    phoenix-summary:
         order: -1001
+
+run_modules:
+  - custom_content
+  - fastp
+  - fastqc
+  - bbduk
+  - quast
+  - kraken
+  - busco
+
+module_order:
+  - fastqc:
+      name: "FastQC (trimmed)"
+      info: "This section of the summary shows FastQC output after adapter and quality trimming."
+      path_filters:
+        - "*_fastqc.zip"
+  - bbduk:
+      name: "BBDuk"
+      info: "This section of the summary shows BBDuk results after removing PhiX reads."
+      path_filters:
+        - "*.bbduk.log"
+  - fastp:
+      name: "Fastp (paired trimmed)"
+      info: "This section of the summary shows Fastp output after trimming for paired reads."
+      path_filters:
+        - "*.fastp.json"
+      path_filters_exclude:
+        - "*_singles.fastp.json"
+  - fastp:
+      name: "Fastp (singles trimmed)"
+      info: "This section of the summary shows Fastp output after trimming for singleton reads."
+      path_filters:
+        - "*_singles.fastp.json"
+  - kraken:
+      name: "Kraken (trimmed reads)"
+      info: "This section of the summary shows taxonomic classification of reads after trimming."
+      path_filters:
+        - "*_trimd.summary.txt"
+  - quast:
+      name: "Quast"
+      info: "This section of the summary shows QUAST output after removing scaffolds <500bp."
+      path_filters:
+        - "*_summary.tsv"
+  - kraken:
+      name: "Kraken (Weighted Scaffolds)"
+      info: "This section of the summary shows taxonomic classification of scaffolds >500bp weighted based on their length."
+      path_filters:
+        - "*_wtasmbld.summary.txt"
+  - busco:
+      name: "BUSCO"
+      info: "This section of the summary assesses genome assembly and annotation completeness with Benchmarking Universal Single-Copy Orthologs."
+      path_filters:
+        - "*.filtered.scaffolds.fa.txt"
+
+sp:
+  quast:
+    fn: "*_summary.tsv"
+  kraken:
+    fn: "*.summary.txt"
+
+extra_fn_clean_exts:
+  - ".filtered"
+  - "_singles"
+  - "_R1_001"
+  - "_R2_001"
+
+max_table_rows: 10000
 
 export_plots: true

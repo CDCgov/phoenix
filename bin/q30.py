@@ -9,6 +9,18 @@ import os,sys
 sys.dont_write_bytecode = True # needs to be before the import fastq
 import fastq
 import time
+import argparse
+
+# Function to get the script version
+def get_version():
+    return "2.0.0"
+
+def parseArgs(args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument('-i', '--input', dest='input', required=False, help='input fasta filename')
+    parser.add_argument('files', nargs=argparse.REMAINDER)
+    return parser.parse_args()
 
 def qual_stat(qstr):
     q20 = 0
@@ -47,10 +59,8 @@ def stat(filename):
     print("q30 percents:", 100 * float(q30_count)/float(total_base_count))
 
 def main():
-    if len(sys.argv) < 2:
-        print("usage: python q30.py <fastq_file>")
-        sys.exit(1)
-    stat(sys.argv[1])
+    args = parseArgs()
+    stat(args.input)
 
 if __name__ == "__main__":
     time1 = time.time()

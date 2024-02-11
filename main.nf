@@ -56,9 +56,16 @@ workflow PHOENIX {
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
         mlst             = PHOENIX_EXTERNAL.out.mlst
-        amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
         gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
-        summary_report   = PHOENIX_EXTERNAL.out.summary_report
+        phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
+        //output for ncbi upload 
+        ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_sra_sheet : null
+        ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_biosample_sheet : null
 }
 
 //
@@ -83,9 +90,16 @@ workflow CDC_PHOENIX {
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
         mlst             = PHOENIX_EXQC.out.mlst
-        amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXQC.out.amrfinder_output
         gamma_ar         = PHOENIX_EXQC.out.gamma_ar
-        summary_report   = PHOENIX_EXQC.out.summary_report
+        phx_summary      = PHOENIX_EXQC.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXQC.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXQC.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXQC.out.dir_samplesheet
+        //output for ncbi upload 
+        ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXQC.out.ncbi_sra_sheet : null
+        ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXQC.out.ncbi_biosample_sheet : null
 }
 
 /*
@@ -103,10 +117,27 @@ workflow SRA {
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db ]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
-    // Check mandatory parameters
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry SRA.' }
 
+    // Check mandatory parameters
     //input on command line
-    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'For -entry SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
+    if (params.input_sra) {
+        //create channel input
+        ch_input = file(params.input_sra)
+        //Check that SRR numbers are passed not SRX
+        if (ch_input) {
+            // Read the contents of the file
+            def sraNumbers = ch_input.text.readLines()
+            // Check each line in the file
+            for (sraNumber in sraNumbers) {
+                // Check if it starts with "SRR"
+                if (!sraNumber.startsWith("SRR")) {
+                    exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for -entry SRA, but found: $sraNumber"
+                }
+            }
+        }
+    } else { exit 1, 'For -entry SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
 
     main:
         // pull data and create samplesheet for it.
@@ -118,9 +149,13 @@ workflow SRA {
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
         mlst             = PHOENIX_EXTERNAL.out.mlst
-        amrfinder_report = PHOENIX_EXTERNAL.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
         gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
-        summary_report   = PHOENIX_EXTERNAL.out.summary_report
+        phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
 }
 
 //
@@ -133,10 +168,27 @@ workflow CDC_SRA {
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
-    // Check mandatory parameters
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CDC_SRA.' }
 
+    // Check mandatory parameters
     //input on command line
-    if (params.input_sra) { ch_input = file(params.input_sra) } else { exit 1, 'For -entry CDC_SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
+    if (params.input_sra) {
+        //create channel input
+        ch_input = file(params.input_sra)
+        //Check that SRR numbers are passed not SRX
+        if (ch_input) {
+            // Read the contents of the file
+            def sraNumbers = ch_input.text.readLines()
+            // Check each line in the file
+            for (sraNumber in sraNumbers) {
+                // Check if it starts with "SRR"
+                if (!sraNumber.startsWith("SRR")) {
+                    exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for -entry CDC_SRA, but found: $sraNumber"
+                }
+            }
+        }
+    } else { exit 1, 'For -entry CDC_SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
 
     main:
         // pull data and create samplesheet for it.
@@ -148,9 +200,13 @@ workflow CDC_SRA {
         scaffolds        = PHOENIX_EXQC.out.scaffolds
         trimmed_reads    = PHOENIX_EXQC.out.trimmed_reads
         mlst             = PHOENIX_EXQC.out.mlst
-        amrfinder_report = PHOENIX_EXQC.out.amrfinder_report
+        amrfinder_output = PHOENIX_EXQC.out.amrfinder_output
         gamma_ar         = PHOENIX_EXQC.out.gamma_ar
-        summary_report   = PHOENIX_EXQC.out.summary_report
+        phx_summary      = PHOENIX_EXQC.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = PHOENIX_EXQC.out.griphin_tsv
+        griphin_excel    = PHOENIX_EXQC.out.griphin_excel
+        dir_samplesheet  = PHOENIX_EXQC.out.dir_samplesheet
 }
 
 /*
@@ -163,6 +219,9 @@ workflow CDC_SRA {
 // WORKFLOW: Entry point to analyze scaffold file(s) and run everything after Spades
 //
 workflow SCAFFOLDS {
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry SCAFFOLDS.' }
+
     // Validate input parameters
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
@@ -192,15 +251,18 @@ workflow SCAFFOLDS {
     emit:
         scaffolds        = SCAFFOLDS_EXTERNAL.out.scaffolds
         mlst             = SCAFFOLDS_EXTERNAL.out.mlst
-        amrfinder_report = SCAFFOLDS_EXTERNAL.out.amrfinder_report
+        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
         gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
-        summary_report   = SCAFFOLDS_EXTERNAL.out.summary_report
+        phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
 }
 
 //
 // WORKFLOW: Entry point to analyze scaffold file(s) and run everything after Spades
 //
 workflow CDC_SCAFFOLDS {
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CDC_SCAFFOLDS.' }
+
     // Validate input parameters
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
@@ -232,10 +294,11 @@ workflow CDC_SCAFFOLDS {
     emit:
         scaffolds        = SCAFFOLDS_EXQC.out.scaffolds
         mlst             = SCAFFOLDS_EXQC.out.mlst
-        amrfinder_report = SCAFFOLDS_EXQC.out.amrfinder_report
+        amrfinder_output = SCAFFOLDS_EXQC.out.amrfinder_output
         gamma_ar         = SCAFFOLDS_EXQC.out.gamma_ar
-        summary_report   = SCAFFOLDS_EXQC.out.summary_report
+        phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
+
 
 /*
 ========================================================================================

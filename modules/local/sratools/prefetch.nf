@@ -1,7 +1,9 @@
 process SRATOOLS_PREFETCH {
     tag "${sra_accession[0]}"
     label 'process_single'
-    container "https://depot.galaxyproject.org/singularity/sra-tools%3A3.0.3--h87f3376_0"
+    // 3.0.3--h87f3376_0 "quay.io/biocontainers/sra-tools@sha256:c9f92683e10091c3ef93066b1fcbdeeba89af49242ab778a9c8cc006f6be82a3"
+    // 3.0.9--h9f5acd7_0
+    container "quay.io/biocontainers/sra-tools@sha256:bd3dafdfb9ad5f301b72c5fdbbcbf411b19c59e117eabe4209dc15546c851c37"
 
     input:
     val(sra_accession)
@@ -11,6 +13,8 @@ process SRATOOLS_PREFETCH {
     path('versions.yml'), emit: versions
 
     script:
+    //define variables
+    def container = task.container.toString() - "quay.io/biocontainers/sra-tools@"
     """
     # fetch sras
     prefetch --verify yes ${sra_accession[0]}
@@ -21,6 +25,7 @@ process SRATOOLS_PREFETCH {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         sratools: \$(prefetch --version 2>&1 | sed 's/prefetch : //' | awk 'NF')
+        sratools_container: ${container}
     END_VERSIONS
     """
 }
