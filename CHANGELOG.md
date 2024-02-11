@@ -175,6 +175,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Container Updates:**  
 - MLST version remains the same, but a custom database was added so that it no longer uses the database included in the software. Now hosted on quay.io.  
+- Bumped up base container (v2.0.2) to have openpyxl module.  
 
 ## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (02/09/2024)
 
