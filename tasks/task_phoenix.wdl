@@ -17,7 +17,7 @@ task phoenix {
   }
   command <<<
     date | tee DATE
-    version="v2.1.0-dev" 
+    version="v2.1.0" 
     echo $version | tee VERSION
 
     # Debug
