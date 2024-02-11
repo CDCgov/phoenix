@@ -35,7 +35,7 @@ def combine_second_rows(excel_files, final_file):
     combined_second_rows = pd.DataFrame()
 
     # Identify invalid files where all columns in the second row contain NaN values
-    invalid_files = [file for file in excel_files if pd.read_excel(file, header=1, nrows=1).isna().all().all()]
+    invalid_files = [file for file in excel_files if pd.read_excel(file, header=0, nrows=1).isna().all().all()]
     #print results of screening for na columns
     if invalid_files:
         print("{} files with all NaN columns:".format(file_type), invalid_files)
@@ -81,7 +81,10 @@ def add_disclaimer(input_excel, input_sheet_name):
 1. Delete this row and the rows below!
 2. At minimum fill out the following columns: 
     - Host: e.g., Homo sapiens, animal, environmental, other
-    - Collection Date: Specimen collection year only"""
+    - Collection Date: Specimen collection year only
+    - Isolate Source: Specimen source. 
+        * Homo sapiens or animal: blood, urine, etc
+        * environmental: device or surface """
         sra_delete_warning = """Do the following before upload:
 1. Delete this row and the rows below!
 2. Fill out 'design_description' column with a short description of our library prep info and any other pertinent information. Ex: Sequenced using Nextera XT library prep kit, 2 x 250.
@@ -92,11 +95,11 @@ including from the Antimicrobial Resistance Laboratory Network (AR Lab Network),
         num_rows = df.shape[0] + 2
         # Add text to the cell
         if input_sheet_name == "SRA_data":
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), sra_delete_warning, orange_format)
-            worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+4), sra_delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+5) + ':J' + str(num_rows+8), disclaimer_text, red_format)
         else:
-            worksheet.merge_range('A' + str(num_rows+1) + ':K' + str(num_rows+4), biosample_delete_warning, orange_format)
-            worksheet.merge_range('A' + str(num_rows+5) + ':K' + str(num_rows+8), disclaimer_text, red_format)
+            worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+6), biosample_delete_warning, orange_format)
+            worksheet.merge_range('A' + str(num_rows+7) + ':J' + str(num_rows+9), disclaimer_text, red_format)
 
 def main():
     args = parseArgs()
