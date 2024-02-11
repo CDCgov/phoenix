@@ -64,6 +64,7 @@ include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_s
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { GENERATE_PIPELINE_STATS        } from '../modules/local/generate_pipeline_stats'
 include { GRIPHIN                        } from '../modules/local/griphin'
+include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/create_ncbi_upload_sheet'
 
 /*
 ========================================================================================
