@@ -176,12 +176,12 @@ task combine_phoenix_run {
     echo "WARNING: No NCBI excel files provided skipping NCBI excel combining steps."
   fi
 
-  if [ -z "~{sep=',' ncbi_sra_excel_files}" ]; then
+  if [ ! -z "~{sep=',' ncbi_sra_excel_files}" ]; then
     echo "Combining and creating ${combined_ncbi_sra_summary_name}"
     COUNTER=1
     SRA_ARRAY_EXCEL=(~{sep=',' ncbi_sra_excel_files})
     for i in ${SRA_ARRAY_EXCEL//,/ }; do
-      echo "found $i copying to Sra_${COUNTER}_Microbe.xlsx"
+      echo "found $i copying to Sra_${COUNTER}_Microbe.1.0.xlsx"
       cp $i ./Sra_${COUNTER}_Microbe.1.0.xlsx ;
       COUNTER=$((COUNTER + 1))
     done
