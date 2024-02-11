@@ -177,20 +177,21 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - MLST version remains the same, but a custom database was added so that it no longer uses the database included in the software. Now hosted on quay.io.  
 - Bumped up base container (v2.0.2) to have openpyxl module.  
 
-## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (02/09/2024)
+## [v2.1.0](https://github.com/CDCgov/phoenix/releases/tag/v2.1.0) (02/11/2024)
 
 [Full Changelog](https://github.com/CDCgov/phoenix/compare/v2.1.0...v2.0.2)
 
 **Implemented Enhancements:**  
-- Added handling for "unknown" assemblers in the scaffolds entry point so genomes can be downloaded from NCBI and run through PHoeNIx.  
-- New Terra workflow for combining `Phoenix_Summary.tsv`, `GRiPHin_Summary.tsv` and `GRiPHin_Summary.xlsx` of multiple runs into one file.  
+- Added handling for "unknown" assemblers in the scaffolds entry point so genomes can be downloaded from NCBI and run through PHoeNIx.
+- For entry points CDC_PHOENIX or PHOENIX you can now use the argument `--create_ncbi_sheet` to generate partially filled out excel sheets for uploading to NCBI. You will still need to fill in some lab/sample specific information and review for accuracy, but this should speed up the process. **As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) that are auto populated in these sheet unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in these files are specifically designated for domestic HAI bacterial pathogen sequencing data, including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov.**    
+- New Terra workflow for combining `Phoenix_Summary.tsv`, `GRiPHin_Summary.tsv` and `GRiPHin_Summary.xlsx` of multiple runs into one file. This workflow will also combine the NCBI excel sheets created when using the `--create_ncbi_sheet`.  
 - `software_versions.yml` now contains versions for all custom scripts used in the pipeline to streamline its validation process and align it with CLIA requirements, ensuring smoother compliance.  
 - MultiQC now contains graphs and data from BBDuk, FastP, Quast and Kraken. BUSCO is also part of MultiQC if the entry point runs it (i.e. CDC_* entries).  
-- AMRFinder+ species that are screened for point mutations was updated with *Enterobacter asburiae*, *Vibrio vulfinicus* and *Vibrio parahaemolyticus*.  
-- Check was added to ensure only SRR numbers are passed to -entry `CDC_SRA` and `SRA`.  
+- AMRFinder+ species that are screened for point mutations were updated with *Enterobacter asburiae*, *Vibrio vulfinicus* and *Vibrio parahaemolyticus*.  
+- A check was added to ensure only SRR numbers are passed to -entry `CDC_SRA` and `SRA`.  
 - After extensive QC cut off review addtional warnings and minimum QC cut-offs were added:
    - Minimum PASS/FAIL:
-     - >500 scaffolds
+     -  %gt; 500 scaffolds
      - FAIry (file integrity check) - see Fixed Bugs section below for details.
    - Warnings:
      - 200-500 scaffolds -> high, but not enough for failure
