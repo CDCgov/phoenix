@@ -299,6 +299,51 @@ workflow CDC_SCAFFOLDS {
         phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
 
+//
+// WORKFLOW: Entry point for CLIA analysis
+//
+workflow CLIA {
+    // Checking that --create_ncbi_sheet wasn't passed
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CLIA.' }
+
+    //Check that SRR numbers are passed no SRX
+    if (params.create_ncbi_sheet) {
+        // Read the contents of the file
+        def sraNumbers = file(params.create_ncbi_sheet).text.readLines()
+
+        // Check each line in the file
+        for (sraNumber in sraNumbers) {
+            // Check if it starts with "SRR"
+            if (!sraNumber.startsWith("SRR")) {
+                exit 1, "Invalid value in ${params.create_ncbi_sheet}. Only SRR numbers are allowed, but found: $sraNumber"
+            }
+        }
+    }
+
+    // Validate input parameters
+    // Check input path parameters to see if they exist
+    def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db]
+    for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+
+    // Check mandatory parameters
+    //input on command line
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry CLIA: Input samplesheet not specified!' }
+    ch_versions = Channel.empty() // Used to collect the software versions
+
+    // Check that a busco_db_path is passed
+    // ; means do nothing as that is correct
+    if (params.busco_db_path != null) { ; } else { exit 1, 'For -entry CLIA, BUSCO offline mode is not allowed, please pass a path to --busco_db_path!' }
+
+    main:
+        CLIA_INTERNAL ( ch_input, ch_versions )
+
+    /*emit:
+        scaffolds        = CLIA_INTERNAL.out.scaffolds
+        trimmed_reads    = CLIA_INTERNAL.out.trimmed_reads
+        amrfinder_report = CLIA_INTERNAL.out.amrfinder_report
+        summary_report   = CLIA_INTERNAL.out.summary_report*/
+}
+
 
 /*
 ========================================================================================
