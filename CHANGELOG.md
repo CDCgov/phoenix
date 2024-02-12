@@ -191,7 +191,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - A check was added to ensure only SRR numbers are passed to -entry `CDC_SRA` and `SRA`.  
 - After extensive QC cut off review addtional warnings and minimum QC cut-offs were added:
    - Minimum PASS/FAIL:
-     -  %gt; 500 scaffolds
+     -  &gt; 500 scaffolds
      - FAIry (file integrity check) - see Fixed Bugs section below for details.
    - Warnings:
      - 200-500 scaffolds -> high, but not enough for failure
