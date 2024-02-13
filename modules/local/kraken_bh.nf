@@ -1,6 +1,6 @@
 process KRAKEN_BEST_HIT {
     tag "$meta.id"
-    label 'process_single'
+    label 'process_low'
     // base_v2.1.0 - MUST manually change below (line 26)!!!
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
