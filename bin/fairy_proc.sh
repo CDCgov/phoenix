@@ -63,13 +63,20 @@ sfx=".fastq.gz"
 gzip -t $fname 2>> ${prefix}.txt
 
 full_name=$(basename "${fname}" .fastq.gz)
-#meta_id=$(basename "${fname}" .fastq.gz | cut -f1 -d"_")
-#get read number - if SRR in name remove that as it will conflict with getting R1/R2 from string.
-read=$(echo "${full_name}" | sed -e 's/SRR//' | grep -oP "R[1-2]{1}" | cut -f2 -d"_")
+# check if it still has .gz on the end  - for *.fq.gz samples
+if [[ $full_name == *.gz ]]; then
+	full_name=$(basename "${fname}" .fq.gz)
+fi 
+
+#get read number - assuming illumina we will check the read names in the fasta files first
+#read=$(zcat "${fname}" | head --lines 1 | cut -f2 -d" " | cut -f1 -d":" | sed 's/^/R/')
+read=$(zcat "${fname}" | head --lines 1 | grep -oP "[1-2]:[NY]:" | cut -f1 -d":" | sed 's/^/R/')
+
 #if the above line didn't capture the read number try some other options
-if [ -z "$read" ]
-then
-	read=$(echo "${full_name}" | sed -e 's/SRR//' | grep -oP "R[1-2](1)" | cut -f2 -d"_")
+if [[ "$read" != "R1" ]] && [[ "$read" != "R2" ]]; then
+	echo "read orientation not captured trying another method."
+	#get read number - if SRR in name remove that as it will conflict with getting R1/R2 from string.
+	read=$(echo "${full_name}" | sed -e 's/SRR//' | grep -oP 'R[12]' | tail -1)
 fi
 
 if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
