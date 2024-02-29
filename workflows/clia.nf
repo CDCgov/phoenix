@@ -404,7 +404,7 @@ workflow CLIA_INTERNAL {
 
         // pdf file
         CREATE_CLIA_PDF (
-            outdir_path, CLIA_GRIPHIN.out.phoenix_tsv_report, CLIA_GRIPHIN.out.griphin_tsv_report, workflow.start
+            outdir_path, CLIA_GRIPHIN.out.phoenix_tsv_report, CLIA_GRIPHIN.out.griphin_tsv_report, workflow.start, params.amrfinder_db
         )
         ch_versions = ch_versions.mix(CREATE_CLIA_PDF.out.versions)
 

@@ -42,6 +42,7 @@ note_text2 = "QC Warning  - Numbers below thresholds will be highlighted in yell
 note_text4 = "Taxa ID Failed - Only Taxa IDed with FastANI are acceptable, all other methods will be highlighted in red"
 note_text3 = "Taxa ID QC Warning  - Numbers below thresholds will be highlighted in yellow: BUSCO ID <97%; FastANI match <95%; FastANI coverage <90%"
 note_text5 = "Assembly ratio and GC% STDev are NaN when there are <10 genomes as reference."
+note_text6 = "AR genes were determined based on: ."
 
 def check_time(start_time):
     from datetime import datetime
@@ -75,10 +76,18 @@ def color_red(val, cutoff, flag):
             return f'<font style="background-color: lightcoral">{val}</font>'
         else:
             return val
+        
+def color_unknown_red(val):
+    if val == "Unknown":
+        return f'<font style="background-color: lightcoral">{val}</font>'
+    elif val == "FAIL":
+        return f'<font style="background-color: lightcoral">{val}</font>'
+    else:
+        return val
 
 def color_yellow(val, cutoff, flag):
     if val == "Unknown":
-        return f'<font style="background-color: lightgoldenrodyellow">{val}</font>'
+        return f'<font style="background-color: lightcoral">{val}</font>'
     elif flag == ">":
         if float(str(val).replace(",","")) > float(cutoff):
             return f'<font style="background-color: lightgoldenrodyellow">{val}</font>'
@@ -90,18 +99,31 @@ def color_yellow(val, cutoff, flag):
         else:
             return val
 
+# Define a function to join non-NaN values with comma
+def combine_strings(row):
+    values = [str(value) for value in row if pd.notnull(value)]
+    return ', '.join(values)
 
 def clia_report(args):
     project_dir = args.project_dir
-    phx_version = args.phx_version
+    ar_database = args.ar_database.replace("amrfinderdb_", "").replace(".tar.gz", "")
     run_start_time, run_end_time = check_time(args.start_time)
 
     summary = os.path.join(project_dir,'Phoenix_Summary.tsv')
     if os.path.exists(summary):
-        columns_to_read = ['ID','Species','Taxa_Confidence','Taxa_Coverage','Beta-lactam_Carbapenem']
-        summary_df = pd.read_csv(summary,sep='\t', usecols=columns_to_read)
-        summary_df = summary_df.rename(columns={ 'Taxa_Confidence':'ANI Score (%)','Taxa_Coverage':'Bases Aligned to Taxon (%)','Beta-lactam_Carbapenem':'Beta-lactam Carbapenem Genes'})
-        #summary_df['Comments'] = ""   
+        summary_df = pd.read_csv(summary,sep='\t')
+        #summary_df.drop(columns=["Auto_QC_Outcome","Warning_Count","Estimated_Coverage","Genome_Length","Assembly_Ratio_(STDev)","#_of_Scaffolds_>500bp","GC_%","BUSCO"], inplace=True)
+        summary_df.drop(summary_df.columns[[i for i in range(1,10)] + [i for i in range(11,16)]], axis=1, inplace=True)
+        # Combine strings in columns containing "Beta-lactam"
+        beta_lactam_columns = [col for col in summary_df.columns if 'Beta-lactam' in col]
+        summary_df['Beta-lactam Resistance Genes'] = summary_df[beta_lactam_columns].apply(lambda row: combine_strings(row), axis=1)
+        # Combine strings in non "Beta-lactam" columns
+        non_beta_lactam_columns = [col for col in list(summary_df.columns) if col not in (beta_lactam_columns + ['ID', 'Species','Beta-lactam Resistance Genes'])]
+        summary_df['Other Resistance Genes'] = summary_df[non_beta_lactam_columns].apply(lambda row: combine_strings(row), axis=1)
+        #drop individual combined columns
+        summary_df.drop(columns=beta_lactam_columns, inplace=True)
+        summary_df.drop(columns=non_beta_lactam_columns, inplace=True)
+        summary_df = summary_df.rename(columns={'Species':'FastANI Species'})
     else:
         logging.info(f"No summary file: {summary}")
     
@@ -117,6 +139,10 @@ def clia_report(args):
         #griphin_df['Total Trimmed'] = griphin_df['Total Trimmed'].apply(lambda x: f'{int(x.replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
         # Round to 2 decimals
         griphin_df[['Assembly Ratio', 'Assembly StDev']] = griphin_df[['Assembly Ratio', 'Assembly StDev']].applymap(lambda x: round(float(x), 2) if x != "Unknown" and x == x else x)
+        #unknowns
+        griphin_df[['GC (%)','Assembly Ratio']] = griphin_df[['GC (%)','Assembly Ratio']].applymap(lambda x: color_unknown_red(x))
+        #Failures
+        griphin_df['Minimum QC'] = griphin_df['Minimum QC'].apply(lambda x: color_unknown_red(x))
         # Failures
         griphin_df['Estimated Coverage'] = griphin_df['Estimated Coverage'].apply(lambda x: color_red(x, COVERAGE_CUTOFF, "<"))
         griphin_df['Assembly StDev'] = griphin_df['Assembly StDev'].apply(lambda x: color_red(x, ASSEMBLY_CUTOFF, ">"))
@@ -131,13 +157,15 @@ def clia_report(args):
 
         taxa_columns_to_read = ['WGS_ID','Taxa_Source','BUSCO_Lineage','BUSCO_%Match','Kraken_ID_Raw_Reads_%','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
         taxa_df = pd.read_csv(matching_files[0],sep='\t', usecols=taxa_columns_to_read)
-        taxa_df = taxa_df.rename(columns={'WGS_ID':'ID','BUSCO_Lineage':'BUSCO Lineage', 'Taxa_Source':'Taxonomic ID Source', 'FastANI_%ID':'FastANI Match (%)','FastANI_%Coverage':'FastANI Coverage (%)',
+        taxa_df = taxa_df.rename(columns={'WGS_ID':'ID','BUSCO_Lineage':'BUSCO Lineage', 'Taxa_Source':'Taxonomic ID Source', 'FastANI_%ID':'FastANI Match (%)','FastANI_%Coverage':'Bases Aligned to FastANI Taxon (%)',
                                             'BUSCO_%Match':'BUSCO Match (%)','Kraken_ID_Raw_Reads_%':'Kraken Raw Reads (%)','Kraken_ID_WtAssembly_%':'Kraken Assembly (%)'})
+        #unknowns
+        taxa_df[['BUSCO Lineage','Kraken Raw Reads (%)','Kraken Assembly (%)']] = taxa_df[['BUSCO Lineage','Kraken Raw Reads (%)','Kraken Assembly (%)']].applymap(lambda x: color_unknown_red(x))
         # Failures
         taxa_df['Taxonomic ID Source'] = taxa_df['Taxonomic ID Source'].apply(lambda x: color_string_red(x))
         # Warnings
         taxa_df['FastANI Match (%)'] = taxa_df['FastANI Match (%)'].apply(lambda x: color_yellow(x, FASTANI_MATCH, "<"))
-        taxa_df['FastANI Coverage (%)'] = taxa_df['FastANI Coverage (%)'].apply(lambda x: color_yellow(x, FASTANI_COVERAGE, ">"))
+        taxa_df['Bases Aligned to FastANI Taxon (%)'] = taxa_df['Bases Aligned to FastANI Taxon (%)'].apply(lambda x: color_yellow(x, FASTANI_COVERAGE, "<"))
         #taxa_df['Genome Size'] = taxa_df['Genome Size'].apply(lambda x: color_red(x, ASSEMBLY_LENGTH, "<"))
         taxa_df['BUSCO Match (%)'] = taxa_df['BUSCO Match (%)'].apply(lambda x: color_yellow(x, BUSCO, "<"))
     else:
@@ -238,11 +266,13 @@ def clia_report(args):
         2. {note_text3}</p>
         <h2>{stitle3}</h2>
         {summary_df.to_html(index=False, justify="left")}
+        <p style='font-size: 0.8em'>1. {note_text6}</br>
         <p></p>
         </article>
         <hr>
         <footer>
-        <p><i>This report is created by phoenix <a href="https://github.com/CDCgov/phoenix">{phx_version}</a> bioinformatics pipeline.</br>
+        <p><i>This report was created using the PHoeNIx <a href="https://github.com/CDCgov/phoenix">{args.phx_version}</a> bioinformatics pipeline CLIA entry point.</br>
+        AR genes were identified with AMRFinderPlus <a href="https://github.com/ncbi/amr">v{args.amrfinder_version}</a> using database version {ar_database}</br>
         {footer}</i></p>
         </footer>
     </body>
@@ -310,6 +340,8 @@ def parse_args():
     parser.add_argument('-p', '--project_dir', type=str, help='Phoenix output folder', required=True)
     parser.add_argument('-t', '--start_time', dest="start_time", type=str, help='Time the pipeline started.', required=False)
     parser.add_argument('--phx_version',dest="phx_version", type=str, help='Phoenix version', required=True)
+    parser.add_argument('--amrfinder_version',dest="amrfinder_version", type=str, help='AMRFinderPlus version', required=True)
+    parser.add_argument('--ar_database',dest="ar_database", type=str, help='AR Databased used with AMRFinderPlus.', required=True)
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     opts = parser.parse_args()
     return opts

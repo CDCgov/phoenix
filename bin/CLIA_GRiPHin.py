@@ -996,7 +996,7 @@ def extract_species(row):
 def extract_confidence(row):
     """Define a function to extract the relevant information based on Taxa_Source."""
     if row['Taxa_Source'] == 'ANI_REFSEQ':
-        return row['FastANI_Organism']
+        return row['FastANI_%ID']
     elif row['Taxa_Source'] == 'kraken2_wtasmbld':
         return row['Kraken_ID_WtAssembly_%'].str.replace(r'\([^)]*\)', '')
     elif row['Taxa_Source'] == 'kraken2_trimmed':

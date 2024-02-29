@@ -8,6 +8,7 @@ process CREATE_CLIA_PDF {
     path(phoenix_summary)
     path(griphin_tsv_summary)
     val(start_time)
+    path(ar_database)
 
     output:
     path("WGS_Run_Summary_report*.pdf"),  emit: pdf_summary
@@ -23,7 +24,7 @@ process CREATE_CLIA_PDF {
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}report_gen.py -p ${directory} --phx_version v2.1.0 -t ${start_time}
+    ${ica}report_gen.py -p ${directory} --phx_version v2.2.0 -t ${start_time} --database ${ar_database}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
