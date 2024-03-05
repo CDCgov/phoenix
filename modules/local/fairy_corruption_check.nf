@@ -31,8 +31,8 @@ process CORRUPTION_CHECK {
     #set +e
     #check for file integrity and log errors
     #if there is a corruption problem the script will create a *_summaryline.tsv and *.synopsis file for the sample.
-    ${ica}fairy_proc.sh -r ${reads[0]} -p ${prefix} ${busco_parameter}
-    ${ica}fairy_proc.sh -r ${reads[1]} -p ${prefix} ${busco_parameter}
+    ${ica}fairy_proc.sh -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} 
+    ${ica}fairy_proc.sh -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} 
 
     script_version=\$(${ica}fairy_proc.sh -V)
 

@@ -11,7 +11,9 @@
 #
 # Function to print out help blurb
 
-version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.1.0 (10/13/2023)
+version="2.0.1"
+# v2.0.1 - JH fixed R1/R2 parsing
+# v2.0(11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.1.0 (10/13/2023)
 
 show_help () {
   echo "Usage: fairy_proc.sh args(* are required) [-V show version]
@@ -24,7 +26,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":1?r:p:bV" option; do
+while getopts ":1?r:p:b:f:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -32,8 +34,8 @@ while getopts ":1?r:p:bV" option; do
       show_help
       exit 0
       ;;
-    r)
-      echo "Option -r triggered, argument = ${OPTARG}"
+    f)
+      echo "Option -f triggered, argument = ${OPTARG}"
       fname=${OPTARG};;
     p)
       echo "Option -p triggered, argument = ${OPTARG}"
@@ -41,7 +43,10 @@ while getopts ":1?r:p:bV" option; do
     b)
       echo "Option -b triggered"
       busco="true";;
-	V)
+    r)
+      echo "Option -r triggered"
+      input_read=${OPTARG};;
+    V)
       show_version="True";;
     :)
       echo "Option -${OPTARG} requires as argument";;
@@ -76,7 +81,16 @@ read=$(zcat "${fname}" | head --lines 1 | grep -oP "[1-2]:[NY]:" | cut -f1 -d":"
 if [[ "$read" != "R1" ]] && [[ "$read" != "R2" ]]; then
 	echo "read orientation not captured trying another method."
 	#get read number - if SRR in name remove that as it will conflict with getting R1/R2 from string.
-	read=$(echo "${full_name}" | sed -e 's/SRR//' | grep -oP 'R[12]' | tail -1)
+	read=$(echo "${full_name}" | sed -e 's/SRR//' | grep -oP '(?<![a-zA-Z0-9])R[12](?![a-zA-Z0-9])' | tail -1)
+	# handing for cases with _1.fastq.gz or _2.fastq.gz 
+	if [[ "$read" != "R1" ]] && [[ "$read" != "R2" ]]; then
+		#ensures that there is no letter or number immediately before or after the match.
+		read=$(echo "${fname}" | grep -oP '(?<![a-zA-Z0-9])[12](?![a-zA-Z0-9])' | sed 's/^/R/')
+		if [[ "$read" != "R1" ]] && [[ "$read" != "R2" ]]; then
+			echo "read orientation could not be captured correctly."
+			read=$input_read
+		fi
+	fi
 fi
 
 if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
