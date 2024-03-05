@@ -24,7 +24,7 @@ process CREATE_CLIA_PDF {
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}report_gen.py -p ${directory} --phx_version v2.2.0 -t ${start_time} --database ${ar_database}
+    ${ica}report_gen.py -p ${directory} --phx_version v2.2.0 -t ${start_time} --ar_database ${ar_database} --amrfinder_version 3.12.8
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
