@@ -249,6 +249,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Fixed Bugs:**
 - Fix for issue [#130](https://github.com/CDCgov/phoenix/issues/130) Identified when an Isolate is incorrectly assigned to cronobacter scheme when it should have been ecloacae. Extension of larger scoring problem with MLST-2.23.0.
 - Fixed [#142](https://github.com/CDCgov/phoenix/issues/142) where names with multiple instances of "R2" in their name couldn't be parsed properly and don't move past the corruption check step. [commit `7fc0ac3c026b7c12608be4dd1d3682675e31d0fe`](https://github.com/CDCgov/phoenix/commit/7fc0ac3c026b7c12608be4dd1d3682675e31d0fe)
+- Fixed an issue in FASTANI. The file for checking 80%+ identity could not be found because the DB_Version was not set when "No Mash Hits found" occurs
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
