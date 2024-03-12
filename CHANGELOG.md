@@ -244,7 +244,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)  
       - Includes until 2024-01-28 [commit 97d1fe0cd0a119172037f6bdb29f8a1c7c6e6019](https://bitbucket.org/genomicepidemiology/resfinder_db/commits/branch/master)  
 
-## [v2.1.1](https://github.com/CDCgov/phoenix/releases/tag/v2.1.1) (02/11/2024)
+## [v2.1.1](https://github.com/CDCgov/phoenix/releases/tag/v2.1.1) (03/11/2024)
 
 **Fixed Bugs:**
 - Fix for issue [#130](https://github.com/CDCgov/phoenix/issues/130) Identified when an Isolate is incorrectly assigned to cronobacter scheme when it should have been ecloacae. Extension of larger scoring problem with MLST-2.23.0.
