@@ -115,10 +115,11 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                 elif line.startswith("s:"):
                     Asmbld_Species_percent = line.split(' ')[1].strip()
                     Asmbld_Species = line.split(' ')[2].strip()
+        # Need to add check for cases when Krkaens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
         if len(Asmbld_Genus) == 0:
-            Asmbld_Genus = "Unknown"
+            Asmbld_Genus = "None"
         if len(Asmbld_Species) == 0:
-            Asmbld_Species = "Unknown"
+            Asmbld_Species = "None"
         Asmbld_kraken = Asmbld_Genus + " (" + Asmbld_Genus_percent + ") " + Asmbld_Species + " (" + Asmbld_Species_percent + ")"
         #guess what the mlst scheme is to check later
         scheme_guess_kraken_wt = Asmbld_Genus[0].lower() + Asmbld_Species[0:4]
