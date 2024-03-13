@@ -116,9 +116,9 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                     Asmbld_Species_percent = line.split(' ')[1].strip()
                     Asmbld_Species = line.split(' ')[2].strip()
         if len(Asmbld_Genus) == 0:
-            Asmbld_Genus = "NONE"
+            Asmbld_Genus = "Unknown"
         if len(Asmbld_Species) == 0:
-            Asmbld_Species = "NONE"
+            Asmbld_Species = "Unknown"
         Asmbld_kraken = Asmbld_Genus + " (" + Asmbld_Genus_percent + ") " + Asmbld_Species + " (" + Asmbld_Species_percent + ")"
         #guess what the mlst scheme is to check later
         scheme_guess_kraken_wt = Asmbld_Genus[0].lower() + Asmbld_Species[0:4]
