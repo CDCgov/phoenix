@@ -95,6 +95,11 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                 elif line.startswith("s:"):
                     Trim_Species_percent = line.split(' ')[1].strip()
                     Trim_Species = line.split(' ')[2].strip()
+        # Need to add check for cases when Krakens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
+        if len(Trim_Genus) == 0:
+            Trim_Genus = "None"
+        if len(Trim_Species) == 0:
+            Trim_Species = "None"
         Trim_kraken = Trim_Genus + " (" + Trim_Genus_percent + ") " + Trim_Species + " (" + Trim_Species_percent + ")"
         #guess what the mlst scheme is to check later
         scheme_guess_kraken_trimd = Trim_Genus[0].lower() + Trim_Species[0:4]
@@ -115,7 +120,7 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                 elif line.startswith("s:"):
                     Asmbld_Species_percent = line.split(' ')[1].strip()
                     Asmbld_Species = line.split(' ')[2].strip()
-        # Need to add check for cases when Krkaens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
+        # Need to add check for cases when Krakens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
         if len(Asmbld_Genus) == 0:
             Asmbld_Genus = "None"
         if len(Asmbld_Species) == 0:
