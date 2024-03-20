@@ -244,13 +244,16 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)  
       - Includes until 2024-01-28 [commit 97d1fe0cd0a119172037f6bdb29f8a1c7c6e6019](https://bitbucket.org/genomicepidemiology/resfinder_db/commits/branch/master)  
 
-## [v2.1.1](https://github.com/CDCgov/phoenix/releases/tag/v2.1.1) (03/11/2024)
+## [v2.1.1](https://github.com/CDCgov/phoenix/releases/tag/v2.1.1) (03/21/2024)
+
+**Implemented Enhancements:** 
+ - The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-1167","blaOXA-1181","blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213".
 
 **Fixed Bugs:**
 - Fix for issue [#130](https://github.com/CDCgov/phoenix/issues/130) Identified when an Isolate is incorrectly assigned to cronobacter scheme when it should have been ecloacae. Extension of larger scoring problem with MLST-2.23.0.
 - Fixed [#142](https://github.com/CDCgov/phoenix/issues/142) where names with multiple instances of "R2" in their name couldn't be parsed properly and don't move past the corruption check step. [commit `7fc0ac3c026b7c12608be4dd1d3682675e31d0fe`](https://github.com/CDCgov/phoenix/commit/7fc0ac3c026b7c12608be4dd1d3682675e31d0fe)
-- Fixed an issue in FASTANI. The file for checking 80%+ identity could not be found because the DB_Version was not set when "No Mash Hits found" occurs
-- Added catch in GRiPHin for cases where Kraken2 did not find a genus/species so that it can continue without crashes. Also added notes in the ouput for when this 'catch' happens as it can imply a possible larger issue
+- Fixed an issue in FASTANI. The file for checking 80%+ identity could not be found because the DB_Version was not set when "No Mash Hits found" occurs.
+- Updated amrfinderplus container from BLAST v2.14.0 --> v2.15.0 to fix [#144](https://github.com/CDCgov/phoenix/issues/144).
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
