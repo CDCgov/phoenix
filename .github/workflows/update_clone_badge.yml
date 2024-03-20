@@ -26,7 +26,7 @@ jobs:
           # Fetch clone count from GitHub API
           CLONE_COUNT=$(curl -s -H "Authorization: ***" \
               https://api.github.com/repos/CDCgov/phoenix/traffic/clones \
-              | jq -r '.clones | if . == null then "0" else map(.count) | add | tostring else "0" end')
+              | jq -r '.clones | if . == null then "0" else map(.count) | add | tostring end')
 
       - name: Update README badge
         run: |
