@@ -17,14 +17,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          node-version: '20.x'
       
       - name: Get clone count
         id: get_clone_count
         run: |
-          CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-                       https://api.github.com/repos/${{ github.repository }}/traffic/clones \
-                       | jq '.clones | map(.count) | add')
-          echo "::set-output name=clone_count::$CLONE_COUNT"
+          # Fetch clone count from GitHub API
+          CLONE_COUNT=$(curl -s -H "Authorization: ***" \
+              https://api.github.com/repos/CDCgov/phoenix/traffic/clones \
+              | jq -r '.clones | if . == null then "0" else map(.count) | add | tostring else "0" end')
 
       - name: Update README badge
         run: |
