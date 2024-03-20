@@ -6,7 +6,7 @@
 
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcdcgov%2Fphoenix&count_bg=%233DC8A9&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Page+Hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
-[![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Download)](https://github.com/cdcgov/phoenix/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Download)]()
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
