@@ -1,0 +1,34 @@
+name: Update Clone Badge
+
+on:
+  workflow_dispatch:  # Manually trigger workflow
+  #schedule:
+  #  - cron: '0 0 * * *'  # Runs at midnight every day
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Get clone count
+        id: get_clone_count
+        run: |
+          CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                       https://api.github.com/repos/${{ github.repository }}/traffic/clones \
+                       | jq '.clones | map(.count) | add')
+          echo "::set-output name=clone_count::$CLONE_COUNT"
+
+      - name: Update README badge
+        run: |
+          sed -i "s/\[!\[GitHub Clones\]\(.*\)\]/[![GitHub Clones](https:\/\/img.shields.io\/github\/downloads\/cdcgov\/phoenix\/total.svg?style=social&logo=github&label=Download-${{ steps.get_clone_count.outputs.clone_count }})]()/g" README.md
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "haiseq@cdc.gov"
+          git config --local user.name "HAISeq"
+          git add README.md
+          git commit -m "Update clone badge"
+          git push
