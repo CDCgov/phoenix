@@ -41,8 +41,6 @@ jobs:
           NEW_TOTAL=$((PREVIOUS_COUNT + CLONE_COUNT))
           echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
 
-          echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
-
       - name: Update README badge
         run: |
           sed -i "s|label=Clones.*)|label=Clones-${{ steps.calculate_new_total.outputs.NEW_TOTAL }})|" README.md
