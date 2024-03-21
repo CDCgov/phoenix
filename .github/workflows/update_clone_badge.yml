@@ -3,6 +3,8 @@ name: Update Clone Badge
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs at midnight every day
+  branches:
+    - v2.1.1-dev
 
 jobs:
   update-badge:
