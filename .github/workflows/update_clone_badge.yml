@@ -1,14 +1,11 @@
 name: Update Clone Badge
 
 on:
-  #workflow_dispatch:  # Manually trigger workflow
   schedule:
     - cron: '*/5 * * * *'  # Runs every 5 minutes
   push:
     branches:
-      - v2.1.1-dev  # Specify the branch you want to run the workflow on
-  #schedule:
-  #  - cron: '0 0 * * *'  # Runs at midnight every day
+      - v2.1.1-dev
 
 jobs:
   update-badge:
@@ -18,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
-          node-version: '20.x'
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Get clone and download counts
         id: get_counts
@@ -26,28 +23,26 @@ jobs:
           # Fetch clone count from GitHub API
           CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               https://api.github.com/repos/CDCgov/phoenix/traffic/clones \
-              | jq -r '.CLONES | if . == null then "0" else map(.count) | add | tostring end')
+              | jq -r '.count')
 
           # Fetch download count from GitHub API (example for fetching release download count)
           DOWNLOAD_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               https://api.github.com/repos/CDCgov/phoenix/releases \
-              | jq -r 'map(.assets | map(select(.download_count != null)) | add | .download_count) | add')
+              | jq -r '.[] | select(.assets != null) | .assets[].download_count' \
+              | awk '{s+=$1} END {print s}')
 
           echo "::set-output name=clone_count::$CLONE_COUNT"
           echo "::set-output name=download_count::$DOWNLOAD_COUNT"
 
       - name: Update README badge
         run: |
-          # Update clone badge
-          sed -i "s|\[!\[GitHub Clones\]\(.*\)\]|\[![GitHub Clones](https:\/\/img.shields.io\/github\/downloads\/cdcgov\/phoenix\/total.svg?style=social&logo=github&label=Clones-${{ steps.get_counts.outputs.clone_count }})]()|g" README.md
-
-          # Update download badge
-          sed -i "s|\[!\[GitHub Downloads\]\(.*\)\]|\[![GitHub Downloads](https:\/\/img.shields.io\/github\/downloads\/cdcgov\/phoenix\/total.svg?style=social&logo=github&label=Downloads-${{ steps.get_counts.outputs.download_count }})]()|g" README.md
+          sed -i "s|label=Clones.*)|label=Clones-${{ steps.get_counts.outputs.clone_count }})|" README.md
+          sed -i "s|label=Download.*)|label=Download-${{ steps.get_counts.outputs.download_count }})|" README.md
 
       - name: Commit and push changes
         run: |
           git config --local user.email "haiseq@cdc.gov"
           git config --local user.name "HAISeq"
           git add README.md
-          git commit -m "Update clone badge"
+          git commit -m "Update clone and download counts"
           git push
