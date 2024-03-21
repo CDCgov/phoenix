@@ -20,17 +20,29 @@ jobs:
         with:
           node-version: '20.x'
       
-      - name: Get clone count
-        id: get_clone_count
+      - name: Get clone and download counts
+        id: get_counts
         run: |
           # Fetch clone count from GitHub API
-          CLONE_COUNT=$(curl -s -H "Authorization: ***" \
+          CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               https://api.github.com/repos/CDCgov/phoenix/traffic/clones \
-              | jq -r '.clones | if . == null then "0" else map(.count) | add | tostring end')
+              | jq -r '.clones | if . == null then "0" else map(.count) | add | tostring else "0" end')
+
+          # Fetch download count from GitHub API (example for fetching release download count)
+          DOWNLOAD_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              https://api.github.com/repos/CDCgov/phoenix/releases \
+              | jq -r 'map(.assets | map(select(.download_count != null)) | add | .download_count) | add')
+
+          echo "::set-output name=clone_count::$CLONE_COUNT"
+          echo "::set-output name=download_count::$DOWNLOAD_COUNT"
 
       - name: Update README badge
         run: |
-          sed -i "s/\[!\[GitHub Clones\]\(.*\)\]/[![GitHub Clones](https:\/\/img.shields.io\/github\/downloads\/cdcgov\/phoenix\/total.svg?style=social&logo=github&label=Download-${{ steps.get_clone_count.outputs.clone_count }})]()/g" README.md
+          # Update clone badge
+          sed -i "s|\[!\[GitHub Clones\]\(.*\)\]|\[![GitHub Clones](https:\/\/img.shields.io\/github\/downloads\/cdcgov\/phoenix\/total.svg?style=social&logo=github&label=Clones-${{ steps.get_counts.outputs.clone_count }})]()|g" README.md
+
+          # Update download badge
+          sed -i "s|\[!\[GitHub Downloads\]\(.*\)\]|\[![GitHub Downloads](https:\/\/img.shields.io\/github\/downloads\/cdcgov\/phoenix\/total.svg?style=social&logo=github&label=Downloads-${{ steps.get_counts.outputs.download_count }})]()|g" README.md
 
       - name: Commit and push changes
         run: |
