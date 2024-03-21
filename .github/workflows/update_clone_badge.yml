@@ -21,13 +21,11 @@ jobs:
         id: get_counts
         run: |
           # Fetch clone count from GitHub API
-          CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              https://api.github.com/repos/CDCgov/phoenix/traffic/clones \
+          CLONE_COUNT=$(curl -s https://api.github.com/repos/CDCgov/phoenix/traffic/clones \
               | jq -r '.count')
 
           # Fetch download count from GitHub API (example for fetching release download count)
-          DOWNLOAD_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              https://api.github.com/repos/CDCgov/phoenix/releases \
+          DOWNLOAD_COUNT=$(curl -s https://api.github.com/repos/CDCgov/phoenix/releases \
               | jq -r '.[] | select(.assets != null) | .assets[].download_count' \
               | awk '{s+=$1} END {print s}')
 
