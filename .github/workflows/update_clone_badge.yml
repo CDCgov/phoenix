@@ -18,7 +18,7 @@ jobs:
           token: ${{ secrets.GH_ACTION }}
       
       - name: Get clone and download counts
-        id: get_counts  gh_action
+        id: get_counts
         run: |
           # Fetch clone count from GitHub API
           CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
