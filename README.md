@@ -14,7 +14,7 @@
 
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcdcgov%2Fphoenix&count_bg=%233DC8A9&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Page+Hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
-![GitHub Clones](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Clones-null)  
+![GitHub Clones](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Clones-179)  
 ![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Download-)
 
 
