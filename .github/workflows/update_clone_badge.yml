@@ -17,27 +17,35 @@ jobs:
         with:
           token: ${{ secrets.GH_ACTION }}
       
-      - name: Get clone and download counts
-        id: get_counts
+      - name: Get clone count for today
+        id: get_clone_count
         run: |
-          # Fetch clone count from GitHub API
+          # Fetch clone count from GitHub API for today
           CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
-              https://api.github.com/repos/CDCgov/phoenix/traffic/clones \
+              "https://api.github.com/repos/CDCgov/phoenix/traffic/clones?per=day&start_date=$(date +%Y-%m-%d)&end_date=$(date +%Y-%m-%d)" \
               | jq -r '.count')
 
-          # Fetch download count from GitHub API (example for fetching release download count)
-          DOWNLOAD_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
-          https://api.github.com/repos/CDCgov/phoenix/releases \
-              | jq -r '.[] | select(.assets != null) | .assets[].download_count' \
-              | awk '{s+=$1} END {print s}')
+          echo "CLONE_COUNT=$CLONE_COUNT" >> $GITHUB_ENV
 
-          echo "::set-output name=clone_count::$CLONE_COUNT"
-          echo "::set-output name=download_count::$DOWNLOAD_COUNT"
+      - name: Extract previous clone count from README
+        id: extract_previous_count
+        run: |
+          # Extract previous clone count from README.md
+          PREVIOUS_COUNT=$(grep -oP '(?<=Clones-)\d+' README.md)
+          echo "PREVIOUS_COUNT=$PREVIOUS_COUNT" >> $GITHUB_ENV
+
+      - name: Calculate new total clone count
+        id: calculate_new_total
+        run: |
+          # Calculate new total clone count by adding today's count to previous count
+          NEW_TOTAL=$((PREVIOUS_COUNT + CLONE_COUNT))
+          echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
+
+          echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
 
       - name: Update README badge
         run: |
-          sed -i "s|label=Clones.*)|label=Clones-${{ steps.get_counts.outputs.clone_count }})|" README.md
-          sed -i "s|label=Download.*)|label=Download-${{ steps.get_counts.outputs.download_count }})|" README.md
+          sed -i "s|label=Clones.*)|label=Clones-${{ steps.calculate_new_total.outputs.NEW_TOTAL }})|" README.md
 
       - name: Commit and push changes
         run: |
