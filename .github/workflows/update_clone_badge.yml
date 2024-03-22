@@ -2,13 +2,13 @@ name: Update Clone Badge
 
 on:
   schedule:
-    #- cron: '0 0 * * *'  # Runs at midnight every day
-    - cron: '*/5 * * * *'  # Runs every 5 minutes
+    - cron: '*/2 * * * *'  # Runs every 5 minutes
 
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-  
+    if: github.ref == 'refs/heads/v2.1.1-dev'  # Run only on v2.1.1-dev branch
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
