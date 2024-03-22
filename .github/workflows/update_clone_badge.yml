@@ -3,8 +3,7 @@ name: Update Clone Badge
 on:
   schedule:
     #- cron: '0 0 * * *'  # Runs at midnight every day
-    #- cron: '*/5 * * * *'  # Runs every 5 minutes
-    - cron: '20 12 * * *'  # Runs at 12:20 PM every day
+    - cron: '*/5 * * * *'  # Runs every 5 minutes
 
 jobs:
   update-badge:
