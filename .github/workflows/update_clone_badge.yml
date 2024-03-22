@@ -44,7 +44,7 @@ jobs:
 
       - name: Update README badge
         run: |
-          sed -i "s|\(Clones%3A%20\)\(\d\+\)|\1${{ steps.calculate_new_total.outputs.NEW_TOTAL }}|" README.md
+          sed -i "s|\(Clones%3A%20\d\+\)|Clones%3A%20${{ steps.calculate_new_total.outputs.NEW_TOTAL }}|" README.md
 
       - name: Commit and push changes
         run: |
