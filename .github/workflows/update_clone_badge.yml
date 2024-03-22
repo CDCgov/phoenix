@@ -25,8 +25,7 @@ jobs:
         run: |
           # Fetch clone count from GitHub API for today
           CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
-              "https://api.github.com/repos/CDCgov/phoenix/traffic/clones?per=day&start_date=$(date +%Y-%m-%d)&end_date=$(date +%Y-%m-%d)" \
-              | jq -r '.count')
+              "https://api.github.com/repos/CDCgov/phoenix/traffic/clones" | jq -r --arg target_day "$(date -d yesterday +%Y-%m-%d)" '.clones[] | select(.timestamp | startswith($target_day))' | jq -r '.count')
           echo "CLONE_COUNT=$CLONE_COUNT" >> $GITHUB_ENV
 
       - name: Extract previous clone count from README
