@@ -8,16 +8,17 @@ on:
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-
+    if: github.ref == 'refs/heads/v2.1.1-dev'
+  
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GH_ACTION }}
-          ref: v2.1.1  # Specify the branch to checkout
+          ref: v2.1.1-dev  # Specify the branch to checkout
       
       - name: Get clone count for today
-        if: github.ref == 'refs/heads/v2.1.1'
+        
         id: get_clone_count
         run: |
           # Fetch clone count from GitHub API for today
@@ -28,7 +29,6 @@ jobs:
           echo "CLONE_COUNT=$CLONE_COUNT" >> $GITHUB_ENV
 
       - name: Extract previous clone count from README
-        if: github.ref == 'refs/heads/v2.1.1'
         id: extract_previous_count
         run: |
           # Extract previous clone count from README.md
@@ -36,7 +36,6 @@ jobs:
           echo "PREVIOUS_COUNT=$PREVIOUS_COUNT" >> $GITHUB_ENV
 
       - name: Calculate new total clone count
-        if: github.ref == 'refs/heads/v2.1.1'
         id: calculate_new_total
         run: |
           # Calculate new total clone count by adding today's count to previous count
@@ -44,7 +43,6 @@ jobs:
           echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
 
       - name: Update README badge
-        if: github.ref == 'refs/heads/v2.1.1'
         run: |
           sed -i "s|label=Clones.*)|label=Clones-${{ steps.calculate_new_total.outputs.NEW_TOTAL }})|" README.md
 
