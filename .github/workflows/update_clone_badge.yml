@@ -7,14 +7,14 @@ on:
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/v2.1.1-dev'  # Run only on v2.1.1-dev branch
+    #if: github.ref == 'refs/heads/v2.1.1-dev'  # Run only on v2.1.1-dev branch
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GH_ACTION }}
-          ref: v2.1.1-dev  # Specify the branch to checkout
+          #ref: v2.1.1-dev  # Specify the branch to checkout
       
       - name: Get clone count for today
         
@@ -24,7 +24,6 @@ jobs:
           CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
               "https://api.github.com/repos/CDCgov/phoenix/traffic/clones?per=day&start_date=$(date +%Y-%m-%d)&end_date=$(date +%Y-%m-%d)" \
               | jq -r '.count')
-
           echo "CLONE_COUNT=$CLONE_COUNT" >> $GITHUB_ENV
 
       - name: Extract previous clone count from README
