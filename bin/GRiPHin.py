@@ -95,6 +95,11 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                 elif line.startswith("s:"):
                     Trim_Species_percent = line.split(' ')[1].strip()
                     Trim_Species = line.split(' ')[2].strip()
+        # Need to add check for cases when Krakens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
+        if len(Trim_Genus) == 0:
+            Trim_Genus = "None"
+        if len(Trim_Species) == 0:
+            Trim_Species = "None"
         Trim_kraken = Trim_Genus + " (" + Trim_Genus_percent + ") " + Trim_Species + " (" + Trim_Species_percent + ")"
         #guess what the mlst scheme is to check later
         scheme_guess_kraken_trimd = Trim_Genus[0].lower() + Trim_Species[0:4]
@@ -115,6 +120,11 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                 elif line.startswith("s:"):
                     Asmbld_Species_percent = line.split(' ')[1].strip()
                     Asmbld_Species = line.split(' ')[2].strip()
+        # Need to add check for cases when Krakens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
+        if len(Asmbld_Genus) == 0:
+            Asmbld_Genus = "None"
+        if len(Asmbld_Species) == 0:
+            Asmbld_Species = "None"
         Asmbld_kraken = Asmbld_Genus + " (" + Asmbld_Genus_percent + ") " + Asmbld_Species + " (" + Asmbld_Species_percent + ")"
         #guess what the mlst scheme is to check later
         scheme_guess_kraken_wt = Asmbld_Genus[0].lower() + Asmbld_Species[0:4]
@@ -1077,7 +1087,8 @@ def big5_check(final_ar_df):
     big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
     blaOXA_48_like = [ "blaOXA-48", "blaOXA-54", "blaOXA-162", "blaOXA-181", "blaOXA-199", "blaOXA-204", "blaOXA-232", "blaOXA-244", "blaOXA-245", "blaOXA-247", "blaOXA-252", "blaOXA-370", "blaOXA-416", "blaOXA-436", \
     "blaOXA-438", "blaOXA-439", "blaOXA-484", "blaOXA-505", "blaOXA-514", "blaOXA-515", "blaOXA-517", "blaOXA-519", "blaOXA-535", "blaOXA-538", "blaOXA-546", "blaOXA-547", "blaOXA-566", "blaOXA-567", "blaOXA-731", \
-    "blaOXA-788", "blaOXA-793", "blaOXA-833", "blaOXA-894", "blaOXA-918", "blaOXA-920", "blaOXA-922", "blaOXA-923", "blaOXA-924", "blaOXA-929", "blaOXA-933", "blaOXA-934", "blaOXA-1038", "blaOXA-1039", "blaOXA-1055", "blaOXA-1119", "blaOXA-1146" ]
+    "blaOXA-788", "blaOXA-793", "blaOXA-833", "blaOXA-894", "blaOXA-918", "blaOXA-920", "blaOXA-922", "blaOXA-923", "blaOXA-924", "blaOXA-929", "blaOXA-933", "blaOXA-934", "blaOXA-1038", "blaOXA-1039", "blaOXA-1055", "blaOXA-1119", "blaOXA-1146", \
+    "blaOXA-1167","blaOXA-1181","blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213" ]
     # combine lists of all genes we want to highlight
     #all_big5_keep = big5_keep + blaOXA_48_like
     # remove list of genes that look like big 5 but don't have activity

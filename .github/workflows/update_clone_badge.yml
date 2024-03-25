@@ -1,0 +1,55 @@
+name: Update Clone Badge
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at midnight every day
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/v2.2.0-dev'  # Run only on v2.2.0-dev branch
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_ACTION }}
+          ref: v2.2.0-dev  # Specify the branch to checkout
+      
+      - name: Get clone count for today
+        
+        id: get_clone_count
+        run: |
+          # Fetch clone count from GitHub API for today
+          CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
+              "https://api.github.com/repos/CDCgov/phoenix/traffic/clones" | jq -r --arg target_day "$(date -d yesterday +%Y-%m-%d)" '.clones[] | select(.timestamp | startswith($target_day))' | jq -r '.count')
+          echo "CLONE_COUNT=$CLONE_COUNT" >> $GITHUB_ENV
+
+      - name: Extract previous clone count from README
+        id: extract_previous_count
+        run: |
+          # Extract previous clone count from README.md
+          PREVIOUS_COUNT=$(grep -oP '(?<=Clones%3A%20)\d+' README.md)
+          echo "PREVIOUS_COUNT=$PREVIOUS_COUNT" >> $GITHUB_ENV
+
+      - name: Calculate new total clone count
+        if: ${{ env.PREVIOUS_COUNT != env.NEW_TOTAL }}
+        id: calculate_new_total
+        run: |
+          # Calculate new total clone count by adding today's count to previous count
+          NEW_TOTAL=$((PREVIOUS_COUNT + CLONE_COUNT))
+          echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
+
+      - name: Update README badge
+        if: ${{ env.PREVIOUS_COUNT != env.NEW_TOTAL }}
+        run: |
+          sed -i -E "s/Clones%3A%20[0-9]+/Clones%3A%20${{ env.NEW_TOTAL }}/g" README.md
+
+      - name: Commit and push changes
+        if: ${{ env.PREVIOUS_COUNT != env.NEW_TOTAL }}
+        run: |
+          git config --local user.email "haiseq@cdc.gov"
+          git config --local user.name "HAISeq"
+          git add README.md
+          git commit -m "Update clone and download counts"
+          git push

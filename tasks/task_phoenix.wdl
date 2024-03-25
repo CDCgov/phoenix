@@ -17,7 +17,7 @@ task phoenix {
   }
   command <<<
     date | tee DATE
-    version="v2.1.0" 
+    version="v2.1.1" 
     echo $version | tee VERSION
 
     # Debug
@@ -246,7 +246,7 @@ task phoenix {
     File? multiqc_output          = "~{samplename}/phx_output/multiqc/multiqc_report.html"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix:2.1.0"
+    docker: "quay.io/jvhagey/phoenix:2.1.1"
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"
