@@ -16,7 +16,7 @@
 
 <!--- ![GitHub Clones](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Clones-)  --->
 
-[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%20812-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)  
+[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%20863-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)  
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
