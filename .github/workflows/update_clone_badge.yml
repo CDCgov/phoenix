@@ -44,7 +44,7 @@ jobs:
 
       - name: Update README badge
         run: |
-          sed -iE "s/Clones%3A%20(\d\+\)/Clones%3A%20${{ env.NEW_TOTAL }}/g" README.md
+          sed -iE "s/Clones%3A%20\d+/Clones%3A%20${{ env.NEW_TOTAL }}/g" README.md
 
       - name: Commit and push changes
         run: |
