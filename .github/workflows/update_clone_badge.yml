@@ -1,23 +1,20 @@
 name: Update Clone Badge
 
 on:
-  push:
-    branches:
-      - v2.1.1-dev  # Specify the branch you want to target here
-  #schedule:
-    #- cron: '0 0 * * *'  # Runs at midnight every day
+  schedule:
+    - cron: '0 0 * * *'  # Runs at midnight every day
 
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/v2.1.1-dev'  # Run only on v2.2.0-dev branch
+    if: github.ref == 'refs/heads/v2.2.0-dev'  # Run only on v2.2.0-dev branch
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GH_ACTION }}
-          ref: v2.1.1-dev  # Specify the branch to checkout
+          ref: v2.2.0-dev  # Specify the branch to checkout
       
       - name: Get clone count for today
         
