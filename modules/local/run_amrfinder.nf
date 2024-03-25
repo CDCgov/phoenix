@@ -1,7 +1,7 @@
 process AMRFINDERPLUS_RUN {
     tag "$meta.id"
     label 'process_medium'
-    // 3.12.1-2024-01-31.1 - new
+    // 3.12.8-2024-01-31.1 - new
     container 'staphb/ncbi-amrfinderplus@sha256:45863da98b042fffc17b91d8a42bb7094509c154409da7747b6ba509bca7cdc2'
 
     input:
