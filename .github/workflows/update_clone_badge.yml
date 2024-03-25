@@ -36,6 +36,7 @@ jobs:
           echo "PREVIOUS_COUNT=$PREVIOUS_COUNT" >> $GITHUB_ENV
 
       - name: Calculate new total clone count
+        if: ${{ env.PREVIOUS_COUNT != env.NEW_TOTAL }}
         id: calculate_new_total
         run: |
           # Calculate new total clone count by adding today's count to previous count
@@ -43,10 +44,12 @@ jobs:
           echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
 
       - name: Update README badge
+        if: ${{ env.PREVIOUS_COUNT != env.NEW_TOTAL }}
         run: |
           sed -i -E "s/Clones%3A%20[0-9]+/Clones%3A%20${{ env.NEW_TOTAL }}/g" README.md
 
       - name: Commit and push changes
+        if: ${{ env.PREVIOUS_COUNT != env.NEW_TOTAL }}
         run: |
           git config --local user.email "haiseq@cdc.gov"
           git config --local user.name "HAISeq"
