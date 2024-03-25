@@ -19,7 +19,7 @@ process GET_RAW_STATS {
 
     when:
     //if the files are not corrupt then get the read stats
-    "${fairy_corrupt_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_corrupt_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt."
+    fairy_corrupt_outcome.every { it.startsWith("PASSED:") }
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.

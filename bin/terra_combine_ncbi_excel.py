@@ -99,7 +99,7 @@ including from the Antimicrobial Resistance Laboratory Network (AR Lab Network),
             worksheet.merge_range('A' + str(num_rows+5) + ':J' + str(num_rows+8), disclaimer_text, red_format)
         else:
             worksheet.merge_range('A' + str(num_rows+1) + ':J' + str(num_rows+6), biosample_delete_warning, orange_format)
-            worksheet.merge_range('A' + str(num_rows+7) + ':J' + str(num_rows+9), disclaimer_text, red_format)
+            worksheet.merge_range('A' + str(num_rows+7) + ':J' + str(num_rows+10), disclaimer_text, red_format)
 
 def main():
     args = parseArgs()

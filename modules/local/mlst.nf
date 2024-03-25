@@ -90,6 +90,11 @@ process MLST {
             cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
             rm ${prefix}_*.tsv
         fi
+    elif [[ \${genus,,} == "enterobacter" ]]; then
+        if [[ \$scheme == "cronobacter" ]]; then
+            mv ${prefix}.tsv ${prefix}.OLD-tsv
+            mlst --scheme ecloacae --threads $task.cpus \$unzipped_fasta > ${prefix}.tsv
+        fi
     else
         :
     fi

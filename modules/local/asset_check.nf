@@ -20,10 +20,13 @@ process ASSET_CHECK {
     script:
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
     """
     if [[ ${zipped_sketch} = *.gz ]]
     then
         pigz -vdf ${zipped_sketch}
+        #for bz2 files
+        #pigz -dc -L ${zipped_sketch} > ${unzipped_sketch}
     else
         :
     fi

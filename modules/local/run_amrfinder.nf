@@ -2,7 +2,7 @@ process AMRFINDERPLUS_RUN {
     tag "$meta.id"
     label 'process_medium'
     // 3.12.8-2024-01-31.1 - new
-    container 'staphb/ncbi-amrfinderplus@sha256:45ca96cec979493a45e451921b2a63796184b732c16cf422ec4383177e12236b'
+    container 'staphb/ncbi-amrfinderplus@sha256:45863da98b042fffc17b91d8a42bb7094509c154409da7747b6ba509bca7cdc2'
 
     input:
     tuple val(meta), path(nuc_fasta), val(organism_param), path(pro_fasta), path(gff)
