@@ -7,7 +7,7 @@ on:
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/v2.2.0-dev'  # Run only on v2.2.0-dev branch
+    if: github.ref == 'refs/heads/main'  # Run only on v2.2.0-dev branch
 
     steps:
       - name: Checkout repository
