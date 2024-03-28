@@ -12,6 +12,7 @@ def get_version():
 
 import argparse
 import pandas as pd
+import numpy as np
 from weasyprint import HTML, CSS
 from datetime import date
 import logging
@@ -42,7 +43,13 @@ note_text2 = "QC Warning  - Numbers below thresholds will be highlighted in yell
 note_text4 = "Taxa ID Failed - Only Taxa IDed with FastANI are acceptable, all other methods will be highlighted in red"
 note_text3 = "Taxa ID QC Warning  - Numbers below thresholds will be highlighted in yellow: BUSCO ID <97%; FastANI match <95%; FastANI coverage <90%"
 note_text5 = "Assembly ratio and GC% STDev are NaN when there are <10 genomes as reference."
-note_text6 = "AR genes were determined based on: ."
+note_text6 = "Identical amino-acid sequence found in the AMRFinder+ database, either EXACT(X/P) or ALLELE(X/P). The suffix indicates whether it was identified with a protein (P) or nucleotide translated (X)."
+note_text7 = "BLAST hits are hits that are < 100% identical to a database protein, but at coverage > 90%. The suffix indicates whether it was identified with a protein (P) or nucleotide translated (X)."
+#note_text8 = "Hits between 50-90% of the length of the database protein are called either PARTIAL if the hit is internal to a contig or PARTIAL_CONTIG_END if the gene could have been broken by a contig boundary. Assemblers can split genes over multiple contigs, genes that are PARTIAL_CONTIG_END are often full-length in reality."
+#note_text9 = "INTERNAL_STOP are genes that when translated from genomic sequence have a stop codon before the end of the database protein and are less likely to be functional."
+#note_text10 = "HMM-only hits don't meet the criteria for a BLAST and a HMM match is above the curated cutoff for an HMM that has been created for that gene or gene family. These will usually be distant relatives of known gene families and may be candidates for a new gene family. Occasionally, partial proteins that have diverged enough from known database proteins to not meet the BLAST cutoffs will show up as HMM-only hits."
+#note_text11 = "The suffix indicates whether it was identified with a protein (P) or nucleotide translated (X)."
+
 
 def check_time(start_time):
     from datetime import datetime
@@ -104,56 +111,107 @@ def combine_strings(row):
     values = [str(value) for value in row if pd.notnull(value)]
     return ', '.join(values)
 
+def get_griphin_df(griphin_summary):
+    columns_to_read = ['WGS_ID','Minimum_QC_Check','Raw_Q30_R1_[%]','Raw_Q30_R2_[%]','Total_Raw_[reads]','Total_Trimmed_[reads]','Estimated_Trimmed_Coverage', 'GC[%]','Scaffolds','Assembly_Length','Assembly_Ratio','Assembly_StDev']
+    griphin_df = pd.read_csv(griphin_summary,sep='\t', usecols=columns_to_read)
+    griphin_df = griphin_df.rename(columns={'WGS_ID':'ID','Minimum_QC_Check':'Minimum QC','Raw_Q30_R1_[%]':'R1 Q30 (%)', 'Raw_Q30_R2_[%]':'R2 Q30 (%)','Total_Raw_[reads]':'Total Raw', 'GC[%]': 'GC (%)',
+                                            'Total_Trimmed_[reads]':'Total Trimmed','Estimated_Trimmed_Coverage':'Estimated Coverage','Assembly_Length':'Assembly Length','Assembly_Ratio':'Assembly Ratio','Assembly_StDev':'Assembly StDev'})
+    #griphin_df['Assembly Length'] = griphin_df['Assembly Length'].apply(lambda x: f'{int(x.replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
+    # Convert 'Scaffolds' from float to int
+    griphin_df['Scaffolds'] = griphin_df['Scaffolds'].astype(int)
+    griphin_df[['Total Raw','Total Trimmed','Scaffolds']] = griphin_df[['Total Raw','Total Trimmed','Scaffolds']].applymap(lambda x: f'{int(str(x).replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
+    # Round to 2 decimals
+    griphin_df[['Assembly Ratio', 'Assembly StDev']] = griphin_df[['Assembly Ratio', 'Assembly StDev']].applymap(lambda x: round(float(x), 2) if x != "Unknown" and x == x else x)
+    #unknowns
+    griphin_df[['GC (%)','Assembly Ratio']] = griphin_df[['GC (%)','Assembly Ratio']].applymap(lambda x: color_unknown_red(x))
+    #Failures
+    griphin_df['Minimum QC'] = griphin_df['Minimum QC'].apply(lambda x: color_unknown_red(x))
+    # Failures
+    griphin_df['Estimated Coverage'] = griphin_df['Estimated Coverage'].apply(lambda x: color_red(x, COVERAGE_CUTOFF, "<"))
+    griphin_df['Assembly StDev'] = griphin_df['Assembly StDev'].apply(lambda x: color_red(x, ASSEMBLY_CUTOFF, ">"))
+    griphin_df['Assembly Length'] = griphin_df['Assembly Length'].apply(lambda x: color_red(x, ASSEMBLY_LENGTH, "<"))
+    griphin_df['Scaffolds'] = griphin_df['Scaffolds'].apply(lambda x: color_red(x, SCAFFOLD_NUM, ">"))
+    # Warnings
+    griphin_df['R1 Q30 (%)'] = griphin_df['R1 Q30 (%)'].apply(lambda x: color_yellow(x, R1_Q30_RAW, "<"))
+    griphin_df['R2 Q30 (%)'] = griphin_df['R2 Q30 (%)'].apply(lambda x: color_yellow(x, R2_Q30_RAW, "<"))
+    griphin_df['Total Raw'] = griphin_df['Total Raw'].apply(lambda x: color_yellow(x, RAW_READ, "<"))
+    griphin_df['Total Trimmed'] = griphin_df['Total Trimmed'].apply(lambda x: color_yellow(x, TRIMMED_READ, "<"))
+    #griphin_df['Scaffolds'] = griphin_df['Scaffolds'].apply(lambda x: color_red(x, SCAFFOLD_NUM, ">"))
+    return griphin_df
+
+def extract_method(hit, gene):
+    parts = hit.split(";")
+    for part in parts:
+        gene_method = next((term for term in ['EXACT', 'ALLELE', 'BLAST'] if term in part), None)
+        if gene_method is not None:
+            parts = hit.split(":")
+            suffix = parts[2].strip("]")[-1]
+            if suffix in ['N', 'P', 'X']:
+                return gene.split("_")[0] + "_" + suffix
+            else:
+                return gene.split("_")[0]
+        else:
+            return ""
+
+def get_ar_df(griphin_summary):
+    ar_df = pd.read_csv(griphin_summary, sep='\t')
+    cols_from_29 = ar_df.columns[29:]
+    ar_df = pd.concat([ar_df.loc[:, ["WGS_ID", "FastANI_Organism"]], ar_df.loc[:, cols_from_29]], axis=1)
+    ar_df = ar_df.astype(str)
+
+    # Create MultiIndex columns for resistance genes
+    exact_gene_columns = pd.MultiIndex.from_product([['Beta-lactam Resistance Genes', 'Other Resistance Genes'], ['ALLELE', 'EXACT', ]], names=[None, None])
+    partial_gene_columns = pd.MultiIndex.from_product([['Beta-lactam Resistance Genes', 'Other Resistance Genes'], ["BLAST"]], names=[None, None])
+
+    # Create empty DataFrame with MultiIndex for resistance genes
+    exact_df = pd.DataFrame(index=ar_df.index, columns=exact_gene_columns)
+    partial_df = pd.DataFrame(index=ar_df.index, columns=partial_gene_columns)
+
+    # Fill DataFrames for resistance genes
+    for col, val in ar_df.items():
+        for idx, hit in val.iteritems():
+            gene = col.split('_')[0]
+            gene_method = extract_method(hit, col)
+            if gene == 'WGS_ID' or gene == 'FastANI_Organism':
+                continue
+            resistance_category = 'Beta-lactam Resistance Genes' if 'Beta-lactam' in col else 'Other Resistance Genes'
+            if gene_method != "":
+                if 'EXACT' in hit or 'ALLELE' in hit:
+                    gene_method_column = 'ALLELE' if 'ALLELE' in hit else 'EXACT'
+                    if pd.notna(exact_df.loc[idx, (resistance_category, gene_method_column)]):
+                        exact_df.loc[idx, (resistance_category, gene_method_column)] += ", " + gene_method
+                    else:
+                        exact_df.loc[idx, (resistance_category, gene_method_column)] = gene_method
+                else:
+                    gene_method_column = next((term for term in ['BLAST'] if term in hit), None)
+                    print(gene_method_column)
+                    if gene_method_column is not None:
+                        if pd.notna(partial_df.loc[idx, (resistance_category, gene_method_column)]):
+                            partial_df.loc[idx, (resistance_category, gene_method_column)] += ", " + gene_method
+                        else:
+                            partial_df.loc[idx, (resistance_category, gene_method_column)] = gene_method
+
+    # Concatenate with the original DataFrame to include ['WGS_ID','FastANI_Organism']
+    exact_df.insert(0, ('', 'WGS_ID'), ar_df['WGS_ID'])
+    exact_df.insert(1, ('', 'FastANI_Organism'), ar_df['FastANI_Organism'])
+    partial_df.insert(0, ('', 'WGS_ID'), ar_df['WGS_ID'])
+
+    # Remove NaN values
+    exact_df.fillna('', inplace=True)
+    partial_df.fillna('', inplace=True)
+
+    return exact_df, partial_df
+
 def clia_report(args):
     project_dir = args.project_dir
     ar_database = args.ar_database.replace("amrfinderdb_", "").replace(".tar.gz", "")
     run_start_time, run_end_time = check_time(args.start_time)
 
-    summary = os.path.join(project_dir,'Phoenix_Summary.tsv')
-    if os.path.exists(summary):
-        summary_df = pd.read_csv(summary,sep='\t')
-        #summary_df.drop(columns=["Auto_QC_Outcome","Warning_Count","Estimated_Coverage","Genome_Length","Assembly_Ratio_(STDev)","#_of_Scaffolds_>500bp","GC_%","BUSCO"], inplace=True)
-        summary_df.drop(summary_df.columns[[i for i in range(1,10)] + [i for i in range(11,16)]], axis=1, inplace=True)
-        # Combine strings in columns containing "Beta-lactam"
-        beta_lactam_columns = [col for col in summary_df.columns if 'Beta-lactam' in col]
-        summary_df['Beta-lactam Resistance Genes'] = summary_df[beta_lactam_columns].apply(lambda row: combine_strings(row), axis=1)
-        # Combine strings in non "Beta-lactam" columns
-        non_beta_lactam_columns = [col for col in list(summary_df.columns) if col not in (beta_lactam_columns + ['ID', 'Species','Beta-lactam Resistance Genes'])]
-        summary_df['Other Resistance Genes'] = summary_df[non_beta_lactam_columns].apply(lambda row: combine_strings(row), axis=1)
-        #drop individual combined columns
-        summary_df.drop(columns=beta_lactam_columns, inplace=True)
-        summary_df.drop(columns=non_beta_lactam_columns, inplace=True)
-        summary_df = summary_df.rename(columns={'Species':'FastANI Species'})
-    else:
-        logging.info(f"No summary file: {summary}")
-    
     griphin_summary = f"{project_dir}/*GRiPHin_Summary.tsv"
     matching_files = glob.glob(griphin_summary)
     if len(matching_files) == 1:
-        columns_to_read = ['WGS_ID','Minimum_QC_Check','Raw_Q30_R1_[%]','Raw_Q30_R2_[%]','Total_Raw_[reads]','Total_Trimmed_[reads]','Estimated_Trimmed_Coverage', 'GC[%]','Scaffolds','Assembly_Length','Assembly_Ratio','Assembly_StDev']
-        griphin_df = pd.read_csv(matching_files[0],sep='\t', usecols=columns_to_read)
-        griphin_df = griphin_df.rename(columns={'WGS_ID':'ID','Minimum_QC_Check':'Minimum QC','Raw_Q30_R1_[%]':'R1 Q30 (%)', 'Raw_Q30_R2_[%]':'R2 Q30 (%)','Total_Raw_[reads]':'Total Raw', 'GC[%]': 'GC (%)',
-                                                'Total_Trimmed_[reads]':'Total Trimmed','Estimated_Trimmed_Coverage':'Estimated Coverage','Assembly_Length':'Assembly Length','Assembly_Ratio':'Assembly Ratio','Assembly_StDev':'Assembly StDev'})
-        #griphin_df['Assembly Length'] = griphin_df['Assembly Length'].apply(lambda x: f'{int(x.replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
-        griphin_df[['Total Raw','Total Trimmed','Scaffolds']] = griphin_df[['Total Raw','Total Trimmed','Scaffolds']].applymap(lambda x: f'{int(x.replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
-        #griphin_df['Total Trimmed'] = griphin_df['Total Trimmed'].apply(lambda x: f'{int(x.replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
-        # Round to 2 decimals
-        griphin_df[['Assembly Ratio', 'Assembly StDev']] = griphin_df[['Assembly Ratio', 'Assembly StDev']].applymap(lambda x: round(float(x), 2) if x != "Unknown" and x == x else x)
-        #unknowns
-        griphin_df[['GC (%)','Assembly Ratio']] = griphin_df[['GC (%)','Assembly Ratio']].applymap(lambda x: color_unknown_red(x))
-        #Failures
-        griphin_df['Minimum QC'] = griphin_df['Minimum QC'].apply(lambda x: color_unknown_red(x))
-        # Failures
-        griphin_df['Estimated Coverage'] = griphin_df['Estimated Coverage'].apply(lambda x: color_red(x, COVERAGE_CUTOFF, "<"))
-        griphin_df['Assembly StDev'] = griphin_df['Assembly StDev'].apply(lambda x: color_red(x, ASSEMBLY_CUTOFF, ">"))
-        griphin_df['Assembly Length'] = griphin_df['Assembly Length'].apply(lambda x: color_red(x, ASSEMBLY_LENGTH, "<"))
-        griphin_df['Scaffolds'] = griphin_df['Scaffolds'].apply(lambda x: color_red(x, SCAFFOLD_NUM, ">"))
-        # Warnings
-        griphin_df['R1 Q30 (%)'] = griphin_df['R1 Q30 (%)'].apply(lambda x: color_yellow(x, R1_Q30_RAW, "<"))
-        griphin_df['R2 Q30 (%)'] = griphin_df['R2 Q30 (%)'].apply(lambda x: color_yellow(x, R2_Q30_RAW, "<"))
-        griphin_df['Total Raw'] = griphin_df['Total Raw'].apply(lambda x: color_yellow(x, RAW_READ, "<"))
-        griphin_df['Total Trimmed'] = griphin_df['Total Trimmed'].apply(lambda x: color_yellow(x, TRIMMED_READ, "<"))
-        #griphin_df['Scaffolds'] = griphin_df['Scaffolds'].apply(lambda x: color_red(x, SCAFFOLD_NUM, ">"))
+        griphin_df = get_griphin_df(matching_files[0])
+        exact_df, partial_df = get_ar_df(matching_files[0])
 
         taxa_columns_to_read = ['WGS_ID','Taxa_Source','BUSCO_Lineage','BUSCO_%Match','Kraken_ID_Raw_Reads_%','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
         taxa_df = pd.read_csv(matching_files[0],sep='\t', usecols=taxa_columns_to_read)
@@ -176,7 +234,8 @@ def clia_report(args):
     stitle1 = "Run Information"
     stitle2 = "Data Quality"
     stitle4 = "Taxonomic Identification Quality"
-    stitle3 = "Predicted Organism and Resistance Genes"
+    stitle3 = "Predicted Organism and High Quality Resistance Genes Hits"
+    stitle5 = "Lower Quality Resistance Genes Hits"
     today = date.today().strftime("%m/%d/%Y")
     today_file_name = date.today().strftime("%Y-%m-%d")
     footer = "Research use only."
@@ -218,6 +277,11 @@ def clia_report(args):
             border: none;
             }}
 
+            /* Add border to the right of data cells */
+            td:not(.exclude-border) {{
+                border-right: 1px solid black;
+            }}
+
             table.dataframe tr:nth-child(even) {{background-color: #f2f2f2;}}
 
             table.dataframe th {{
@@ -235,24 +299,24 @@ def clia_report(args):
         <h2>{stitle1}</h2>
         <table>
         <tr>
-        <td>Lab:</td>
-        <td>Clinical and Environmental Microbiology Branch</td>
+        <td class="exclude-border">Lab:</td>
+        <td class="exclude-border">Clinical and Environmental Microbiology Branch</td>
         </tr>
         <tr>
-        <td>Run Operator:</td>
-        <td>Frank Bao</td>
+        <td class="exclude-border">Run Operator:</td>
+        <td class="exclude-border">Frank Bao</td>
         </tr>
         <tr>
-        <td>Run Start date:</td>
-        <td>{run_start_time}</td>
+        <td class="exclude-border">Run Start date:</td>
+        <td class="exclude-border">{run_start_time}</td>
         </tr>
         <tr>
-        <td>Run End date:</td>
-        <td>{run_end_time}</td>
+        <td class="exclude-border">Run End date:</td>
+        <td class="exclude-border">{run_end_time}</td>
         </tr>
         <tr>
-        <td>Report date:</td>
-        <td>{today}</td>
+        <td class="exclude-border">Report date:</td>
+        <td class="exclude-border">{today}</td>
         </tr>
         </table>
         <h2>{stitle2}</h2>
@@ -265,9 +329,13 @@ def clia_report(args):
         <p style='font-size: 0.8em'>1. {note_text4}</br>
         2. {note_text3}</p>
         <h2>{stitle3}</h2>
-        {summary_df.to_html(index=False, justify="left")}
+        {exact_df.to_html(index=False, justify="left")}
         <p style='font-size: 0.8em'>1. {note_text6}</br>
         <p></p>
+        <h2>{stitle5}</h2>
+        {partial_df.to_html(index=False, justify="left")}
+        <p style='font-size: 0.8em'>1. {note_text7}</br>
+        </p>
         </article>
         <hr>
         <footer>
