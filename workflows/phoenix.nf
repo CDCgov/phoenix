@@ -121,7 +121,7 @@ workflow PHOENIX_EXTERNAL {
 
         //fairy compressed file corruption check & generate read stats
         CORRUPTION_CHECK (
-            INPUT_CHECK.out.reads, false // true says busco is being run in this workflow
+            INPUT_CHECK.out.reads, params.run_busco
         )
         ch_versions = ch_versions.mix(CORRUPTION_CHECK.out.versions)
 
