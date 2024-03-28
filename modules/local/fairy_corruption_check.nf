@@ -9,8 +9,7 @@ process CORRUPTION_CHECK {
     val(busco_val)
 
     output:
-    tuple val(meta), path('*_summary.txt'),                    emit: outcome
-    tuple val(meta), path('*_summary_old.txt'),                emit: outcome_to_edit
+    tuple val(meta), path('*_summary_fairy.txt'),                    emit: outcome
     path('*_summaryline.tsv'),                  optional:true, emit: summary_line
     tuple val(meta), path('*.synopsis'),        optional:true, emit: synopsis
     path("versions.yml"),                                      emit: versions
@@ -37,7 +36,7 @@ process CORRUPTION_CHECK {
     script_version=\$(${ica}fairy_proc.sh -V)
 
     #making a copy of the summary file to pass to READ_COUNT_CHECKS to handle file names being the same
-    cp ${prefix}_summary.txt ${prefix}_summary_old.txt
+    mv ${prefix}_summary.txt ${prefix}_summary_fairy.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

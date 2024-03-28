@@ -127,8 +127,9 @@ workflow PHOENIX_EXTERNAL {
 
         //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
         //The mapping here is just to get things in the right bracket so we can call var[0]
-        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0])
-        .join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome, by: [0,0])
+            .join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+            .filter { it[3].findAll {!it.contains('FAILED')}}
 
         //Get stats on raw reads if the reads aren't corrupted
         GET_RAW_STATS (
