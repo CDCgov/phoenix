@@ -43,30 +43,29 @@ workflow PHOENIX {
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-
-    // Check mandatory parameters
+    if (params.ica != true && params.ica != false) {exit 1, "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."}
 
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX: Input samplesheet not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
-    if (params.ica != true && params.ica != false) {exit 1, "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."}
-
+    
     main:
         PHOENIX_EXTERNAL ( ch_input, ch_versions, true )
     emit:
-        scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
-        trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
-        mlst             = PHOENIX_EXTERNAL.out.mlst
-        amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
-        gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
-        phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
-        //output for phylophoenix
-        griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
-        griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
-        dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
-        //output for ncbi upload 
-        ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_sra_sheet : null
-        ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_biosample_sheet : null
+        check = PHOENIX_EXTERNAL.out.check
+        // scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
+        // trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
+        // mlst             = PHOENIX_EXTERNAL.out.mlst
+        // amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
+        // gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
+        // phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
+        // //output for phylophoenix
+        // griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
+        // griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
+        // dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
+        // //output for ncbi upload 
+        // ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_sra_sheet : null
+        // ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_biosample_sheet : null
 }
 
 //
