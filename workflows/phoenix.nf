@@ -157,22 +157,22 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(FASTP_TRIMD.out.versions)
 
-        // // Rerun on unpaired reads to get stats, nothing removed
-        // FASTP_SINGLES (
-        //     FASTP_TRIMD.out.reads_fail
-        // )
-        // ch_versions = ch_versions.mix(FASTP_SINGLES.out.versions)
+        // Rerun on unpaired reads to get stats, nothing removed
+        FASTP_SINGLES (
+            FASTP_TRIMD.out.reads_fail
+        )
+        ch_versions = ch_versions.mix(FASTP_SINGLES.out.versions)
 
-        // // Combining fastp json outputs based on meta.id
-        // fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0,0])\
-        // .join(GET_RAW_STATS.out.combined_raw_stats, by: [0,0])\
-        // .join(GET_RAW_STATS.out.outcome_to_edit, by: [0,0])
+        // Combining fastp json outputs based on meta.id
+        fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0,0])\
+        .join(GET_RAW_STATS.out.combined_raw_stats, by: [0,0])\
+        .join(GET_RAW_STATS.out.outcome, by: [0,0])
 
-        // // Script gathers data from fastp jsons for pipeline stats file
-        // GET_TRIMD_STATS (
-        //     fastp_json_ch, false // false says no busco is being run
-        // )
-        // ch_versions = ch_versions.mix(GET_TRIMD_STATS.out.versions)
+        // Script gathers data from fastp jsons for pipeline stats file
+        GET_TRIMD_STATS (
+            fastp_json_ch, params.run_busco // false says no busco is being run
+        )
+        ch_versions = ch_versions.mix(GET_TRIMD_STATS.out.versions)
 
         // // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
         // trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
