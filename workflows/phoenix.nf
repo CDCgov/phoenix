@@ -174,14 +174,17 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GET_TRIMD_STATS.out.versions)
 
-        // // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
-        // trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
+        // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
+        trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads
+            .join(GET_TRIMD_STATS.out.outcome.splitCsv(strip:true, by:5)
+            .map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
+            .filter { it[2].findAll {!it.contains('FAILED')}}
 
-        // // Running Fastqc on trimmed reads
-        // FASTQCTRIMD (
-        //     trimd_reads_file_integrity_ch
-        // )
-        // ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
+        // Running Fastqc on trimmed reads
+        FASTQCTRIMD (
+            trimd_reads_file_integrity_ch
+        )
+        ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
         // // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         // KRAKEN2_TRIMD (

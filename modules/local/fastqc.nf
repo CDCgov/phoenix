@@ -7,10 +7,6 @@ process FASTQC {
     input:
     tuple val(meta), path(reads), val(fairy_outcome)
 
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[3]}" == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."
-
     output:
     tuple val(meta), path("*.html"), emit: html
     tuple val(meta), path("*.zip") , emit: zip
