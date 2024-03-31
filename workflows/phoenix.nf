@@ -140,7 +140,10 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
 
         // Combining reads with output of corruption check
-        bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
+        bbduk_ch = INPUT_CHECK.out.reads
+            .join(GET_RAW_STATS.out.outcome.splitCsv(strip:true, by:3)
+            .map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
+            .filter { it[3].findAll {!it.contains('FAILED')}}
 
         // Remove PhiX reads
         BBDUK (
