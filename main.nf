@@ -49,6 +49,7 @@ workflow PHOENIX {
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX: Input samplesheet not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
+    if (params.ica != true && params.ica != false) {exit 1, "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."}
 
     main:
         PHOENIX_EXTERNAL ( ch_input, ch_versions, true )
