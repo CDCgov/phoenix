@@ -50,7 +50,7 @@ workflow PHOENIX {
     ch_versions = Channel.empty() // Used to collect the software versions
     
     main:
-        PHOENIX_EXTERNAL ( ch_input, ch_versions, true )
+        PHOENIX_EXTERNAL ( ch_input, ch_versions, params.ncbi_excel_creation )
     emit:
         check = PHOENIX_EXTERNAL.out.check
         // scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
