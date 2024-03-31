@@ -11,46 +11,40 @@ process GET_RAW_STATS {
     output:
     tuple val(meta), path('*_stats.txt'),                        emit: raw_stats
     tuple val(meta), path('*_raw_read_counts.txt'),              emit: combined_raw_stats
-    tuple val(meta), path('*_summary.txt'),                      emit: outcome
-    path('*_summaryline.tsv'),                    optional:true, emit: summary_line
-    tuple val(meta), path('*_summary_old_2.txt'),                emit: outcome_to_edit
-    tuple val(meta), path('*.synopsis'),          optional:true, emit: synopsis
+    tuple val(meta), path('*_summary_rawstats.txt'),             emit: outcome
+    path('*_summaryline.tsv'),                                   optional:true, emit: summary_line
+    tuple val(meta), path('*.synopsis'),                         optional:true, emit: synopsis
     path("versions.yml"),                                        emit: versions
 
-    when:
-    //if the files are not corrupt then get the read stats
-    "${fairy_corrupt_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_corrupt_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt."
-
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def busco_parameter = busco_val ? "--busco" : ""
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
-    def path_to_bin = "${workflow.launchDir}/bin/"
+    def script_q30 = params.ica ? "python ${params.ica_path}/q30.py" : "q30.py"
+    def script_stats = params.ica ? "python ${params.ica_path}/create_raw_stats_output.py" : "create_raw_stats_output.py"
+    def script_fairy = params.ica ? "python ${params.ica_path}/fairy.py" : "fairy.py"
     """
-    ${ica}q30.py -i ${reads[0]} > ${prefix}_R1_stats.txt
-    ${ica}q30.py -i ${reads[1]} > ${prefix}_R2_stats.txt
-    ${ica}create_raw_stats_output.py -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
+    ${script_q30} -i ${reads[0]} > ${prefix}_R1_stats.txt
+    ${script_q30} -i ${reads[1]} > ${prefix}_R2_stats.txt
+    ${script_stats} -n ${prefix} -r1 ${prefix}_R1_stats.txt -r2 ${prefix}_R2_stats.txt
 
-    ## checking that read counts match before moving on
+    # making a copy of the summary file - this avoids writing to the previous file
+    cp ${fairy_outcome} ${prefix}_input.txt
 
     # Output check for messages indicating read pairs that do not match
-    ${ica}fairy.py -r ${prefix}_raw_read_counts.txt -f ${fairy_outcome} ${busco_parameter}
+    ${script_fairy} -r ${prefix}_raw_read_counts.txt -f ${prefix}_input.txt ${busco_parameter}
 
-    #making a copy of the summary file to pass to BBMAP_REFORMAT to handle file names being the same
-    cp ${prefix}_summary.txt ${prefix}_summary_old_2.txt
+    # rename output file
+    mv ${prefix}_summary.txt ${prefix}_summary_rawstats.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        q30.py: \$(${ica}q30.py --version )
-        create_raw_stats_output.py: \$(${ica}create_raw_stats_output.py --version )
-        fairy.py: \$(${ica}fairy.py --version )
+        q30.py: \$(${script_q30} --version )
+        create_raw_stats_output.py: \$(${script_stats} --version )
+        fairy.py: \$(${script_fairy} --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

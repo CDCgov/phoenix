@@ -113,7 +113,7 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
-        //unzip any zipped databases
+        // unzip any zipped databases
         ASSET_CHECK (
             params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
         )
@@ -127,13 +127,15 @@ workflow PHOENIX_EXTERNAL {
 
         //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
         //The mapping here is just to get things in the right bracket so we can call var[0]
-        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome, by: [0,0])
-            .join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+        read_stats_ch = INPUT_CHECK.out.reads
+            .join(CORRUPTION_CHECK.out.outcome, by: [0,0])
+            .join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2)
+            .map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
             .filter { it[3].findAll {!it.contains('FAILED')}}
 
-        //Get stats on raw reads if the reads aren't corrupted
+        // Get stats on raw reads if the reads aren't corrupted
         GET_RAW_STATS (
-            read_stats_ch, false // false says no busco is being run
+            read_stats_ch, params.run_busco // false says no busco is being run
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
 
@@ -475,19 +477,21 @@ workflow PHOENIX_EXTERNAL {
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
     
     emit:
-        scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
-        trimmed_reads    = FASTP_TRIMD.out.reads
-        mlst             = DO_MLST.out.checked_MLSTs
-        amrfinder_output = AMRFINDERPLUS_RUN.out.report
-        gamma_ar         = GAMMA_AR.out.gamma
-        phx_summary     = GATHER_SUMMARY_LINES.out.summary_report
-        //output for phylophoenix
-        griphin_tsv      = GRIPHIN.out.griphin_report
-        griphin_excel    = GRIPHIN.out.griphin_tsv_report
-        dir_samplesheet  = GRIPHIN.out.converted_samplesheet
-        //output for ncbi upload 
-        ncbi_sra_sheet       = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra : null
-        ncbi_biosample_sheet = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample : null
+        check = INPUT_CHECK.out.versions
+        // outcome = GET_RAW_STATS.out.outcome
+        // scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
+        // trimmed_reads    = FASTP_TRIMD.out.reads
+        // mlst             = DO_MLST.out.checked_MLSTs
+        // amrfinder_output = AMRFINDERPLUS_RUN.out.report
+        // gamma_ar         = GAMMA_AR.out.gamma
+        // phx_summary     = GATHER_SUMMARY_LINES.out.summary_report
+        // //output for phylophoenix
+        // griphin_tsv      = GRIPHIN.out.griphin_report
+        // griphin_excel    = GRIPHIN.out.griphin_tsv_report
+        // dir_samplesheet  = GRIPHIN.out.converted_samplesheet
+        // //output for ncbi upload 
+        // ncbi_sra_sheet       = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra : null
+        // ncbi_biosample_sheet = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample : null
 }
 
 /*
