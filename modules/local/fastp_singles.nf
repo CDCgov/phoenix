@@ -19,14 +19,11 @@ process FASTP_SINGLES {
     task.ext.when == null || task.ext.when
 
     script:
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "bash ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container = task.container.toString() - "staphb/fastp@"
+    def script = params.ica ? "${params.ica_path}/create_empty_fastp_json.sh" : "create_empty_fastp_json.sh"
     """
     echo "Debugging: Emptiness of reads[0] and reads[1]" > debug_status.log
     if [[ ! -s ${reads[0]} ]] && [[ ! -s ${reads[1]} ]]; then
@@ -34,7 +31,7 @@ process FASTP_SINGLES {
         echo "!!!!! - Both are empty"
         # Both are empty, do nothing??? Nope we handle now
         #Create psuedo file as empty aint cutting it
-        ${ica}create_empty_fastp_json.sh -n ${prefix}
+        ${script} -n ${prefix}
         touch "${prefix}_empty.html"
         touch ${prefix}.singles.fastq
         gzip ${prefix}.singles.fastq
@@ -69,7 +66,7 @@ process FASTP_SINGLES {
             2> ${prefix}.fastp.log
     fi
 
-    script_version=\$(${ica}create_empty_fastp_json.sh -V)
+    script_version=\$(${script} -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
