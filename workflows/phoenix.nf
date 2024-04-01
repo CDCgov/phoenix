@@ -186,11 +186,11 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
-        // // Checking for Contamination in trimmed reads, creating krona plots and best hit files
-        // KRAKEN2_TRIMD (
-        //     FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db, "reads"
-        // )
-        // ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
+        // Checking for Contamination in trimmed reads, creating krona plots and best hit files
+        KRAKEN2_TRIMD (
+            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db, "reads"
+        )
+        ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
         // SPADES_WF (
         //     FASTP_SINGLES.out.reads, \
