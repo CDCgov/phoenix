@@ -117,8 +117,9 @@ def get_griphin_df(griphin_summary):
     griphin_df = griphin_df.rename(columns={'WGS_ID':'ID','Minimum_QC_Check':'Minimum QC','Raw_Q30_R1_[%]':'R1 Q30 (%)', 'Raw_Q30_R2_[%]':'R2 Q30 (%)','Total_Raw_[reads]':'Total Raw', 'GC[%]': 'GC (%)',
                                             'Total_Trimmed_[reads]':'Total Trimmed','Estimated_Trimmed_Coverage':'Estimated Coverage','Assembly_Length':'Assembly Length','Assembly_Ratio':'Assembly Ratio','Assembly_StDev':'Assembly StDev'})
     #griphin_df['Assembly Length'] = griphin_df['Assembly Length'].apply(lambda x: f'{int(x.replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
-    # Convert 'Scaffolds' from float to int
-    griphin_df['Scaffolds'] = griphin_df['Scaffolds'].astype(int)
+    # Convert 'Scaffolds' from float to int - allows unknown
+    #griphin_df['Scaffolds'] = griphin_df['Scaffolds'].astype(int)
+    #griphin_df['Scaffolds'] = pd.to_numeric(griphin_df['Scaffolds'], errors='coerce').fillna('Unknown')
     griphin_df[['Total Raw','Total Trimmed','Scaffolds']] = griphin_df[['Total Raw','Total Trimmed','Scaffolds']].applymap(lambda x: f'{int(str(x).replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
     # Round to 2 decimals
     griphin_df[['Assembly Ratio', 'Assembly StDev']] = griphin_df[['Assembly Ratio', 'Assembly StDev']].applymap(lambda x: round(float(x), 2) if x != "Unknown" and x == x else x)
@@ -184,7 +185,6 @@ def get_ar_df(griphin_summary):
                         exact_df.loc[idx, (resistance_category, gene_method_column)] = gene_method
                 else:
                     gene_method_column = next((term for term in ['BLAST'] if term in hit), None)
-                    print(gene_method_column)
                     if gene_method_column is not None:
                         if pd.notna(partial_df.loc[idx, (resistance_category, gene_method_column)]):
                             partial_df.loc[idx, (resistance_category, gene_method_column)] += ", " + gene_method
