@@ -17,25 +17,12 @@ process SCAFFOLD_COUNT_CHECK {
     path(names_file)
 
     output:
-    tuple val(meta), path('*_summary.txt'),             emit: outcome
-    path('*_summaryline.tsv'),           optional:true, emit: summary_line
-    tuple val(meta), path('*.synopsis'), optional:true, emit: synopsis
-    path("versions.yml"),                               emit: versions
+    tuple val(meta), path('*_summary_complete.txt'),            emit: outcome
+    path('*_summaryline.tsv'),                                  optional:true, emit: summary_line
+    tuple val(meta), path('*.synopsis'),                        optional:true, emit: synopsis
+    path("versions.yml"),                                       emit: versions
 
     script:
-    // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) { terra = ""} 
-    else if (params.terra==true) { terra = "-2 terra" }
-    else { error "Please set params.terra to either \"true\" or \"false\"" }
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { 
-        ica_python = ""
-        ica_bash = ""
-    } else if (params.ica==true) { 
-        ica_python = "python ${workflow.launchDir}/bin/" 
-        ica_bash = "bash ${workflow.launchDir}/bin/" 
-    }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def fairy_read_count_outcome_file = fairy_read_count_outcome ? "$fairy_read_count_outcome" : ""
@@ -49,58 +36,82 @@ process SCAFFOLD_COUNT_CHECK {
     def extended_qc_arg = extended_qc ? "--extended_qc" : ""
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def script_id = params.ica ? "${params.ica_path}/determine_taxID.sh" : "determine_taxID.sh"
+    def script_writer = params.ica ? "${params.ica_path}/pipeline_stats_writer.sh" : "pipeline_stats_writer.sh"
+    def script_summary = params.ica ? "python ${params.ica_path}/Phoenix_summary_line.py" : "Phoenix_summary_line.py"
+    def script_edit = params.ica ? "python ${params.ica_path}/edit_line_summary.py" : "edit_line_summary.py"
+    def terra = params.terra ? "-2 terra" : ""
     """
-    #checking that the output contains scaffolds still:
+    # set new final script name
+    complete_summary="${prefix}_summary_complete.txt"
+    
+    # handle -entry SCAFFOLDS
+    scaffold_entry_file() {
+        cat <<<EOT >> \${complete_summary}
+        PASSED: Using Scaffold entry no corruption check run on R1.
+        PASSED: Using Scaffold entry no corruption check run on R2.
+        PASSED: Using Scaffold entry no paired reads to check.
+        PASSED: Using Scaffold entry no trimd reads to check.
+        FAILED: No scaffolds in ${prefix} after filtering!
+        EOT
+    }
+
+    # checking that the output contains scaffolds still:
     if grep "Output:                 	0 reads (0.00%) 	0 bases (0.00%)" ${bbmap_log}; then
         #Check if the file exists already (it won't with -entry SCAFFOLDS)
-        if [ -f ${prefix}_summary_old_3.txt ]; then
-            #replace end of line with actual error message
-            sed -i 's/End_of_File/FAILED: No scaffolds in ${prefix} after filtering!/' ${fairy_read_count_outcome_file}
+        if [ -f ${fairy_read_count_outcome} ]; then
+            # replace end of line with actual error message
+            cp ${fairy_read_count_outcome} \${complete_summary}
+            sed -i 's/End_of_File/FAILED: No scaffolds in ${prefix} after filtering!/' \${complete_summary}
         else
-            echo "PASSED: Using Scaffold entry no corruption check run on R1." > ${prefix}_summary_old_3.txt
-            echo "PASSED: Using Scaffold entry no corruption check run on R2." >> ${prefix}_summary_old_3.txt
-            echo "PASSED: Using Scaffold entry no paired reads to check." >> ${prefix}_summary_old_3.txt
-            echo "PASSED: Using Scaffold entry no trimd reads to check." >> ${prefix}_summary_old_3.txt
-            echo "FAILED: No scaffolds in ${prefix} after filtering!" >> ${prefix}_summary_old_3.txt
+            scaffold_entry_file
+            echo "FAILED: No scaffolds in ${prefix} after filtering!" >> \${complete_summary}
         fi
 
         # if the sample has no scaffolds left make the summaryline and synopsis file for it. 
         # get taxa ID
-        ${ica_bash}determine_taxID.sh -r $kraken2_trimd_summary -s ${prefix} -d $nodes_file -m $names_file
+        ${script_id} -r $kraken2_trimd_summary -s ${prefix} -d $nodes_file -m $names_file
 
-        #write synopsis file
-        ${ica_bash}pipeline_stats_writer.sh -d ${prefix} -q ${prefix}.tax -5 $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
-        $kraken2_trimd_report $kraken2_trimd_summary_pipeline_stats $krona_trimd $terra
+        # write synopsis file
+        ${script_writer} \\ 
+            -d ${prefix} \\
+            -q ${prefix}.tax \\
+            -5 $coverage \\
+            $raw_qc \\
+            $fastp_total_qc_pipeline_stats \\
+            $kraken2_trimd_report \\
+            $kraken2_trimd_summary_pipeline_stats \\
+            $krona_trimd $terra
 
         # write summary_line file
-        ${ica_python}Phoenix_summary_line.py -n ${prefix} -s ${prefix}.synopsis -x ${prefix}.tax -o ${prefix}_summaryline.tsv\\
-        $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg
+        ${script_summary} \\
+            -n ${prefix} \\
+            -s ${prefix}.synopsis \\
+            -x ${prefix}.tax
+            -o ${prefix}_summaryline.tsv\\
+            $kraken2_trimd_summary_summaryline \\
+            $fastp_total_qc_summaryline \\
+            $extended_qc_arg
 
         # change pass to fail and add in error
-        ${ica_python}edit_line_summary.py -i ${prefix}_summaryline.tsv
-
-        #change file name.
-        cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
+        ${script_edit} -i ${prefix}_summaryline.tsv
 
     # if there are scaffolds left after filtering do the following...
     else
         #Check if the file exists already (it won't with -entry SCAFFOLDS)
-        if [ -f ${prefix}_summary_old_3.txt ]; then
+        if [ -f ${fairy_read_count_outcome} ]; then
             #replace end of line with actual error message
-            sed -i 's/End_of_File/PASSED: More than 0 scaffolds in ${prefix} after filtering./' ${fairy_read_count_outcome_file}
+            cp ${fairy_read_count_outcome} \${complete_summary}
+            sed -i 's/End_of_File/PASSED: More than 0 scaffolds in ${prefix} after filtering./' \${complete_summary}
         else
-            echo "PASSED: Using Scaffold entry no corruption check run on R1." > ${prefix}_summary_old_3.txt
-            echo "PASSED: Using Scaffold entry no corruption check run on R2." >> ${prefix}_summary_old_3.txt
-            echo "PASSED: Using Scaffold entry no paired reads to check." >> ${prefix}_summary_old_3.txt
-            echo "PASSED: Using Scaffold entry no trimd reads to check." >> ${prefix}_summary_old_3.txt
-            echo "PASSED: More than 0 scaffolds in ${prefix} after filtering." >> ${prefix}_summary_old_3.txt
+            scaffold_entry_file
+            echo "PASSED: More than 0 scaffolds in ${prefix} after filtering." >> \${complete_summary}
         fi
-        cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
     fi
 
     #gettings script versions
-    dettaxid_version=\$(${ica_bash}determine_taxID.sh -V)
-    pipestats_version=\$(${ica_bash}pipeline_stats_writer.sh -V)
+    dettaxid_version=\$(${script_id} -V)
+    pipestats_version=\$(${script_writer} -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -109,8 +120,8 @@ process SCAFFOLD_COUNT_CHECK {
         phoenix_base_container: ${container}
         \${dettaxid_version}
         \${pipestats_version}
-        Phoenix_summary_line.py: \$(${ica_python}Phoenix_summary_line.py --version )
-        edit_line_summary.py: \$(${ica_python}edit_line_summary.py --version )
+        Phoenix_summary_line.py: \$(${script_summary} --version )
+        edit_line_summary.py: \$(${script_edit} --version )
     END_VERSIONS
     """
 }

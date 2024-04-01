@@ -211,26 +211,26 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
-        // // Removing scaffolds <500bp
-        // BBMAP_REFORMAT (
-        //     RENAME_FASTA_HEADERS.out.renamed_scaffolds
-        // )
-        // ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
+        // Removing scaffolds <500bp
+        BBMAP_REFORMAT (
+            RENAME_FASTA_HEADERS.out.renamed_scaffolds
+        )
+        ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
 
-        // // Combine bbmap log with the fairy outcome file
-        // scaffold_check_ch = BBMAP_REFORMAT.out.log.map{meta, log                -> [[id:meta.id], log]}\
-        // .join(GET_TRIMD_STATS.out.outcome_to_edit.map{   meta, outcome_to_edit  -> [[id:meta.id], outcome_to_edit]},    by: [0])\
-        // .join(GET_RAW_STATS.out.combined_raw_stats.map{meta, combined_raw_stats -> [[id:meta.id], combined_raw_stats]}, by: [0])\
-        // .join(GET_TRIMD_STATS.out.fastp_total_qc.map{  meta, fastp_total_qc     -> [[id:meta.id], fastp_total_qc]},     by: [0])\
-        // .join(KRAKEN2_TRIMD.out.report.map{            meta, report             -> [[id:meta.id], report]},             by: [0])\
-        // .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{     meta, k2_bh_summary      -> [[id:meta.id], k2_bh_summary]},      by: [0])\
-        // .join(KRAKEN2_TRIMD.out.krona_html.map{        meta, krona_html         -> [[id:meta.id], krona_html]},         by: [0])
+        // Combine bbmap log with the fairy outcome file
+        scaffold_check_ch = BBMAP_REFORMAT.out.log.map{      meta, log                -> [[id:meta.id], log]}\
+        .join(GET_TRIMD_STATS.out.outcome.map{               meta, outcome            -> [[id:meta.id], outcome]},    by: [0])\
+        .join(GET_RAW_STATS.out.combined_raw_stats.map{      meta, combined_raw_stats -> [[id:meta.id], combined_raw_stats]}, by: [0])\
+        .join(GET_TRIMD_STATS.out.fastp_total_qc.map{        meta, fastp_total_qc     -> [[id:meta.id], fastp_total_qc]},     by: [0])\
+        .join(KRAKEN2_TRIMD.out.report.map{                  meta, report             -> [[id:meta.id], report]},             by: [0])\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{           meta, k2_bh_summary      -> [[id:meta.id], k2_bh_summary]},      by: [0])\
+        .join(KRAKEN2_TRIMD.out.krona_html.map{              meta, krona_html         -> [[id:meta.id], krona_html]},         by: [0])
 
-        // // Checking that there are still scaffolds left after filtering
-        // SCAFFOLD_COUNT_CHECK (
-        //     scaffold_check_ch, false, params.coverage, params.nodes, params.names
-        // )
-        // ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
+        // Checking that there are still scaffolds left after filtering
+        SCAFFOLD_COUNT_CHECK (
+            scaffold_check_ch, params.extended_qc, params.coverage, params.nodes, params.names
+        )
+        ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
 
         // //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         // filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
