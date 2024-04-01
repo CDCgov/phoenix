@@ -205,11 +205,11 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(SPADES_WF.out.versions)
 
-        // // Rename scaffold headers
-        // RENAME_FASTA_HEADERS (
-        //     SPADES_WF.out.spades_ch
-        // )
-        // ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
+        // Rename scaffold headers
+        RENAME_FASTA_HEADERS (
+            SPADES_WF.out.spades_ch
+        )
+        ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
         // // Removing scaffolds <500bp
         // BBMAP_REFORMAT (
