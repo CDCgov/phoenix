@@ -44,6 +44,7 @@ workflow PHOENIX {
     def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
     if (params.ica != true && params.ica != false) {exit 1, "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."}
+    if (params.terra != true && params.terra != false) {exit 1, "Please set params.terra to either \"true\" if running on terra or \"false\" for all other methods."}
 
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX: Input samplesheet not specified!' }
