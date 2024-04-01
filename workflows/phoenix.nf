@@ -192,18 +192,18 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
-        // SPADES_WF (
-        //     FASTP_SINGLES.out.reads, \
-        //     FASTP_TRIMD.out.reads, \
-        //     GET_TRIMD_STATS.out.fastp_total_qc, \
-        //     GET_RAW_STATS.out.combined_raw_stats, \
-        //     [], \
-        //     KRAKEN2_TRIMD.out.report, \
-        //     KRAKEN2_TRIMD.out.krona_html, \
-        //     KRAKEN2_TRIMD.out.k2_bh_summary, \
-        //     false
-        // )
-        // ch_versions = ch_versions.mix(SPADES_WF.out.versions)
+        SPADES_WF (
+            FASTP_SINGLES.out.reads, \
+            FASTP_TRIMD.out.reads, \
+            GET_TRIMD_STATS.out.fastp_total_qc, \
+            GET_RAW_STATS.out.combined_raw_stats, \
+            [], \
+            KRAKEN2_TRIMD.out.report, \
+            KRAKEN2_TRIMD.out.krona_html, \
+            KRAKEN2_TRIMD.out.k2_bh_summary, \
+            params.extended_qc
+        )
+        ch_versions = ch_versions.mix(SPADES_WF.out.versions)
 
         // // Rename scaffold headers
         // RENAME_FASTA_HEADERS (

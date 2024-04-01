@@ -84,6 +84,9 @@ workflow CDC_PHOENIX {
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry CDC_PHOENIX: Input samplesheet not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
+    // true is for -entry CDC_PHOENIX and CDC_SCAFFOLDS - used in SPADES
+    extended_qc=false
+
     main:
         PHOENIX_EXQC ( ch_input, ch_versions, true )
 
