@@ -319,16 +319,16 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
-        // // Perform MLST steps on isolates (with srst2 on internal samples)
-        // DO_MLST (
-        //     BBMAP_REFORMAT.out.filtered_scaffolds, \
-        //     SCAFFOLD_COUNT_CHECK.out.outcome, \
-        //     FASTP_TRIMD.out.reads, \
-        //     DETERMINE_TAXA_ID.out.taxonomy, \
-        //     ASSET_CHECK.out.mlst_db, \
-        //     false
-        // )
-        // ch_versions = ch_versions.mix(DO_MLST.out.versions)
+        // Perform MLST steps on isolates (with srst2 on internal samples)
+        DO_MLST (
+            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            SCAFFOLD_COUNT_CHECK.out.outcome, \
+            FASTP_TRIMD.out.reads, \
+            DETERMINE_TAXA_ID.out.taxonomy, \
+            ASSET_CHECK.out.mlst_db, \
+            params.run_srst2_mlst
+        )
+        ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
         // /*// Fetch AMRFinder Database
         // AMRFINDERPLUS_UPDATE( )

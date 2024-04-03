@@ -21,13 +21,10 @@ process GET_MLST_SRST2 {
     (task.ext.when == null || task.ext.when) //& "${status[0]}" == "False"
 
     script:
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container_version = task.container.toString() - "quay.io/biocontainers/python@"
+    def script = params.ica ? "python ${params.ica_path}/local_MLST_converter.py" : "local_MLST_converter.py"
     """
     if [[ "${status[0]}" == "False" ]]; then
         genus="empty"
@@ -47,7 +44,7 @@ process GET_MLST_SRST2 {
         echo "\${genus}___\${species}"
         # Old way, now use provided DB with different name format
         # convert_taxonomy_with_complexes_to_pubMLST.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
-        ${ica}local_MLST_converter.py --genus "\${genus}" --species "\${species}" > DB_defs.txt
+        ${script} --genus "\${genus}" --species "\${species}" > DB_defs.txt
 
         dbline=\$(tail -n1 DB_defs.txt)
         echo "\$dbline"
@@ -100,7 +97,7 @@ process GET_MLST_SRST2 {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        local_MLST_converter.py: \$(${ica}local_MLST_converter.py --version )
+        local_MLST_converter.py: \$(${script} --version )
         python: \$(python --version | sed 's/Python //g')
         python_container: ${container_version}
     END_VERSIONS
