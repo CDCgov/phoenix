@@ -85,7 +85,8 @@ workflow SPADES_WF {
             // Combining weighted kraken report with the FastANI hit based on meta.id
             best_hit_ch = k2_bh_summary.map{                         meta, ksummary       -> [[id:meta.id], ksummary]}\
             .join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
-
+            .filter { it[2][0].contains('run_failure') || it[2][1].contains('no_scaffolds') || it[2][2].contains('no_contigs')}
+            
             // Getting ID from either FastANI or if fails, from Kraken2
             DETERMINE_TAXA_ID_FAILURE (
                 best_hit_ch, params.nodes, params.names
