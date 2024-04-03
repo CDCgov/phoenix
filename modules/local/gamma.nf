@@ -15,10 +15,6 @@ process GAMMA {
     tuple val(meta), path("*.fasta"), optional:true , emit: fasta
     path "versions.yml"                             , emit: versions
 
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
-
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"

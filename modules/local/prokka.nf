@@ -24,27 +24,15 @@ process PROKKA {
     tuple val(meta), path("*.tsv"), emit: tsv
     path "versions.yml" , emit: versions
 
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
-
     script:
-    //set up for terra
-    if (params.terra==false) {
-        terra = ""
-        terra_exit = ""
-    } else if (params.terra==true) {
-        terra = "PATH=/opt/conda/envs/prokka/bin:\$PATH"
-        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/prokka/bin:||')" """
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     //define variables
     def args = task.ext.args   ?: ''
     prefix   = task.ext.prefix ?: "${meta.id}"
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prodigal_opt = prodigal_tf ? "--prodigaltf ${prodigal_tf[0]}" : ""
     def container = task.container.toString() - "staphb/prokka@"
+    def terra = params.terra ? "PATH=/opt/conda/envs/prokka/bin:\$PATH" : ""
+    def terra_exit = params.terra ? """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/prokka/bin:||')" """ : ""
     """
     #adding python path for running busco on terra
     $terra

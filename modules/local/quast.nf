@@ -11,10 +11,6 @@ process QUAST {
     tuple val(meta), path('*.tsv')        , emit: report_tsv
     path "versions.yml"                   , emit: versions
 
-    when:
-    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
-
     script:
     def args     = task.ext.args   ?: ''
     def prefix   = task.ext.prefix ?: "${meta.id}"

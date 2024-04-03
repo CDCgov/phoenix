@@ -232,56 +232,64 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
 
-        // //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        // filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
-        // .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
+            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5)
+            .map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .filter { it[2].findAll {it.contains('PASSED: More than 0 scaffolds')}}
+        
+        // Running gamma to identify hypervirulence genes in scaffolds
+        GAMMA_HV (
+            filtered_scaffolds_ch, params.hvgamdb
+        )
+        ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
 
-        // // Running gamma to identify hypervirulence genes in scaffolds
-        // GAMMA_HV (
-        //     filtered_scaffolds_ch, params.hvgamdb
-        // )
-        // ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
+        // Running gamma to identify AR genes in scaffolds
+        GAMMA_AR (
+            filtered_scaffolds_ch, params.ardb
+        )
+        ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
-        // // Running gamma to identify AR genes in scaffolds
-        // GAMMA_AR (
-        //     filtered_scaffolds_ch, params.ardb
-        // )
-        // ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
+        GAMMA_PF (
+            filtered_scaffolds_ch, params.gamdbpf
+        )
+        ch_versions = ch_versions.mix(GAMMA_PF.out.versions)
 
-        // GAMMA_PF (
-        //     filtered_scaffolds_ch, params.gamdbpf
-        // )
-        // ch_versions = ch_versions.mix(GAMMA_PF.out.versions)
+        // Getting Assembly Stats
+        QUAST (
+            filtered_scaffolds_ch
+        )
+        ch_versions = ch_versions.mix(QUAST.out.versions)
 
-        // // Getting Assembly Stats
-        // QUAST (
-        //     filtered_scaffolds_ch
-        // )
-        // ch_versions = ch_versions.mix(QUAST.out.versions)
+        // get gff and protein files for amrfinder+
+        PROKKA (
+            filtered_scaffolds_ch, [], []
+        )
+        ch_versions = ch_versions.mix(PROKKA.out.versions)
 
-        // // Creating krona plots and best hit files for weighted assembly
-        // KRAKEN2_WTASMBLD (
-        //     BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "reads"
-        // )
-        // ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
+        // Creating krona plots and best hit files for weighted assembly
+        KRAKEN2_WTASMBLD (
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "reads"
+        )
+        ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
-        // // combine filtered scaffolds and mash_sketch so mash_sketch goes with each filtered_scaffolds file
-        // mash_dist_ch = filtered_scaffolds_ch.combine(ASSET_CHECK.out.mash_sketch)
+        // combine filtered scaffolds and mash_sketch so mash_sketch goes with each filtered_scaffolds file
+        mash_dist_ch = filtered_scaffolds_ch.combine(ASSET_CHECK.out.mash_sketch)
 
-        // // Running Mash distance to get top 20 matches for fastANI to speed things up
-        // MASH_DIST (
-        //     mash_dist_ch
-        // )
-        // ch_versions = ch_versions.mix(MASH_DIST.out.versions)
+        // Running Mash distance to get top 20 matches for fastANI to speed things up
+        MASH_DIST (
+            mash_dist_ch
+        )
+        ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
-        // // Combining mash dist with filtered scaffolds and the outcome of the scaffolds count check based on meta.id
-        // top_mash_hits_ch = MASH_DIST.out.dist.join(filtered_scaffolds_ch, by: [0])
+        // Combining mash dist with filtered scaffolds and the outcome of the scaffolds count check based on meta.id
+        top_mash_hits_ch = MASH_DIST.out.dist.join(filtered_scaffolds_ch, by: [0])
 
-        // // Generate file with list of paths of top taxa for fastANI
-        // DETERMINE_TOP_MASH_HITS (
-        //     top_mash_hits_ch
-        // )
-        // ch_versions = ch_versions.mix(DETERMINE_TOP_MASH_HITS.out.versions)
+        // Generate file with list of paths of top taxa for fastANI
+        DETERMINE_TOP_MASH_HITS (
+            top_mash_hits_ch
+        )
+        ch_versions = ch_versions.mix(DETERMINE_TOP_MASH_HITS.out.versions)
 
         // // Combining filtered scaffolds with the top taxa list based on meta.id
         // top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}\
@@ -321,12 +329,6 @@ workflow PHOENIX_EXTERNAL {
         //     false
         // )
         // ch_versions = ch_versions.mix(DO_MLST.out.versions)
-
-        // // get gff and protein files for amrfinder+
-        // PROKKA (
-        //     filtered_scaffolds_ch, [], []
-        // )
-        // ch_versions = ch_versions.mix(PROKKA.out.versions)
 
         // /*// Fetch AMRFinder Database
         // AMRFINDERPLUS_UPDATE( )
