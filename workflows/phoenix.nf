@@ -330,37 +330,37 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
-        // /*// Fetch AMRFinder Database
-        // AMRFINDERPLUS_UPDATE( )
-        // ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)*/
+        /*// Fetch AMRFinder Database
+        AMRFINDERPLUS_UPDATE( )
+        ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)*/
 
-        // // Create file that has the organism name to pass to AMRFinder
-        // GET_TAXA_FOR_AMRFINDER (
-        //     DETERMINE_TAXA_ID.out.taxonomy
-        // )
-        // ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
+        // Create file that has the organism name to pass to AMRFinder
+        GET_TAXA_FOR_AMRFINDER (
+            DETERMINE_TAXA_ID.out.taxonomy
+        )
+        ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
-        // // Combining taxa and scaffolds to run amrfinder and get the point mutations.
-        // amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, reads          -> [[id:meta.id], reads]}\
-        // .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
-        // .join(PROKKA.out.faa.map{                                                meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
-        // .join(PROKKA.out.gff.map{                                                meta, gff            -> [[id:meta.id], gff ]},            by: [0])
+        // Combining taxa and scaffolds to run amrfinder and get the point mutations.
+        amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, reads          -> [[id:meta.id], reads]}\
+        .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+        .join(PROKKA.out.faa.map{                                                meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+        .join(PROKKA.out.gff.map{                                                meta, gff            -> [[id:meta.id], gff ]},            by: [0])
 
-        // // Run AMRFinder
-        // AMRFINDERPLUS_RUN (
-        //     amr_channel, params.amrfinder_db
-        // )
-        // ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
+        // Run AMRFinder
+        AMRFINDERPLUS_RUN (
+            amr_channel, params.amrfinder_db
+        )
+        ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
-        // // Combining determined taxa with the assembly stats based on meta.id
-        // assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
-        // .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
+        // Combining determined taxa with the assembly stats based on meta.id
+        assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
+        .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
-        // // Calculating the assembly ratio and gather GC% stats
-        // CALCULATE_ASSEMBLY_RATIO (
-        //     assembly_ratios_ch, params.ncbi_assembly_stats
-        // )
-        // ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
+        // Calculating the assembly ratio and gather GC% stats
+        CALCULATE_ASSEMBLY_RATIO (
+            assembly_ratios_ch, params.ncbi_assembly_stats
+        )
+        ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         // GENERATE_PIPELINE_STATS_WF (
         //     GET_RAW_STATS.out.combined_raw_stats, \

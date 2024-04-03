@@ -18,24 +18,13 @@ process AMRFINDERPLUS_RUN {
     task.ext.when == null || task.ext.when
 
     script:
-    // use --organism
-    if ( "${organism_param[0]}" != "No Match Found") {
-        organism = "--organism ${organism_param[0]}"
-    } else { organism = "" }
-    //set up for terra
-    if (params.terra==false) {
-        terra = ""
-        terra_exit = ""
-    } else if (params.terra==true) {
-        terra = "PATH=/opt/conda/envs/amrfinderplus/bin:\$PATH"
-        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/amrfinderplus/bin:||')" """
-    } else {
-        error "Please set params.terra to either \"true\" or \"false\""
-    }
     // define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container = task.container.toString() - "staphb/ncbi-amrfinderplus@"
+    def terra = params.terra ? "PATH=/opt/conda/envs/amrfinderplus/bin:\$PATH" : ""
+    def terra_exit = params.terra ? """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/amrfinderplus/bin:||')" """ : ""
+    def organism = "${organism_param[0]}" != "No Match Found" ? "--organism ${organism_param[0]}" : ""
     //get name of amrfinder database file
     db_name = db.toString() - '.tar.gz'
     """
