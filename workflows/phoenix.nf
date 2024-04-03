@@ -296,28 +296,28 @@ workflow PHOENIX_EXTERNAL {
         .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{              meta, top_taxa_list      -> [[id:meta.id], top_taxa_list ]}, by: [0])\
         .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{              meta, reference_dir      -> [[id:meta.id], reference_dir ]}, by: [0])
 
-        // // Getting species ID
-        // FASTANI (
-        //     top_taxa_list_ch
-        // )
-        // ch_versions = ch_versions.mix(FASTANI.out.versions)
+        // Getting species ID
+        FASTANI (
+            top_taxa_list_ch
+        )
+        ch_versions = ch_versions.mix(FASTANI.out.versions)
 
-        // // Reformat ANI headers
-        // FORMAT_ANI (
-        //     FASTANI.out.ani
-        // )
-        // ch_versions = ch_versions.mix(FORMAT_ANI.out.versions)
+        // Reformat ANI headers
+        FORMAT_ANI (
+            FASTANI.out.ani
+        )
+        ch_versions = ch_versions.mix(FORMAT_ANI.out.versions)
 
-        // // Combining weighted kraken report with the FastANI hit based on meta.id
-        // best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}\
-        // .join(FORMAT_ANI.out.ani_best_hit.map{               meta, ani_best_hit  -> [[id:meta.id], ani_best_hit ]},  by: [0])\
-        // .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{           meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary ]}, by: [0])
+        // Combining weighted kraken report with the FastANI hit based on meta.id
+        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}\
+        .join(FORMAT_ANI.out.ani_best_hit.map{               meta, ani_best_hit  -> [[id:meta.id], ani_best_hit ]},  by: [0])\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{           meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary ]}, by: [0])
 
-        // // Getting ID from either FastANI or if fails, from Kraken2
-        // DETERMINE_TAXA_ID (
-        //     best_hit_ch, params.nodes, params.names
-        // )
-        // ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
+        // Getting ID from either FastANI or if fails, from Kraken2
+        DETERMINE_TAXA_ID (
+            best_hit_ch, params.nodes, params.names
+        )
+        ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
         // // Perform MLST steps on isolates (with srst2 on internal samples)
         // DO_MLST (
