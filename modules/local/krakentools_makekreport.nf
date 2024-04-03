@@ -13,17 +13,14 @@ process KRAKENTOOLS_MAKEKREPORT {
 
     script: // This script is bundled with the pipeline, in phoenix/bin/
     // This script has to be run with kraken output that does not use --use-names flag https://github.com/jenniferlu717/KrakenTools/issues/29
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container_version = "base_v2.1.0"
     def krakentools_version = "1.2"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def script = params.ica ? "python ${params.ica_path}/make_kreport.py" : "make_kreport.py"
     """
-    ${ica}make_kreport.py \\
+    ${script} \\
         --input ${kraken_output} \\
         --output ${prefix}.kraken2_wtasmbld.summary.txt \\
         --taxonomy ${kraken2db_path}/ktaxonomy.tsv \\

@@ -17,25 +17,19 @@ process DETERMINE_TOP_MASH_HITS {
     "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) { terra = ""} 
-    else if (params.terra==true) { terra = "-t terra" }
-    else { error "Please set params.terra to either \"true\" or \"false\"" }
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "bash ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def sample_name = "${mash_dists}" - ".txt" //get full sample name with REFSEQ_DATE
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def script = params.ica ? "${params.ica_path}/sort_and_prep_dist.sh" : "sort_and_prep_dist.sh"
+    def terra = params.terra ? "-t terra" : ""
     """
     mkdir reference_dir
 
-    ${ica}sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -o reference_dir $terra
+    ${script} -a $assembly_scaffolds -x $mash_dists -o reference_dir $terra
 
-    script_version=\$(${ica}sort_and_prep_dist.sh -V)
+    script_version=\$(${script} -V)
 
     if [[ ! -f ${sample_name}_best_MASH_hits.txt ]]; then
         echo "No MASH hit found" > ${sample_name}_best_MASH_hits.txt
