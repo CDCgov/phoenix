@@ -13,23 +13,20 @@ process GATHER_SUMMARY_LINES {
     path("versions.yml")             , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def busco_parameter = busco_val ? "--busco" : ""
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def script = params.ica ? "python ${params.ica_path}/Create_phoenix_summary_tsv.py" : "Create_phoenix_summary_tsv.py"
     """
-    ${ica}Create_phoenix_summary_tsv.py \\
+    ${script} \\
         --out Phoenix_Summary.tsv \\
         $busco_parameter
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        Create_phoenix_summary_tsv.py: \$(${ica}Create_phoenix_summary_tsv.py --version )
+        Create_phoenix_summary_tsv.py: \$(${script} --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

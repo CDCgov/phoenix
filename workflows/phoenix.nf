@@ -362,52 +362,68 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
-        // GENERATE_PIPELINE_STATS_WF (
-        //     GET_RAW_STATS.out.combined_raw_stats, \
-        //     GET_TRIMD_STATS.out.fastp_total_qc, \
-        //     [], \
-        //     KRAKEN2_TRIMD.out.report, \
-        //     KRAKEN2_TRIMD.out.krona_html, \
-        //     KRAKEN2_TRIMD.out.k2_bh_summary, \
-        //     RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
-        //     BBMAP_REFORMAT.out.filtered_scaffolds, \
-        //     DO_MLST.out.checked_MLSTs, \
-        //     GAMMA_HV.out.gamma, \
-        //     GAMMA_AR.out.gamma, \
-        //     GAMMA_PF.out.gamma, \
-        //     QUAST.out.report_tsv, \
-        //     [], [], [], [], \
-        //     KRAKEN2_WTASMBLD.out.report, \
-        //     KRAKEN2_WTASMBLD.out.krona_html, \
-        //     KRAKEN2_WTASMBLD.out.k2_bh_summary, \
-        //     DETERMINE_TAXA_ID.out.taxonomy, \
-        //     FORMAT_ANI.out.ani_best_hit, \
-        //     CALCULATE_ASSEMBLY_RATIO.out.ratio, \
-        //     AMRFINDERPLUS_RUN.out.mutation_report, \
-        //     CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
-        //     false
-        // )
-        // ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
+        // prepare inputs to the stats wf
+        if (params.run_srst2_mlst){
+            fullgene_results=SRST2_TRIMD_AR.out.fullgene_results
+        } else {
+            fullgene_results=[]
+        }
+        if (params.asmbld){
+            asmbld_report=KRAKEN2_ASMBLD.out.report                 // channel: tuple (meta) path(report)
+            asmbld_krona_html=KRAKEN2_ASMBLD.out.krona_html         // channel: tuple (meta) path(krona_html)
+            asmbld_k2_bh_summary=KRAKEN2_ASMBLD.out.k2_bh_summary   // channel: tuple (meta) path(k2_bh_summary)
+        } else{
+            asmbld_report=[]
+            asmbld_krona_html=[]
+            asmbld_k2_bh_summary=[]
+        }
 
-        // // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        // line_summary_ch = GET_TRIMD_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-        // .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
-        // .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        // .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        // .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        // .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
-        // .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
-        // .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
-        // .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
-        // .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
-        // .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])\
-        // .join(FORMAT_ANI.out.ani_best_hit.map{                           meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
+        GENERATE_PIPELINE_STATS_WF (
+            GET_RAW_STATS.out.combined_raw_stats, \
+            GET_TRIMD_STATS.out.fastp_total_qc, \
+            fullgene_results, \
+            KRAKEN2_TRIMD.out.report, \
+            KRAKEN2_TRIMD.out.krona_html, \
+            KRAKEN2_TRIMD.out.k2_bh_summary, \
+            RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
+            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            DO_MLST.out.checked_MLSTs, \
+            GAMMA_HV.out.gamma, \
+            GAMMA_AR.out.gamma, \
+            GAMMA_PF.out.gamma, \
+            QUAST.out.report_tsv, \
+            params.busco, asmbld_report, asmbld_krona_html, asmbld_k2_bh_summary, \
+            KRAKEN2_WTASMBLD.out.report, \
+            KRAKEN2_WTASMBLD.out.krona_html, \
+            KRAKEN2_WTASMBLD.out.k2_bh_summary, \
+            DETERMINE_TAXA_ID.out.taxonomy, \
+            FORMAT_ANI.out.ani_best_hit, \
+            CALCULATE_ASSEMBLY_RATIO.out.ratio, \
+            AMRFINDERPLUS_RUN.out.mutation_report, \
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
+            params.extended_qc
+        )
+        ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions) 
 
-        // // Generate summary per sample that passed SPAdes
-        // CREATE_SUMMARY_LINE (
-        //     line_summary_ch
-        // )
-        // ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
+        // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
+        line_summary_ch = GET_TRIMD_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
+        .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
+        .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+        .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+        .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
+        .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
+        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
+        .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
+        .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
+        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])\
+        .join(FORMAT_ANI.out.ani_best_hit.map{                           meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
+
+        // Generate summary per sample that passed SPAdes
+        CREATE_SUMMARY_LINE (
+            line_summary_ch
+        )
+        ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
         // // Collect all the summary files prior to fetch step to force the fetch process to wait
         // failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
