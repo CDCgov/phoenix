@@ -392,7 +392,7 @@ workflow PHOENIX_EXTERNAL {
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
             QUAST.out.report_tsv, \
-            params.busco, asmbld_report, asmbld_krona_html, asmbld_k2_bh_summary, \
+            params.run_busco, asmbld_report, asmbld_krona_html, asmbld_k2_bh_summary, \
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
@@ -425,33 +425,36 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
-        // // Collect all the summary files prior to fetch step to force the fetch process to wait
-        // failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
-        // // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
-        // summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().ifEmpty( [] )
+        // Collect all the summary files prior to fetch step to force the fetch process to wait
+        failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
+        // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().ifEmpty( [] )
 
-        // // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
-        // FETCH_FAILED_SUMMARIES (
-        //     outdir_path, failed_summaries_ch, summaries_ch
-        // )
-        // ch_versions = ch_versions.mix(FETCH_FAILED_SUMMARIES.out.versions)
+        // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
+        FETCH_FAILED_SUMMARIES (
+            outdir_path, failed_summaries_ch, summaries_ch
+        )
+        ch_versions = ch_versions.mix(FETCH_FAILED_SUMMARIES.out.versions)
 
-        // // combine all line summaries into one channel
-        // spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
-        // fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )\
-        // .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        // .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        // .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
-        // .ifEmpty( [] )
+        // combine all line summaries into one channel
+        spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
+        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )\
+            .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] ))\
+            .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] ))\
+            .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
+            .ifEmpty( [] )
 
-        // // pulling it all together
-        // all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
+        // pulling it all together
+        all_summaries_ch = spades_failure_summaries_ch
+            .combine(failed_summaries_ch)
+            .combine(summaries_ch)
+            .combine(fairy_summary_ch)
 
-        // // Combining sample summaries into final report
-        // GATHER_SUMMARY_LINES (
-        //     all_summaries_ch, outdir_path, false
-        // )
-        // ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+        // Combining sample summaries into final report
+        GATHER_SUMMARY_LINES (
+            all_summaries_ch, params.run_busco
+        )
+        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         // //create GRiPHin report
         // GRIPHIN (

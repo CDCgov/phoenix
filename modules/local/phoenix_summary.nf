@@ -5,7 +5,6 @@ process GATHER_SUMMARY_LINES {
 
     input:
     path(summary_line_files)
-    path(outdir_path)
     val(busco_val)
 
     output:

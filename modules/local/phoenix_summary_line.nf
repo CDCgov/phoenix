@@ -31,7 +31,7 @@ process CREATE_SUMMARY_LINE {
     def fastani_file    = fastani ? "-f $fastani" : ""
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
-    def script = params.ica ? "python ${params.ica_path}/Phoenix_summary_line.py" : "Phoenix_summary_line.oy"
+    def script = params.ica ? "python ${params.ica_path}/Phoenix_summary_line.py" : "Phoenix_summary_line.py"
     """
     ${script} \\
         -q $quast_report \\
