@@ -243,3 +243,23 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since the last time the database was created and contains updates since version [NT v6 July 2019](https://www.mediterranee-infection.com/acces-ressources/base-de-donnees/arg-annot-2/)  
    - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)  
       - Includes until 2024-01-28 [commit 97d1fe0cd0a119172037f6bdb29f8a1c7c6e6019](https://bitbucket.org/genomicepidemiology/resfinder_db/commits/branch/master)  
+
+## [v3.1.0](https://github.com/CDCgov/phoenix/releases/tag/v3.1.0) (04/08/2024)
+**Implemented Enhancements**
+- refactors filtering failed samples for fairy
+- refactors ICA handling, terra handling
+- add a param flags in nextflow.config
+    - execution-based
+        - run_busco
+        - ncbi_excel_creation
+        - extended_qc
+        - run_srst2_mlst
+        - run_griphin
+    - feature-based
+        - save_trimmed_fail
+        - save_merged
+        - save_output_fastqs
+        - save_reads_assignment
+- moves parameter checks upstream to main.nf
+    - ICA
+    - TERRA
