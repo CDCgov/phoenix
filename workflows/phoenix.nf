@@ -450,21 +450,31 @@ workflow PHOENIX_EXTERNAL {
             .combine(summaries_ch)
             .combine(fairy_summary_ch)
 
-        // Combining sample summaries into final report
-        GATHER_SUMMARY_LINES (
-            all_summaries_ch, params.run_busco
-        )
-        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+        // // Combining sample summaries into final report
+        // GATHER_SUMMARY_LINES (
+        //     all_summaries_ch, params.run_busco
+        // )
+        // ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         // //create GRiPHin report
-        // GRIPHIN (
-        //     all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false
-        // )
-        // ch_versions = ch_versions.mix(GRIPHIN.out.versions)
-
-        // if (ncbi_excel_creation == true && params.create_ncbi_sheet == true) {
+        // if(params.run_griphin) {
+        //     GRIPHIN (
+        //         all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false
+        //     )
+        //     ch_versions = ch_versions.mix(GRIPHIN.out.versions)
+        // }
+        
+        // // Create NCBI sheet
+        // if (params.ncbi_excel_creation == true && params.create_ncbi_sheet == true) {
         //     // requiring files so that this process doesn't start until needed files are made. 
-        //     required_files_ch = FASTP_TRIMD.out.reads.map{ meta, reads -> reads[0]}.collect().combine(DO_MLST.out.checked_MLSTs.map{ meta, checked_MLSTs -> checked_MLSTs}.collect()).combine(DETERMINE_TAXA_ID.out.taxonomy.map{ meta, taxonomy -> taxonomy}.collect())
+        //     required_files_ch = FASTP_TRIMD.out.reads
+        //         .map{ meta, reads -> reads[0]}
+        //         .collect()
+        //         .combine(DO_MLST.out.checked_MLSTs
+        //             .map{ meta, checked_MLSTs -> checked_MLSTs}
+        //             .collect())
+        //         .combine(DETERMINE_TAXA_ID.out.taxonomy
+        //         .map{ meta, taxonomy -> taxonomy}.collect())
 
         //     //Fill out NCBI excel sheets for upload based on what PHX found
         //     CREATE_NCBI_UPLOAD_SHEET (
@@ -504,21 +514,19 @@ workflow PHOENIX_EXTERNAL {
         // ch_versions    = ch_versions.mix(MULTIQC.out.versions)
     
     emit:
-        check = FASTP_TRIMD.out.reads
-        // outcome = GET_RAW_STATS.out.outcome
-        // scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
-        // trimmed_reads    = FASTP_TRIMD.out.reads
-        // mlst             = DO_MLST.out.checked_MLSTs
-        // amrfinder_output = AMRFINDERPLUS_RUN.out.report
-        // gamma_ar         = GAMMA_AR.out.gamma
-        // phx_summary     = GATHER_SUMMARY_LINES.out.summary_report
-        // //output for phylophoenix
-        // griphin_tsv      = GRIPHIN.out.griphin_report
-        // griphin_excel    = GRIPHIN.out.griphin_tsv_report
-        // dir_samplesheet  = GRIPHIN.out.converted_samplesheet
-        // //output for ncbi upload 
-        // ncbi_sra_sheet       = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra : null
-        // ncbi_biosample_sheet = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample : null
+        scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
+        trimmed_reads    = FASTP_TRIMD.out.reads
+        mlst             = DO_MLST.out.checked_MLSTs
+        amrfinder_output = AMRFINDERPLUS_RUN.out.report
+        gamma_ar         = GAMMA_AR.out.gamma
+        phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
+        //output for phylophoenix
+        griphin_tsv      = params.run_griphin ? GRIPHIN.out.griphin_report : null
+        griphin_excel    = params.run_griphin ? GRIPHIN.out.griphin_tsv_report : null
+        dir_samplesheet  = params.run_griphin ? GRIPHIN.out.converted_samplesheet : null
+        //output for ncbi upload 
+        ncbi_sra_sheet       = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra : null
+        ncbi_biosample_sheet = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample : null
 }
 
 /*
