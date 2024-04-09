@@ -53,20 +53,19 @@ workflow PHOENIX {
     main:
         PHOENIX_EXTERNAL ( ch_input, ch_versions, params.ncbi_excel_creation )
     emit:
-        check = PHOENIX_EXTERNAL.out.check
-        // scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
-        // trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
-        // mlst             = PHOENIX_EXTERNAL.out.mlst
-        // amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
-        // gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
-        // phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
-        // //output for phylophoenix
-        // griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
-        // griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
-        // dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
-        // //output for ncbi upload 
-        // ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_sra_sheet : null
-        // ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_biosample_sheet : null
+        scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
+        trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
+        mlst             = PHOENIX_EXTERNAL.out.mlst
+        amrfinder_output = PHOENIX_EXTERNAL.out.amrfinder_output
+        gamma_ar         = PHOENIX_EXTERNAL.out.gamma_ar
+        phx_summary      = PHOENIX_EXTERNAL.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = params.run_griphin ? PHOENIX_EXTERNAL.out.griphin_tsv : null
+        griphin_excel    = params.run_griphin ? PHOENIX_EXTERNAL.out.griphin_excel : null
+        dir_samplesheet  = params.run_griphin ? PHOENIX_EXTERNAL.out.dir_samplesheet : null
+        //output for ncbi upload 
+        ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_sra_sheet : null
+        ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_biosample_sheet : null
 }
 
 //
