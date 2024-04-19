@@ -950,9 +950,11 @@ def write_phoenix_summary(set_coverage, final_df, final_ar_df, busco_df):
        'Assembly_Ratio', 'Assembly_Ratio_(STDev)', 'Taxa_Source', 'BUSCO_DB', 'BUSCO_Match', 'BUSCO', 'Kraken2_Trimd', 'Kraken2_Weighted',
        'FastANI_Organism', 'FastANI_%ID', 'Taxa_Coverage','Species_Support_ANI', 'AR_Database']
     # remove what we don't want
-    column_list = [item for item in column_list if item not in cols_to_drop]
-    pattern = re.compile(r'\w{2}_\d+\.\d+')
-    resistance_types = [col_name.split(re.search(pattern, col_name).group(),1)[1].replace('_(', '').replace(')', '') for col_name in column_list ]
+    #column_list = [item for item in column_list if item not in cols_to_drop]
+    pattern = re.compile(r'\((.*?)\)$')  # Pattern to match the last string between "(" and ")" at the end of the string
+    resistance_types = [pattern.search(col_name).group(1) for col_name in column_list if pattern.search(col_name)]
+    #pattern = re.compile(r'\w{2}_\d+\.\d+')
+    #resistance_types = [col_name.split(re.search(pattern, col_name).group(),1)[1].replace('_(', '').replace(')', '') for col_name in column_list ]
     #create ar db
     ar_db_df = pd.DataFrame()
     for resistance_type in resistance_types:
