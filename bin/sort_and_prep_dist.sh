@@ -94,9 +94,14 @@ echo "Cutoff IS: ${cutoff}"
 
 matches=0
 # Needed a new variable to put a hard stop on fill-ins being 150% of orignal. Example - if max ani samples to use is 20, the 30th sample is the last one that could be used as filler
-#maxplus_ani_samples=$(echo 'scale=0; 1.5 * '${max_ani_samples}' / 1' | bc -l)
+# Temporarily setting value here, should move to main parameters in the future?
+max_hits=40 #Target is 20, but we'll allow twice as many even though this likely only occurs in crummy isolates
+
+
 
 #echo "${assembly_file}" > "${sample_name}_best_MASH_hits.txt"
+
+##
 
 while IFS= read -r var; do
 	echo "${var}"
@@ -104,7 +109,8 @@ while IFS= read -r var; do
 	dist=$(echo ${var} | cut -d' ' -f3)
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
-		if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 0 ]); then
+	# Also setting a minimum kmer threshold to ensure 1000 crappy hits dont make it ner the top with 1/1000 kmer matches
+	if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 5 ]); then
 		if [[ -f "${outdir}/${source}.gz" ]]; then
 			echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 #		if [[ -f "${GCF_name}.gz" ]]; then
