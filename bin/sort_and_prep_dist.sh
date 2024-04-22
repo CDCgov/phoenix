@@ -110,7 +110,7 @@ while IFS= read -r var; do
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
 	# Also setting a minimum kmer threshold to ensure 1000 crappy hits dont make it ner the top with 1/1000 kmer matches
-	if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 5 ]); then
+	if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 5 ] && [ ${matches} -le ${max_hits} ]); then
 		if [[ -f "${outdir}/${source}.gz" ]]; then
 			echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 #		if [[ -f "${GCF_name}.gz" ]]; then
