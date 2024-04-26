@@ -16,6 +16,10 @@ import csv
 from Bio import SeqIO
 from itertools import chain
 
+# Set display options to show all rows and columns
+pd.set_option('display.max_rows', None)  # Show all rows
+pd.set_option('display.max_columns', None)  # Show all columns
+
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
 ## Written by Jill Hagey (qpk9@cdc.gov)
@@ -1037,11 +1041,91 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     df = pd.DataFrame(data)
     return df
 
+def srst2_dedup(srst2_ar_df, gamma_ar_df):
+    ##### First, we will drop columns with "partial" in the name
+    # Filter out columns that contain the substring
+    columns_to_drop = [col for col in srst2_ar_df.columns if "partial" in col]
+    # Drop the columns
+    srst2_ar_df = srst2_ar_df.drop(columns=columns_to_drop)
+    ##### Second we will look for GAMMA + genes, but different alleles found my SRST2 and dedup them (AKA we will remove and not report them) #####
+    # Iterate over each row in the first DataFrame -> this will give all the srst2 genes and alleles
+    for idx, row in srst2_ar_df.iterrows():
+        #create empty list for each row
+        gene_list = []
+        # For each column in the row find the srst2 hits
+        for col_name in srst2_ar_df.columns:
+            if pd.notna(row[col_name]) and row[col_name] != "":
+                # split on _ to get just the gene/allele name for matching
+                gene = col_name.split('_')[0].split("-")[0]
+                gene_list.append(gene)
+        # Extract unique genes in srst2 - positive SRST2 hits
+        unique_gene_list = list(set(gene_list))
+        # Check if the gene name (column name) exists in the GAMMA AR DataFrame -> if there is a match these would be GAMMA +, but a different allele and we want to remove these.
+        for gene in unique_gene_list:
+            if gamma_ar_df.columns.str.contains(gene).any():
+                # Check for partial string match in the column names of the gamma DataFrame
+                matching_columns = gamma_ar_df.columns[gamma_ar_df.columns.str.contains(gene)].tolist()
+                for column in matching_columns:
+                    # check that for the column in question there is also a value found in the GAMMA column
+                    if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
+                        # Check if there is a value in the corresponding column in the second DataFrame
+                        srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
+                        print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
+    ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
+    # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
+    gamma_neg_srst2 = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
+    # check the number of alleles per gene so that we only have those that are singles and will be reported
+    gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: [column.split('_')[0] for column in row.index if row[column]], axis=1))
+    gamma_neg_genes.columns = ["neg_genes"] # a column name to make it easier
+    # Iterate over each row
+    for index, row in gamma_neg_genes.iterrows():
+        gene_list = []
+        multiple_occurrences = []
+        count = 0
+        for val in row["neg_genes"]:
+            gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
+        for val in gene_list:
+            count = count + 1 #only continue below if we have seen this gene before
+            if gene_list.count(val) > 1 and val not in multiple_occurrences:
+                #get a dataframe of the gene in question
+                df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
+                # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
+                df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
+                # Convert extracted values to integer type and keep NA values
+                df['Percent_Match'] = pd.to_numeric(df['Percent_Match'], errors='coerce')
+                df['Coverage'] = pd.to_numeric(df['Coverage'], errors='coerce')
+                df = df.dropna(subset=['Percent_Match']) #drop rows with no values
+                ### Filtering steps to get the top hit for srst2
+                # Step 1: Identify the Max Percent_Match
+                max_percent_match = df['Percent_Match'].max()
+
+                # Step 2: Filter rows to keep rows with the max Percent_Match
+                max_percent_match_rows = df[df['Percent_Match'] == max_percent_match]
+
+                # Step 3: Identify the max Coverage among rows with the max Percent_Match
+                max_coverage = max_percent_match_rows['Coverage'].max()
+
+                # Step 4: Drop rows with the lowest Percent_Match and, if needed, with the lowest Coverage
+                if len(max_percent_match_rows) > 1:  # Only consider Coverage if there are ties in Percent_Match
+                    rows_to_drop = max_percent_match_rows[max_percent_match_rows['Coverage'] != max_coverage].index
+                    # Drop the identified rows
+                    df_cleaned = df.drop(rows_to_drop)
+                else:
+                    max_percent_mismatch_rows = df[df['Percent_Match'] != max_percent_match]
+                    df_cleaned = df.drop(max_percent_mismatch_rows.index)
+                # Now that we know what alleles we are keeping based on the top hits (these are the row names), we will get the inverse row names so we know what to drop
+                index_diff = df.index.difference(df_cleaned.index)
+                # For the sample in question remove the data from cell if the particular allele(s) we want to drop
+                srst2_ar_df.at[index, index_diff.tolist()] = ""
+            multiple_occurrences.append(val)
+    srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
+    return srst2_ar_df
+
 def add_srst2(ar_df, srst2_ar_df):
     ar_combined_df = pd.DataFrame() #create new dataframe to fill
     ar_combined_ordered_df = pd.DataFrame() #create new dataframe to fill
-    common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes
-    # Combine values in cells for columns that are in both dataframes
+    common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
+    # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
     for col in common_cols:
         if col != "WGS_ID":
             ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
@@ -1051,9 +1135,11 @@ def add_srst2(ar_df, srst2_ar_df):
             ar_combined_df[col] = srst2_ar_df[col]
     # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
     # drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
-    srst2_ar_df.drop(common_cols, axis = 1, inplace=True)
+    srst2_ar_df.drop(common_cols, axis = 1, inplace=True) # This will leave GAMMA- samples
     ar_df.drop(common_cols, axis = 1, inplace=True)
     # Add cols that are unique to srst2
+    ############### DEDUPING FOR SRST2 ###############
+    srst2_ar_df = srst2_dedup(srst2_ar_df, ar_df.join(ar_combined_df))
     ar_combined_df = ar_combined_df.join(srst2_ar_df)
     # Add cols that are unique to gamma ar_df
     ar_combined_df = ar_combined_df.join(ar_df)
@@ -1085,21 +1171,19 @@ def big5_check(final_ar_df):
     final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
     all_genes = final_ar_df.columns.tolist()
     big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
-    #blaOXA_48_like = [ "blaOXA-48", "blaOXA-54", "blaOXA-162", "blaOXA-181", "blaOXA-199", "blaOXA-204", "blaOXA-232", "blaOXA-244", "blaOXA-245", "blaOXA-247", "blaOXA-252", "blaOXA-370", "blaOXA-416", "blaOXA-436", \
-    #"blaOXA-438", "blaOXA-439", "blaOXA-484", "blaOXA-505", "blaOXA-514", "blaOXA-515", "blaOXA-517", "blaOXA-519", "blaOXA-535", "blaOXA-538", "blaOXA-546", "blaOXA-547", "blaOXA-566", "blaOXA-567", "blaOXA-731", \
-    #"blaOXA-788", "blaOXA-793", "blaOXA-833", "blaOXA-894", "blaOXA-918", "blaOXA-920", "blaOXA-922", "blaOXA-923", "blaOXA-924", "blaOXA-929", "blaOXA-933", "blaOXA-934", "blaOXA-1038", "blaOXA-1039", "blaOXA-1055", "blaOXA-1119", "blaOXA-1146", \
-    #"blaOXA-1167","blaOXA-1181","blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213" ]
+    blaOXA_48_like = [ "48", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", "731", \
+    "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1038", "1039", "1055", "1119", "1146", "1167","1181","1200","1201","1205","1207","1211","1212","1213" ]
     # Acquired OXA families 23, 24/40, 58, 143, 235
-    #blaOXA_23_like = [ "blaOXA-23", #"blaOXA-54", "blaOXA-162", "blaOXA-181", "blaOXA-199", "blaOXA-204", "blaOXA-232", "blaOXA-244", "blaOXA-245", "blaOXA-247", "blaOXA-252", "blaOXA-370", "blaOXA-416", "blaOXA-436", \
-    #"blaOXA-438", "blaOXA-439", #"blaOXA-484", "blaOXA-505", "blaOXA-514", "blaOXA-515", "blaOXA-517", "blaOXA-519", "blaOXA-535", "blaOXA-538", "blaOXA-546", "blaOXA-547", "blaOXA-566", "blaOXA-567", "blaOXA-731", \
-    #"blaOXA-788", "blaOXA-793", #"blaOXA-833", "blaOXA-894", "blaOXA-918", "blaOXA-920", "blaOXA-922", "blaOXA-923", "blaOXA-924", "blaOXA-929", "blaOXA-933", "blaOXA-934", "blaOXA-1038", "blaOXA-1039", "blaOXA-1055", "blaOXA-1119", "blaOXA-1146", \
-    #"blaOXA-1167","blaOXA-1181",#"blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213" ]
-    #blaOXA_24_40_like = [ 
-    #    blaOXA_24_40_like = [ 
+    blaOXA_23_like = [ "23", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", \
+    "731", "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1038", "1039", "1055", "1119", "1146", "1167","1181","1200","1201","1205","1207","1211","1212","1213" ]
+    blaOXA_24_40_like = [ "24","40","25","26","72","139","160","207","437","653", "897","1040","1081" ]
+    blaOXA_58_like = [ "58", "96","97","164","397","420","512","1178" ]
+    blaOXA_143_like = [ "143","182","231","253","255","499","649","825","945","1139","1182" ]
+    blaOXA_235_like = [ "134","235","236","237","276","278","282","283","284","285","335","360","361","362","363","496","537","646","647","648","915","991","1005","1110","1111","1112","1116" ]
     # combine lists of all genes we want to highlight
-    #all_big5_keep = big5_keep + blaOXA_48_like
+    blaOXAs = [f"{num}" for num in blaOXA_48_like + blaOXA_23_like + blaOXA_24_40_like + blaOXA_58_like + blaOXA_143_like + blaOXA_235_like]
     # remove list of genes that look like big 5 but don't have activity
-    big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "blaOXA-163", "blaOXA-405"]
+    big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "163", "405"]
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
     for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
         if gene == 'No_AR_Genes_Found':
@@ -1107,9 +1191,9 @@ def big5_check(final_ar_df):
         else:
             gene_name = gene.split('_(')[0] # remove drug name for matching genes
             drug = gene.split('_(')[1] # keep drug name to add back later
-            # make sure we have a complete match for blaOXA-48 and blaOXA-48-like genes
+            # make sure we have a complete match for 48 and 48-like genes
             if gene_name.startswith("blaOXA"): #check for complete blaOXA match
-                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_keep_gene in blaOXA_48_like if gene_name == big5_keep_gene ]
+                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_keep_gene in blaOXAs if gene_name == big5_keep_gene ]
             else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
                 for big5 in big5_keep:
                     if search(big5, gene_name): #search for big5 gene substring in the gene name
@@ -1271,7 +1355,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     ##    column_count = column_count + 1
     # Creating footers
     worksheet.write('A' + str(max_row + 4), 'Cells in YELLOW denote isolates outside of ' + str(set_coverage) + '-100X coverage', yellow_format)
-    worksheet.write('A' + str(max_row + 5), 'Cells in ORANGE denote “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaOXA-48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
+    worksheet.write('A' + str(max_row + 5), 'Cells in ORANGE denote “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, 48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
     worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, assembly ratio stdev > 2.58, assembly length < 1Mbps)', red_format)
     # More footers - Disclaimer etc.
     # unbold
