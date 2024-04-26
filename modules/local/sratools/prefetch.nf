@@ -3,7 +3,8 @@ process SRATOOLS_PREFETCH {
     label 'process_single'
     // 3.0.3--h87f3376_0 "quay.io/biocontainers/sra-tools@sha256:c9f92683e10091c3ef93066b1fcbdeeba89af49242ab778a9c8cc006f6be82a3"
     // 3.0.9--h9f5acd7_0
-    container "quay.io/biocontainers/sra-tools@sha256:bd3dafdfb9ad5f301b72c5fdbbcbf411b19c59e117eabe4209dc15546c851c37"
+    // 3.1.0--h4304569_1
+    container "quay.io/biocontainers/sra-tools@sha256:8c0e26d2ee39a93860168327113674127297ce0cd9bf33ebd489a4fdef08f112"
 
     input:
     val(sra_accession)
