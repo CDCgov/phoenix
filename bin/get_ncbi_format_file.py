@@ -16,7 +16,8 @@ from load_files import FileLoader
 
 # Function to get the script version
 def get_version():
-    return "2.0.0"
+    #update to 2.1.0 to make one sheet per biosample
+    return "2.1.0"
 
 def parseArgs(args=None):
     """"""
@@ -181,23 +182,32 @@ def check_input(input):
         return flag
 
 def base_output(output_path, sra, sra_columns, bio_attribute, biosample_columns):
-    path = output_path
-    if not os.path.exists(path):
-        # Create the directory
-        os.makedirs(path)
-    path_bio = path + "/BiosampleAttributes_Microbe.1.0.xlsx"
-    path_sra = path + "/Sra_Microbe.1.0.xlsx"
+    #create biosample df
     df_biosample = pd.DataFrame(tools.purify_dict(bio_attribute)).T.reset_index(drop=True)
-    #make sure the column order is correct
-    df_biosample = df_biosample[biosample_columns]
-    df_biosample.to_excel(path_bio, index=False)
+    #SRA df
     df_sra = pd.DataFrame(tools.purify_dict(sra)).T.reset_index(drop=True)
-    #make sure the column order is correct
-    df_sra = df_sra[sra_columns]
-    df_sra.to_excel(path_sra, index=False)
-    #add disclaimer
-    add_disclaimer(df_biosample, path_bio, "Sheet1")
-    add_disclaimer(df_sra, path_sra, "SRA_data")
+    # Group by bioproject_accession
+    grouped = df_biosample.groupby('bioproject_accession')
+    # Create a dictionary of DataFrames
+    for biosample_id, df_biosample in grouped:
+        if not os.path.exists(output_path):
+            # Create the directory
+            os.makedirs(output_path)
+        path_bio = output_path + "/" + biosample_id + "_BiosampleAttributes_Microbe.1.0.xlsx"
+        path_sra = output_path + "/" + biosample_id + "_Sra_Microbe.1.0.xlsx"
+        #make sure the column order is correct
+        df_biosample = df_biosample[biosample_columns]
+        df_biosample.to_excel(path_bio, index=False)
+        #Convert column '*sample_name' from df2 to a list
+        sample_names_list = df_biosample['*sample_name'].tolist()
+        #Filter rows in df_sra based on the sample_names_list
+        df_sra_filtered = df_sra[df_sra['sample_name'].isin(sample_names_list)]
+        #make sure the column order is correct
+        df_sra_filtered = df_sra_filtered[sra_columns]
+        df_sra_filtered.to_excel(path_sra, index=False)
+        #add disclaimer
+        add_disclaimer(df_biosample, path_bio, "Sheet1")
+        add_disclaimer(df_sra_filtered, path_sra, "SRA_data")
 
 def add_disclaimer(df, input_excel, input_sheet_name):
     # Load the Excel file using pandas ExcelWriter
