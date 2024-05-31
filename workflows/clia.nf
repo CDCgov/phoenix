@@ -348,7 +348,7 @@ workflow CLIA_INTERNAL {
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         ABRITAMR (
-            filtered_scaffolds_ch, params.old_amrfinder_db
+            filtered_scaffolds_ch
         )
         ch_versions = ch_versions.mix(ABRITAMR.out.versions)
 
