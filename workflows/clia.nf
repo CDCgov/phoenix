@@ -52,6 +52,7 @@ include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
+include { ABRITAMR                       } from '../modules/local/abritamr'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
@@ -346,6 +347,11 @@ workflow CLIA_INTERNAL {
         )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
+        ABRITAMR (
+            filtered_scaffolds_ch, params.old_amrfinder_db
+        )
+        ch_versions = ch_versions.mix(ABRITAMR.out.versions)
+
         // Combining determined taxa with the assembly stats based on meta.id
         assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
         .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
@@ -404,7 +410,7 @@ workflow CLIA_INTERNAL {
 
         // pdf file
         CREATE_CLIA_PDF (
-            outdir_path, CLIA_GRIPHIN.out.phoenix_tsv_report, CLIA_GRIPHIN.out.griphin_tsv_report, workflow.start, params.amrfinder_db
+            outdir_path, CLIA_GRIPHIN.out.phoenix_tsv_report, CLIA_GRIPHIN.out.griphin_tsv_report, workflow.start, params.amrfinder_db, params.coverage
         )
         ch_versions = ch_versions.mix(CREATE_CLIA_PDF.out.versions)
 

@@ -18,8 +18,24 @@ from datetime import date
 import logging
 import os, glob
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        formatter_class = argparse.RawTextHelpFormatter,
+        description = "Summary report generating script for CLIA Phoenix"
+    )
+    parser.add_argument('-p', '--project_dir', type=str, help='Phoenix output folder', required=True)
+    parser.add_argument('-t', '--start_time', dest="start_time", type=str, help='Time the pipeline started.', required=False)
+    parser.add_argument('--phx_version', dest="phx_version", type=str, help='Phoenix version', required=True)
+    parser.add_argument('--amrfinder_version', dest="amrfinder_version", type=str, help='AMRFinderPlus version', required=True)
+    parser.add_argument('--ar_database', dest="ar_database", type=str, help='AR Databased used with AMRFinderPlus.', required=True)
+    parser.add_argument('--coverage', default=40, dest="coverage", type=str, help='Coverage cut off to use.', required=True)
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    opts = parser.parse_args()
+    return opts
+
 # Minimum cutoff for Error
-COVERAGE_CUTOFF = 50
+#COVERAGE_CUTOFF = 40
 ASSEMBLY_CUTOFF = 2.58
 ASSEMBLY_LENGTH = 1000000
 SCAFFOLD_NUM = 500
@@ -111,7 +127,7 @@ def combine_strings(row):
     values = [str(value) for value in row if pd.notnull(value)]
     return ', '.join(values)
 
-def get_griphin_df(griphin_summary):
+def get_griphin_df(griphin_summary, COVERAGE_CUTOFF):
     columns_to_read = ['WGS_ID','Minimum_QC_Check','Raw_Q30_R1_[%]','Raw_Q30_R2_[%]','Total_Raw_[reads]','Total_Trimmed_[reads]','Estimated_Trimmed_Coverage', 'GC[%]','Scaffolds','Assembly_Length','Assembly_Ratio','Assembly_StDev']
     griphin_df = pd.read_csv(griphin_summary,sep='\t', usecols=columns_to_read)
     griphin_df = griphin_df.rename(columns={'WGS_ID':'ID','Minimum_QC_Check':'Minimum QC','Raw_Q30_R1_[%]':'R1 Q30 (%)', 'Raw_Q30_R2_[%]':'R2 Q30 (%)','Total_Raw_[reads]':'Total Raw', 'GC[%]': 'GC (%)',
@@ -210,7 +226,7 @@ def clia_report(args):
     griphin_summary = f"{project_dir}/*GRiPHin_Summary.tsv"
     matching_files = glob.glob(griphin_summary)
     if len(matching_files) == 1:
-        griphin_df = get_griphin_df(matching_files[0])
+        griphin_df = get_griphin_df(matching_files[0], args.coverage)
         exact_df, partial_df = get_ar_df(matching_files[0])
 
         taxa_columns_to_read = ['WGS_ID','Taxa_Source','BUSCO_Lineage','BUSCO_%Match','Kraken_ID_Raw_Reads_%','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
@@ -399,20 +415,6 @@ def clia_report(args):
     # Convert HTML to PDF
     HTML(string=html).write_pdf(pdf_file, stylesheets=[pdf_css])
     logging.info("Report generation is completed.")
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        formatter_class = argparse.RawTextHelpFormatter,
-        description = "Summary report generating script for CLIA Phoenix"
-    )
-    parser.add_argument('-p', '--project_dir', type=str, help='Phoenix output folder', required=True)
-    parser.add_argument('-t', '--start_time', dest="start_time", type=str, help='Time the pipeline started.', required=False)
-    parser.add_argument('--phx_version',dest="phx_version", type=str, help='Phoenix version', required=True)
-    parser.add_argument('--amrfinder_version',dest="amrfinder_version", type=str, help='AMRFinderPlus version', required=True)
-    parser.add_argument('--ar_database',dest="ar_database", type=str, help='AR Databased used with AMRFinderPlus.', required=True)
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
-    opts = parser.parse_args()
-    return opts
 
 def main():
     logging.basicConfig(filename=f"report_generate_{date.today()}.log",
