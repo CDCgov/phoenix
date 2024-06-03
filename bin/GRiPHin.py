@@ -1073,52 +1073,54 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                         print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
-    gamma_neg_srst2 = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
-    # check the number of alleles per gene so that we only have those that are singles and will be reported
-    gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: [column.split('_')[0] for column in row.index if row[column]], axis=1))
-    gamma_neg_genes.columns = ["neg_genes"] # a column name to make it easier
-    # Iterate over each row
-    for index, row in gamma_neg_genes.iterrows():
-        gene_list = []
-        multiple_occurrences = []
-        count = 0
-        for val in row["neg_genes"]:
-            gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
-        for val in gene_list:
-            count = count + 1 #only continue below if we have seen this gene before
-            if gene_list.count(val) > 1 and val not in multiple_occurrences:
-                #get a dataframe of the gene in question
-                df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
-                # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
-                df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
-                # Convert extracted values to integer type and keep NA values
-                df['Percent_Match'] = pd.to_numeric(df['Percent_Match'], errors='coerce')
-                df['Coverage'] = pd.to_numeric(df['Coverage'], errors='coerce')
-                df = df.dropna(subset=['Percent_Match']) #drop rows with no values
-                ### Filtering steps to get the top hit for srst2
-                # Step 1: Identify the Max Percent_Match
-                max_percent_match = df['Percent_Match'].max()
+    # Check if DataFrame is not empty
+    if not srst2_ar_df.empty:
+        gamma_neg_srst2 = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
+        # check the number of alleles per gene so that we only have those that are singles and will be reported
+        gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: [column.split('_')[0] for column in row.index if row[column]], axis=1))
+        gamma_neg_genes.columns = ["neg_genes"] # a column name to make it easier
+        # Iterate over each row
+        for index, row in gamma_neg_genes.iterrows():
+            gene_list = []
+            multiple_occurrences = []
+            count = 0
+            for val in row["neg_genes"]:
+                gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
+            for val in gene_list:
+                count = count + 1 #only continue below if we have seen this gene before
+                if gene_list.count(val) > 1 and val not in multiple_occurrences:
+                    #get a dataframe of the gene in question
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
+                    # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
+                    df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
+                    # Convert extracted values to integer type and keep NA values
+                    df['Percent_Match'] = pd.to_numeric(df['Percent_Match'], errors='coerce')
+                    df['Coverage'] = pd.to_numeric(df['Coverage'], errors='coerce')
+                    df = df.dropna(subset=['Percent_Match']) #drop rows with no values
+                    ### Filtering steps to get the top hit for srst2
+                    # Step 1: Identify the Max Percent_Match
+                    max_percent_match = df['Percent_Match'].max()
 
-                # Step 2: Filter rows to keep rows with the max Percent_Match
-                max_percent_match_rows = df[df['Percent_Match'] == max_percent_match]
+                    # Step 2: Filter rows to keep rows with the max Percent_Match
+                    max_percent_match_rows = df[df['Percent_Match'] == max_percent_match]
 
-                # Step 3: Identify the max Coverage among rows with the max Percent_Match
-                max_coverage = max_percent_match_rows['Coverage'].max()
+                    # Step 3: Identify the max Coverage among rows with the max Percent_Match
+                    max_coverage = max_percent_match_rows['Coverage'].max()
 
-                # Step 4: Drop rows with the lowest Percent_Match and, if needed, with the lowest Coverage
-                if len(max_percent_match_rows) > 1:  # Only consider Coverage if there are ties in Percent_Match
-                    rows_to_drop = max_percent_match_rows[max_percent_match_rows['Coverage'] != max_coverage].index
-                    # Drop the identified rows
-                    df_cleaned = df.drop(rows_to_drop)
-                else:
-                    max_percent_mismatch_rows = df[df['Percent_Match'] != max_percent_match]
-                    df_cleaned = df.drop(max_percent_mismatch_rows.index)
-                # Now that we know what alleles we are keeping based on the top hits (these are the row names), we will get the inverse row names so we know what to drop
-                index_diff = df.index.difference(df_cleaned.index)
-                # For the sample in question remove the data from cell if the particular allele(s) we want to drop
-                srst2_ar_df.at[index, index_diff.tolist()] = ""
-            multiple_occurrences.append(val)
-    srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
+                    # Step 4: Drop rows with the lowest Percent_Match and, if needed, with the lowest Coverage
+                    if len(max_percent_match_rows) > 1:  # Only consider Coverage if there are ties in Percent_Match
+                        rows_to_drop = max_percent_match_rows[max_percent_match_rows['Coverage'] != max_coverage].index
+                        # Drop the identified rows
+                        df_cleaned = df.drop(rows_to_drop)
+                    else:
+                        max_percent_mismatch_rows = df[df['Percent_Match'] != max_percent_match]
+                        df_cleaned = df.drop(max_percent_mismatch_rows.index)
+                    # Now that we know what alleles we are keeping based on the top hits (these are the row names), we will get the inverse row names so we know what to drop
+                    index_diff = df.index.difference(df_cleaned.index)
+                    # For the sample in question remove the data from cell if the particular allele(s) we want to drop
+                    srst2_ar_df.at[index, index_diff.tolist()] = ""
+                multiple_occurrences.append(val)
+        srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
     return srst2_ar_df
 
 def add_srst2(ar_df, srst2_ar_df):
