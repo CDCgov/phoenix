@@ -5,7 +5,6 @@ process ABRITAMR {
 
     input:
     tuple val(meta), path(fasta), val(fairy_outcome)
-    path(db)
 
     output:
     tuple val(meta), path("*.summary_matches.txt")  , emit: matches
