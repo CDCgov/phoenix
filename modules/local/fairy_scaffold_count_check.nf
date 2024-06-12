@@ -17,10 +17,10 @@ process SCAFFOLD_COUNT_CHECK {
     path(names_file)
 
     output:
-    tuple val(meta), path('*_summary.txt'),             emit: outcome
-    path('*_summaryline.tsv'),           optional:true, emit: summary_line
-    tuple val(meta), path('*.synopsis'), optional:true, emit: synopsis
-    path("versions.yml"),                               emit: versions
+    tuple val(meta), path('*_scaffolds_summary.txt'), optional:true, emit: outcome
+    path('*_summaryline.tsv'),                        optional:true, emit: summary_line
+    tuple val(meta), path('*.synopsis'),              optional:true, emit: synopsis
+    path("versions.yml"),                                            emit: versions
 
     script:
     // terra=true sets paths for bc/wget for terra container paths
@@ -32,8 +32,8 @@ process SCAFFOLD_COUNT_CHECK {
         ica_python = ""
         ica_bash = ""
     } else if (params.ica==true) { 
-        ica_python = "python ${workflow.launchDir}/bin/" 
-        ica_bash = "bash ${workflow.launchDir}/bin/" 
+        ica_python = "python ${params.bin_dir}" 
+        ica_bash = "bash ${params.bin_dir}" 
     }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
@@ -80,7 +80,7 @@ process SCAFFOLD_COUNT_CHECK {
         ${ica_python}edit_line_summary.py -i ${prefix}_summaryline.tsv
 
         #change file name.
-        cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
+        cp ${prefix}_summary_old_3.txt ${prefix}_scaffolds_summary.txt
 
     # if there are scaffolds left after filtering do the following...
     else
@@ -95,7 +95,7 @@ process SCAFFOLD_COUNT_CHECK {
             echo "PASSED: Using Scaffold entry no trimd reads to check." >> ${prefix}_summary_old_3.txt
             echo "PASSED: More than 0 scaffolds in ${prefix} after filtering." >> ${prefix}_summary_old_3.txt
         fi
-        cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
+        cp ${prefix}_summary_old_3.txt ${prefix}_scaffolds_summary.txt
     fi
 
     #gettings script versions

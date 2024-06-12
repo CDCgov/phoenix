@@ -44,7 +44,7 @@ def reads_compare(read_file, trimd_file, filename, busco):
         with open(filename, "a") as tmp:
             tmp.write(outcome)
             tmp.write("\nEnd_of_File")
-        os.rename(filename, prefix + "_summary.txt")
+        os.rename(filename, prefix + "_trimstats_summary.txt")
 
     else: # Check if read pairs are equal and if they aren't write a synopsis and summary line file for them. 
         approved = "PASSED: Read pairs for " + prefix + " are equal."
@@ -64,7 +64,7 @@ def reads_compare(read_file, trimd_file, filename, busco):
         #filename = prefix + "_summary_old.txt"
         with open(filename, "a") as tmp:
             tmp.write(outcome)
-        os.rename(filename, prefix + "_summary.txt")
+        os.rename(filename, prefix + "_rawstats_summary.txt")
 
 def get_read_stats(aggr_read_stats, trimmed):
     length_R1 = str(aggr_read_stats["R1[bp]"].values[0])

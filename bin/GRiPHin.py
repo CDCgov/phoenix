@@ -104,7 +104,7 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
             Trim_Genus = "None"
         if len(Trim_Species) == 0:
             Trim_Species = "None"
-        Trim_kraken = Trim_Genus + " (" + Trim_Genus_percent + ") " + Trim_Species + " (" + Trim_Species_percent + ")"
+        Trim_kraken = Trim_Genus + " (" + Trim_Genus_percent + ") " + Trim_Species + " (" + Trim_Species_percent + ")."
         #guess what the mlst scheme is to check later
         scheme_guess_kraken_trimd = Trim_Genus[0].lower() + Trim_Species[0:4]
     except FileNotFoundError:
@@ -129,7 +129,7 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
             Asmbld_Genus = "None"
         if len(Asmbld_Species) == 0:
             Asmbld_Species = "None"
-        Asmbld_kraken = Asmbld_Genus + " (" + Asmbld_Genus_percent + ") " + Asmbld_Species + " (" + Asmbld_Species_percent + ")"
+        Asmbld_kraken = Asmbld_Genus + " (" + Asmbld_Genus_percent + ") " + Asmbld_Species + " (" + Asmbld_Species_percent + ")."
         #guess what the mlst scheme is to check later
         scheme_guess_kraken_wt = Asmbld_Genus[0].lower() + Asmbld_Species[0:4]
     except FileNotFoundError:
@@ -247,7 +247,7 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
         pass
     if str(assembly_stdev) == "NA":
         if str(gc_stdev) == "NA":
-            alerts.append("Assembly ratio and GC% STDev are N/A <10 genomes as reference")
+            alerts.append("Assembly ratio and GC% STDev are N/A <10 genomes as reference.")
         else:
             alerts.append("Open Github issue assembly ratio STDev is N/A but not GC%. This shouldn't happen.")
     elif str(gc_stdev) == "NA":
@@ -271,23 +271,23 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     warnings = []
     if scaffolds_entry == False:
         if Total_Trimmed_reads == "Unknown" or int(Total_Trimmed_reads) < int(1000000):
-            warnings.append("<1,000,000 trimmed reads")
+            warnings.append("<1,000,000 trimmed reads.")
         if Total_Raw_reads == "Unknown" or int(Total_Raw_reads) < int(1000000):
-            warnings.append("<1,000,000 raw reads")
+            warnings.append("<1,000,000 raw reads.")
         if Q30_R1_per == "Unknown" or float(Q30_R1_per) < float(90.00):
-            warnings.append("Average Q30 of raw R1 reads <{:.2f}%".format(float(90.00)))
+            warnings.append("Average Q30 of raw R1 reads <{:.2f}%.".format(float(90.00)))
         if Q30_R2_per == "Unknown" or float(Q30_R2_per) < float(70.00):
-            warnings.append("Average Q30 of raw R2 reads <{:.2f}%".format(int(70.00)))
+            warnings.append("Average Q30 of raw R2 reads <{:.2f}%.".format(int(70.00)))
         if Trim_Q30_R1_per == "Unknown" or float(Trim_Q30_R1_per) < float(90.00):
-            warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({:.2f}%)".format(float(90.00),float(Trim_Q30_R1_per)))
+            warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({:.2f}%).".format(float(90.00),float(Trim_Q30_R1_per)))
         if Trim_Q30_R2_per == "Unknown" or float(Trim_Q30_R2_per) < float(70.00):
-            warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({:.2f}%)".format(int(70.00), float(Trim_Q30_R2_per)))
+            warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({:.2f}%).".format(int(70.00), float(Trim_Q30_R2_per)))
         if Trim_unclassified_percent == "trimmed" or float(Trim_unclassified_percent) > float(30.00):
-            warnings.append(">{:.2f}% unclassifed trimmed reads".format(int(30)))
+            warnings.append(">{:.2f}% unclassifed trimmed reads.".format(int(30)))
         if len(kraken_trim_genus) >=2:
-            warnings.append(">=2 genera had >{:.2f}% of reads assigned to them".format(int(25)))
+            warnings.append(">=2 genera had >{:.2f}% of reads assigned to them.".format(int(25)))
         if float(Trim_Genus_percent) <float(70.00):
-            warnings.append("<70% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
+            warnings.append("<70% of reads assigned to top genera hit ({:.2f}%).".format(float(Trim_Genus_percent)))
     else:
         pass
     if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
@@ -300,7 +300,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         if float(Wt_asmbld_unclassified_percent) > float(30.00):
             warnings.append(">{:.2f}% unclassifed weighted scaffolds.".format(int(30)))
         if float(Asmbld_Genus_percent) <float(70.00):
-            warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
+            warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%).".format(float(Asmbld_Genus_percent)))
     elif scaffolds == "Unknown" and Wt_asmbld_unclassified_percent == "Unknown" and Asmbld_Genus_percent == "Unknown":
         warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
@@ -394,51 +394,53 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
         kraken_wtasmbld_report = 'Unknown'
     return kraken_trim_genus, kraken_wtasmbld_genus
 
-def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds):
+def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds):
     """Checking auto pass fail conditions"""
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
     QC_reason = []
     QC_result = [] # set as blank to begin with, need this to assign variable in QC_result == "FAIL": line
     QC_result.append("PASS") #set default as PASS
     #check output of fairy and determine if reads were corrupt or had unequal number of reads
-    with open(fairy_file, 'r') as f:
-        for line in f:
-            if ('FAILED CORRUPTION CHECK!' in line):
-                fastq_file_failure = str(line.split(' ')[10])
-                QC_result.append("FAIL")
-                QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped.")
-            if ('FAILED: The number of reads in R1/R2 are NOT the same!' in line):
-                QC_result.append("FAIL")
-                QC_reason.append("The # of reads in raw R1/R2 files are NOT equal.")
-            if ('FAILED: There are 0 reads in' in line):
-                QC_result.append("FAIL")
-                QC_reason.append("No reads remain after trimming.")
-            if ('FAILED: No scaffolds in ' in line):
-                QC_result.append("FAIL")
-                QC_reason.append("No scaffolds were >500bp.")
-    f.close()
+    for fairy_file in fairy_files:
+        with open(fairy_file, 'r') as f:
+            for line in f:
+                if ('FAILED CORRUPTION CHECK!' in line):
+                    fastq_file_failure = str(line.split(' ')[10])
+                    QC_result.append("FAIL")
+                    QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped.")
+                if ('FAILED: The number of reads in R1/R2 are NOT the same!' in line):
+                    QC_result.append("FAIL")
+                    QC_reason.append("The # of reads in raw R1/R2 files are NOT equal.")
+                if ('FAILED: There are 0 reads in' in line):
+                    QC_result.append("FAIL")
+                    QC_reason.append("No reads remain after trimming.")
+                if ('FAILED: No scaffolds in ' in line):
+                    QC_result.append("FAIL")
+                    QC_reason.append("No scaffolds were >500bp.")
+        f.close()
     if scaffolds_entry == False: # if its not being used for scaffolds entry check estimated coverage otherwise don't
         if coverage == "Unknown" or int(coverage) < int(set_coverage):
             QC_result.append("FAIL")
             if coverage == "Unknown": # if else really only needed so you don't end up with "unknownx"
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
+                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ").")
             else:
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
+                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x).")
     else:
         pass
     if length == "Unknown" or int(length) <= 1000000:
         QC_result.append("FAIL")
-        QC_reason.append("assembly <1,000,000bps (" + str(length) + ")")
+        QC_reason.append("assembly <1,000,000bps (" + str(length) + ").")
     if str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
         if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
             QC_result.append("FAIL")
-            QC_reason.append("assembly file not found")
+            QC_reason.append("assembly file not found.")
         elif float(assembly_stdev) > 2.58:
             QC_result.append("FAIL")
-            QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ")")
+            QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ").")
     if str(scaffolds) == "Unknown" or int(scaffolds) > int(500):
         QC_result.append("FAIL")
         QC_reason.append("High scaffold count >500 ({}).".format(str(scaffolds)))
+    QC_reason = set(QC_reason)
     QC_reason = ', '.join(QC_reason)
     #checking if it was a pass
     if any("FAIL" in sub for sub in QC_result):
@@ -882,7 +884,7 @@ def Get_Files(directory, sample_name):
     kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt"
     quast_report = directory + "/quast/" + sample_name + "_summary.tsv"
     mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
-    fairy_file = directory + "/file_integrity/" + sample_name + "_summary.txt"
+    fairy_file = glob.glob(directory + "/file_integrity/" + sample_name + "_*_summary.txt")
     # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
     # You only need this for glob because glob will throw an index error if not.
     try:
@@ -1147,7 +1149,7 @@ def add_srst2(ar_df, srst2_ar_df):
     ar_combined_df = ar_combined_df.join(ar_df)
     #fixing column orders
     ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
-    ar_drugs_list = ar_combined_df.columns.str.extract('.*\((.*)\).*').values.tolist() # get all ar drug names form column names
+    ar_drugs_list = ar_combined_df.columns.str.extract('.*\\((.*)\\).*').values.tolist() # get all ar drug names form column names
     sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
     # create list to add to
@@ -1372,7 +1374,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # add autofilter
     worksheet.autofilter(1, 0, max_row, max_col - 1)
     # Close the Pandas Excel writer and output the Excel file.
-    writer.save()
+    writer.close()
 
 def blind_samples(final_df, control_file):
     """If you passed a file to -c this will swap out sample names to 'blind' the WGS_IDs in the final excel file."""

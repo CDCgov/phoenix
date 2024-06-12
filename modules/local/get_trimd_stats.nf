@@ -1,6 +1,7 @@
 process GET_TRIMD_STATS {
     tag "$meta.id"
     label 'process_single'
+    stageInMode 'copy'
     // base_v2.1.0 - MUST manually change below (line 30)!!!
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
@@ -12,17 +13,17 @@ process GET_TRIMD_STATS {
     val(busco_val)
 
     output:
-    tuple val(meta), path('*_trimmed_read_counts.txt'),          emit: fastp_total_qc
-    tuple val(meta), path('*_summary.txt'),                      emit: outcome
-    path('*_summaryline.tsv'),                    optional:true, emit: summary_line
-    tuple val(meta), path('*_summary_old_3.txt'),                emit: outcome_to_edit
-    tuple val(meta), path('*.synopsis'),          optional:true, emit: synopsis
-    path("versions.yml"),                                        emit: versions
+    tuple val(meta), path('*_trimmed_read_counts.txt'),               emit: fastp_total_qc
+    tuple val(meta), path('*_trimstats_summary.txt'),  optional:true, emit: outcome
+    path('*_summaryline.tsv'),                         optional:true, emit: summary_line
+    tuple val(meta), path('*_summary_old_3.txt'),                     emit: outcome_to_edit
+    tuple val(meta), path('*.synopsis'),               optional:true, emit: synopsis
+    path("versions.yml"),                                             emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
+    else if (params.ica==true) { ica = "python ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -41,7 +42,10 @@ process GET_TRIMD_STATS {
     ${ica}fairy.py -r ${raw_qc} -f ${fairy_outcome} -t ${prefix}_trimmed_read_counts.txt ${busco_parameter}
 
     #making a copy of the summary file to pass to BBMAP_REFORMAT to handle file names being the same
-    cp ${prefix}_summary.txt ${prefix}_summary_old_3.txt
+    cp ${prefix}_trimstats_summary.txt ${prefix}_summary_old_3.txt
+    if ! grep -q "FAILED" ${prefix}_trimstats_summary.txt; then
+        rm ${prefix}_trimstats_summary.txt
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
