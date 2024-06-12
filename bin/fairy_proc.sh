@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #set +e
 #
 # Description: script to check for file integrity and log errors 
@@ -95,7 +95,7 @@ fi
 
 if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
 	#prefix=${prefix%%_*}
-	echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE ${prefix}_${read} FOR CORRUPTION!" >> ${prefix}_summary.txt
+	echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE ${prefix}_${read} FOR CORRUPTION!" >> ${prefix}_corruption_summary.txt
 	
 	#error warning for line_summary channel
 	if [[ "${busco}" == "true" ]]; then
@@ -176,6 +176,6 @@ if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
 	echo "WARNINGS: out of line with what is expected and MAY cause problems downstream."  >> "${sample_name}.synopsis"
 	echo "ALERT: something to note, does not mean it is a poor-quality assembly."  >> "${sample_name}.synopsis"
 else
-	echo "PASSED: File ${prefix}_${read} is not corrupt." >> ${prefix}_summary.txt
+	echo "PASSED: File ${prefix}_${read} is not corrupt." >> ${prefix}_corruption_summary.txt
 	echo "PASSED: File ${prefix}_${read} is not corrupt."
 fi

@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: script to Compare local assembly to the expected assembly size based upon taxonomy file in directory or directly given

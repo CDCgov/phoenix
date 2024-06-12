@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #
 # Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.kraken2 assembly 3.kraken2 reads
 # 	The taxon is chosen based on the highest ranked classifier first

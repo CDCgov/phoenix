@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: Script to format ANI output to include more information on the top line

@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: Script to create empty json for single reads info to be used downstream

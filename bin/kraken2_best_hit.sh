@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: Grabs the best species match based on %/read hits from the kraken tool run. Simplified for nextflow inclusion

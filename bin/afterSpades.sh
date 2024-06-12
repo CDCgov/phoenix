@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: Script to clean up the output of SPAdes

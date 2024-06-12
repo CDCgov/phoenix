@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #
 # Description: Checks sample output folders for correct fiels and tests the thresholds for passability. Edited for use in P
 #
