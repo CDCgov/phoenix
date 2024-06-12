@@ -1,8 +1,7 @@
 process BUSCO {
     tag "$meta.id"
     label 'process_high'
-    // 5.4.7--pyhdfd78af_0
-    container 'quay.io/biocontainers/busco@sha256:f5ef1f64076deb66ed015d0b6692619610eb1de22f0a9741bbf0ea8434d06404'
+    container 'quay.io/biocontainers/busco@sha256:dfdd6716b6ef376bb215fac3de664b4112bd212ef45cfb65a468e4067d4aec5e'
 
     input:
     tuple val(meta), path('tmp_input/*'), path(busco_lineages_path), // path to busco lineages - downloads if not set
