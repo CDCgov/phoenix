@@ -26,7 +26,7 @@ process SPADES {
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "bash ${workflow.launchDir}/bin/" }
+    else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def args = task.ext.args ?: ''
@@ -38,9 +38,50 @@ process SPADES {
     def extended_qc_arg = extended_qc ? "-c" : ""
     def container = task.container.toString() - "staphb/spades@"
     """
-    # preemptively create _summary_line.csv and .synopsis file in case spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
-    ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
-    ${ica}beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
+    # Overwrite default that spades was successful
+    # Lets downstream process know that spades completed ok - see spades_failure.nf subworkflow
+    spades_complete=run_completed
+    echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
+
+    {
+        if [[ -z \$(zcat $unpaired_reads) ]]; then
+            spades.py \\
+                $args \\
+                --threads $task.cpus \\
+                --memory $maxmem \\
+                $input_reads \\
+                --phred-offset $phred_offset\\
+                -o ./
+        else
+            spades.py \\
+                $args \\
+                --threads $task.cpus \\
+                --memory $maxmem \\
+                $single_reads \\
+                $input_reads \\
+                --phred-offset $phred_offset\\
+                -o ./
+        fi
+
+    } || {
+    
+        if [[ ! -e ${prefix}.contigs.fa.gz ]] || [[ -e ${prefix}.scaffolds.fa.gz ]]; then
+
+            # Set default to be that spades fails and doesn't create scaffolds or contigs
+            spades_complete=run_failure
+            echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
+
+            # preemptively create _summary_line.csv and .synopsis file in case spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
+            ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
+            ${ica}beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
+        fi
+    }
+
+    mv spades.log ${prefix}.spades.log
+
+    #This file will determine if downstream process GENERATE_PIPELINE_STATS_FAILURE and CREATE_SUMMARY_LINE_FAILURE will run (if spades creates contigs, but not scaffolds).
+    ${ica}afterSpades.sh
+
     #get version information
     bspades_version=\$(${ica}beforeSpades.sh -V)
     pipestats_version=\$(${ica}pipeline_stats_writer_trimd.sh -V)
@@ -54,45 +95,5 @@ process SPADES {
         \${aspades_version}
         \${pipestats_version}
     END_VERSIONS
-
-    # Set default to be that spades fails and doesn't create scaffolds or contigs
-    spades_complete=run_failure,no_scaffolds,no_contigs
-    echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
-
-    if [[ -z \$(zcat $unpaired_reads) ]]; then
-        spades.py \\
-            $args \\
-            --threads $task.cpus \\
-            --memory $maxmem \\
-            $input_reads \\
-            --phred-offset $phred_offset\\
-            -o ./
-
-    else
-        spades.py \\
-            $args \\
-            --threads $task.cpus \\
-            --memory $maxmem \\
-            $single_reads \\
-            $input_reads \\
-            --phred-offset $phred_offset\\
-            -o ./
-    fi
-
-    mv spades.log ${prefix}.spades.log
-
-    # Overwrite default that spades failed
-    # Lets downstream process know that spades completed ok - see spades_failure.nf subworkflow
-    spades_complete=run_completed
-    echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
-
-    # If spades completed delete the preemptive summary files that were created.
-    rm ${full_outdir}/${prefix}/${prefix}_summaryline_failure.tsv
-    rm ${full_outdir}/${prefix}/${prefix}.synopsis
-
-    #Create a summaryline file that will be deleted later if spades is successful if not this line shows up in the final Phoenix_output_summary file
-    #create file '*_spades_outcome.csv' to state if spades fails, if contigs or scaffolds are created. See spades_failure.nf subworkflow
-    #This file will determine if downstream process GENERATE_PIPELINE_STATS_FAILURE and CREATE_SUMMARY_LINE_FAILURE will run (if spades creates contigs, but not scaffolds).
-    ${ica}afterSpades.sh
     """
 }
