@@ -28,7 +28,7 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     else { error "Please set params.terra to either \"true\" or \"false\"" }
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "bash ${workflow.launchDir}/bin/" }
+    else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"

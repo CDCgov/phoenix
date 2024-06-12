@@ -1,6 +1,7 @@
 process SCAFFOLDS_SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_low'
+    stageInMode 'copy'
     // base_v2.1.0 - MUST manually change below (line 20)!!!
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
