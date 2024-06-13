@@ -9,9 +9,9 @@ process GET_TAXA_FOR_AMRFINDER {
     val(clia_entry)
 
     output:
-    tuple val(meta), path("*_AMRFinder_Organism.csv"), emit: amrfinder_taxa
-    tuple val(meta), path("*_ABRITAMR_Organism.csv"),  emit: abritamr_taxa
-    path("versions.yml"),                              emit: versions
+    tuple val(meta), path("*_AMRFinder_Organism.csv"),               emit: amrfinder_taxa
+    tuple val(meta), path("*_ABRITAMR_Organism.csv"), optional:true, emit: abritamr_taxa
+    path("versions.yml"),                                            emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
