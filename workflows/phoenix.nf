@@ -325,7 +325,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            DETERMINE_TAXA_ID.out.taxonomy
+            DETERMINE_TAXA_ID.out.taxonomy, false
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 

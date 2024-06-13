@@ -33,7 +33,6 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
 include { CORRUPTION_CHECK               } from '../modules/local/fairy_corruption_check'
-include { READ_COUNT_CHECK               } from '../modules/local/fairy_read_count_check'
 include { BBDUK                          } from '../modules/local/bbduk'
 include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
 include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
@@ -53,6 +52,7 @@ include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { ABRITAMR                       } from '../modules/local/abritamr'
+include { ABRITAMR_REPORT                } from '../modules/local/abritamr_report'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
@@ -150,7 +150,7 @@ workflow CLIA_INTERNAL {
         //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
         //The mapping here is just to get things in the right bracket so we can call var[0]
         read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0])
-        .join(CORRUPTION_CHECK.out.outcome.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+        .join(CORRUPTION_CHECK.out.outcome_to_edit.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
 
         //Get stats on raw reads if the reads aren't corrupted
         GET_RAW_STATS (
@@ -159,7 +159,7 @@ workflow CLIA_INTERNAL {
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
 
         // Combining reads with output of corruption check
-        bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
+        bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome_to_edit.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
 
         // Remove PhiX reads
         BBDUK (
@@ -191,7 +191,7 @@ workflow CLIA_INTERNAL {
         ch_versions = ch_versions.mix(GET_TRIMD_STATS.out.versions)
 
         // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
-        trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
+        trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome_to_edit.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
 
         // Running Fastqc on trimmed reads
         FASTQCTRIMD (
@@ -201,7 +201,7 @@ workflow CLIA_INTERNAL {
 
         // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db, "reads"
+            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome_to_edit, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db, "reads"
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -232,7 +232,7 @@ workflow CLIA_INTERNAL {
 
         // Combine bbmap log with the fairy outcome file
         scaffold_check_ch = BBMAP_REFORMAT.out.log.map{meta, log                -> [[id:meta.id], log]}\
-        .join(GET_TRIMD_STATS.out.outcome_to_edit.map{   meta, outcome_to_edit  -> [[id:meta.id], outcome_to_edit]},    by: [0])\
+        .join(GET_TRIMD_STATS.out.outcome_to_edit.map{ meta, outcome_to_edit    -> [[id:meta.id], outcome_to_edit]},    by: [0])\
         .join(GET_RAW_STATS.out.combined_raw_stats.map{meta, combined_raw_stats -> [[id:meta.id], combined_raw_stats]}, by: [0])\
         .join(GET_TRIMD_STATS.out.fastp_total_qc.map{  meta, fastp_total_qc     -> [[id:meta.id], fastp_total_qc]},     by: [0])\
         .join(KRAKEN2_TRIMD.out.report.map{            meta, report             -> [[id:meta.id], report]},             by: [0])\
@@ -246,7 +246,7 @@ workflow CLIA_INTERNAL {
         ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
+        filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}\
         .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
 
         // Getting Assembly Stats
@@ -255,9 +255,9 @@ workflow CLIA_INTERNAL {
         )
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
-       // Add in busco_db into the scaffolds channel so each scaffolds ch has a busco_db to go with it.
+        // Add in busco_db into the scaffolds channel so each scaffolds ch has a busco_db to go with it.
         busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}.combine(busco_db_path)\
-        .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0]) 
+        .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
  
         // Checking single copy genes for assembly completeness
         BUSCO (
@@ -297,8 +297,8 @@ workflow CLIA_INTERNAL {
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}\
-        .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{              meta, top_taxa_list      -> [[id:meta.id], top_taxa_list ]}, by: [0])\
-        .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{              meta, reference_dir      -> [[id:meta.id], reference_dir ]}, by: [0])
+        .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{         meta, top_taxa_list      -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+        .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{         meta, reference_dir      -> [[id:meta.id], reference_dir ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -331,7 +331,7 @@ workflow CLIA_INTERNAL {
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            DETERMINE_TAXA_ID.out.taxonomy
+            DETERMINE_TAXA_ID.out.taxonomy, true
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
@@ -347,8 +347,22 @@ workflow CLIA_INTERNAL {
         )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        abritamr_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{                meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
+        .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{  meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+        .join(GET_TAXA_FOR_AMRFINDER.out.abritamr_taxa.splitCsv(strip:true).map{meta, abritamr_taxa      -> [meta, abritamr_taxa ]}, by: [0])
+
         ABRITAMR (
-            filtered_scaffolds_ch
+            abritamr_ch
+        )
+        ch_versions = ch_versions.mix(ABRITAMR.out.versions)
+
+        abritamr_report_ch = ABRITAMR.out.matches.map{                                                  meta, matches  -> [[id:meta.id], matches]}\
+        .join(ABRITAMR.out.partials.map{                                                                meta, partials -> [[id:meta.id], partials ]}, by: [0])\
+        .join(GET_TAXA_FOR_AMRFINDER.out.abritamr_taxa.splitCsv(strip:true).map{meta, abritamr_taxa -> [meta, abritamr_taxa ]}, by: [0])
+
+        ABRITAMR_REPORT (
+            abritamr_report_ch
         )
         ch_versions = ch_versions.mix(ABRITAMR.out.versions)
 
@@ -445,12 +459,6 @@ workflow CLIA_INTERNAL {
         )
         multiqc_report = MULTIQC.out.report.toList()
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
-    
-    /*emit:
-        scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
-        trimmed_reads    = FASTP_TRIMD.out.reads
-        amrfinder_report = AMRFINDERPLUS_RUN.out.report
-        phx_summary      = GATHER_SUMMARY_LINES.out.summary_report*/
 }
 
 /*

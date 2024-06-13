@@ -11,13 +11,14 @@ import re
 
 # Function to get the script version
 def get_version():
-    return "2.0.0"
+    return "2.1.0" #2.1.0 had --clia added
 
 def parseArgs(args=None):
     """Takes in a taxa file and creates a file with the taxa found"""
     parser = argparse.ArgumentParser(description='Script to generate a PHoeNIx summary line')
     parser.add_argument('-t', '--taxa', dest="taxa_file", required=True, help='.tax file that comes from determine_taxID.sh')
-    parser.add_argument('-o', '--output', dest="output", required=True, help='name of output file')
+    parser.add_argument('-c', '--clia', dest="clia_entry", default=False, action='store_true', help='.tax file that comes from determine_taxID.sh')
+    parser.add_argument('-o', '--output', dest="output", required=True, help='name of output file prefix')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
@@ -114,16 +115,41 @@ def complicated_genus(gen_sp, genus_match):
         taxa="No Match Found"
     return taxa
 
-def write_file(taxa, output_file):
+def write_file(taxa, output_file_prefix, file_name):
     print(taxa)
-    with open(output_file, 'w') as f:
+    with open(output_file_prefix + file_name, 'w') as f:
         f.write(taxa)
+
+
+def abritamr_taxa_check(genus_match, species_match, gen_sp):
+    gen_sp_matches = ["Burkholderia_cepacia, Burkholderia_pseudomallei","Enterobacter_asburiae","Enterobacter_cloacae","Enterococcus_faecalis","Enterococcus_faecium","Klebsiella_oxytoca", "Klebsiella_pneumoniae", 
+                      "Staphylococcus_aureus","Staphylococcus_pseudintermedius","Streptococcus_agalactiae","Streptococcus_pneumoniae","Streptococcus_pyogenes","Vibrio_cholerae","Vibrio_vulfinicus","Vibrio_parahaemolyticus", 
+                      "Neisseria_gonorrhoeae","Neisseria_meningitidis","Acinetobacter_baumannii","Clostridioides_difficile","Citrobacter_freundii","Pseudomonas_aeruginosa","Serratia_marcescens"]
+    if genus_match == "Campylobacter":
+        taxa = str("Campylobacter")
+    elif genus_match == "Escherichia":
+        taxa = str("Escherichia")
+    elif genus_match == "Salmonella":
+        taxa = str("Salmonella")
+    else:
+        for gen_sp_match in gen_sp_matches:
+            if gen_sp == gen_sp_match:
+                taxa = gen_sp_match
+            else:
+                taxa = "No Match Found"
+    return taxa
 
 def main():
     args = parseArgs()
     genus_match, species_match, gen_sp = get_taxa(args.taxa_file)
-    taxa = taxa_check(genus_match, species_match, gen_sp)
-    write_file(taxa, args.output)
+    if args.clia_entry == True:
+        taxa = taxa_check(genus_match, species_match, gen_sp)
+        write_file(taxa, args.output, "_AMRFinder_Organism.csv")
+        taxa = abritamr_taxa_check(genus_match, species_match, gen_sp)
+        write_file(taxa, args.output, "_ABRITAMR_Organism.csv")
+    else:
+        taxa = taxa_check(genus_match, species_match, gen_sp)
+        write_file(taxa, args.output,"_AMRFinder_Organism.csv")
 
 if __name__ == '__main__':
     main()

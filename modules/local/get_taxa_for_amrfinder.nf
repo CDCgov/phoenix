@@ -6,10 +6,12 @@ process GET_TAXA_FOR_AMRFINDER {
 
     input:
     tuple val(meta), path(taxa_file)
+    val(clia_entry)
 
     output:
     tuple val(meta), path("*_AMRFinder_Organism.csv"), emit: amrfinder_taxa
-    path("versions.yml"),                           emit: versions
+    tuple val(meta), path("*_ABRITAMR_Organism.csv"),  emit: abritamr_taxa
+    path("versions.yml"),                              emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -19,9 +21,10 @@ process GET_TAXA_FOR_AMRFINDER {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container_version = "base_v2.1.0"
+    def clia = clia_entry ? "--clia" : "" //add if you are running the clia version to get the taxa for abritamr
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix}_AMRFinder_Organism.csv
+    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix} ${clia}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -4,7 +4,7 @@ process ABRITAMR {
     container "quay.io/biocontainers/abritamr:1.0.17--pyh5707d69_1"
 
     input:
-    tuple val(meta), path(fasta), val(fairy_outcome)
+    tuple val(meta), path(fasta), val(fairy_outcome), val(organism_param)
 
     output:
     tuple val(meta), path("*.summary_matches.txt")  , emit: matches
@@ -12,8 +12,6 @@ process ABRITAMR {
     tuple val(meta), path("*.summary_virulence.txt"), emit: virulence
     tuple val(meta), path("*.amrfinder.out")        , emit: amrfinder
     tuple val(meta), path("*.abritamr.txt")         , emit: summary, optional: true
-    path "*.{log,err}"                              , emit: logs, optional: true
-    path ".command.*"                               , emit: nf_logs
     path "versions.yml"                             , emit: versions
 
     when:
@@ -23,24 +21,28 @@ process ABRITAMR {
     script:
     def is_compressed = fasta.getName().endsWith(".gz") ? true : false
     fasta_name = fasta.getName().replace(".gz", "")
+    // use --species
+    if ( "${organism_param[0]}" != "No Match Found") { species = "--species ${organism_param[0]}" } else { species = "" }
     """
     if [ "$is_compressed" == "true" ]; then
         gzip -c -d $fasta > $fasta_name
     fi
 
+    #have to add ID in front for handling for if the ID is only numbers
     abritamr run \\
         --contigs $fasta_name \\
-        --prefix results \\
-        --jobs $task.cpus
+        --prefix ID_${meta.id} \\
+        --jobs $task.cpus \\
+        $species
 
     # Rename output files to prevent name collisions
-    mv results/summary_matches.txt ./${meta.id}.summary_matches.txt
-    mv results/summary_partials.txt ./${meta.id}.summary_partials.txt
-    mv results/summary_virulence.txt ./${meta.id}.summary_virulence.txt
-    mv results/amrfinder.out ./${meta.id}.amrfinder.out
-    if [ -f results/abritamr.txt ]; then
+    mv ID_${meta.id}/summary_matches.txt ./ID_${meta.id}.summary_matches.txt
+    mv ID_${meta.id}/summary_partials.txt ./ID_${meta.id}.summary_partials.txt
+    mv ID_${meta.id}/summary_virulence.txt ./ID_${meta.id}.summary_virulence.txt
+    mv ID_${meta.id}/amrfinder.out ./ID_${meta.id}.amrfinder.out
+    if [ -f ${meta.id}/abritamr.txt ]; then
         # This file is not always present
-        mv results/abritamr.txt ./${meta.id}.abritamr.txt
+        mv ID_${meta.id}/abritamr.txt ./ID_${meta.id}.abritamr.txt
     fi
 
     cat <<-END_VERSIONS > versions.yml
