@@ -4,9 +4,9 @@
 ========================================================================================
 */
 
-include { CDIFF_CLADE                    } from '../modules/local/centar/cdiff_clade'
-include { CDIFF_PLASMID                  } from '../modules/local/centar/cdiff_plasmid'
-include { GAMMA as CDIFF_GENES           } from '../modules/local/gamma'
+include { CDIFF_CLADE                    } from '../../modules/local/centar/cdiff_clade'
+include { CDIFF_PLASMID                  } from '../../modules/local/centar/cdiff_plasmid'
+include { GAMMA as CDIFF_GENES           } from '../../modules/local/gamma'
 include { CENTAR_CONSOLIDATER            } from '../../modules/local/centar/centar_consolidater'
 
 /*
