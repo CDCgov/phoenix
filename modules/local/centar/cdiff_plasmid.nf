@@ -34,7 +34,8 @@ process CDIFF_CLADE {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         cdiff_clade.sh: \$(${ica}get_cdiff_clade.sh -V)
-        cdiff_clade_container: ${container}
+        phoenix_base_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

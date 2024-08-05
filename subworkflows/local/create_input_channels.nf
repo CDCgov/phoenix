@@ -18,13 +18,14 @@ workflow CREATE_INPUT_CHANNELS {
         if (indir != null) {
 
             // get file_integrity file for MLST updating
-            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_scaffolds_summary.txt')
+            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
             //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
             file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_scaffolds_summary.txt", params.indir.toString())}
+                .map{ it -> create_meta_with_wildcard(it, "_summary.txt", params.indir.toString())}
+            file_integrity_ch.view()
 
             //get list of all samples in the folder - just using the file_integrity file, but it could be any file really
-            def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
+            def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
 
             //create file_integrity file channel with meta information 
             id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
@@ -109,7 +110,7 @@ workflow CREATE_INPUT_CHANNELS {
             def ani_glob = append_to_path(params.indir.toString(),'*/ANI/*.fastANI.txt')
             //create .tax file channel with meta information 
             ani_best_hit_ch = Channel.fromPath(ani_glob) // use created regrex to get samples
-                .map{ it -> create_meta_ani(it, ".fastANI.txt", params.indir.toString())} // create meta for sample
+                .map{ it -> create_meta_with_wildcard(it, ".fastANI.txt", params.indir.toString())} // create meta for sample
             //filtering out failured samples
             filtered_ani_best_hit_ch = ani_best_hit_ch.combine(id_channel).filter{ meta, ani_best_hit, id_channel -> id_channel.contains(meta.id)}.map{ meta, ani_best_hit, id_channel -> [ meta, ani_best_hit ]}
 
@@ -138,6 +139,19 @@ workflow CREATE_INPUT_CHANNELS {
             def line_summary_glob = append_to_path(params.indir.toString(),'*/*_summaryline.tsv')
             line_summary_ch = Channel.fromPath(line_summary_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, "_summaryline.tsv", params.indir.toString())} // create meta for sample
+
+            //////////////////////////// FOR CENTAR ///////////////////////////////////////
+
+            // get files for MLST updating 
+            def combined_mlst = append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
+            //create .tax file channel with meta information 
+            combined_mlst_ch = Channel.fromPath(combined_mlst) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString())} // create meta for sample
+            //filtering out failured samples
+            filtered_combined_mlst_ch = combined_mlst_ch.combine(id_channel).filter{ meta, combined_mlst, id_channel -> id_channel.contains(meta.id)}.map{ meta, combined_mlst, id_channel -> [ meta, combined_mlst ]}
+
+
+            /////////////////////////// PROJECT LEVEL FILES ///////////////////////////////
 
             //filtering out failured samples
             filtered_line_summary_ch = line_summary_ch.combine(id_channel).filter{ meta, line_summary, id_channel -> id_channel.contains(meta.id)}.map{ meta, line_summary, id_channel -> [ meta, line_summary ]}
@@ -198,6 +212,7 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_trimmed_stats_ch = COLLECT_SAMPLE_FILES.out.trimmed_stats
             filtered_quast_ch = COLLECT_SAMPLE_FILES.out.quast_report
             filtered_ani_best_hit_ch = COLLECT_SAMPLE_FILES.out.ani_best_hit
+            filtered_combined_mlst_ch = COLLECT_SAMPLE_FILES.out.combined_mlst
 
             // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
@@ -226,6 +241,7 @@ workflow CREATE_INPUT_CHANNELS {
         valid_samplesheet  = valid_samplesheet
         versions           = ch_versions
         directory_ch       = directory_ch
+        pipeline_info      = pipeline_info_ch
 
         // sample specific files
         filtered_scaffolds = filtered_scaffolds_ch      // channel: [ meta, [ scaffolds_file ] ]
@@ -243,7 +259,7 @@ workflow CREATE_INPUT_CHANNELS {
         k2_bh_summary      = filtered_kraken_bh_ch
         fastp_total_qc     = filtered_trimmed_stats_ch
         quast_report       = filtered_quast_ch
-        pipeline_info      = pipeline_info_ch
+        combined_mlst      = filtered_combined_mlst_ch // for centar entry
 
 }
 
@@ -252,7 +268,6 @@ workflow CREATE_INPUT_CHANNELS {
     GROOVY FUNCTIONS
 ========================================================================================
 */
-
 
 // Function to get list of [ meta, [ directory ] ]
 def create_dir_channels(LinkedHashMap row) {
@@ -304,7 +319,7 @@ def append_to_path(full_path, string) {
     return new_string
 }
 
-def create_meta_ani(sample, file_extension, indir){
+def create_meta_with_wildcard(sample, file_extension, indir){
     '''Creating meta: [[id:sample1], $PATH/sample1_REFSEQ_20240124.fastANI.txt]'''
     def meta = [:] // create meta array
     meta.id = sample.getName().replaceAll(file_extension, "").split('_')[0] // get file name without extention

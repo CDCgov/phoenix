@@ -20,6 +20,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/quast/${meta.id}_summary.tsv"),                              emit: quast_report
     tuple val(meta), path("${meta.id}/ANI/${meta.id}_REFSEQ_*.fastANI.txt"),                       emit: ani_best_hit
     tuple val(meta), path("${meta.id}/qc_stats/*_trimmed_read_counts.txt"),                        emit: trimmed_stats
+    tuple val(meta), path("${meta.id}/mlst/*_combined.tsv"),                                       emit: combined_mlst
     tuple val(meta), path("${meta.id}/${meta.id}_Assembly_ratio_*.txt"),                           emit: assembly_ratio
     tuple val(meta), path("${meta.id}/${meta.id}.synopsis"),                                       emit: synopsis
     tuple val(meta), path("${meta.id}/${meta.id}.tax"),                                            emit: tax

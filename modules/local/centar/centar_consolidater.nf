@@ -15,7 +15,7 @@ process CENTAR_CONSOLIDATER {
     task.ext.when == null || task.ext.when
 
     script:
-     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.terra==false) { terra = ""} 
     else if (params.terra==true) { terra = "-t terra" }
     else { error "Please set params.terra to either \"true\" or \"false\"" }
@@ -26,7 +26,6 @@ process CENTAR_CONSOLIDATER {
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    
     ${ica}Centar_Consolidater.sh \\
         -t ${tox_file} \\
         -c "${clade_file}"
@@ -34,7 +33,8 @@ process CENTAR_CONSOLIDATER {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         Centar_Consolidater.sh: \$(${ica}get_cdiff_clade.sh -V)
-        Centar_Consolidater_container: ${container}
+        phoenix_base_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

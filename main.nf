@@ -407,6 +407,39 @@ workflow UPDATE_CDC_PHOENIX {
 
 }
 
+workflow CENTAR {
+
+    // Check mandatory parameters
+    ch_versions = Channel.empty() // Used to collect the software versions
+    // Check input path parameters to see if they exist
+    if (params.input != null ) {  // if a samplesheet is passed
+        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
+        if (params.indir != null ) { //if samplesheet is passed and an input directory exit
+            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory! Just pick one.' 
+        } else { // if only samplesheet is passed check to make sure input is an actual file
+            def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            ch_input_indir = null //keep input directory null if not passed
+            // get full path for input and make channel
+            if (params.input) { ch_input = file(params.input) }
+        }
+    } else {
+        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
+            ch_input = null //keep samplesheet input null if not passed
+            def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            ch_input_indir = Channel.fromPath(params.indir, relative: true)
+            //ch_input_indir.view()
+        } else { // if no samplesheet is passed and no input directory is given
+            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
+        }
+    }
+
+    main:
+        RUN_CENTAR ( ch_input, ch_input_indir, ch_versions )
+
+}
+
 /*
 ========================================================================================
     THE END

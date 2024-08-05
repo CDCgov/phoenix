@@ -84,8 +84,11 @@ def filter_out_meta(input_ch) {
     return [ filteredList, indir ]
 }
 
-def remove_last_element(input_ch) {
-    return input_ch.remove(-1)
+def create_meta(input_ch) {
+    def meta = [:] // create meta array
+    meta.project_id = input_ch.getName().replaceAll("_GRiPHin_Summary.xlsx", "")
+    array = [ meta, input_ch ]
+    return array
 }
 
 /*
@@ -215,9 +218,11 @@ workflow UPDATE_CDC_PHOENIX_EXQC {
         ch_versions = ch_versions.mix(GRIPHIN_COPY.out.versions)
 
         // combine by project_id - > this will need to be adjusted in CDC_PHOENIX and PHOENIX
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[id:meta.id, project_id:meta.project_id], griphin_excel_ch]}\
-        .join(GRIPHIN_COPY.out.griphin_report.map{                   meta, griphin_report   -> [[id:meta.id, project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[id:meta.id, project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{         meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(GRIPHIN_COPY.out.griphin_report.map{ it -> create_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [0])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                     meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [0])
+
+        griphins_ch.view()
 
         UPDATE_GRIPHIN (
             griphins_ch, params.coverage
