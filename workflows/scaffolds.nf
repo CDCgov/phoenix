@@ -58,7 +58,7 @@ include { GRIPHIN                        } from '../modules/local/griphin'
 ========================================================================================
 */
 
-include { CREATE_INPUT_CHANNEL                     } from '../subworkflows/local/create_input_channel'
+include { CREATE_SCAFFOLDS_INPUT_CHANNEL           } from '../subworkflows/local/create_scaffolds_input_channel'
 include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'
@@ -132,10 +132,10 @@ workflow SCAFFOLDS_EXTERNAL {
         // Allow relative paths for krakendb argument
         kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
-        CREATE_INPUT_CHANNEL (
+        CREATE_SCAFFOLDS_INPUT_CHANNEL (
             ch_input_indir, ch_input, ch_versions
         )
-        ch_versions = ch_versions.mix(CREATE_INPUT_CHANNEL.out.versions)
+        ch_versions = ch_versions.mix(CREATE_SCAFFOLDS_INPUT_CHANNEL.out.versions)
 
         //unzip any zipped databases
         ASSET_CHECK (
@@ -250,7 +250,8 @@ workflow SCAFFOLDS_EXTERNAL {
             [], \
             DETERMINE_TAXA_ID.out.taxonomy, \
             ASSET_CHECK.out.mlst_db, \
-            false
+            false, \
+            "original" // this is opposed to the "update" option.
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
@@ -343,7 +344,7 @@ workflow SCAFFOLDS_EXTERNAL {
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
         // Collect all the summary files prior to fetch step to force the fetch process to wait
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect()
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{ meta, line_summary -> [line_summary]}.collect()
         // collect the failed fairy summary lines
         fairy_summary_ch = SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] )
         // pulling it all together

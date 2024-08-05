@@ -309,7 +309,8 @@ workflow PHOENIX_EXTERNAL {
             FASTP_TRIMD.out.reads, \
             DETERMINE_TAXA_ID.out.taxonomy, \
             ASSET_CHECK.out.mlst_db, \
-            false
+            false, \
+            "original" // this is opposed to the "update" option.
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
@@ -401,7 +402,7 @@ workflow PHOENIX_EXTERNAL {
         // Collect all the summary files prior to fetch step to force the fetch process to wait
         failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
         // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().ifEmpty( [] )
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{ meta, line_summary -> [line_summary]}.collect().ifEmpty( [] )
 
         // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
         FETCH_FAILED_SUMMARIES (
