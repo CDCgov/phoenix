@@ -39,7 +39,7 @@ include { UPDATE_GRIPHIN                 } from '../modules/local/updater/update
 */
 include { CREATE_INPUT_CHANNELS          } from '../subworkflows/local/create_input_channels'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
-include { DO_MLST                        } from '../subworkflows/local/do_mlst'
+include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_steps'
 
 /*
 ========================================================================================
@@ -87,7 +87,7 @@ def create_meta(input_ch) {
 ========================================================================================
 */
 
-workflow UPDATE_CDC_PHOENIX_EXQC {
+workflow RUN_CENTAR {
     take:
         ch_input
         ch_input_indir
@@ -110,29 +110,70 @@ workflow UPDATE_CDC_PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
-        CDIFF_CLADE(
-            CREATE_INPUT_CHANNELS.out.combined_mlst, ASSET_CHECK.out.mlst_db
+        CENTAR_SUBWORKFLOW (
+            CREATE_INPUT_CHANNELS.out.combined_mlst,
+            CREATE_INPUT_CHANNELS.out.fairy_outcome,
+            CREATE_INPUT_CHANNELS.out.filtered_scaffolds,
+            ASSET_CHECK.out.mlst_db,
         )
-        ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
+        ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
 
-        CDIFF_PLASMID(
-            CREATE_INPUT_CHANNELS.out.combined_mlst, ASSET_CHECK.out.mlst_db
+        // update synopsis file?
+
+        /*/ Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
+        line_summary_ch = CREATE_INPUT_CHANNELS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id, project_id:meta.project_id], fastp_total_qc]}\
+        .join(DO_MLST.out.checked_MLSTs.map{                           meta, checked_MLSTs   -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]},  by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{                  meta, gamma_hv        -> [[id:meta.id, project_id:meta.project_id], gamma_hv]},       by: [[0][0],[0][1]])\
+        .join(GAMMA_AR.out.gamma.map{                                  meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},          by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{                  meta, gamma_pf        -> [[id:meta.id, project_id:meta.project_id], gamma_pf]},       by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.quast_report.map{              meta, quast_report    -> [[id:meta.id, project_id:meta.project_id], quast_report]},   by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.assembly_ratio.map{            meta, assembly_ratio  -> [[id:meta.id, project_id:meta.project_id], assembly_ratio]}, by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.synopsis.map{                  meta, synopsis        -> [[id:meta.id, project_id:meta.project_id], synopsis]},       by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{                  meta, taxonomy        -> [[id:meta.id, project_id:meta.project_id], taxonomy]},       by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.k2_bh_summary.map{             meta, k2_bh_summary   -> [[id:meta.id, project_id:meta.project_id], k2_bh_summary]},  by: [[0][0],[0][1]])\
+        .join(AMRFINDERPLUS_RUN.out.report.map{                        meta, report          -> [[id:meta.id, project_id:meta.project_id], report]},         by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.ani_best_hit.map{              meta, ani_best_hit    -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},   by: [[0][0],[0][1]])
+
+        // Generate summary per sample
+        CREATE_SUMMARY_LINE (
+            line_summary_ch
         )
-        ch_versions = ch_versions.mix(CDIFF_PLASMID.out.versions)
+        ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
-        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        filtered_scaffolds_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
-        .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+        // Extract the list of project folders from input_dir channel
+        project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map { it[1] }.collect().toList()
 
-        CDIFF_GENES(
-            filtered_scaffolds_ch, params.cdiff_db
+        // Collect all the summary files and filter to keep those that have the correct project_id
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().filter { line_summary ->
+            def project_id = line_summary[0].project_id
+            project_ids.contains(project_id)}
+            .join(CREATE_INPUT_CHANNELS.out.directory_ch, by: [[0][0],[0][1]])
+            .map { it -> filter_out_meta(it) }// Convert to a list to use indexing
+
+        // Combining sample summaries into final report
+        GATHER_SUMMARY_LINES (
+            summaries_ch.map{ summary_line, dir -> summary_line}, summaries_ch.map{ summary_line, dir -> dir}, true
         )
-        ch_versions = ch_versions.mix(CDIFF_GENES.out.versions)
+        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-        CENTAR_CONSOLIDATER(
-            CDIFF_GENES.out.gamma, CDIFF_CLADE.out.clade
+        GRIPHIN_COPY (
+            summaries_ch.map{ summary_line, dir -> summary_line}, \
+            CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
+            summaries_ch.map{ summary_line, dir -> dir.toString()}, params.coverage, true, false
         )
-        ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN_COPY.out.versions)
+
+        // combine by project_id - > this will need to be adjusted in CDC_PHOENIX and PHOENIX
+        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{         meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(GRIPHIN_COPY.out.griphin_report.map{ it -> create_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [0])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                     meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [0])
+
+        griphins_ch.view()
+
+        UPDATE_GRIPHIN (
+            griphins_ch, params.coverage
+        )
+        ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
         /// need to figure out how to do this on a per directory 
         // Collecting the software versions
@@ -140,11 +181,21 @@ workflow UPDATE_CDC_PHOENIX_EXQC {
             ch_versions.unique().collectFile(name: 'collated_versions.yml')
         )
 
-    /*emit:
-        mlst             = DO_MLST.out.checked_MLSTs
-        amrfinder_output = AMRFINDERPLUS_RUN.out.report
-        gamma_ar         = GAMMA_AR.out.gamma
-        phx_summary      = GATHER_SUMMARY_LINES.out.summary_report*/
+        //
+        // MODULE: MultiQC
+        //
+        workflow_summary    = WorkflowPhoenix.paramsSummaryMultiqc(workflow, summary_params)
+        ch_workflow_summary = Channel.value(workflow_summary)
+
+        ch_multiqc_files = Channel.empty()
+        ch_multiqc_files = ch_multiqc_files.mix(Channel.from(ch_multiqc_config))
+        ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+        ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+
+    emit:
+        amrfinder_output = CENTAR_CONSOLIDATER.out.report*/
+
 }
 
 /*

@@ -1,4 +1,4 @@
-process CDIFF_CLADE {
+process CDIFF_PLASMID {
     tag "$meta.id"
     label 'process_single'
     // base_v2.1.0 - MUST manually change below (line 23)!!!
@@ -27,9 +27,7 @@ process CDIFF_CLADE {
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     
-    ${ica}get_cdiff_clade.sh \\
-        -m ${mlst_combined_file} \\
-        -r "${mlst_db}"
+        ????
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

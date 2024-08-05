@@ -92,6 +92,22 @@ include { DO_MLST                        } from '../subworkflows/local/do_mlst'
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
+
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim()
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim()
+            }
+        }
+        return "$genus $species"
+}
+
+
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -347,6 +363,18 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
+        // Run centar if necessary
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)} == "Clostridioides difficile" && params.centar == true) {
+            CENTAR_SUBWORKFLOW (
+                DO_MLST.out.combined_mlst,
+                SCAFFOLD_COUNT_CHECK.out.outcome,
+                filtered_scaffolds_ch,
+                ASSET_CHECK.out.mlst_db,
+            )
+            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        }
+
+
         // get gff and protein files for amrfinder+
         PROKKA (
             filtered_scaffolds_ch, [], []
@@ -462,7 +490,7 @@ workflow PHOENIX_EXQC {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, params.centar
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
