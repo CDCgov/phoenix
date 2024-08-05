@@ -136,7 +136,7 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
         print("Warning: " + sample_name + ".wtasmbld_summary.txt not found")
         Asmbld_kraken = 'Unknown'
         Asmbld_unclassified_percent = "Unknown"
-        Asmbld_Genus_percent = 0
+        Asmbld_Genus_percent = "Unknown"
         scheme_guess_kraken_wt = ""
     return Trim_kraken, Trim_Genus_percent, Asmbld_kraken, Asmbld_Genus_percent, Trim_unclassified_percent, Asmbld_unclassified_percent, scheme_guess_kraken_wt, scheme_guess_kraken_trimd
 
@@ -271,40 +271,50 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     warnings = []
     if scaffolds_entry == False:
         if Total_Trimmed_reads == "Unknown" or int(Total_Trimmed_reads) < int(1000000):
-            warnings.append("<1,000,000 trimmed reads.")
+            warnings.append("<1,000,000 trimmed reads")
         if Total_Raw_reads == "Unknown" or int(Total_Raw_reads) < int(1000000):
-            warnings.append("<1,000,000 raw reads.")
+            warnings.append("<1,000,000 raw reads")
         if Q30_R1_per == "Unknown" or float(Q30_R1_per) < float(90.00):
-            warnings.append("Average Q30 of raw R1 reads <{:.2f}%.".format(float(90.00)))
+            warnings.append("Average Q30 of raw R1 reads <{:.2f}%".format(float(90.00)))
         if Q30_R2_per == "Unknown" or float(Q30_R2_per) < float(70.00):
-            warnings.append("Average Q30 of raw R2 reads <{:.2f}%.".format(int(70.00)))
+            warnings.append("Average Q30 of raw R2 reads <{:.2f}%".format(int(70.00)))
         if Trim_Q30_R1_per == "Unknown" or float(Trim_Q30_R1_per) < float(90.00):
-            warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({:.2f}%).".format(float(90.00),float(Trim_Q30_R1_per)))
+            try:
+                warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({:.2f}%)".format(float(90.00),float(Trim_Q30_R1_per)))
+            except ValueError:
+                warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({})".format(float(90.00),Trim_Q30_R1_per))
         if Trim_Q30_R2_per == "Unknown" or float(Trim_Q30_R2_per) < float(70.00):
-            warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({:.2f}%).".format(int(70.00), float(Trim_Q30_R2_per)))
-        if Trim_unclassified_percent == "trimmed" or float(Trim_unclassified_percent) > float(30.00):
+            try:
+                warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({:.2f}%)".format(float(90.00),float(Trim_Q30_R2_per)))
+            except ValueError:
+                warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({})".format(float(90.00),Trim_Q30_R2_per))
+        if Trim_unclassified_percent == "Unknown" or float(Trim_unclassified_percent) > float(30.00):
             warnings.append(">{:.2f}% unclassifed trimmed reads.".format(int(30)))
         if len(kraken_trim_genus) >=2:
             warnings.append(">=2 genera had >{:.2f}% of reads assigned to them.".format(int(25)))
-        if float(Trim_Genus_percent) <float(70.00):
-            warnings.append("<70% of reads assigned to top genera hit ({:.2f}%).".format(float(Trim_Genus_percent)))
+        if Trim_Genus_percent == "Unknown" or float(Trim_Genus_percent) <float(70.00):
+            try:
+                warnings.append("<70% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
+            except ValueError:
+                warnings.append("<70% of reads assigned to top genera hit ({})".format(Trim_Genus_percent))
+
     else:
         pass
     if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
         # sample_gc > (species_gc_mean + out_of_range_stdev)
         if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
-            warnings.append("GC% >2.58 stdev away from mean GC of {:.2f}%.".format(float(gc_metrics[3])))
+            warnings.append("GC% >2.58 stdev away from mean GC of {:.2f}%".format(float(gc_metrics[3])))
     if scaffolds != "Unknown" and Wt_asmbld_unclassified_percent != "Unknown" and Asmbld_Genus_percent != "Unknown":
         if int(scaffolds) > int(200) and int(scaffolds) < int(500): # between 200-500 
-            warnings.append("High scaffold count 200-500 ({}).".format(int(scaffolds)))
+            warnings.append("High scaffold count 200-500 ({})".format(int(scaffolds)))
         if float(Wt_asmbld_unclassified_percent) > float(30.00):
-            warnings.append(">{:.2f}% unclassifed weighted scaffolds.".format(int(30)))
+            warnings.append(">{:.2f}% unclassifed weighted scaffolds".format(int(30)))
         if float(Asmbld_Genus_percent) <float(70.00):
-            warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%).".format(float(Asmbld_Genus_percent)))
+            warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     elif scaffolds == "Unknown" and Wt_asmbld_unclassified_percent == "Unknown" and Asmbld_Genus_percent == "Unknown":
         warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
-        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them.".format(int(25))) 
+        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
         if genus == "Enterobacter" and MLST_scheme_1 == "ecloacae":
             pass
@@ -319,7 +329,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         elif (genus == "Shigella" or genus == "Escherichia") and MLST_scheme_1.startswith("ecoli"):
             pass
         else:
-            warnings.append("Check 1st MLST scheme matches taxa IDed.")
+            warnings.append("Check 1st MLST scheme matches taxa IDed")
     if MLST_scheme_2 != "-" and not MLST_scheme_2.startswith(scheme_guess):
         if genus == "Enterobacter" and MLST_scheme_2 == "ecloacae":
             pass
@@ -334,15 +344,15 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         elif (genus == "Shigella" or genus == "Escherichia") and MLST_scheme_2.startswith("ecoli"):
             pass
         else:
-            warnings.append("Check 2nd MLST scheme matches taxa IDed.")
+            warnings.append("Check 2nd MLST scheme matches taxa IDed")
     if FastANI_ID != "Unknown":
         if float(FastANI_ID) < float(95.00):
-            warnings.append("FastANI match is <95%.")
+            warnings.append("FastANI match is <95%")
         if float(FastANI_coverage) < float(90.00):
-            warnings.append("FastANI coverage is <90%.")
+            warnings.append("FastANI coverage is <90%")
     if busco_id != "Unknown":
         if float(busco_id) < float(97.00):
-            warnings.append("BUSCO match is <97%.")
+            warnings.append("BUSCO match is <97%")
     #add in fastani warning
     if fastani_warning != None:
         warnings.append(fastani_warning)
@@ -407,39 +417,39 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
                 if ('FAILED CORRUPTION CHECK!' in line):
                     fastq_file_failure = str(line.split(' ')[10])
                     QC_result.append("FAIL")
-                    QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped.")
+                    QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped")
                 if ('FAILED: The number of reads in R1/R2 are NOT the same!' in line):
                     QC_result.append("FAIL")
-                    QC_reason.append("The # of reads in raw R1/R2 files are NOT equal.")
+                    QC_reason.append("The # of reads in raw R1/R2 files are NOT equal")
                 if ('FAILED: There are 0 reads in' in line):
                     QC_result.append("FAIL")
-                    QC_reason.append("No reads remain after trimming.")
+                    QC_reason.append("No reads remain after trimming")
                 if ('FAILED: No scaffolds in ' in line):
                     QC_result.append("FAIL")
-                    QC_reason.append("No scaffolds were >500bp.")
+                    QC_reason.append("No scaffolds were >500bp")
         f.close()
     if scaffolds_entry == False: # if its not being used for scaffolds entry check estimated coverage otherwise don't
         if coverage == "Unknown" or int(coverage) < int(set_coverage):
             QC_result.append("FAIL")
             if coverage == "Unknown": # if else really only needed so you don't end up with "unknownx"
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ").")
+                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
             else:
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x).")
+                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
     else:
         pass
     if length == "Unknown" or int(length) <= 1000000:
         QC_result.append("FAIL")
-        QC_reason.append("assembly <1,000,000bps (" + str(length) + ").")
+        QC_reason.append("assembly <1,000,000bps (" + str(length) + ")")
     if str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
         if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
             QC_result.append("FAIL")
-            QC_reason.append("assembly file not found.")
+            QC_reason.append("assembly file not found")
         elif float(assembly_stdev) > 2.58:
             QC_result.append("FAIL")
-            QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ").")
+            QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ")")
     if str(scaffolds) == "Unknown" or int(scaffolds) > int(500):
         QC_result.append("FAIL")
-        QC_reason.append("High scaffold count >500 ({}).".format(str(scaffolds)))
+        QC_reason.append("High scaffold count >500 ({})".format(str(scaffolds)))
     QC_reason = set(QC_reason)
     QC_reason = ', '.join(QC_reason)
     #checking if it was a pass
@@ -649,7 +659,7 @@ def parse_ani(fast_ani_file):
         scheme_guess = "NA NA"
         fastani_warning = "No hits with >=80% ANI."
     else:
-        fastani_warning = None
+        fastani_warning = ""
         ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
@@ -762,7 +772,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         print("Warning: " + sample_name + ".fastANI.txt not found")
         ani_source_file = fastani_ID = fastani_coverage = fastani_organism = 'Unknown'
         FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
-        scheme_guess_fastani = ""
+        scheme_guess_fastani = fastani_warning = ""
     try:
         ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df)
     except FileNotFoundError: 
@@ -1125,28 +1135,8 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
         srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
     return srst2_ar_df
 
-def add_srst2(ar_df, srst2_ar_df):
-    ar_combined_df = pd.DataFrame() #create new dataframe to fill
+def order_ar_gene_columns(ar_combined_df):
     ar_combined_ordered_df = pd.DataFrame() #create new dataframe to fill
-    common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
-    # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
-    for col in common_cols:
-        if col != "WGS_ID":
-            ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
-            ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
-            ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
-        else:
-            ar_combined_df[col] = srst2_ar_df[col]
-    # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
-    # drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
-    srst2_ar_df.drop(common_cols, axis = 1, inplace=True) # This will leave GAMMA- samples
-    ar_df.drop(common_cols, axis = 1, inplace=True)
-    # Add cols that are unique to srst2
-    ############### DEDUPING FOR SRST2 ###############
-    srst2_ar_df = srst2_dedup(srst2_ar_df, ar_df.join(ar_combined_df))
-    ar_combined_df = ar_combined_df.join(srst2_ar_df)
-    # Add cols that are unique to gamma ar_df
-    ar_combined_df = ar_combined_df.join(ar_df)
     #fixing column orders
     ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\\((.*)\\).*').values.tolist() # get all ar drug names form column names
@@ -1167,6 +1157,31 @@ def add_srst2(ar_df, srst2_ar_df):
     all_column_names.insert(0, "AR_Database")
     # reorder columns - should be alphabetical by drug name and within drug name genes are alphabetically listed
     ar_combined_ordered_df = ar_combined_ordered_df.reindex(all_column_names, axis=1)
+    return ar_combined_ordered_df
+
+def add_srst2(ar_df, srst2_ar_df):
+    ar_combined_df = pd.DataFrame() #create new dataframe to fill
+    common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
+    # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
+    for col in common_cols:
+        if col != "WGS_ID":
+            ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
+            ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
+            ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
+        else:
+            ar_combined_df[col] = srst2_ar_df[col]
+    # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
+    # drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
+    srst2_ar_df.drop(common_cols, axis = 1, inplace=True) # This will leave GAMMA- samples
+    ar_df.drop(common_cols, axis = 1, inplace=True)
+    # Add cols that are unique to srst2
+    ############### DEDUPING FOR SRST2 ###############
+    srst2_ar_df = srst2_dedup(srst2_ar_df, ar_df.join(ar_combined_df))
+    ar_combined_df = ar_combined_df.join(srst2_ar_df)
+    # Add cols that are unique to gamma ar_df
+    ar_combined_df = ar_combined_df.join(ar_df)
+    #fixing column orders
+    ar_combined_ordered_df = order_ar_gene_columns(ar_combined_df)
     return ar_combined_ordered_df
 
 def big5_check(final_ar_df):

@@ -264,3 +264,21 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
       - Version [2024-01-31.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.12/)  
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) and [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/) haven't changed since last version release.
+
+## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (XX/XX/2024)
+
+**Implemented Enhancements:** 
+ - Creation of `-entry UPDATE_CDC_PHOENIX` to take in a phoenix directory and update MLST and AR calls
+
+**Fixed Bugs:**
+- Changes were made to allow `-resume` to work correctly.
+
+**Container Updates:**  
+- Containers updated to include developers bug fixes:  
+  - busco: v5.4.7--pyhdfd78af_0 to v5.7.1--pyhdfd78af_0  
+
+**Database Updates:**  
+- Curated AR gene database was updated on 2024-02-29 (yyyy-mm-dd) to include the new AMRFinder database:
+   - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
+      - Version [2024-01-31.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.12/)  
+   - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) and [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/) haven't changed since last version release.
