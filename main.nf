@@ -407,6 +407,10 @@ workflow UPDATE_CDC_PHOENIX {
 
 }
 
+//
+// WORKFLOW: Entry point for running C. diff specific pipeline as standalone
+//
+
 workflow CENTAR {
 
     // Check mandatory parameters

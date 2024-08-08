@@ -12,6 +12,7 @@ include { GAMMA as CDIFF_AR_GENES        } from '../../modules/local/gamma'
 include { WGMLST                         } from '../../modules/local/centar/pn20_wgmlst'
 include { CDIFF_RIBOTYPER                } from '../../modules/local/centar/cdiff_ribotyper'
 include { CENTAR_CONSOLIDATER            } from '../../modules/local/centar/centar_consolidater'
+include { KRAKEN2_WF as KRAKEN2_PLASMID  } from './kraken2krona'
 
 /*
 ========================================================================================

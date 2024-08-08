@@ -374,7 +374,6 @@ workflow PHOENIX_EXQC {
             ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
         }
 
-
         // get gff and protein files for amrfinder+
         PROKKA (
             filtered_scaffolds_ch, [], []
