@@ -5,8 +5,12 @@
 */
 
 include { CDIFF_CLADE                    } from '../../modules/local/centar/cdiff_clade'
+include { CDIFF_TOXINOTYPER              } from '../../modules/local/centar/cdiff_toxinotyper'
 include { CDIFF_PLASMID                  } from '../../modules/local/centar/cdiff_plasmid'
-include { GAMMA as CDIFF_GENES           } from '../../modules/local/gamma'
+include { GAMMA as CDIFF_TOX_GENES       } from '../../modules/local/gamma'
+include { GAMMA as CDIFF_AR_GENES        } from '../../modules/local/gamma'
+include { WGMLST                         } from '../../modules/local/centar/pn20_wgmlst'
+include { CDIFF_RIBOTYPER                } from '../../modules/local/centar/cdiff_ribotyper'
 include { CENTAR_CONSOLIDATER            } from '../../modules/local/centar/centar_consolidater'
 
 /*
@@ -32,23 +36,55 @@ workflow CENTAR_SUBWORKFLOW {
         )
         ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
 
-        /*CDIFF_PLASMID( // not written yet, just a placeholder
-            ????
+        CDIFF_PLASMIDS( 
+            filtered_scaffolds_ch, params.cdiff_wgmlst_blast_db
         )
-        ch_versions = ch_versions.mix(CDIFF_PLASMID.out.versions)*/
+        ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)*/
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         filtered_scaffolds_ch = filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
         .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
 
-        // Running gamma to identify hypervirulence genes in scaffolds
-        CDIFF_GENES (
-            filtered_scaffolds_ch, params.cdiff_gene_db
+        // Running gamma to identify toxin genes in scaffolds for general presence
+        CDIFF_TOX_GENES (
+            filtered_scaffolds_ch, params.cdiff_tox_gene_db
         )
-        ch_versions = ch_versions.mix(CDIFF_GENES.out.versions)
+        ch_versions = ch_versions.mix(CDIFF_TOX_GENES.out.versions)
+
+        // Running gamma to identify Cdiff specific AR genes in scaffolds
+        CDIFF_AR_GENES (
+            filtered_scaffolds_ch, params.cdiff_ar_gene_db
+        )
+        ch_versions = ch_versions.mix(CDIFF_AR_GENES.out.versions)
+
+        // Running blat to identify diffbase toxin genes for specific toxinotyping
+        CDIFF_TOXINOTYPER (
+            filtered_scaffolds_ch, params.cdiff_diffbase_AA, params.cdiff_diffbase_definitions
+        )
+        ch_versions = ch_versions.mix(CDIFF_TOXINOTYPER.out.versions)
+
+        // Running blat to identify diffbase toxin genes for specific toxinotyping
+        WGMLST (
+            filtered_scaffolds_ch, params.cdiff_wgmlst
+        )
+        ch_versions = ch_versions.mix(WGMLST.out.versions)
+
+        // Running blat to identify diffbase toxin genes for specific toxinotyping
+        CDIFF_RIBOTYPER (
+            WGMLST.out.wgmlst_alleles, params.cdiff_diffbase_AA, params.cdiff_diffbase_definitions
+        )
+        ch_versions = ch_versions.mix(CDIFF_RIBOTYPER.out.versions)
+
+        // Join everything together based on meta.id
+        cdiff_summary_ch = CDIFF_TOX_GENES.out.gamma.map{        meta, gamma           -> [[id:meta.id], gamma]}\
+        .join(CDIFF_CLADE.out.clade.map{                         meta, clade           -> [[id:meta.id], clade]},             by: [0])\
+        .join(CDIFF_TOXINOTYPER.out.tox_file.map{                meta, tox_file        -> [[id:meta.id], tox_file]},          by: [0])\
+        .join(CDIFF_AR_GENES.out.gamma.map{                      meta, gamma           -> [[id:meta.id], gamma]},             by: [0])\
+        .join(CDIFF_PLASMIDS.out.plasmid_file.map{               meta, plasmid_file    -> [[id:meta.id], plasmid_file]},      by: [0])\
+        .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype        -> [[id:meta.id], ribotype_file]},     by: [0])
 
         CENTAR_CONSOLIDATER(
-           CDIFF_GENES.out.gamma, CDIFF_CLADE.out.clade
+           cdiff_summary_ch
         )
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
 

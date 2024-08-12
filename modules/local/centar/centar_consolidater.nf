@@ -5,7 +5,7 @@ process CENTAR_CONSOLIDATER {
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
-    tuple val(meta), path(tox_file), path(clade_file)
+    tuple val(meta), path(tox_file), path(clade_file), path(toxinotype_file), path(other_AR_file), path(rt_file), ${plasmid_file}
 
     output:
     tuple val(meta), path("*clade.tsv"), emit: clade
@@ -28,11 +28,15 @@ process CENTAR_CONSOLIDATER {
     """
     ${ica}Centar_Consolidater.sh \\
         -t ${tox_file} \\
-        -c "${clade_file}"
+        -c ${clade_file} \\
+        -t ${toxinotype_file} \\
+        -a ${other_ar_file} \\
+        -r ${rt_file} \\
+        -p ${plasmid_file}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        Centar_Consolidater.sh: \$(${ica}get_cdiff_clade.sh -V)
+        \$(${ica}Centar_Consolidator.sh -V)
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS
