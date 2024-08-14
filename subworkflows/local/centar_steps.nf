@@ -81,7 +81,7 @@ workflow CENTAR_SUBWORKFLOW {
         .join(CDIFF_CLADE.out.clade.map{                         meta, clade           -> [[id:meta.id], clade]},         by: [0])\
         .join(CDIFF_TOXINOTYPER.out.tox_file.map{                meta, tox_file        -> [[id:meta.id], tox_file]},      by: [0])\
         .join(CDIFF_AR_GENES.out.gamma.map{                      meta, gamma           -> [[id:meta.id], gamma]},         by: [0])\
-        .join(CDIFF_PLASMIDS.out.plasmid_file.map{               meta, plasmid_file    -> [[id:meta.id], plasmid_file]},  by: [0])\
+        .join(CDIFF_PLASMIDS.out.plasmids_file.map{              meta, plasmids_file   -> [[id:meta.id], plasmids_file]}, by: [0])\
         .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype        -> [[id:meta.id], ribotype_file]}, by: [0])
 
         CENTAR_CONSOLIDATER(
@@ -90,7 +90,7 @@ workflow CENTAR_SUBWORKFLOW {
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
 
     emit:
-        consolidated_centar = CENTAR_CONSOLIDATER.out.report
+        consolidated_centar = CENTAR_CONSOLIDATER.out.centar_summary_line
         versions            = ch_versions // channel: [ versions.yml ]
 
 }
