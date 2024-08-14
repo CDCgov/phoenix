@@ -18,12 +18,13 @@ workflow CREATE_INPUT_CHANNELS {
         if (indir != null) {
 
             // get file_integrity file for MLST updating
-            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_scaffolds_summary.txt')
+            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
             //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
             file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_scaffolds_summary.txt", params.indir.toString())}
+                .map{ it -> create_meta(it, "_summary.txt", params.indir.toString())}
+                .combine(id_channel).filter{ meta, file_integrity, id_channel -> id_channel.contains(meta.id)}.map{ meta, file_integrity, id_channel -> [ meta, file_integrity ]}
 
-            //get list of all samples in the folder - just using the file_integrity file, but it could be any file really
+            //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
             def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
 
             //create file_integrity file channel with meta information 

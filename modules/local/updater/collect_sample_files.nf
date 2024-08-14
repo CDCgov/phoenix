@@ -8,7 +8,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path(dir)
 
     output:
-    tuple val(meta), path("${meta.id}/file_integrity/${meta.id}_scaffolds_summary.txt"),           emit: fairy_summary
+    tuple val(meta), path("${meta.id}/file_integrity/${meta.id}*summary.txt"),                     emit: fairy_summary
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_1.trim.fastq.gz"),                    emit: read1
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_2.trim.fastq.gz"),                    emit: read2
     tuple val(meta), path("${meta.id}/assembly/${meta.id}.filtered.scaffolds.fa.gz"),              emit: scaffolds

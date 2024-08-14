@@ -99,7 +99,7 @@ def check_samplesheet(file_in, file_out):
                 path = str(dir).strip()[:-1]
             else:
                 path = str(dir).strip()
-            files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
+            #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
             files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
             files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
             files.append(path + "/" + sample_folder + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
@@ -115,16 +115,22 @@ def check_samplesheet(file_in, file_out):
                 #last_slash_index = path.rfind('/')
                 # Slice the string up to and including the last slash
                 #project_path = path[:last_slash_index + 1]
-            print(sample_name)
-            print(path)
-            print(glob.glob(path + "/*_GRiPHin_Summary.xlsx"))
-            glob.glob(path + "/*_GRiPHin_Summary.xlsx")
             #except IndexError:
             #    raise ValueError(f"No *_GRiPHin_Summary.xlsx file found in {path}")
             try:
+                fairy_file = glob.glob(path + "/" + sample_folder + "/file_integrity/" + sample_name + "*summary.txt")[0]
+            except IndexError:
+                raise ValueError(f"No *_summary.tsv file found in {path}.")
+            # check that the sample did not fail the file_integrity check
+            with open(fairy_file, 'r') as file:
+                for line in file:
+                    if 'FAILED' in line:
+                        print("The file {} states the file failed integrity checks and should not be included in the analysis. Please remove this sample from the analysis.".format(fairy_file))
+                        sys.exit(1)
+            try:
                 glob.glob(path + "/*_GRiPHin_Summary.tsv")[0]
             except IndexError:
-                raise ValueError(f"No *_GRiPHin_Summary.tsv file found in {path}")
+                raise ValueError(f"No *_GRiPHin_Summary.tsv file found in {path}.")
             for file_path in files:
                 # Check if the file exists
                 if Path(file_path).exists():
