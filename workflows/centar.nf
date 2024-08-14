@@ -121,7 +121,7 @@ workflow RUN_CENTAR {
         // Extract the list of project folders from input_dir channel
         project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map { it[1] }.collect().toList()
 
-        // Collect all the summary files and filter to keep those that have the correct project_id
+        /*/ Collect all the summary files and filter to keep those that have the correct project_id
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().filter { line_summary ->
             def project_id = line_summary[0].project_id
             project_ids.contains(project_id)}

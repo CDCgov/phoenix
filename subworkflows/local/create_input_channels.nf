@@ -143,10 +143,11 @@ workflow CREATE_INPUT_CHANNELS {
             //////////////////////////// FOR CENTAR ///////////////////////////////////////
 
             // get files for MLST updating 
-            def combined_mlst = append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
+            def combined_mlst_glob = append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
             //create .tax file channel with meta information 
-            combined_mlst_ch = Channel.fromPath(combined_mlst) // use created regrex to get samples
+            combined_mlst_ch = Channel.fromPath(combined_mlst_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString())} // create meta for sample
+            combined_mlst_ch.view()
             //filtering out failured samples
             filtered_combined_mlst_ch = combined_mlst_ch.combine(id_channel).filter{ meta, combined_mlst, id_channel -> id_channel.contains(meta.id)}.map{ meta, combined_mlst, id_channel -> [ meta, combined_mlst ]}
 

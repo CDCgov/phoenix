@@ -36,6 +36,7 @@ include { SCAFFOLDS_EXQC              } from './workflows/cdc_scaffolds'
 include { SRA_PREP                    } from './workflows/sra_prep'
 include { CLIA_INTERNAL               } from './workflows/clia'
 include { UPDATE_CDC_PHOENIX_EXQC     } from './workflows/update_cdc_phoenix'
+include { RUN_CENTAR                  } from './workflows/centar'
 
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
