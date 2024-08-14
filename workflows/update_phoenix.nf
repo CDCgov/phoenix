@@ -30,16 +30,19 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
-include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
-include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
-include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
-include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { CREATE_AND_UPDATE_README       } from '../modules/local/updater/create_and_update_readme'
-include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
-include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { GRIPHIN as GRIPHIN_COPY        } from '../modules/local/griphin'
-include { UPDATE_GRIPHIN                 } from '../modules/local/updater/update_griphin'
+include { ASSET_CHECK                          } from '../modules/local/asset_check'
+include { GAMMA as GAMMA_AR                    } from '../modules/local/gamma'
+include { GET_TAXA_FOR_AMRFINDER               } from '../modules/local/get_taxa_for_amrfinder'
+include { AMRFINDERPLUS_RUN                    } from '../modules/local/run_amrfinder'
+include { CREATE_SUMMARY_LINE                  } from '../modules/local/phoenix_summary_line'
+include { CREATE_AND_UPDATE_README             } from '../modules/local/updater/create_and_update_readme'
+include { FETCH_FAILED_SUMMARIES               } from '../modules/local/fetch_failed_summaries'
+include { GATHER_SUMMARY_LINES                 } from '../modules/local/phoenix_summary'
+include { GRIPHIN as GRIPHIN_NO_OUTPUT         } from '../modules/local/griphin'
+include { GRIPHIN as GRIPHIN_NO_OUTPUT_CDC     } from '../modules/local/griphin'
+include { UPDATE_GRIPHIN                       } from '../modules/local/updater/update_griphin'
+include { UPDATE_GRIPHIN as UPDATE_CDC_GRIPHIN } from '../modules/local/updater/update_griphin'
+include { SRST2_AR                             } from '../modules/local/srst2_ar'
 
 /*
 ========================================================================================
@@ -69,7 +72,6 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 ========================================================================================
 */
 
-
 def filter_out_meta(input_ch) {
     // Create an empty list to store the filtered items
     def filteredList = []
@@ -88,18 +90,24 @@ def remove_last_element(input_ch) {
     return input_ch.remove(-1)
 }
 
+def add_meta(input_ch) {
+    def meta = [:] // create meta array
+    meta.project_id = input_ch.getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
+    def array = [ meta, input_ch ]
+    return array
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
 ========================================================================================
 */
 
-workflow UPDATE_CDC_PHOENIX_EXQC {
+workflow UPDATE_PHOENIX_WF {
     take:
         ch_input
         ch_input_indir
         ch_versions
-        
 
     main:
         // Allow outdir to be relative
@@ -139,6 +147,21 @@ workflow UPDATE_CDC_PHOENIX_EXQC {
             filtered_scaffolds_ch, params.ardb
         )
         ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
+
+        // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
+        trimd_reads_file_integrity_ch = CREATE_INPUT_CHANNELS.out.reads.join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+        .join(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch.map{meta, phoenix_tsv_ch -> [[id:meta.id, project_id:meta.project_id], meta.entry]}, by: [[0][0],[0][1]])
+
+        // now we will split the channel into its true (busco present) and false (busco wasn't run with this dataset) elements
+        busco_boolean_1ch = trimd_reads_file_integrity_ch.branch{ 
+                    buscoTrue: it[3] == true
+                    buscoFalse: it[3] == false}
+
+        // Idenitifying AR genes in trimmed reads - using only datasets that were previously run with CDC_PHOENIX entry
+        SRST2_AR (
+            busco_boolean_1ch.buscoTrue.map{meta, reads, fairy_outcome, busco_boolean -> [meta, reads, fairy_outcome]}, "gene", params.ardb
+        )
+        ch_versions = ch_versions.mix(SRST2_AR.out.versions)
 
         // Perform MLST steps on isolates (with srst2 on internal samples)
         // 3rd input would normally be FASTP_TRIMD.out.reads, but since we have no reads we just pass something to get the meta_id and create an empty channel
@@ -191,15 +214,22 @@ workflow UPDATE_CDC_PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
+        //CREATE_INPUT_CHANNELS.out.directory_ch.view()
         // Extract the list of project folders from input_dir channel
         project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map { it[1] }.collect().toList()
+        //project_ids.view()
 
-        // Collect all the summary files and filter to keep those that have the correct project_id
+        CREATE_SUMMARY_LINE.out.line_summary.view()
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().map{ meta, line_summary -> tuple( groupKey(meta.project_id), line_summary )}.groupTuple()
+
+        /*/ Collect all the summary files and filter to separate those that have the same project_id
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().filter { line_summary ->
             def project_id = line_summary[0].project_id
             project_ids.contains(project_id)}
             .join(CREATE_INPUT_CHANNELS.out.directory_ch, by: [[0][0],[0][1]])
-            .map { it -> filter_out_meta(it) }// Convert to a list to use indexing
+            .map { it -> filter_out_meta(it) }// Convert to a list to use indexing*/
+
+        summaries_ch.view()
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
@@ -207,18 +237,73 @@ workflow UPDATE_CDC_PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-        GRIPHIN_COPY (
-            summaries_ch.map{ summary_line, dir -> summary_line}, \
+       //summaries_ch.flatten().view()
+
+        // check if the incoming file was created with CDC_PHOENIX or PHOENIX
+        buscoExists_ch = summaries_ch.flatten().map{ file, dir_ch -> 
+                def busco_boolean = file.head().text.contains('BUSCO')
+                //array = [ meta, dir_ch, busco_boolean ]
+                return [ file, dir_ch, busco_boolean ]}
+
+        // now we will split the channel into its true and false elements
+        busco_boolean_ch = buscoExists_ch.branch{
+                    buscoTrue: it[2] == true 
+                    buscoFalse: it[2] == false}
+
+        buscoTrue = busco_boolean_ch.buscoTrue
+        buscoFalse = busco_boolean_ch.buscoFalse
+
+        //buscoFalse.view()
+        //buscoTrue.view()
+
+        // for samples that were created with entry CDC_PHX
+        GRIPHIN_NO_OUTPUT_CDC (
+            buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            summaries_ch.map{ summary_line, dir -> dir.toString()}, params.coverage, true, false
+            buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true
         )
-        ch_versions = ch_versions.mix(GRIPHIN_COPY.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT_CDC.out.versions)
+
+        // for samples that were created with entry PHX
+        GRIPHIN_NO_OUTPUT (
+            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
+            CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
+            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, true, false, true
+        )
+        ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT.out.versions)
+
+
+        /*griphin_reports_ch = GRIPHIN_NO_OUTPUT.out.griphin_report.collect().combine(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.collect()).flatten()
+        griphin_reports_ch.view()
+
+        // join old and new griphins for combining
+        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{          meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(griphin_reports_ch.map{it -> add_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                      meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+
+        // combine griphin files
+        UPDATE_GRIPHIN (
+            griphins_ch, params.coverage
+        )
+        ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)*/
 
         // combine by project_id - > this will need to be adjusted in CDC_PHOENIX and PHOENIX
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[id:meta.id, project_id:meta.project_id], griphin_excel_ch]}\
-        .join(GRIPHIN_COPY.out.griphin_report.map{                   meta, griphin_report   -> [[id:meta.id, project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[id:meta.id, project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{          meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(GRIPHIN_NO_OUTPUT.out.griphin_report.map{it -> add_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                      meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
 
+        // combine by project_id - > this will need to be adjusted in CDC_PHOENIX and PHOENIX
+        griphins_cdc_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{          meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.map{it -> add_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                          meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+
+        // combine griphin files that created with CDC_PHOENIX entry
+        UPDATE_CDC_GRIPHIN (
+            griphins_cdc_ch, params.coverage
+        )
+        ch_versions = ch_versions.mix(UPDATE_CDC_GRIPHIN.out.versions)
+
+        // combine griphin files
         UPDATE_GRIPHIN (
             griphins_ch, params.coverage
         )
@@ -247,6 +332,10 @@ workflow UPDATE_CDC_PHOENIX_EXQC {
         amrfinder_output = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
         phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
+        //output for phylophoenix
+        //griphin_tsv      = UPDATE_GRIPHIN.out.griphin_tsv_report
+        //griphin_excel    = UPDATE_GRIPHIN.out.griphin_report
+        //dir_samplesheet  = UPDATE_CDC_GRIPHIN.out.converted_samplesheet
 }
 
 /*

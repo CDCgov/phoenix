@@ -153,7 +153,7 @@ workflow CREATE_INPUT_CHANNELS {
             def griphin_tsv_glob = append_to_path(params.indir.toString(),'*_GRiPHin_Summary.tsv')
             griphin_tsv_ch = Channel.fromPath(griphin_tsv_glob).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
             def phoenix_tsv_glob = append_to_path(params.indir.toString(),'Phoenix_Summary.tsv$')
-            phoenix_tsv_ch = Channel.fromPath(phoenix_tsv_glob).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())}
+            phoenix_tsv_ch = Channel.fromPath(phoenix_tsv_glob).combine(id_channel).map{ it -> create_groups_id_and_busco(it, params.indir.toString())}
 
             def pipeline_info_glob = append_to_path(params.indir.toString(),'pipeline_info/software_versions.yml')
             pipeline_info_ch = Channel.fromPath(pipeline_info_glob).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples*/
@@ -207,7 +207,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             griphin_excel_ch = COLLECT_PROJECT_FILES.out.griphin_excel
             griphin_tsv_ch = COLLECT_PROJECT_FILES.out.griphin_tsv
-            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv
+            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> add_entry_meta(it)}
             pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
 
             valid_samplesheet = SAMPLESHEET_CHECK.out.csv
@@ -263,6 +263,27 @@ def create_dir_channels(LinkedHashMap row) {
     return array
 }
 
+def add_entry_meta(input_ch){
+    """samples needed to be grouped by their project directory for editing summary files."""
+    def meta = [:] // create meta array
+    meta.id = input_ch[0].id
+    meta.project_id = input_ch[0].project_id
+    // Use file object to read the first line of the file
+    def file = input_ch[1]
+    def firstLine = file.text.split('\n')[0]
+    meta.entry = firstLine.contains('BUSCO')
+    return [meta, input_ch[1]]
+}
+
+def create_groups_id_and_busco(input_ch, project_folder){
+    """samples needed to be grouped by their project directory for editing summary files."""
+    def meta = [:] // create meta array
+    meta.id = input_ch[1]
+    meta.project_id = project_folder.toString().split('/')[-1]
+    meta.entry = input_ch[2].head().text.contains('BUSCO')
+    return [meta, input_ch[0]]
+}
+
 def create_groups_and_id(input_ch, project_folder){
     """samples needed to be grouped by their project directory for editing summary files."""
     def meta = [:] // create meta array
@@ -309,7 +330,7 @@ def create_meta_ani(sample, file_extension, indir){
     def meta = [:] // create meta array
     meta.id = sample.getName().replaceAll(file_extension, "").split('_')[0] // get file name without extention
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]  //file() portion provides full path 
+    def array = [ meta, sample ]
     return array
 }
 
@@ -318,7 +339,7 @@ def create_meta(sample, file_extension, indir){
     def meta = [:] // create meta array
     meta.id = sample.getName().replaceAll(file_extension, "") // get file name without extention
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]  //file() portion provides full path 
+    def array = [ meta, sample ]
     return array
 }
 
@@ -327,7 +348,7 @@ def create_meta_non_extension(sample, indir){
     def meta = [:] // create meta array
     meta.id = sample.getSimpleName().split('_')[0] // get the last string after the last backslash
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]  //file() portion provides full path
+    def array = [ meta, sample ]
     return array
 }
 

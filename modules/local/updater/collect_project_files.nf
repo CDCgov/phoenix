@@ -8,8 +8,8 @@ process COLLECT_PROJECT_FILES {
     tuple val(meta), path(dir)
 
     output:
-    tuple val(meta), path("*_GRiPHin_Summary.tsv"),   emit: griphin_tsv
-    tuple val(meta), path("*_GRiPHin_Summary.xlsx"),  emit: griphin_excel
+    tuple val(meta), path("*_GRiPHin.tsv"),           emit: griphin_tsv
+    tuple val(meta), path("*_GRiPHin.xlsx"),          emit: griphin_excel
     tuple val(meta), path("Phoenix_Summary.tsv"),     emit: phoenix_tsv
     tuple val(meta), path("software_versions.yml"),   emit: software_versions_file
     path("versions.yml"),                             emit: versions
@@ -26,8 +26,9 @@ process COLLECT_PROJECT_FILES {
     """
     #just moving files so the output is accessible 
     mv ${project_path}/pipeline_info/software_versions.yml .
-    mv ${project_path}/*_GRiPHin_Summary.xlsx .
-    mv ${project_path}/*_GRiPHin_Summary.tsv .
+    #remove the "summary" part of the name so that the output can be picked up correctly in the UPDATE_GRIPHIN process
+    mv ${project_path}/${project_path}_GRiPHin_Summary.xlsx ./${project_path}_old_GRiPHin.xlsx
+    mv ${project_path}/${project_path}_GRiPHin_Summary.tsv ./${project_path}_old_GRiPHin.tsv
     mv ${project_path}/Phoenix_Summary.tsv .
 
     cat <<-END_VERSIONS > versions.yml

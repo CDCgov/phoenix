@@ -10,10 +10,11 @@ process GRIPHIN {
     val(coverage)
     val(entry)
     val(scaffolds_entry)
+    val(update)
 
     output:
-    tuple val(meta), path("*_Summary.xlsx"), emit: griphin_report
-    path("*_Summary.tsv"),                   emit: griphin_tsv_report
+    path("*_GRiPHin*.xlsx"),                 emit: griphin_report
+    path("*_GRiPHin*.tsv"),                  emit: griphin_tsv_report
     path("Directory_samplesheet.csv"),       emit: converted_samplesheet
     path("versions.yml"),                    emit: versions
 
@@ -25,11 +26,12 @@ process GRIPHIN {
     // define variables
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
+    def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     full_path=\$(readlink -f ${outdir})
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${outdir} --coverage ${coverage} ${phoenix} ${scaffolds}
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${scaffolds}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

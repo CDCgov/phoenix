@@ -358,7 +358,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         //create GRiPHin report
         GRIPHIN (
-            summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, true
+            summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, true, false
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
