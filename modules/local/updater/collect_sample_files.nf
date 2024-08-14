@@ -8,7 +8,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path(dir)
 
     output:
-    tuple val(meta), path("${meta.id}/file_integrity/${meta.id}_scaffolds_summary.txt"),           emit: fairy_summary
+    tuple val(meta), path("${meta.id}/file_integrity/${meta.id}*summary.txt"),                     emit: fairy_summary
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_1.trim.fastq.gz"),                    emit: read1
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_2.trim.fastq.gz"),                    emit: read2
     tuple val(meta), path("${meta.id}/assembly/${meta.id}.filtered.scaffolds.fa.gz"),              emit: scaffolds
@@ -30,15 +30,8 @@ process COLLECT_SAMPLE_FILES {
     script: 
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
-    // Remove trailing slash if present
-    def clean_dir = dir.endsWith('/') ? "${dir}"[0..-2] : "${dir}"
-
-    // Define project_path and ab_path
-    def project_path = clean_dir
-    def ab_path = "${clean_dir}/${meta.id}"
     """
-    #just moving files so the output is accessible 
-    mv ${ab_path} .
+    # Nothing happens just getting all of thse files into channels 
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
