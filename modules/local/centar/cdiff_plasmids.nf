@@ -5,7 +5,7 @@ process CDIFF_PLASMIDS {
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
-    tuple val(meta), path(assembly)
+    tuple val(meta), path(assembly), val(fairy_outcome)
     path(plasmid_database)
 
     output:
@@ -24,15 +24,15 @@ process CDIFF_PLASMIDS {
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "staphb/gamma@"
     """
-    // Call the real internal scripts to infer the ribotpes
+    # Call the real internal scripts to infer the ribotpes
 
-    // Placeholder to create a blank file  
+    # Placeholder to create a blank file  
     touch "${prefix}_plasmids.tsv"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        // Replace with proper container when module is filled in
-        // blat_toxinotypes.sh: \$(${ica}blat_toxinotypes.sh -V)
+        # Replace with proper container when module is filled in
+        # blat_toxinotypes.sh: \$(${ica}blat_toxinotypes.sh -V)
         gamma_container: ${container}
     END_VERSIONS
     """

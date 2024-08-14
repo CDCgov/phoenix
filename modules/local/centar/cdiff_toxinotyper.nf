@@ -4,7 +4,7 @@ process CDIFF_TOXINOTYPER {
     container 'staphb/gamma@sha256:60d8ac58e016349a856fb7b443dd422ba69bae3f40e0dad83460d25ecf71101e'
 
     input:
-    tuple val(meta), path(assembly)
+    tuple val(meta), path(assembly), val(fairy_outcome)
     path(tox_database)
     path(tox_definitions)
 

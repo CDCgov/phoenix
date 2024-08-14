@@ -18,19 +18,18 @@ workflow CREATE_INPUT_CHANNELS {
         if (indir != null) {
 
             // get file_integrity file for MLST updating
-            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
+            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
             //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
             file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
                 .map{ it -> create_meta_with_wildcard(it, "_summary.txt", params.indir.toString())}
-            file_integrity_ch.view()
 
-            //get list of all samples in the folder - just using the file_integrity file, but it could be any file really
+            //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
             def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
 
             //create file_integrity file channel with meta information 
             id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
                  // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
-            id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.flatten()
+            //id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.flatten()
 
             directory_ch = Channel.fromPath(params.indir, relative: true).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())}
 
@@ -190,10 +189,12 @@ workflow CREATE_INPUT_CHANNELS {
             ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
 
             directory_ch = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> create_dir_channels(it) }
+            //adding meta.id to end of dir - otherwise too many files are copied and it takes forever. 
+            sample_directory_ch = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> create_sample_dir_channels(it) }
 
             // pulling all the necessary sample level files into channels
             COLLECT_SAMPLE_FILES (
-                directory_ch
+                sample_directory_ch
             )
             ch_versions = ch_versions.mix(COLLECT_SAMPLE_FILES.out.versions)
 
@@ -276,6 +277,17 @@ def create_dir_channels(LinkedHashMap row) {
     meta.id = row.sample
     meta.project_id = row.directory.toString().split('/')[-1]
     array = [ meta, row.directory ]
+    return array
+}
+
+// Function to get list of [ meta, [ directory ] ]
+def create_sample_dir_channels(LinkedHashMap row) {
+    def meta = [:] // create meta array
+    meta.id = row.sample
+    meta.project_id = row.directory.toString().split('/')[-1]
+    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    def dir = clean_path + "/" + row.sample
+    array = [ meta, dir ]
     return array
 }
 
