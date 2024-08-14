@@ -9,7 +9,7 @@ include { CDIFF_TOXINOTYPER              } from '../../modules/local/centar/cdif
 include { CDIFF_PLASMIDS                 } from '../../modules/local/centar/cdiff_plasmids'
 include { GAMMA as CDIFF_TOX_GENES       } from '../../modules/local/gamma'
 include { GAMMA as CDIFF_AR_GENES        } from '../../modules/local/gamma'
-//include { WGMLST                         } from '../../modules/local/centar/pn2.0_wgmlst'
+include { WGMLST                         } from '../../modules/local/centar/wgmlst'
 include { CDIFF_RIBOTYPER                } from '../../modules/local/centar/cdiff_ribotyper'
 include { CENTAR_CONSOLIDATER            } from '../../modules/local/centar/centar_consolidater'
 include { KRAKEN2_WF as KRAKEN2_PLASMID  } from './kraken2krona'
@@ -66,13 +66,13 @@ workflow CENTAR_SUBWORKFLOW {
 
         // Running blat to identify diffbase toxin genes for specific toxinotyping
         WGMLST (
-            filtered_scaffolds_ch, params.cdiff_wgmlst
+            filtered_scaffolds_ch, params.cdiff_wgmlst_blast_db
         )
         ch_versions = ch_versions.mix(WGMLST.out.versions)
 
         // Running blat to identify diffbase toxin genes for specific toxinotyping
         CDIFF_RIBOTYPER (
-            WGMLST.out.wgmlst_alleles, params.cdiff_diffbase_AA, params.cdiff_diffbase_definitions
+            WGMLST.out.wgmlst_alleles_file
         )
         ch_versions = ch_versions.mix(CDIFF_RIBOTYPER.out.versions)
 
