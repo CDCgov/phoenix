@@ -22,10 +22,6 @@ def multiqc_report = []
 */
 
 include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { CDIFF_CLADE                    } from '../modules/local/centar/cdiff_clade'
-include { CDIFF_PLASMID                  } from '../modules/local/centar/cdiff_plasmid'
-include { GAMMA as CDIFF_GENES           } from '../modules/local/gamma'
-include { CENTAR_CONSOLIDATER            } from '../modules/local/centar/centar_consolidater'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
