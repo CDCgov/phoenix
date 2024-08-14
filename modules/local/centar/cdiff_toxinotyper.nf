@@ -31,7 +31,7 @@ process CDIFF_TOXINOTYPER {
 
     ${ica}blat_toxinotypes.sh \\
         -i ${assembly} \\
-        -d ${tox_db}" \\
+        -d ${tox_database}" \\
         -t ${tox_definitions} \\
         -o ./
 

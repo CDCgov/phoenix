@@ -23,9 +23,9 @@ process CDIFF_CLADE {
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}get_cdiff_clade.sh \\
+    ${ica}get_Cdiff_clade.sh \\
         -m ${mlst_combined_file} \\
-        -r "${mlst_db}"
+        -r "${mlst_database}"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
