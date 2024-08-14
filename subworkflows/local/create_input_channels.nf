@@ -149,7 +149,7 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString())} // create meta for sample
             combined_mlst_ch.view()
             //filtering out failured samples
-            filtered_combined_mlst_ch = combined_mlst_ch.combine(id_channel).filter{ meta, combined_mlst, id_channel -> id_channel.contains(meta.id)}.map{ meta, combined_mlst, id_channel -> [ meta, combined_mlst ]}
+            filtered_combined_mlst_ch = combined_mlst_ch.combine(id_channel).filter{ meta, combined_mlst_ch, id_channel -> id_channel.contains(meta.id)}.map{ meta, combined_mlst_ch, id_channel -> [ meta, combined_mlst ]}
 
 
             /////////////////////////// PROJECT LEVEL FILES ///////////////////////////////
