@@ -42,7 +42,7 @@ workflow CENTAR_SUBWORKFLOW {
         .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
 
         CDIFF_PLASMIDS (
-            filtered_scaffolds_ch, params.cdiff_wgmlst_blast_db
+            filtered_scaffolds_ch, params.cdiff_plasmid_db
         )
         ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)
 
