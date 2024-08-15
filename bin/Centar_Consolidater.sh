@@ -20,7 +20,7 @@
 
 #  Function to print out help blurb
 show_help () {
-	echo "Usage is ../Centar_Consolidater.sh -t path_to_phx_isolate_GAMMA_tox_file -c path_to_clade_file -o output_file -y toxinotype_file -r Ribotype_file -p plasmid_file"
+	echo "Usage is ../Centar_Consolidater.sh -t path_to_phx_isolate_GAMMA_tox_file -c path_to_clade_file -o output_file -y toxinotype_file -r Ribotype_file -p plasmid_file -s sample_name"
 }
 
 version="1.0"
@@ -29,7 +29,7 @@ tox_input=""
 clade_input=""
 # Parse command line options
 options_found=0
-while getopts ":h?t:c:o:y:a:r:p:V" option; do
+while getopts ":h?t:c:o:y:a:r:p:Vs:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -55,6 +55,9 @@ while getopts ":h?t:c:o:y:a:r:p:V" option; do
         r)
 			echo "Option -r triggered, argument = ${OPTARG}"
 			rt_file=${OPTARG};;
+        s)
+			echo "Option -s triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
         p)
 			echo "Option -p triggered, argument = ${OPTARG}"
 			plasmid_file=${OPTARG};;
@@ -94,30 +97,15 @@ function extract_gama_elements {
 }
 
 
-# Loop through the genes in the list and format to match desired output style
-if [[ ! -f "${output}" ]]; then
-    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\ttcdA_occurences\ttcdA_Variant\t\Diffbase_Toxin-A_sub-type\ttcdA Confidence (Coverage_NT|Coverage_AA|Length)\ttcdB_prsence\ttcdB_occurences\ttcdB_Variant\tDiffbase_Toxin-B_sub-type\ttcdB Confidence (Coverage_NT|Coverage_AA|Length)\ttcdC_presence\ttcdC_occurences\ttcdC_Variant\ttcdC Confidence (Coverage_NT|Coverage_AA|Length)\ttcdR_presence\ttcdR_occurences\ttcdR Confidence (Coverage_NT|Coverage_AA|Length)\ttcdE_presence\ttcdE_occurences\ttcdE Confidence (Coverage_NT|Coverage_AA|Length)\tcdtA_presence\tcdtA_occurences\tcdtA Confidence (Coverage_NT|Coverage_AA|Length)\tcdtB_presence\tcdtB_occurences\tcdtB Confidence (Coverage_NT|Coverage_AA|Length)\tcdtR_presence\tcdtR_occurences\tcdtR_Variant\tcdtR Confidence (Coverage_NT|Coverage_AA|Length)\tcdtAB1_presence\tcdtAB1_occurences\tcdtAB1 Confidence (Coverage_NT|Coverage_AA|Length)\tcdtAB2_presence\tcdtAB2_occurences\tcdtAB2 Confidence (Coverage_NT|Coverage_AA|Length)\tnon-tox_presence\tnon-tox_occurences\tnon-tox Confidence (Coverage_NT|Coverage_AA|Length)\tgyrA_presence\tgyrA_occurences\tgyrA_Variant\tgyrA_additional_info\tgyrA Confidence (Coverage_NT|Coverage_AA|Length)\tgyrB_presence\tgyrB_occurences\tgyrB_Variant\tgyrB_additional_info\tgyrB Confidence (Coverage_NT|Coverage_AA|Length)\tInferred RT\tProbability\tPlasmid Info" > "${output}"
-fi
-tcdA_set="No_Tox_file   No_Tox_file No_Tox_file"
-tcdB_set="No_Tox_file   No_Tox_file No_Tox_file"
-tcdC_set="No_Tox_file   No_Tox_file No_Tox_file"
-tcdD_set="No_Tox_file   No_Tox_file No_Tox_file"
-tcdE_set="No_Tox_file   No_Tox_file No_Tox_file"
-cdtA_set="No_Tox_file   No_Tox_file No_Tox_file"
-cdtB_set="No_Tox_file   No_Tox_file No_Tox_file"
-cdtAB1_set="No_Tox_file   No_Tox_file No_Tox_file"
-cdtAB2_set="No_Tox_file   No_Tox_file No_Tox_file"
-cdtR_set="No_Tox_file   No_Tox_file No_Tox_file"
-nontox_set="No_Tox_file   No_Tox_file No_Tox_file"
-gyrA_set="No_Tox_file   No_Tox_file No_Tox_file"
-gyrB_set="No_Tox_file   No_Tox_file No_Tox_file"
-clade="No_clade/MLST_file"
-
 if [[ -f "${ar_file}" ]]; then
     ## Parse the AR file once ready and figure out how to make it expandable
-else
     echo "NO_OTHER_AR_FILE_YET"
     other_AR="NO_AR_FILE_YET"
+    other_AR_count=0
+    other_AR_header="Other_Cdiff_AR"
+else
+    echo "NO_OTHER_AR_FILE"
+    other_AR="NO_AR_FILE"
     other_AR_count=0
     other_AR_header="Other_Cdiff_AR"
 fi
@@ -125,31 +113,31 @@ fi
 if [[ -f "${rt_file}" ]]; then
     ML_RT="unset"
     ## Parse the RT file once ready and figure out how to make it expandable
+    echo "No Ribotype file yet"
+    ML_RT="NO_RT_FILE_YET\tNO_RT_FILE_YET"
 else
     echo "No Ribotype file"
-    ML_RT="NO_RT_FILE_YET\tNO_RT_FILE_YET"
+    ML_RT="NO_RT_FILE_YET\tNO_RT_FILE"
 fi
 
 if [[ -f "${rt_file}" ]]; then
-    plasmids="unset"
     ## Parse the RT file once ready and figure out how to make it expandable
+    echo "No plasmid info file yet"
+    plasmids="NO_PLASMID_FILE_YET"
 else
     echo "No plasmid info file"
-    plasmids="NO_PLSAMID_FILE_YET"
+    plasmids="NO_PLASMID_FILE_YET"
 fi
 
 if [[ -f "${ttype_file}" ]]; then
-    isolate_ID=$(basename ${ttype_file} .tox | rev | cut -d'_' -f3- | rev)
     line=0
-    subtype_A=""
-    subtype_B=""
-    ttype="Not_found_in_toxinotype_file"
+    
     while IFS= read -r var; do
         if [[ "${line}" -eq 0 ]]; then
             line=$(( line + 1 ))
             continue
         else
-            if [[ "${var}" = "Toxinotype: "* ]]; then
+            if [[ "${var}" = "Toxinotype:"* ]]; then
                 toxinotype=$(echo "${var}" | cut -d$'\t' -f2)
             else
                 current_type=$(echo "${var}" | cut -d$'\t' -f2)
@@ -183,6 +171,9 @@ if [[ -f "${ttype_file}" ]]; then
     fi
 else
     echo "No toxinotype input file"
+    subtype_A="NO_ttype_file"
+    subtype_B="NO_ttype_file"
+    ttype="NO_ttype_file"
 fi
 
 if [[ -f "${tox_input}" ]]; then
@@ -190,7 +181,7 @@ if [[ -f "${tox_input}" ]]; then
     tcdA_count=$(grep -c 'tcdA' "${tox_input}")
     if [[ "${tcdA_count}" -eq 0 ]]; then
         tcdA=0
-        tcdA_set="0\t0\tNA\tNA|NA|NA"
+        tcdA_set="0\t0\tNA\tNA\tNA|NA|NA"
     elif [[ "${tcdA_count}" -eq 1 ]]; then
         tcdA_line=$(grep 'tcdA' "${tox_input}")
         tcdA_matchtype=$(echo "${tcdA_line}" | cut -d$'\t' -f5)
@@ -246,7 +237,7 @@ if [[ -f "${tox_input}" ]]; then
     echo "${tcdB_count}"
     if [[ "${tcdB_count}" -eq 0 ]]; then
         tcdB=0
-        tcdB_set="0\t0\tNA\tNA|NA|NA"
+        tcdB_set="0\t0\tNA\tNA\tNA|NA|NA"
     elif [[ "${tcdB_count}" -eq 1 ]]; then
         tcdB_line=$(grep 'tcdB' "${tox_input}")
         tcdB_matchtype=$(echo "${tcdB_line}" | cut -d$'\t' -f5)
@@ -981,7 +972,20 @@ if [[ -f "${tox_input}" ]]; then
     fi
     
 else
-    echo "Nothing to set, carry on"
+    echo "No tox file found"
+    tcdA_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    tcdB_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    tcdC_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    tcdD_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    tcdE_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    cdtA_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    cdtB_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    cdtAB1_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    cdtAB2_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    cdtR_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    nontox_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    gyrA_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
+    gyrB_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
 fi
 
 if [[ -f "${clade_input}" ]]; then
@@ -993,6 +997,7 @@ if [[ -f "${clade_input}" ]]; then
     fi
 else
     echo "No clade/mlst file, carry one"
+    clade="No_clade/MLST_file"
 fi
 
 echo -e "clade:${clade}
@@ -1013,4 +1018,8 @@ gyrB:${gyrB_set}
 plasmids:${plasmids}
 "
 
-echo -e "${isolate_ID}\t${clade}\t${toxinotype}\t${tcdA_set}\t${tcdB_set}\t${tcdC_set}\t${tcdD_set}\t${tcdE_set}\t${cdtA_set}\t${cdtB_set}\t${cdtR_set}\t${cdtAB1_set}\t${cdtAB2_set}\t${nontox_set}\t${gyrA_set}\t${gyrB_set}\t${plasmids}\t${ML_RT}\t${other_AR}"  >> "${output}"
+# Loop through the genes in the list and format to match desired output style
+if [[ ! -f "${output}" ]]; then
+    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\ttcdA_occurences\ttcdA_Variant\tDiffbase_Toxin-A_sub-type\ttcdA Confidence (Coverage_NT|Coverage_AA|Length)\ttcdB_prsence\ttcdB_occurences\ttcdB_Variant\tDiffbase_Toxin-B_sub-type\ttcdB Confidence (Coverage_NT|Coverage_AA|Length)\ttcdC_presence\ttcdC_occurences\ttcdC_Variant\ttcdC Confidence (Coverage_NT|Coverage_AA|Length)\ttcdR_presence\ttcdR_occurences\ttcdR Confidence (Coverage_NT|Coverage_AA|Length)\ttcdE_presence\ttcdE_occurences\ttcdE Confidence (Coverage_NT|Coverage_AA|Length)\tcdtA_presence\tcdtA_occurences\tcdtA Confidence (Coverage_NT|Coverage_AA|Length)\tcdtB_presence\tcdtB_occurences\tcdtB Confidence (Coverage_NT|Coverage_AA|Length)\tcdtR_presence\tcdtR_occurences\tcdtR_Variant\tcdtR Confidence (Coverage_NT|Coverage_AA|Length)\tcdtAB1_presence\tcdtAB1_occurences\tcdtAB1 Confidence (Coverage_NT|Coverage_AA|Length)\tcdtAB2_presence\tcdtAB2_occurences\tcdtAB2 Confidence (Coverage_NT|Coverage_AA|Length)\tnon-tox_presence\tnon-tox_occurences\tnon-tox Confidence (Coverage_NT|Coverage_AA|Length)\tgyrA_presence\tgyrA_occurences\tgyrA_Variant\tgyrA_additional_info\tgyrA Confidence (Coverage_NT|Coverage_AA|Length)\tgyrB_presence\tgyrB_occurences\tgyrB_Variant\tgyrB_additional_info\tgyrB Confidence (Coverage_NT|Coverage_AA|Length)\tInferred RT\tProbability\tPlasmid Info\t${other_AR_header}" > "${output}"
+fi
+echo -e "${sample_name}\t${clade}\t${toxinotype}\t${tcdA_set}\t${tcdB_set}\t${tcdC_set}\t${tcdD_set}\t${tcdE_set}\t${cdtA_set}\t${cdtB_set}\t${cdtR_set}\t${cdtAB1_set}\t${cdtAB2_set}\t${nontox_set}\t${gyrA_set}\t${gyrB_set}\t${ML_RT}\t${plasmids}\t${other_AR}"  >> "${output}"

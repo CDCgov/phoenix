@@ -1,4 +1,4 @@
-#!/bin/sh -l
+#!/bin/bash -l
 
 #$ -o run_GAMA.out
 #$ -e run_GAMA.err
@@ -184,8 +184,9 @@ fi
 if [[ -z "${clade}" ]] || [[ "${clade}" = '' ]]; then
     clade="clade_Not_defined"
 fi
-echo -e "${sample_name}\t${clade}" > "${epath}/MLST/${sample_name}_cdifficile_clade.tsv"
-echo -e "Sample name\tClade" >> "${sample_name}_cdifficile_clade.tsv"
+
+echo -e "Sample name\tClade" > "${sample_name}_cdifficile_clade.tsv"
+echo -e "${sample_name}\t${clade}" >> "${sample_name}_cdifficile_clade.tsv"
 #echo -e "Sample name\tClade"
 #echo -e "${sample_name}\t${clade}"
 

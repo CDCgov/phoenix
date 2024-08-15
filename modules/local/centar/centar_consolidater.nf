@@ -31,15 +31,16 @@ process CENTAR_CONSOLIDATER {
     ${ica}Centar_Consolidater.sh \\
         -t ${tox_file} \\
         -c ${clade_file} \\
-        -t ${toxinotype_file} \\
+        -y ${toxinotype_file} \\
         -a ${other_AR_file} \\
         -r ${rt_file} \\
-        -p ${plasmids_file}
-        -o ${prefix}_centar_output.tsv
+        -p ${plasmids_file} \\
+        -o ${prefix}_centar_output.tsv \\
+        -s ${prefix}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        \$(${ica}Centar_Consolidator.sh -V)
+        \$(${ica}Centar_Consolidater.sh -V)
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

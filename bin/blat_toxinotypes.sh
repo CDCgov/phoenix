@@ -38,9 +38,9 @@ while getopts ":h?i:o:d:t:" option; do
 		i)
 			echo "Option -i triggered, argument = ${OPTARG}"
 			input=${OPTARG};;
-#		o)
-#			echo "Option -o triggered, argument = ${OPTARG}"
-#			output=${OPTARG};;
+		o)
+			echo "Option -o triggered, argument = ${OPTARG}"
+			sample_name=${OPTARG};;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
 			DB=${OPTARG};;
@@ -75,12 +75,11 @@ fi
  	exit 1
  fi
 
-sample_name=$(basename ${input} .scaffolds.fa)
 db_name=$(basename ${DB} .fa)
 blat -q=prot -t=dnax ${input} ${DB} -minIdentity=100 -noHead ${sample_name}_${db_name}.psl
 
 
-header="ID  Toxinotype  Toxin   sub-type    Contig  Start   Stop"
+header="ID\tToxinotype\tToxin\tsub-type\tContig\tStart\tStop"
 
 ToxA_default="${sample_name}\tToxin-A\tN/A\tN/A\tN/A\tN/A\n"
 ToxB_default="${sample_name}\tToxin-B\tN/A\tN/A\tN/A\tN/A\n"
@@ -174,9 +173,9 @@ fi
 
 sort -k2 ${sample_name}_${db_name}.tmx > ${sample_name}_${db_name}.tox
 
-echo "${header}" > ${sample_name}_${db_name}.tmp
+echo -e "${header}" > ${sample_name}_${db_name}.tmp
 cat ${sample_name}_${db_name}.tmp ${sample_name}_${db_name}.tmx > ${sample_name}_${db_name}.tox
-echo "Toxinotype:   ${toxinotype}" >> ${sample_name}_${db_name}.tox
+echo -e "Toxinotype:\t${toxinotype}" >> ${sample_name}_${db_name}.tox
 
 rm ${sample_name}_${db_name}.tmx ${sample_name}_${db_name}.tmp
 

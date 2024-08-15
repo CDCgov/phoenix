@@ -17,6 +17,7 @@ process CDIFF_TOXINOTYPER {
     task.ext.when == null || task.ext.when
 
     script:
+    def prefix = task.ext.prefix ?: "${meta.id}"
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
@@ -28,7 +29,7 @@ process CDIFF_TOXINOTYPER {
         -i ${assembly} \\
         -d ${tox_database} \\
         -t ${tox_definitions} \\
-        -o ./
+        -o ${prefix}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
