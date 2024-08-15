@@ -1,5 +1,5 @@
 process WGMLST {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_single'
     // base_v2.1.0 - MUST manually change below (line 27)!!!
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'

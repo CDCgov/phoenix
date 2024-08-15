@@ -94,20 +94,20 @@ def check_samplesheet(file_in, file_out):
             files = []
             # Define the file path
             dir = line.split(",")[1]
-            sample_folder = line.split(",")[0]
+            #sample_folder = line.split(",")[0]
             if str(dir).strip().endswith('/'):
                 path = str(dir).strip()[:-1]
             else:
                 path = str(dir).strip()
             #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
-            files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
-            files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
-            files.append(path + "/" + sample_folder + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
-            files.append(path + "/" + sample_folder + "/annotation/" + sample_name + ".faa")
-            files.append(path + "/" + sample_folder + "/annotation/" + sample_name + ".gff")
-            files.append(path + "/" + sample_folder + "/" + sample_name + ".tax")
-            files.append(path + "/" + sample_folder + "/" + sample_name + "_summaryline.tsv")
-            files.append(path + "/" + sample_folder + "/" + sample_name + ".synopsis")
+            files.append(path + "/" + sample_name + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
+            files.append(path + "/" + sample_name + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
+            files.append(path + "/" + sample_name + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
+            files.append(path + "/" + sample_name + "/annotation/" + sample_name + ".faa")
+            files.append(path + "/" + sample_name + "/annotation/" + sample_name + ".gff")
+            files.append(path + "/" + sample_name + "/" + sample_name + ".tax")
+            files.append(path + "/" + sample_name + "/" + sample_name + "_summaryline.tsv")
+            files.append(path + "/" + sample_name + "/" + sample_name + ".synopsis")
             files.append(path + "/" + "Phoenix_Summary.tsv")
             # Handle glob searches with potential errors
             #try:
@@ -116,9 +116,10 @@ def check_samplesheet(file_in, file_out):
                 # Slice the string up to and including the last slash
                 #project_path = path[:last_slash_index + 1]
             try:
-                fairy_file = glob.glob(path + "/" + sample_folder + "/file_integrity/" + sample_name + "*summary.txt")[0]
+                fairy_file = glob.glob(path + "/" + sample_name + "/file_integrity/" + sample_name + "*summary.txt")[0]
+                full_path = path + "/" + sample_name + "/file_integrity/"
             except IndexError:
-                raise ValueError(f"No *_summary.tsv file found in {path}.")
+                raise ValueError(f"No *_summary.tsv file found in {full_path}")
             # check that the sample did not fail the file_integrity check
             with open(fairy_file, 'r') as file:
                 for line in file:

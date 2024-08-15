@@ -5,7 +5,8 @@ process COLLECT_PROJECT_FILES {
     container 'quay.io/jvhagey/phoenix:base_v2.1.0'
 
     input:
-    tuple val(meta), path(dir)
+    tuple val(meta), file(software_versions), file(griphin_summary_tsv), file(griphin_summary_excel), file(phx_summary)
+    //tuple val(meta), path(software_versions), path(griphin_summary_tsv), path(griphin_summary_excel), path(phx_summary)
 
     output:
     tuple val(meta), path("*_GRiPHin_Summary.tsv"),   emit: griphin_tsv
@@ -18,17 +19,14 @@ process COLLECT_PROJECT_FILES {
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     // Remove trailing slash if present
-    def clean_dir = dir.endsWith('/') ? "${dir}"[0..-2] : "${dir}"
+    //def clean_dir = dir.endsWith('/') ? "${dir}"[0..-2] : "${dir}"
 
     // Define project_path and ab_path
-    def project_path = clean_dir
-    def ab_path = "${clean_dir}/${meta.id}"
+    //def project_path = clean_dir
+    //def ab_path = "${clean_dir}/${meta.id}"
     """
     #just moving files so the output is accessible 
-    mv ${project_path}/pipeline_info/software_versions.yml .
-    mv ${project_path}/*_GRiPHin_Summary.xlsx .
-    mv ${project_path}/*_GRiPHin_Summary.tsv .
-    mv ${project_path}/Phoenix_Summary.tsv .
+    mv input.*/* .
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

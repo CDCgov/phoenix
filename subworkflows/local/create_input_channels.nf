@@ -216,16 +216,23 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_ani_best_hit_ch = COLLECT_SAMPLE_FILES.out.ani_best_hit
             filtered_combined_mlst_ch = COLLECT_SAMPLE_FILES.out.combined_mlst
 
-            // pulling all the necessary project level files into channels
+            summary_files_ch = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
+
+            griphin_excel_ch = summary_files_ch.map{ meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, griphin_summary_excel]}
+            griphin_tsv_ch = summary_files_ch.map{   meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, griphin_summary_tsv]}
+            phoenix_tsv_ch = summary_files_ch.map{   meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, phx_summary]}
+            pipeline_info_ch = summary_files_ch.map{ meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, software_versions]}
+
+            /*/ pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
-                directory_ch
+                summary_files_ch
             )
             ch_versions = ch_versions.mix(COLLECT_PROJECT_FILES.out.versions)
 
             griphin_excel_ch = COLLECT_PROJECT_FILES.out.griphin_excel
             griphin_tsv_ch = COLLECT_PROJECT_FILES.out.griphin_tsv
             phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv
-            pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
+            pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file*/
 
             valid_samplesheet = SAMPLESHEET_CHECK.out.csv
 
@@ -265,8 +272,7 @@ workflow CREATE_INPUT_CHANNELS {
 
 }
 
-/*
-========================================================================================
+/*========================================================================================
     GROOVY FUNCTIONS
 ========================================================================================
 */
@@ -288,6 +294,21 @@ def create_sample_dir_channels(LinkedHashMap row) {
     def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
     def dir = clean_path + "/" + row.sample
     array = [ meta, dir ]
+    return array
+}
+
+
+// Function to get list of [ meta, [ directory ] ]
+def create_summary_files_channels(LinkedHashMap row) {
+    def meta = [:] // create meta array
+    meta.id = row.sample
+    meta.project_id = row.directory.toString().split('/')[-1]
+    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    def software_versions = clean_path + "/pipeline_info/software_versions.yml"
+    def griphin_summary_tsv = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.tsv"
+    def griphin_summary_excel = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.xlsx"
+    def phx_summary = clean_path + "/Phoenix_Summary.tsv"
+    array = [ meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary ]
     return array
 }
 

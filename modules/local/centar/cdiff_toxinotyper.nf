@@ -1,5 +1,5 @@
 process CDIFF_TOXINOTYPER {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_single'
     container 'staphb/gamma@sha256:60d8ac58e016349a856fb7b443dd422ba69bae3f40e0dad83460d25ecf71101e'
 
@@ -18,20 +18,15 @@ process CDIFF_TOXINOTYPER {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.terra==false) { terra = ""} 
-    else if (params.terra==true) { terra = "-t terra" }
-    else { error "Please set params.terra to either \"true\" or \"false\"" }
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "staphb/gamma@"
-    """"
-
+    """
     ${ica}blat_toxinotypes.sh \\
         -i ${assembly} \\
-        -d ${tox_database}" \\
+        -d ${tox_database} \\
         -t ${tox_definitions} \\
         -o ./
 

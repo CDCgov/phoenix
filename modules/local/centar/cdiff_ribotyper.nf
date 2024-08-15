@@ -5,7 +5,7 @@ process CDIFF_RIBOTYPER {
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
-    tuple val(meta), path(wgmlst), val(fairy_outcome)
+    tuple val(meta), path(wgmlst)
 
     output:
     tuple val(meta), path("*.tsv"), emit: ribotype_file
