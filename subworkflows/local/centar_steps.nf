@@ -82,7 +82,7 @@ workflow CENTAR_SUBWORKFLOW {
         .join(CDIFF_TOXINOTYPER.out.tox_file.map{                meta, tox_file        -> [[id:meta.id], tox_file]},      by: [0])\
         .join(CDIFF_AR_GENES.out.gamma.map{                      meta, gamma           -> [[id:meta.id], gamma]},         by: [0])\
         .join(CDIFF_PLASMIDS.out.plasmids_file.map{              meta, plasmids_file   -> [[id:meta.id], plasmids_file]}, by: [0])\
-        .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype        -> [[id:meta.id], ribotype_file]}, by: [0])
+        .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype_file   -> [[id:meta.id], ribotype_file]}, by: [0])
 
         CENTAR_CONSOLIDATER(
            cdiff_summary_ch

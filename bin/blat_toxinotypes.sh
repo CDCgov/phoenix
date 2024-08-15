@@ -1,4 +1,4 @@
-#!/bin/sh -l
+#!/bin/bash -l
 
 #$ -o 	blattox.out
 #$ -e 	blattox.err
@@ -38,9 +38,9 @@ while getopts ":h?i:o:d:t:" option; do
 		i)
 			echo "Option -i triggered, argument = ${OPTARG}"
 			input=${OPTARG};;
-		o)
-			echo "Option -o triggered, argument = ${OPTARG}"
-			output=${OPTARG};;
+#		o)
+#			echo "Option -o triggered, argument = ${OPTARG}"
+#			output=${OPTARG};;
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
 			DB=${OPTARG};;
@@ -64,22 +64,20 @@ if [[ "${options_found}" -eq 0 ]]; then
 fi
 
 # Checks for proper argumentation
- if [[ ! -f "${input}" ]] || [[ -z "${input}" ]]; then
+ if [[ ! -f "${input}" ]] || [[-z "${input}" ]]; then
  	echo "Assembly empty or non-existent, exiting"
  	exit 1
  fi
 
 # Checks for proper argumentation
- if [[ ! -f "${DB}" ]] || [[ -z "${DB}" ]]; then
+ if [[ ! -f "${DB}" ]] || [[-z "${DB}" ]]; then
  	echo "Database empty or non-existent, exiting"
  	exit 1
  fi
 
-ml blat/35
-
 sample_name=$(basename ${input} .scaffolds.fa)
 db_name=$(basename ${DB} .fa)
-blat -q=prot -t=dnax ${input} ${DB} -minIdentity=100 -noHead ${output}/${sample_name}_${db_name}.psl
+blat -q=prot -t=dnax ${input} ${DB} -minIdentity=100 -noHead ${sample_name}_${db_name}.psl
 
 
 header="ID  Toxinotype  Toxin   sub-type    Contig  Start   Stop"
@@ -133,15 +131,15 @@ while IFS= read -r var; do
                 A_sub_type=${line_array[9]}
             fi
         fi
-        echo -e "${sample_name}\t${type}\t${sub_type}\t${contig}\t${contig_start}\t${contig_stop}" >> ${output}/${sample_name}_${db_name}.tmx
+        echo -e "${sample_name}\t${type}\t${sub_type}\t${contig}\t${contig_start}\t${contig_stop}" >> ${sample_name}_${db_name}.tmx
     fi
-done < "${output}/${sample_name}_${db_name}.psl"
+done < "${sample_name}_${db_name}.psl"
 
 if [[ "${A_found}" = "False" ]]; then
-    echo -e "${ToxA_default}" >> ${output}/${sample_name}_${db_name}.tmx
+    echo -e "${ToxA_default}" >> ${sample_name}_${db_name}.tmx
 fi
 if [[ "${B_found}" = "False" ]]; then
-    echo -e "${ToxB_default}" >> ${output}/${sample_name}_${db_name}.tmx
+    echo -e "${ToxB_default}" >> ${sample_name}_${db_name}.tmx
 fi
 total_toxs_count=$(( A_count + B_count))
 echo "Count check ${A_count},${B_count},${total_toxs_count}"
@@ -174,13 +172,13 @@ else
 fi
 
 
-sort -k2 ${output}/${sample_name}_${db_name}.tmx > ${output}/${sample_name}_${db_name}.tox
+sort -k2 ${sample_name}_${db_name}.tmx > ${sample_name}_${db_name}.tox
 
-echo "${header}" > ${output}/${sample_name}_${db_name}.tmp
-cat ${output}/${sample_name}_${db_name}.tmp ${output}/${sample_name}_${db_name}.tmx > ${output}/${sample_name}_${db_name}.tox
-echo "Toxinotype:   ${toxinotype}" >> ${output}/${sample_name}_${db_name}.tox
+echo "${header}" > ${sample_name}_${db_name}.tmp
+cat ${sample_name}_${db_name}.tmp ${sample_name}_${db_name}.tmx > ${sample_name}_${db_name}.tox
+echo "Toxinotype:   ${toxinotype}" >> ${sample_name}_${db_name}.tox
 
-rm ${output}/${sample_name}_${db_name}.tmx ${output}/${sample_name}_${db_name}.tmp
+rm ${sample_name}_${db_name}.tmx ${sample_name}_${db_name}.tmp
 
 # Send a completion email to whoever ran the script
 echo "All isolates completed"

@@ -54,7 +54,7 @@ while getopts ":h?t:c:o:y:a:r:p:V" option; do
 			ar_file=${OPTARG};;
         r)
 			echo "Option -r triggered, argument = ${OPTARG}"
-			ar_file=${OPTARG};;
+			rt_file=${OPTARG};;
         p)
 			echo "Option -p triggered, argument = ${OPTARG}"
 			plasmid_file=${OPTARG};;
@@ -994,10 +994,6 @@ if [[ -f "${clade_input}" ]]; then
 else
     echo "No clade/mlst file, carry one"
 fi
-
-if [[ -f "${other_AR}"]]
-
-
 
 echo -e "clade:${clade}
 toxinoptype:${toxinotype}

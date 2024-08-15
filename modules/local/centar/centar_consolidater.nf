@@ -21,6 +21,7 @@ process CENTAR_CONSOLIDATER {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
+    def prefix = task.ext.prefix ?: "${meta.id}"
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
@@ -31,9 +32,10 @@ process CENTAR_CONSOLIDATER {
         -t ${tox_file} \\
         -c ${clade_file} \\
         -t ${toxinotype_file} \\
-        -a ${other_ar_file} \\
+        -a ${other_AR_file} \\
         -r ${rt_file} \\
         -p ${plasmids_file}
+        -o ${prefix}_centar_output.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
