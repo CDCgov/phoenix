@@ -29,7 +29,7 @@ tox_input=""
 clade_input=""
 # Parse command line options
 options_found=0
-while getopts ":h?t:c:o:y:a:r:p:Vs:" option; do
+while getopts ":h?t:c:o:y:a:r:p:Vs:n:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -52,6 +52,9 @@ while getopts ":h?t:c:o:y:a:r:p:Vs:" option; do
         a)
 			echo "Option -a triggered, argument = ${OPTARG}"
 			ar_file=${OPTARG};;
+        n)
+			echo "Option -n triggered, argument = ${OPTARG}"
+			nt_file=${OPTARG};;
         r)
 			echo "Option -r triggered, argument = ${OPTARG}"
 			rt_file=${OPTARG};;
@@ -91,6 +94,17 @@ function extract_gama_elements {
     if ! [[ $1 =~ $re ]] ; then
         echo "error: Input is not a number"; exit 1
     fi
+    formatted_string=$(echo $2 | sed 's/__/!/g')
+    new_string=$(echo "${formatted_string}" | cut -d'!' -f$1)
+    echo "${new_string}"
+}
+
+# Little func to compare gamma output to what the mutation type is, e.g. AA vs NT and how well they match. $1 is the gamma line you want to check
+function confirm_mutation_type {
+    #re='^[0-9]+$'
+    #if ! [[ $1 =~ $re ]] ; then
+    #    echo "error: Input is not a number"; exit 1
+    #fi
     formatted_string=$(echo $2 | sed 's/__/!/g')
     new_string=$(echo "${formatted_string}" | cut -d'!' -f$1)
     echo "${new_string}"

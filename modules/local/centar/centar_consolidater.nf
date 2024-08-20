@@ -8,9 +8,10 @@ process CENTAR_CONSOLIDATER {
     tuple val(meta), path(tox_file), 
     path(clade_file), 
     path(toxinotype_file), 
-    path(other_AR_file), 
-    path(rt_file), 
-    path(plasmids_file)
+    path(other_AR_AA_file),
+    path(other_AR_NT_file), 
+    path(plasmids_file),
+    path(rt_file)
 
     output:
     tuple val(meta), path("*.tsv"), emit: centar_summary_line
@@ -32,7 +33,8 @@ process CENTAR_CONSOLIDATER {
         -t ${tox_file} \\
         -c ${clade_file} \\
         -y ${toxinotype_file} \\
-        -a ${other_AR_file} \\
+        -a ${other_AR_AA_file} \\
+        -n ${other_AR_NT_file} \\
         -r ${rt_file} \\
         -p ${plasmids_file} \\
         -o ${prefix}_centar_output.tsv \\
