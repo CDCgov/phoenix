@@ -366,7 +366,8 @@ workflow SCAFFOLDS_EXTERNAL {
         CUSTOM_DUMPSOFTWAREVERSIONS (
             ch_versions.unique().collectFile(name: 'collated_versions.yml')
         )
-                //
+
+        //
         // MODULE: MultiQC
         //
         workflow_summary    = WorkflowPhoenix.paramsSummaryMultiqc(workflow, summary_params)
