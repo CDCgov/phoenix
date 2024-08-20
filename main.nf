@@ -391,20 +391,15 @@ workflow UPDATE_PHOENIX {
 
     main:
         UPDATE_PHOENIX_WF ( ch_input, ch_input_indir, ch_versions )
-    
-    /*emit:
+
+    emit:
         mlst             = UPDATE_PHOENIX_WF.out.mlst
         amrfinder_output = UPDATE_PHOENIX_WF.out.amrfinder_output
         gamma_ar         = UPDATE_PHOENIX_WF.out.gamma_ar
-        //phx_summary      = UPDATE_PHOENIX_WF.out.phx_summary
-        /output for phylophoenix
+        phx_summary      = UPDATE_PHOENIX_WF.out.phx_summary
+        //output for phylophoenix
         griphin_tsv      = UPDATE_PHOENIX_WF.out.griphin_tsv
         griphin_excel    = UPDATE_PHOENIX_WF.out.griphin_excel
-        dir_samplesheet  = UPDATE_PHOENIX_WF.out.dir_samplesheet
-        //output for ncbi upload 
-        ncbi_sra_sheet       = params.create_ncbi_sheet ? UPDATE_PHOENIX_WF.out.ncbi_sra_sheet : null
-        ncbi_biosample_sheet = params.create_ncbi_sheet ? UPDATE_PHOENIX_WF.out.ncbi_biosample_sheet : null*/
-
 }
 
 /*

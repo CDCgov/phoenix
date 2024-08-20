@@ -214,53 +214,39 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
-        //CREATE_INPUT_CHANNELS.out.directory_ch.view()
-        // Extract the list of project folders from input_dir channel
-        project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map { it[1] }.collect().toList()
-        //project_ids.view()
+        // Extract the list of project folders from input_dir channel, combine with the actual path that is needed by GATHER_SUMMARY_LINES
+        project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map { it[1] }.unique().collect()
+            .map { dirs -> dirs.collectEntries { dir -> def dirName = dir.tokenize('/').last()
+            return [dirName, dir]}}
 
-        CREATE_SUMMARY_LINE.out.line_summary.view()
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().map{ meta, line_summary -> tuple( groupKey(meta.project_id), line_summary )}.groupTuple()
-
-        /*/ Collect all the summary files and filter to separate those that have the same project_id
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().filter { line_summary ->
-            def project_id = line_summary[0].project_id
-            project_ids.contains(project_id)}
-            .join(CREATE_INPUT_CHANNELS.out.directory_ch, by: [[0][0],[0][1]])
-            .map { it -> filter_out_meta(it) }// Convert to a list to use indexing*/
-
-        summaries_ch.view()
+        // Group the line_summaries by their project id and add in the full path for the project dir
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{meta, summaryline -> [meta.project_id, summaryline]}.groupTuple(by: 0)
+            .map { group -> 
+                def (id, files) = group
+                def dirPath = project_ids.value[id]  // Retrieve the matching directory path
+                return [id, dirPath, files]}
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            summaries_ch.map{ summary_line, dir -> summary_line}, summaries_ch.map{ summary_line, dir -> dir}, true
+            summaries_ch.map{ project_id, dir, summary_lines -> summary_lines}, summaries_ch.map{ project_id, dir, summary_lines -> dir}, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-       //summaries_ch.flatten().view()
-
         // check if the incoming file was created with CDC_PHOENIX or PHOENIX
-        buscoExists_ch = summaries_ch.flatten().map{ file, dir_ch -> 
-                def busco_boolean = file.head().text.contains('BUSCO')
-                //array = [ meta, dir_ch, busco_boolean ]
-                return [ file, dir_ch, busco_boolean ]}
+        buscoExists_ch = summaries_ch.map{ project_id, dir, summary_lines -> 
+                def busco_boolean = summary_lines.head().text.contains('BUSCO')
+                return [ summary_lines, dir, busco_boolean ]}
 
-        // now we will split the channel into its true and false elements
+        // now we will split the channel into its true and false elements for if we need to run the CDC version of GRIPHIN or not. 
         busco_boolean_ch = buscoExists_ch.branch{
                     buscoTrue: it[2] == true 
                     buscoFalse: it[2] == false}
 
-        buscoTrue = busco_boolean_ch.buscoTrue
-        buscoFalse = busco_boolean_ch.buscoFalse
-
-        //buscoFalse.view()
-        //buscoTrue.view()
-
         // for samples that were created with entry CDC_PHX
         GRIPHIN_NO_OUTPUT_CDC (
-            buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
+            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true
+            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT_CDC.out.versions)
 
@@ -272,38 +258,15 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT.out.versions)
 
-
-        /*griphin_reports_ch = GRIPHIN_NO_OUTPUT.out.griphin_report.collect().combine(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.collect()).flatten()
-        griphin_reports_ch.view()
+        // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
+        griphin_reports_ch = GRIPHIN_NO_OUTPUT.out.griphin_report.collect().combine(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.collect()).flatten()
 
         // join old and new griphins for combining
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{          meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-        .join(griphin_reports_ch.map{it -> add_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                      meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(griphin_reports_ch.map{it -> add_meta(it)}.map{        meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
 
-        // combine griphin files
-        UPDATE_GRIPHIN (
-            griphins_ch, params.coverage
-        )
-        ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)*/
-
-        // combine by project_id - > this will need to be adjusted in CDC_PHOENIX and PHOENIX
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{          meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-        .join(GRIPHIN_NO_OUTPUT.out.griphin_report.map{it -> add_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                      meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
-
-        // combine by project_id - > this will need to be adjusted in CDC_PHOENIX and PHOENIX
-        griphins_cdc_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{          meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-        .join(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.map{it -> add_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                          meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
-
-        // combine griphin files that created with CDC_PHOENIX entry
-        UPDATE_CDC_GRIPHIN (
-            griphins_cdc_ch, params.coverage
-        )
-        ch_versions = ch_versions.mix(UPDATE_CDC_GRIPHIN.out.versions)
-
-        // combine griphin files
+        // combine griphin files, the new one just created and the old one that was found in the project dir. 
         UPDATE_GRIPHIN (
             griphins_ch, params.coverage
         )
@@ -315,26 +278,14 @@ workflow UPDATE_PHOENIX_WF {
             ch_versions.unique().collectFile(name: 'collated_versions.yml')
         )
 
-        //
-        // MODULE: MultiQC
-        //
-        workflow_summary    = WorkflowPhoenix.paramsSummaryMultiqc(workflow, summary_params)
-        ch_workflow_summary = Channel.value(workflow_summary)
-
-        ch_multiqc_files = Channel.empty()
-        ch_multiqc_files = ch_multiqc_files.mix(Channel.from(ch_multiqc_config))
-        ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
-        ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-        ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-
     emit:
         mlst             = DO_MLST.out.checked_MLSTs
         amrfinder_output = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
         phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
         //output for phylophoenix
-        //griphin_tsv      = UPDATE_GRIPHIN.out.griphin_tsv_report
-        //griphin_excel    = UPDATE_GRIPHIN.out.griphin_report
+        griphin_tsv      = UPDATE_GRIPHIN.out.griphin_tsv_report
+        griphin_excel    = UPDATE_GRIPHIN.out.griphin_report
         //dir_samplesheet  = UPDATE_CDC_GRIPHIN.out.converted_samplesheet
 }
 

@@ -5,31 +5,24 @@ process COLLECT_PROJECT_FILES {
     container 'quay.io/jvhagey/phoenix:base_v2.1.0'
 
     input:
-    tuple val(meta), path(dir)
+    tuple val(meta), path(griphin_excel), path(griphin_tsv), path(phoenix_tsv), path(pipeline_info)
 
     output:
-    tuple val(meta), path("*_GRiPHin.tsv"),           emit: griphin_tsv
-    tuple val(meta), path("*_GRiPHin.xlsx"),          emit: griphin_excel
-    tuple val(meta), path("Phoenix_Summary.tsv"),     emit: phoenix_tsv
+    tuple val(meta), path("*_old_GRiPHin.tsv"),       emit: griphin_tsv
+    tuple val(meta), path("*_old_GRiPHin.xlsx"),      emit: griphin_excel
+    tuple val(meta), path("Phoenix_Summary_Old.tsv"), emit: phoenix_tsv
     tuple val(meta), path("software_versions.yml"),   emit: software_versions_file
     path("versions.yml"),                             emit: versions
 
     script: 
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
-    // Remove trailing slash if present
-    def clean_dir = dir.endsWith('/') ? "${dir}"[0..-2] : "${dir}"
-
-    // Define project_path and ab_path
-    def project_path = clean_dir
-    def ab_path = "${clean_dir}/${meta.id}"
     """
-    #just moving files so the output is accessible 
-    mv ${project_path}/pipeline_info/software_versions.yml .
+    mv ./pipeline_info/software_versions.yml .
     #remove the "summary" part of the name so that the output can be picked up correctly in the UPDATE_GRIPHIN process
-    mv ${project_path}/${project_path}_GRiPHin_Summary.xlsx ./${project_path}_old_GRiPHin.xlsx
-    mv ${project_path}/${project_path}_GRiPHin_Summary.tsv ./${project_path}_old_GRiPHin.tsv
-    mv ${project_path}/Phoenix_Summary.tsv .
+    mv ${meta.project_id}_GRiPHin_Summary.xlsx ${meta.project_id}_old_GRiPHin.xlsx
+    mv ${meta.project_id}_GRiPHin_Summary.tsv ${meta.project_id}_old_GRiPHin.tsv
+    mv Phoenix_Summary.tsv Phoenix_Summary_Old.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

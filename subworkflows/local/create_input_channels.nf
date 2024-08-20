@@ -201,8 +201,11 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_ani_best_hit_ch = COLLECT_SAMPLE_FILES.out.ani_best_hit
 
             // pulling all the necessary project level files into channels
+            summary_files_ch = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
+
+            // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
-                directory_ch
+                summary_files_ch
             )
             ch_versions = ch_versions.mix(COLLECT_PROJECT_FILES.out.versions)
 
@@ -254,6 +257,19 @@ workflow CREATE_INPUT_CHANNELS {
 ========================================================================================
 */
 
+// Function to get list of [ meta, [ directory ] ]
+def create_summary_files_channels(LinkedHashMap row) {
+    def meta = [:] // create meta array
+    meta.id = row.sample
+    meta.project_id = row.directory.toString().split('/')[-1]
+    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    def software_versions = clean_path + "/pipeline_info/"
+    def griphin_summary_tsv = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.tsv"
+    def griphin_summary_excel = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.xlsx"
+    def phx_summary = clean_path + "/Phoenix_Summary.tsv"
+    array = [ meta, griphin_summary_excel, griphin_summary_tsv, phx_summary, software_versions ]
+    return array
+}
 
 // Function to get list of [ meta, [ directory ] ]
 def create_dir_channels(LinkedHashMap row) {
