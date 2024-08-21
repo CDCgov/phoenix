@@ -18,7 +18,9 @@ process COLLECT_PROJECT_FILES {
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    mv ./pipeline_info/software_versions.yml .
+    if [ ! -e "software_versions.yml" ]; then
+        mv ./pipeline_info/software_versions.yml .
+    fi
     #remove the "summary" part of the name so that the output can be picked up correctly in the UPDATE_GRIPHIN process
     mv ${meta.project_id}_GRiPHin_Summary.xlsx ${meta.project_id}_old_GRiPHin.xlsx
     mv ${meta.project_id}_GRiPHin_Summary.tsv ${meta.project_id}_old_GRiPHin.tsv

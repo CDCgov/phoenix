@@ -382,8 +382,7 @@ workflow UPDATE_PHOENIX {
             ch_input = null //keep samplesheet input null if not passed
             def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = Channel.fromPath(params.indir, relative: true)
-            //ch_input_indir.view()
+            ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
         } else { // if no samplesheet is passed and no input directory is given
             exit 1, 'For -entry UPDATE_PHOENIX: You need EITHER an input samplesheet or a directory!' 
         }

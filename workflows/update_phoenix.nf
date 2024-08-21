@@ -220,7 +220,10 @@ workflow UPDATE_PHOENIX_WF {
             return [dirName, dir]}}
 
         // Group the line_summaries by their project id and add in the full path for the project dir
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{meta, summaryline -> [meta.project_id, summaryline]}.groupTuple(by: 0)
+        //the join is only to make sure SRST2 finished before going to the last step, we just combine and then kick it out
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary
+            .join(SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]]) 
+            .map{meta, summaryline, gene_results -> [meta.project_id, summaryline]}.groupTuple(by: 0)
             .map { group -> 
                 def (id, files) = group
                 def dirPath = project_ids.value[id]  // Retrieve the matching directory path
@@ -259,7 +262,7 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT.out.versions)
 
         // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
-        griphin_reports_ch = GRIPHIN_NO_OUTPUT.out.griphin_report.collect().combine(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.collect()).flatten()
+        griphin_reports_ch = GRIPHIN_NO_OUTPUT.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.collect().ifEmpty([])).flatten()
 
         // join old and new griphins for combining
         griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
