@@ -33,12 +33,13 @@ workflow CENTAR_SUBWORKFLOW {
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
         ch_versions = Channel.empty() // Used to collect the software versions
+        mlst_db_value=mlst_db.first()
        
         combined_mlst.view()
         mlst_db.view()
  
         CDIFF_CLADE (
-            combined_mlst, mlst_db
+            combined_mlst, mlst_db_value
         )
         ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
 
