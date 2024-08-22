@@ -94,7 +94,7 @@ def check_samplesheet(file_in, file_out):
             files = []
             # Define the file path
             dir = line.split(",")[1]
-            #sample_folder = line.split(",")[0]
+            sample_folder = line.split(",")[0]
             if str(dir).strip().endswith('/'):
                 path = str(dir).strip()[:-1]
             else:
