@@ -17,31 +17,37 @@ workflow CREATE_INPUT_CHANNELS {
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
 
+            //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
+            def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
+
+            // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
+            id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
+
+            //make relative path full and get 
+            directory_ch = id_channel.flatten().combine(indir.map{ it -> return new File(it.toString()).getAbsolutePath()})
+                .map{ it -> create_groups_and_id(it, params.indir.toString())}
+
             // get file_integrity file for MLST updating
             def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
             //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
             file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
-                .map{ it -> create_meta_with_wildcard(it, "_summary.txt", params.indir.toString())}
+                .map{ it -> create_meta(it, "_summary.txt", params.indir.toString(), true)}
+                .combine(id_channel).filter{ meta, file_integrity, id_channel -> id_channel.contains(meta.id)}.map{ meta, file_integrity, id_channel -> [ meta, file_integrity ]}
 
-            //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
-            def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
-
-            //create file_integrity file channel with meta information 
-            id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
-                 // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
-            //id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.flatten()
-
-            directory_ch = Channel.fromPath(params.indir, relative: true).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())}
+            /*/maybe shorter version, will test later?
+            Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_summary.txt", params.indir.toString(),true)}
+                .filter{ meta, file_integrity -> id_channel.contains(meta.id)}*/
 
             // Get reads
             def r1_glob = append_to_path(params.indir.toString(),'*/fastp_trimd/*_1.trim.fastq.gz')
             def r2_glob = append_to_path(params.indir.toString(),'*/fastp_trimd/*_2.trim.fastq.gz')
             //create reads channel with meta information
-            r1_reads_ch = Channel.fromPath(r1_glob).map{ it -> create_meta(it, "_1.trim.fastq.gz", params.indir.toString())}
+            r1_reads_ch = Channel.fromPath(r1_glob).map{ it -> create_meta(it, "_1.trim.fastq.gz", params.indir.toString(),false)}
             filtered_r1_reads_ch = r1_reads_ch.combine(id_channel).filter{ meta, read_1, id_channel -> id_channel.contains(meta.id)}\
             .map{ meta, read_1, id_channel -> [ meta, read_1 ]}
 
-            r2_reads_ch = Channel.fromPath(r2_glob).map{ it -> create_meta(it, "_2.trim.fastq.gz", params.indir.toString())}
+            r2_reads_ch = Channel.fromPath(r2_glob).map{ it -> create_meta(it, "_2.trim.fastq.gz", params.indir.toString(),false)}
             filtered_r2_reads_ch = r2_reads_ch.combine(id_channel).filter{ meta, read_2, id_channel -> id_channel.contains(meta.id)}\
             .map{ meta, read_2, id_channel -> [ meta, read_2 ]}
             // combine reads into one channel
@@ -50,7 +56,7 @@ workflow CREATE_INPUT_CHANNELS {
             // Get scaffolds
             def scaffolds_glob = append_to_path(params.indir.toString(),'*/assembly/*.filtered.scaffolds.fa.gz')
             //create scaffolds channel with meta information -- annoying, but you have to keep this in the brackets instead of having it once outside.
-            scaffolds_ch = Channel.fromPath(scaffolds_glob).map{ it -> create_meta(it, ".filtered.scaffolds.fa.gz", params.indir.toString())} // use created regrex to get samples
+            scaffolds_ch = Channel.fromPath(scaffolds_glob).map{ it -> create_meta(it, ".filtered.scaffolds.fa.gz", params.indir.toString(),false)} // use created regrex to get samples
                 // create meta for sample
             // Checking regrex has correct extension
             scaffolds_ch = scaffolds_ch.map{ it -> check_scaffolds(it) }
@@ -61,7 +67,7 @@ workflow CREATE_INPUT_CHANNELS {
             def taxa_glob = append_to_path(params.indir.toString(),'*/*.tax')
             //create .tax file channel with meta information 
             taxonomy_ch = Channel.fromPath(taxa_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".tax", params.indir.toString())} // create meta for sample
+                .map{ it -> create_meta(it, ".tax", params.indir.toString(),false)} // create meta for sample
             //filtering out failured samples
             filtered_taxonomy_ch = taxonomy_ch.combine(id_channel).filter{ meta, taxa, id_channel -> id_channel.contains(meta.id)}.map{ meta, taxa, id_channel -> [ meta, taxa ]}
 
@@ -69,7 +75,7 @@ workflow CREATE_INPUT_CHANNELS {
             def trimmed_stats_glob = append_to_path(params.indir.toString(),'*/qc_stats/*_trimmed_read_counts.txt')
             //create .tax file channel with meta information 
             trimmed_stats_ch = Channel.fromPath(trimmed_stats_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_trimmed_read_counts.txt", params.indir.toString())} // create meta for sample
+                .map{ it -> create_meta(it, "_trimmed_read_counts.txt", params.indir.toString(),false)} // create meta for sample
             //filtering out failured samples
             filtered_trimmed_stats_ch = trimmed_stats_ch.combine(id_channel).filter{ meta, trimmed_stats, id_channel -> id_channel.contains(meta.id)}.map{ meta, trimmed_stats, id_channel -> [ meta, trimmed_stats ]}
 
@@ -77,7 +83,7 @@ workflow CREATE_INPUT_CHANNELS {
             def kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.top_kraken_hit.txt')
             //create *.top_kraken_hit.txt file channel with meta information 
             kraken_bh_ch = Channel.fromPath(kraken_bh_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".kraken2_trimd.top_kraken_hit.txt", params.indir.toString())} // create meta for sample
+                .map{ it -> create_meta(it, ".kraken2_trimd.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
             //filtering out failured samples
             filtered_kraken_bh_ch = kraken_bh_ch.combine(id_channel).filter{ meta, kraken_bh, id_channel -> id_channel.contains(meta.id)}.map{ meta, kraken_bh, id_channel -> [ meta, kraken_bh ]}
 
@@ -101,7 +107,7 @@ workflow CREATE_INPUT_CHANNELS {
             def quast_glob = append_to_path(params.indir.toString(),'*/quast/*_summary.tsv')
             //create .tax file channel with meta information 
             quast_ch = Channel.fromPath(quast_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_summary.tsv", params.indir.toString())} // create meta for sample
+                .map{ it -> create_meta(it, "_summary.tsv", params.indir.toString(),false)} // create meta for sample
             //filtering out failured samples
             filtered_quast_ch = quast_ch.combine(id_channel).filter{ meta, quast_report, id_channel -> id_channel.contains(meta.id)}.map{ meta, quast_report, id_channel -> [ meta, quast_report ]}
 
@@ -137,7 +143,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             def line_summary_glob = append_to_path(params.indir.toString(),'*/*_summaryline.tsv')
             line_summary_ch = Channel.fromPath(line_summary_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_summaryline.tsv", params.indir.toString())} // create meta for sample
+                .map{ it -> create_meta(it, "_summaryline.tsv", params.indir.toString(),false)} // create meta for sample
 
             //////////////////////////// FOR CENTAR ///////////////////////////////////////
 
@@ -150,7 +156,6 @@ workflow CREATE_INPUT_CHANNELS {
             //filtering out failured samples
             filtered_combined_mlst_ch = combined_mlst_ch.combine(id_channel).filter{ meta, combined_mlst_ch, id_channel -> id_channel.contains(meta.id)}.map{ meta, combined_mlst_ch, id_channel -> [ meta, combined_mlst ]}
 
-
             /////////////////////////// PROJECT LEVEL FILES ///////////////////////////////
 
             //filtering out failured samples
@@ -162,15 +167,19 @@ workflow CREATE_INPUT_CHANNELS {
             //filtering out failured samples
             filtered_synopsis_ch = synopsis_ch.combine(id_channel).filter{ meta, synopsis, id_channel -> id_channel.contains(meta.id)}.map{ meta, synopsis, id_channel -> [ meta, synopsis ]}
 
+            // use created regrex to get samples
             def griphin_excel_glob = append_to_path(params.indir.toString(),'*_GRiPHin_Summary.xlsx')
-            griphin_excel_ch = Channel.fromPath(griphin_excel_glob).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
+            all_griphin_excel_ch = id_channel.flatten().combine(Channel.fromPath(griphin_excel_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())}
+                //.map{ it -> modifiedFileChannel(it, "_GRiPHin_Summary","_old_GRiPHin") }
+            //create regrex, get files in dir, add in meta information, change name
             def griphin_tsv_glob = append_to_path(params.indir.toString(),'*_GRiPHin_Summary.tsv')
-            griphin_tsv_ch = Channel.fromPath(griphin_tsv_glob).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
-            def phoenix_tsv_glob = append_to_path(params.indir.toString(),'Phoenix_Summary.tsv$')
-            phoenix_tsv_ch = Channel.fromPath(phoenix_tsv_glob).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())}
-
+            all_griphin_tsv_ch = id_channel.flatten().combine(Channel.fromPath(griphin_tsv_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} 
+                //.map{ it -> modifiedFileChannel(it, "_GRiPHin_Summary","_old_GRiPHin") }
+            def phoenix_tsv_glob = append_to_path(params.indir.toString(),'Phoenix_Summary.tsv')
+            all_phoenix_tsv_ch = id_channel.flatten().combine(Channel.fromPath(phoenix_tsv_glob)).map{ it -> create_groups_id_and_busco(it, params.indir.toString())}
+                //.map{ it -> modifiedFileChannel(it, "_Summary","_Summary_Old") }
             def pipeline_info_glob = append_to_path(params.indir.toString(),'pipeline_info/software_versions.yml')
-            pipeline_info_ch = Channel.fromPath(pipeline_info_glob).combine(id_channel).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples*/
+            all_pipeline_info_ch = id_channel.flatten().combine(Channel.fromPath(pipeline_info_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
 
             //get valid samplesheet for griphin step in cdc_scaffolds
             CREATE_SAMPLESHEET (
@@ -179,6 +188,24 @@ workflow CREATE_INPUT_CHANNELS {
             ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
 
             valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
+
+            // combing all summary files into one channel
+            summary_files_ch = all_griphin_excel_ch.join(all_griphin_tsv_ch.map{meta, griphin_tsv   -> [[id:meta.id, project_id:meta.project_id], griphin_tsv]},   by: [[0][0],[0][1]])
+                                    .join(all_phoenix_tsv_ch.map{               meta, phoenix_tsv   -> [[id:meta.id, project_id:meta.project_id], phoenix_tsv]},   by: [[0][0],[0][1]])
+                                    .join(all_pipeline_info_ch.map{             meta, pipeline_info -> [[id:meta.id, project_id:meta.project_id], pipeline_info]}, by: [[0][0],[0][1]])
+
+            // pulling all the necessary project level files into channels - need to do this for the name change.
+            COLLECT_PROJECT_FILES (
+                summary_files_ch
+            )
+            ch_versions = ch_versions.mix(COLLECT_PROJECT_FILES.out.versions)
+
+            griphin_excel_ch = COLLECT_PROJECT_FILES.out.griphin_excel
+            griphin_tsv_ch = COLLECT_PROJECT_FILES.out.griphin_tsv
+            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> add_entry_meta(it)}
+            pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
+
+
 
         } else if (samplesheet != null) {
             // if a samplesheet was passed then use that to create the channelv
@@ -231,10 +258,10 @@ workflow CREATE_INPUT_CHANNELS {
 
             griphin_excel_ch = COLLECT_PROJECT_FILES.out.griphin_excel
             griphin_tsv_ch = COLLECT_PROJECT_FILES.out.griphin_tsv
-            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv
-            pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file*/
+            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> add_entry_meta(it)}
+            pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
 
-            valid_samplesheet = SAMPLESHEET_CHECK.out.csv
+            valid_samplesheet = SAMPLESHEET_CHECK.out.csv // still need to check this file
 
         } else {
             exit 1, 'You need EITHER an input directory samplesheet (using --input) or a single sample directory (using --indir)!' 
@@ -277,6 +304,27 @@ workflow CREATE_INPUT_CHANNELS {
 ========================================================================================
 */
 
+
+def modifiedFileChannel(input_ch, old_string, new_string) {
+    def newFileName = input_ch[1].getName().replaceAll(old_string, new_string)
+    def newFilePath = input_ch[1].getParent() ? input_ch[1].getParent().resolve(newFileName) : newFileName
+    return [ input_ch[0], newFilePath ]
+}
+
+// Function to get list of [ meta, [ directory ] ]
+def create_summary_files_channels(LinkedHashMap row) {
+    def meta = [:] // create meta array
+    meta.id = row.sample
+    meta.project_id = row.directory.toString().split('/')[-1]
+    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    def software_versions = clean_path + "/pipeline_info/"
+    def griphin_summary_tsv = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.tsv"
+    def griphin_summary_excel = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.xlsx"
+    def phx_summary = clean_path + "/Phoenix_Summary.tsv"
+    array = [ meta, griphin_summary_excel, griphin_summary_tsv, phx_summary, software_versions ]
+    return array
+}
+
 // Function to get list of [ meta, [ directory ] ]
 def create_dir_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
@@ -284,6 +332,28 @@ def create_dir_channels(LinkedHashMap row) {
     meta.project_id = row.directory.toString().split('/')[-1]
     array = [ meta, row.directory ]
     return array
+}
+
+def add_entry_meta(input_ch){
+    """samples needed to be grouped by their project directory for editing summary files."""
+    def meta = [:] // create meta array
+    meta.id = input_ch[0].id
+    meta.project_id = input_ch[0].project_id
+    // Use file object to read the first line of the file
+    def file = input_ch[1]
+    def firstLine = file.text.split('\n')[0]
+    meta.entry = firstLine.contains('BUSCO')
+    return [meta, input_ch[1]]
+}
+
+def create_groups_id_and_busco(input_ch, project_folder){
+    """samples needed to be grouped by their project directory for editing summary files."""
+    def meta = [:] // create meta array
+    meta.id = input_ch[0]
+    meta.project_id = project_folder.toString().split('/')[-1]
+    def firstLine = input_ch[1].text.split('\n')[0]
+    meta.entry = firstLine.contains('BUSCO')
+    return [meta, input_ch[1]]
 }
 
 // Function to get list of [ meta, [ directory ] ]
@@ -315,9 +385,9 @@ def create_summary_files_channels(LinkedHashMap row) {
 def create_groups_and_id(input_ch, project_folder){
     """samples needed to be grouped by their project directory for editing summary files."""
     def meta = [:] // create meta array
-    meta.id = input_ch[1]
+    meta.id = input_ch[0]
     meta.project_id = project_folder.toString().split('/')[-1]
-    return [meta, input_ch[0]]
+    return [meta, input_ch[1]]
 }
 
 def create_groups(input_ch, project_folder){
@@ -358,16 +428,25 @@ def create_meta_with_wildcard(sample, file_extension, indir){
     def meta = [:] // create meta array
     meta.id = sample.getName().replaceAll(file_extension, "").split('_')[0] // get file name without extention
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]  //file() portion provides full path 
+    def array = [ meta, sample ]
     return array
 }
 
-def create_meta(sample, file_extension, indir){
+def create_meta(sample, file_extension, indir, extra_check){
     '''Creating meta: [[id:sample1], $PATH/sample1.filtered.scaffolds.fa.gz]'''
     def meta = [:] // create meta array
     meta.id = sample.getName().replaceAll(file_extension, "") // get file name without extention
+    if (extra_check==true){
+        full_ext1 =  "_scaffolds" + file_extension
+        full_ext2 = "_corruption" + file_extension
+        full_ext3 = "_trimstats" + file_extension
+        full_ext4 = "_rawstats" + file_extension
+        meta.id = sample.getName().replaceAll(full_ext1, "").replaceAll(full_ext2, "").replaceAll(full_ext3, "").replaceAll(full_ext4, "")
+    } else {
+        meta.id = sample.getName().replaceAll(file_extension, "") // get file name without extention
+    }
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]  //file() portion provides full path 
+    def array = [ meta, sample ]
     return array
 }
 
@@ -376,7 +455,7 @@ def create_meta_non_extension(sample, indir){
     def meta = [:] // create meta array
     meta.id = sample.getSimpleName().split('_')[0] // get the last string after the last backslash
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]  //file() portion provides full path
+    def array = [ meta, sample ]
     return array
 }
 

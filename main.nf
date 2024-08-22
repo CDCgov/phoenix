@@ -35,7 +35,7 @@ include { SCAFFOLDS_EXTERNAL          } from './workflows/scaffolds'
 include { SCAFFOLDS_EXQC              } from './workflows/cdc_scaffolds'
 include { SRA_PREP                    } from './workflows/sra_prep'
 include { CLIA_INTERNAL               } from './workflows/clia'
-include { UPDATE_CDC_PHOENIX_EXQC     } from './workflows/update_cdc_phoenix'
+include { UPDATE_PHOENIX_WF           } from './workflows/update_phoenix'
 include { RUN_CENTAR                  } from './workflows/centar'
 
 //
@@ -353,7 +353,7 @@ workflow CLIA {
 // WORKFLOW: Entry point for updating phoenix mlst and ar output
 //
 
-workflow UPDATE_CDC_PHOENIX {
+workflow UPDATE_PHOENIX {
 
     //Regardless of what is passed outdir needs to be the same as the input dir 
     //if you don't pass outdir then the indir
@@ -383,66 +383,23 @@ workflow UPDATE_CDC_PHOENIX {
             ch_input = null //keep samplesheet input null if not passed
             def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = Channel.fromPath(params.indir, relative: true)
-            //ch_input_indir.view()
+            ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
         } else { // if no samplesheet is passed and no input directory is given
             exit 1, 'For -entry UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
     main:
-        UPDATE_CDC_PHOENIX_EXQC ( ch_input, ch_input_indir, ch_versions )
-    
-    /*emit:
-        mlst             = UPDATE_CDC_PHOENIX_EXQC.out.mlst
-        amrfinder_output = UPDATE_CDC_PHOENIX_EXQC.out.amrfinder_output
-        gamma_ar         = UPDATE_CDC_PHOENIX_EXQC.out.gamma_ar
-        //phx_summary      = UPDATE_CDC_PHOENIX_EXQC.out.phx_summary
-        /output for phylophoenix
-        griphin_tsv      = UPDATE_CDC_PHOENIX_EXQC.out.griphin_tsv
-        griphin_excel    = UPDATE_CDC_PHOENIX_EXQC.out.griphin_excel
-        dir_samplesheet  = UPDATE_CDC_PHOENIX_EXQC.out.dir_samplesheet
-        //output for ncbi upload 
-        ncbi_sra_sheet       = params.create_ncbi_sheet ? UPDATE_CDC_PHOENIX_EXQC.out.ncbi_sra_sheet : null
-        ncbi_biosample_sheet = params.create_ncbi_sheet ? UPDATE_CDC_PHOENIX_EXQC.out.ncbi_biosample_sheet : null*/
+        UPDATE_PHOENIX_WF ( ch_input, ch_input_indir, ch_versions )
 
-}
-
-//
-// WORKFLOW: Entry point for running C. diff specific pipeline as standalone
-//
-
-workflow CENTAR {
-
-    // Check mandatory parameters
-    ch_versions = Channel.empty() // Used to collect the software versions
-    // Check input path parameters to see if they exist
-    if (params.input != null ) {  // if a samplesheet is passed
-        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
-        if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory! Just pick one.' 
-        } else { // if only samplesheet is passed check to make sure input is an actual file
-            def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
-            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = null //keep input directory null if not passed
-            // get full path for input and make channel
-            if (params.input) { ch_input = file(params.input) }
-        }
-    } else {
-        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
-            ch_input = null //keep samplesheet input null if not passed
-            def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
-            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = Channel.fromPath(params.indir, relative: true)
-            //ch_input_indir.view()
-        } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
-        }
-    }
-
-    main:
-        RUN_CENTAR ( ch_input, ch_input_indir, ch_versions )
-
+    emit:
+        mlst             = UPDATE_PHOENIX_WF.out.mlst
+        amrfinder_output = UPDATE_PHOENIX_WF.out.amrfinder_output
+        gamma_ar         = UPDATE_PHOENIX_WF.out.gamma_ar
+        phx_summary      = UPDATE_PHOENIX_WF.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = UPDATE_PHOENIX_WF.out.griphin_tsv
+        griphin_excel    = UPDATE_PHOENIX_WF.out.griphin_excel
 }
 
 /*

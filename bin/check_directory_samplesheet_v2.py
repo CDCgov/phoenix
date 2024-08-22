@@ -100,14 +100,14 @@ def check_samplesheet(file_in, file_out):
             else:
                 path = str(dir).strip()
             #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
-            files.append(path + "/" + sample_name + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
-            files.append(path + "/" + sample_name + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
-            files.append(path + "/" + sample_name + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
-            files.append(path + "/" + sample_name + "/annotation/" + sample_name + ".faa")
-            files.append(path + "/" + sample_name + "/annotation/" + sample_name + ".gff")
-            files.append(path + "/" + sample_name + "/" + sample_name + ".tax")
-            files.append(path + "/" + sample_name + "/" + sample_name + "_summaryline.tsv")
-            files.append(path + "/" + sample_name + "/" + sample_name + ".synopsis")
+            files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
+            files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
+            files.append(path + "/" + sample_folder + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
+            files.append(path + "/" + sample_folder + "/annotation/" + sample_name + ".faa")
+            files.append(path + "/" + sample_folder + "/annotation/" + sample_name + ".gff")
+            files.append(path + "/" + sample_folder + "/" + sample_name + ".tax")
+            files.append(path + "/" + sample_folder + "/" + sample_name + "_summaryline.tsv")
+            files.append(path + "/" + sample_folder + "/" + sample_name + ".synopsis")
             files.append(path + "/" + "Phoenix_Summary.tsv")
             # Handle glob searches with potential errors
             #try:
@@ -129,7 +129,7 @@ def check_samplesheet(file_in, file_out):
             try:
                 glob.glob(path + "/*_GRiPHin_Summary.tsv")[0]
             except IndexError:
-                raise ValueError(f"No *_GRiPHin_Summary.tsv file found in {path}")
+                raise ValueError(f"No *_GRiPHin_Summary.tsv file found in {path}.")
             for file_path in files:
                 # Check if the file exists
                 if Path(file_path).exists():

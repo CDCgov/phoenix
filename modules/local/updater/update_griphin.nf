@@ -8,8 +8,8 @@ process UPDATE_GRIPHIN {
     val(coverage)
 
     output:
-    path("*_Summary.xlsx"),            emit: griphin_report
-    path("*_Summary.tsv"),             emit: griphin_tsv_report
+    path("*_GRiPHin_Summary.xlsx"),    emit: griphin_report
+    path("*_GRiPHin_Summary.tsv"),     emit: griphin_tsv_report
     path("versions.yml"),              emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
@@ -20,7 +20,7 @@ process UPDATE_GRIPHIN {
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    ${ica}combine_GRiPHins.py -g1 ${old_griphin} -g2 ${new_griphin} --output ${outdir} --coverage ${coverage}
+    ${ica}combine_GRiPHins.py -g1 ${old_griphin} -g2 ${new_griphin} --output ${outdir}_GRiPHin_Summary --coverage ${coverage}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
