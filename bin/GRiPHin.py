@@ -17,8 +17,8 @@ from Bio import SeqIO
 from itertools import chain
 
 # Set display options to show all rows and columns
-pd.set_option('display.max_rows', None)  # Show all rows
-pd.set_option('display.max_columns', None)  # Show all columns
+#pd.set_option('display.max_rows', None)  # Show all rows
+#pd.set_option('display.max_columns', None)  # Show all columns
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
@@ -894,6 +894,7 @@ def Get_Files(directory, sample_name):
     kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt"
     quast_report = directory + "/quast/" + sample_name + "_summary.tsv"
     mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
+    #centar_file = directory + "/centar/" + sample_name + ".tsv"
     fairy_file = glob.glob(directory + "/file_integrity/" + sample_name + "_*_summary.txt")
     # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
     # You only need this for glob because glob will throw an index error if not.
@@ -1082,7 +1083,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
                         # Check if there is a value in the corresponding column in the second DataFrame
                         srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
-                        print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
+                        #print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
     # Check if DataFrame is not empty
@@ -1138,7 +1139,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
 def order_ar_gene_columns(ar_combined_df):
     ar_combined_ordered_df = pd.DataFrame() #create new dataframe to fill
     #fixing column orders
-    ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
+    ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID','No_AR_Genes_Found']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\\((.*)\\).*').values.tolist() # get all ar drug names form column names
     sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
@@ -1153,6 +1154,7 @@ def order_ar_gene_columns(ar_combined_df):
     # unnest list
     all_column_names = list(chain(*all_column_names))
     #add back AR_DB and WGS_ID to front of list
+    all_column_names.insert(0, "No_AR_Genes_Found")
     all_column_names.insert(0, "WGS_ID")
     all_column_names.insert(0, "AR_Database")
     # reorder columns - should be alphabetical by drug name and within drug name genes are alphabetically listed
@@ -1269,7 +1271,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
-        writer = pd.ExcelWriter((output + '_GRiPHin_Summary.xlsx'), engine='xlsxwriter')
+        writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
     else:
         writer = pd.ExcelWriter(('GRiPHin_Summary.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
@@ -1445,7 +1447,7 @@ def sort_samplesheet(samplesheet):
 def convert_excel_to_tsv(output):
     '''Reads in the xlsx file that was just created, outputs as tsv version with first layer of headers removed'''
     if output != "":
-        output_file = output + '_GRiPHin_Summary'
+        output_file = output
     else:
         output_file = 'GRiPHin_Summary'
     #Read excel file into a dataframe

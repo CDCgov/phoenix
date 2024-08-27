@@ -268,10 +268,11 @@ Below are the list of changes to phx since is initial release. As fixes can take
 ## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (XX/XX/2024)
 
 **Implemented Enhancements:** 
- - Creation of `-entry UPDATE_CDC_PHOENIX` to take in a phoenix directory and update MLST and AR calls
+ - Creation of `-entry UPDATE_CDC_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when. 
 
 **Fixed Bugs:**
-- Changes were made to allow `-resume` to work correctly.
+- Changes were made to allow `-resume` to work correctly.  
+- Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  

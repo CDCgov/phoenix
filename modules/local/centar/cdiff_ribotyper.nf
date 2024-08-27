@@ -1,15 +1,17 @@
 process CDIFF_RIBOTYPER {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 27)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // phx_ml_v1.0.0 - MUST manually change below (line 27)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:827455416027d49d1a5f37bdea1acd2fc5c4ab537fa59a97b7ea31df334e48cc'
 
     input:
-    tuple val(meta), path(wgmlst)
+    tuple val(meta), path(csv_core)
+    tuple val(meta), path(csv_accessory)
+    path(newtype_bin_dir)
 
     output:
-    tuple val(meta), path("*.tsv"), emit: ribotype_file
-    path "versions.yml"           , emit: versions
+    tuple val(meta), path("*_ribotype.tsv"), emit: ribotype_file
+    path("versions.yml")                   , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -17,26 +19,21 @@ process CDIFF_RIBOTYPER {
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.terra==false) { terra = ""} 
-    else if (params.terra==true) { terra = "-t terra" }
-    else { error "Please set params.terra to either \"true\" or \"false\"" }
-    // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
+    else if (params.ica==true) { ica = "python ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
-    def container_version = "base_v2.1.0"
-    def container = task.container.toString() - "staphb/gamma@"
+    def container_version = "phx_ml_v1.0.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # Call the real internal scripts to infer the ribotpes
-
-    # Placeholder to create a blank file  
-    touch "${prefix}_ribotype.tsv"
+    ${ica}newtype.py -i ./ -s PN2.0 -o ${prefix}_ribotype.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        # Replace with proper container when module is filled in
-        # blat_toxinotypes.sh: \$(${ica}blat_toxinotypes.sh -V)
-        gamma_container: ${container}
+        python: \$(python --version | sed 's/Python //g')
+        newtype.py: \$(${ica}${ica}newtype.py --version)
+        phoenix_ml_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }
