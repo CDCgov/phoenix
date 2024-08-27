@@ -34,10 +34,7 @@ workflow CENTAR_SUBWORKFLOW {
         outdir_path = Channel.fromPath(params.outdir, relative: true)
         ch_versions = Channel.empty() // Used to collect the software versions
         mlst_db_value=mlst_db.first()
-       
-        combined_mlst.view()
-        mlst_db.view()
- 
+
         CDIFF_CLADE (
             combined_mlst, mlst_db_value
         )
@@ -76,35 +73,40 @@ workflow CENTAR_SUBWORKFLOW {
         )
         ch_versions = ch_versions.mix(CDIFF_AR_GENES_NT.out.versions)
 
-
         // Running blat to identify diffbase toxin genes for specific toxinotyping
         CDIFF_TOXINOTYPER (
             filtered_scaffolds_ch, params.cdiff_diffbase_AA, params.cdiff_diffbase_definitions
         )
         ch_versions = ch_versions.mix(CDIFF_TOXINOTYPER.out.versions)
 
-        // Running blat to identify diffbase toxin genes for specific toxinotyping
-        WGMLST (
-            filtered_scaffolds_ch, params.cdiff_wgmlst_blast_db
-        )
-        ch_versions = ch_versions.mix(WGMLST.out.versions)
+        if (params.wgmlst_container != null) {
+            // Running blat to identify diffbase toxin genes for specific toxinotyping
+            WGMLST (
+                filtered_scaffolds_ch, params.blast_kb, params.cdiff_wgmlst_blast_db, params.cdiff_wgmlst_blast_loci, params.qckb
+            )
+            ch_versions = ch_versions.mix(WGMLST.out.versions)
 
-        // Running blat to identify diffbase toxin genes for specific toxinotyping
-        CDIFF_RIBOTYPER (
-            WGMLST.out.wgmlst_alleles_file
-        )
-        ch_versions = ch_versions.mix(CDIFF_RIBOTYPER.out.versions)
-        
-//        CDIFF_TOX_GENES.out.view()
+            // Join everything together based on meta.id and project_id
+            allele_calls_ch = WGMLST.out.csv_core.map{meta, csv_core_st, csv_core_pcr           -> [[id:meta.id, project_id:meta.project_id], csv_core_st]}\
+            .join(WGMLST.out.csv_accessory.map{       meta, csv_accessory_st, csv_accessory_pcr -> [[id:meta.id, project_id:meta.project_id], csv_accessory_st]}, by: [[0][0],[0][1]])
+
+            // Running blat to identify diffbase toxin genes for specific toxinotyping
+            CDIFF_RIBOTYPER (
+                allele_calls_ch.map{meta, csv_core, csv_accessory -> [ meta, csv_core ]},
+                allele_calls_ch.map{meta, csv_core, csv_accessory -> [ meta, csv_accessory ]},
+                params.newtype_bin_dir
+            )
+            ch_versions = ch_versions.mix(CDIFF_RIBOTYPER.out.versions)
+        }
 
         // Join everything together based on meta.id
-        cdiff_summary_ch = CDIFF_TOX_GENES.out.gamma.map{        meta, gamma           -> [[id:meta.id], gamma]}\
-        .join(CDIFF_CLADE.out.clade.map{                         meta, clade           -> [[id:meta.id], clade]},         by: [0])\
-        .join(CDIFF_TOXINOTYPER.out.tox_file.map{                meta, tox_file        -> [[id:meta.id], tox_file]},      by: [0])\
-        .join(CDIFF_AR_GENES_AA.out.gamma.map{                   meta, gamma           -> [[id:meta.id], gamma]},         by: [0])\
-        .join(CDIFF_AR_GENES_NT.out.gamma.map{                   meta, gamma           -> [[id:meta.id], gamma]},         by: [0])\
-        .join(CDIFF_PLASMIDS.out.plasmids_file.map{              meta, plasmids_file   -> [[id:meta.id], plasmids_file]}, by: [0])\
-        .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype_file   -> [[id:meta.id], ribotype_file]}, by: [0])
+        cdiff_summary_ch = CDIFF_TOX_GENES.out.gamma.map{        meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]}\
+        .join(CDIFF_CLADE.out.clade.map{                         meta, clade           -> [[id:meta.id, project_id:meta.project_id], clade]},         by: [[0][0],[0][1]])\
+        .join(CDIFF_TOXINOTYPER.out.tox_file.map{                meta, tox_file        -> [[id:meta.id, project_id:meta.project_id], tox_file]},      by: [[0][0],[0][1]])\
+        .join(CDIFF_AR_GENES_AA.out.gamma.map{                   meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
+        .join(CDIFF_AR_GENES_NT.out.gamma.map{                   meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
+        .join(CDIFF_PLASMIDS.out.plasmids_file.map{              meta, plasmids_file   -> [[id:meta.id, project_id:meta.project_id], plasmids_file]}, by: [[0][0],[0][1]])\
+        .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype_file   -> [[id:meta.id, project_id:meta.project_id], ribotype_file]}, by: [[0][0],[0][1]])
 
         cdiff_summary_ch.view()
 

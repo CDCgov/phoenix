@@ -151,8 +151,7 @@ workflow CREATE_INPUT_CHANNELS {
             def combined_mlst_glob = append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
             //create .tax file channel with meta information 
             combined_mlst_ch = Channel.fromPath(combined_mlst_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString())} // create meta for sample
-            combined_mlst_ch.view()
+                .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString(),false)} // create meta for sample
             //filtering out failured samples
             filtered_combined_mlst_ch = combined_mlst_ch.combine(id_channel).filter{ meta, combined_mlst_ch, id_channel -> id_channel.contains(meta.id)}.map{ meta, combined_mlst_ch, id_channel -> [ meta, combined_mlst ]}
 
@@ -205,8 +204,6 @@ workflow CREATE_INPUT_CHANNELS {
             phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> add_entry_meta(it)}
             pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
 
-
-
         } else if (samplesheet != null) {
             // if a samplesheet was passed then use that to create the channelv
 
@@ -245,12 +242,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             summary_files_ch = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
 
-            griphin_excel_ch = summary_files_ch.map{ meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, griphin_summary_excel]}
-            griphin_tsv_ch = summary_files_ch.map{   meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, griphin_summary_tsv]}
-            phoenix_tsv_ch = summary_files_ch.map{   meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, phx_summary]}
-            pipeline_info_ch = summary_files_ch.map{ meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary -> [meta, software_versions]}
-
-            /*/ pulling all the necessary project level files into channels
+            // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
                 summary_files_ch
             )
@@ -368,7 +360,7 @@ def create_sample_dir_channels(LinkedHashMap row) {
 }
 
 
-// Function to get list of [ meta, [ directory ] ]
+/*/ Function to get list of [ meta, [ directory ] ]
 def create_summary_files_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
@@ -380,7 +372,7 @@ def create_summary_files_channels(LinkedHashMap row) {
     def phx_summary = clean_path + "/Phoenix_Summary.tsv"
     array = [ meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary ]
     return array
-}
+}*/
 
 def create_groups_and_id(input_ch, project_folder){
     """samples needed to be grouped by their project directory for editing summary files."""

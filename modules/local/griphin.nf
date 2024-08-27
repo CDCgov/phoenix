@@ -1,6 +1,8 @@
 process GRIPHIN {
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
+    //container 'quay.io/jvhagey/phoenix:base_v2.0.2'
+    // base_v2.1.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     path(summary_line_files)
@@ -11,7 +13,7 @@ process GRIPHIN {
     val(entry)
     val(scaffolds_entry)
     val(update)
-    val(run_centar)
+    //val(run_centar)
 
     output:
     path("*_GRiPHin*.xlsx"),                 emit: griphin_report
@@ -27,13 +29,14 @@ process GRIPHIN {
     // define variables
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
-    def centar = run_centar ? "--centar" : ""
+    //def centar = run_centar ? "--centar" : ""
     def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
+    def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     full_path=\$(readlink -f ${outdir})
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${scaffolds} ${centar}
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${scaffolds}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
