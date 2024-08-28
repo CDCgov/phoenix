@@ -190,9 +190,9 @@ if [[ -f "${tox_input}" ]]; then
         tcdA_line=$(grep 'tcdA' "${tox_input}")
         tcdA_matchtype=$(echo "${tcdA_line}" | cut -d$'\t' -f5)
         tcdA_allele=$(extract_gama_elements 3 "${tcdA_line}")
-        tcdA_IDA=$(echo "${tcdA_line}" | cut -d$'\t' -f10)
-        tcdA_IDN=$(echo "${tcdA_line}" | cut -d$'\t' -f11)
-        tcdA_length=$(echo "${tcdA_line}" | cut -d$'\t' -f12)
+        tcdA_IDA=$(echo "${tcdA_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        tcdA_IDN=$(echo "${tcdA_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        tcdA_length=$(echo "${tcdA_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${tcdA_matchtype}" = *"Trunc"* ]]; then
             tcdA="Trunc:Codon"
         elif (( $(echo "$tcdA_length*100 < 90" | bc -l) )); then
@@ -200,7 +200,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdA=1
         fi
-        tcdA_set="${tcdA}\t${subtype_A}\t${tcdA_IDN}|${tcdA_IDA}|${tcdA_length}"
+        tcdA_set="${tcdA}\t${subtype_A}\t${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}"
     else
         tcdA=1
         readarray -t tcdA_arr < <(grep "tcdA" "${tox_input}")
@@ -212,9 +212,9 @@ if [[ -f "${tox_input}" ]]; then
 
         tcdA_stats=""
         while [[ ${count} -lt ${tcdA_count_array} ]]; do
-            tcdA_IDA=$(echo "${tcdA_arr[count]}" | cut -d$'\t' -f10)
-            tcdA_IDN=$(echo "${tcdA_arr[count]}" | cut -d$'\t' -f11)
-            tcdA_length=$(echo "${tcdA_arr[count]}" | cut -d$'\t' -f12)
+            tcdA_IDA=$(echo "${tcdA_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            tcdA_IDN=$(echo "${tcdA_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            tcdA_length=$(echo "${tcdA_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             tcdA_matchtype=$(echo "${tcdA_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${tcdA} = "" ]]; then
                 if [[ "${tcdA_matchtype}" = *"Trunc"* ]]; then
@@ -234,9 +234,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdA_stats}" == "" ]]; then
-                tcdA_stats="${tcdA_IDN}|${tcdA_IDA}|${tcdA_length}"
+                tcdA_stats="${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}"
             else
-                tcdA_stats="${tcdA_stats}-${tcdA_IDN}|${tcdA_IDA}|${tcdA_length}"
+                tcdA_stats="${tcdA_stats}-${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -253,9 +253,9 @@ if [[ -f "${tox_input}" ]]; then
         tcdB_line=$(grep 'tcdB' "${tox_input}")
         tcdB_matchtype=$(echo "${tcdB_line}" | cut -d$'\t' -f5)
         tcdB_allele=$(extract_gama_elements 3 "${tcdB_line}")
-        tcdB_IDA=$(echo "${tcdB_line}" | cut -d$'\t' -f10)
-        tcdB_IDN=$(echo "${tcdB_line}" | cut -d$'\t' -f11)
-        tcdB_length=$(echo "${tcdB_line}" | cut -d$'\t' -f12)
+        tcdB_IDA=$(echo "${tcdB_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        tcdB_IDN=$(echo "${tcdB_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        tcdB_length=$(echo "${tcdB_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${tcdB_matchtype}" = *"Trunc"* ]]; then
             tcdB="Trunc:Codon"
         elif (( $(echo "$tcdB_length*100 < 90" | bc -l) )); then
@@ -263,7 +263,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdB=1
         fi
-        tcdB_set="${tcdB}\t${subtype_B}\t${tcdB_IDN}|${tcdB_IDA}|${tcdB_length}"
+        tcdB_set="${tcdB}\t${subtype_B}\t${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}"
     else
         tcdB=1
         readarray -t tcdB_arr < <(grep "tcdB" "${tox_input}")
@@ -276,9 +276,9 @@ if [[ -f "${tox_input}" ]]; then
         tcdB_stats=""
         while [[ ${count} -lt ${tcdB_count_array} ]]; do
             echo "${count}"
-            tcdB_IDA=$(echo "${tcdB_arr[count]}" | cut -d$'\t' -f10)
-            tcdB_IDN=$(echo "${tcdB_arr[count]}" | cut -d$'\t' -f11)
-            tcdB_length=$(echo "${tcdB_arr[count]}" | cut -d$'\t' -f12)
+            tcdB_IDA=$(echo "${tcdB_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            tcdB_IDN=$(echo "${tcdB_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            tcdB_length=$(echo "${tcdB_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             tcdB_matchtype=$(echo "${tcdB_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${tcdB} = "" ]]; then
                 if [[ "${tcdB_matchtype}" = *"Trunc"* ]]; then
@@ -298,10 +298,10 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdB_stats}" == "" ]]; then
-                tcdB_stats="${tcdB_IDN}|${tcdB_IDA}|${tcdB_length}"
+                tcdB_stats="${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}"
             else
                 echo "extra"
-                tcdB_stats="${tcdB_stats}-${tcdB_IDN}|${tcdB_IDA}|${tcdB_length}"
+                tcdB_stats="${tcdB_stats}-${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}"
             fi
             echo "${count}-${tcdB}\t${tcdB_count_array}\t${tcdB_stats}"
             count=$(( count + 1 ))
@@ -318,9 +318,9 @@ if [[ -f "${tox_input}" ]]; then
         tcdC_line=$(grep 'tcdC' "${tox_input}")
         tcdC_matchtype=$(echo "${tcdC_line}" | cut -d$'\t' -f5)
         tcdC_allele=$(extract_gama_elements 3 "${tcdC_line}")
-        tcdC_IDA=$(echo "${tcdC_line}" | cut -d$'\t' -f10)
-        tcdC_IDN=$(echo "${tcdC_line}" | cut -d$'\t' -f11)
-        tcdC_length=$(echo "${tcdC_line}" | cut -d$'\t' -f12)
+        tcdC_IDA=$(echo "${tcdC_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        tcdC_IDN=$(echo "${tcdC_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        tcdC_length=$(echo "${tcdC_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${tcdC_matchtype}" = *"Trunc"* ]]; then
             tcdC="Trunc:Codon"
         elif (( $(echo "$tcdC_length*100 < 90" | bc -l) )); then
@@ -328,7 +328,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdC=1
         fi
-        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_IDN}|${tcdC_IDA}|${tcdC_length}"
+        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
     else
         readarray -t tcdC_arr < <(grep "tcdC" "${tox_input}")
         tcdC_count_array=${#tcdC_arr[@]}
@@ -343,9 +343,9 @@ if [[ -f "${tox_input}" ]]; then
         tcdC=""
         while [[ ${count} -lt ${tcdC_count_array} ]]; do
             tcdC_allele_current=$(extract_gama_elements 3 "${tcdC_arr[count]}")
-            tcdC_IDA=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f10)
-            tcdC_IDN=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f11)
-            tcdC_length=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f12)
+            tcdC_IDA=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            tcdC_IDN=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            tcdC_length=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             tcdC_matchtype=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${tcdC} = "" ]]; then
                 if [[ "${tcdC_matchtype}" = *"Trunc"* ]]; then
@@ -370,9 +370,9 @@ if [[ -f "${tox_input}" ]]; then
                 tcdC_allele="${tcdC_allele}-${tcdC_allele_current}"
             fi
             if [[ "${tcdC_stats}" == "" ]]; then
-                tcdC_stats="${tcdC_IDN}|${tcdC_IDA}|${tcdC_length}"
+                tcdC_stats="${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
             else
-                tcdC_stats="${tcdC_stats}-${tcdC_IDN}|${tcdC_IDA}|${tcdC_length}"
+                tcdC_stats="${tcdC_stats}-${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -387,9 +387,9 @@ if [[ -f "${tox_input}" ]]; then
     elif [[ "${tcdD_count}" -eq 1 ]]; then
         tcdD_line=$(grep 'tcdD' "${tox_input}")
         tcdD_matchtype=$(echo "${tcdD_line}" | cut -d$'\t' -f5)
-        tcdD_IDA=$(echo "${tcdD_line}" | cut -d$'\t' -f10)
-        tcdD_IDN=$(echo "${tcdD_line}" | cut -d$'\t' -f11)
-        tcdD_length=$(echo "${tcdD_line}" | cut -d$'\t' -f12)
+        tcdD_IDA=$(echo "${tcdD_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        tcdD_IDN=$(echo "${tcdD_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        tcdD_length=$(echo "${tcdD_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${tcdD_matchtype}" = *"Trunc"* ]]; then
             tcdD="Trunc:Codon"
         elif (( $(echo "$tcdD_length*100 < 90" | bc -l) )); then
@@ -397,7 +397,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdD=1
         fi
-        tcdD_set="${tcdD}\t${tcdD_IDN}|${tcdD_IDA}|${tcdD_length}"
+        tcdD_set="${tcdD}\t${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}"
     else
         tcdD=1
         readarray -t tcdD_arr < <(grep "tcdD" "${tox_input}")
@@ -409,9 +409,9 @@ if [[ -f "${tox_input}" ]]; then
 
         tcdD_stats=""
         while [[ ${count} -lt ${tcdD_count_array} ]]; do
-            tcdD_IDA=$(echo "${tcdD_arr[count]}" | cut -d$'\t' -f10)
-            tcdD_IDN=$(echo "${tcdD_arr[count]}" | cut -d$'\t' -f11)
-            tcdD_length=$(echo "${tcdD_arr[count]}" | cut -d$'\t' -f12)
+            tcdD_IDA=$(echo "${tcdD_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            tcdD_IDN=$(echo "${tcdD_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            tcdD_length=$(echo "${tcdD_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             tcdD_matchtype=$(echo "${tcdD_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${tcdD} = "" ]]; then
                 if [[ "${tcdD_matchtype}" = *"Trunc"* ]]; then
@@ -431,9 +431,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdD_stats}" == "" ]]; then
-                tcdD_stats="${tcdD_IDN}|${tcdD_IDA}|${tcdD_length}"
+                tcdD_stats="${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}"
             else
-                tcdD_stats="${tcdD_stats}-${tcdD_IDN}|${tcdD_IDA}|${tcdD_length}"
+                tcdD_stats="${tcdD_stats}-${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -448,9 +448,9 @@ if [[ -f "${tox_input}" ]]; then
     elif [[ "${tcdE_count}" -eq 1 ]]; then
         tcdE_line=$(grep 'tcdE' "${tox_input}")
         tcdE_matchtype=$(echo "${tcdE_line}" | cut -d$'\t' -f5)
-        tcdE_IDA=$(echo "${tcdE_line}" | cut -d$'\t' -f10)
-        tcdE_IDN=$(echo "${tcdE_line}" | cut -d$'\t' -f11)
-        tcdE_length=$(echo "${tcdE_line}" | cut -d$'\t' -f12)
+        tcdE_IDA=$(echo "${tcdE_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        tcdE_IDN=$(echo "${tcdE_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        tcdE_length=$(echo "${tcdE_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${tcdE_matchtype}" = *"Trunc"* ]]; then
             tcdE="Trunc:Codon"
         elif (( $(echo "$tcdE_length*100 < 90" | bc -l) )); then
@@ -458,7 +458,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdE=1
         fi
-        tcdE_set="${tcdE}\t${tcdE_IDN}|${tcdE_IDA}|${tcdE_length}"
+        tcdE_set="${tcdE}\t${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}"
     else
         tcdE=1
         readarray -t tcdE_arr < <(grep "tcdE" "${tox_input}")
@@ -470,9 +470,9 @@ if [[ -f "${tox_input}" ]]; then
 
         tcdE_stats=""
         while [[ ${count} -lt ${tcdE_count_array} ]]; do
-            tcdE_IDA=$(echo "${tcdE_arr[count]}" | cut -d$'\t' -f10)
-            tcdE_IDN=$(echo "${tcdE_arr[count]}" | cut -d$'\t' -f11)
-            tcdE_length=$(echo "${tcdE_arr[count]}" | cut -d$'\t' -f12)
+            tcdE_IDA=$(echo "${tcdE_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            tcdE_IDN=$(echo "${tcdE_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            tcdE_length=$(echo "${tcdE_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             tcdE_matchtype=$(echo "${tcdE_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${tcdE} = "" ]]; then
                 if [[ "${tcdE_matchtype}" = *"Trunc"* ]]; then
@@ -492,9 +492,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdE_stats}" == "" ]]; then
-                tcdE_stats="${tcdE_IDN}|${tcdE_IDA}|${tcdE_length}"
+                tcdE_stats="${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}"
             else
-                tcdE_stats="${tcdE_stats}-${tcdE_IDN}|${tcdE_IDA}|${tcdE_length}"
+                tcdE_stats="${tcdE_stats}-${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -509,9 +509,9 @@ if [[ -f "${tox_input}" ]]; then
     elif [[ "${cdtA_count}" -eq 1 ]]; then
         cdtA_line=$(grep 'cdtA_' "${tox_input}")
         cdtA_matchtype=$(echo "${cdtA_line}" | cut -d$'\t' -f5)
-        cdtA_IDA=$(echo "${cdtA_line}" | cut -d$'\t' -f10)
-        cdtA_IDN=$(echo "${cdtA_line}" | cut -d$'\t' -f11)
-        cdtA_length=$(echo "${cdtA_line}" | cut -d$'\t' -f12)
+        cdtA_IDA=$(echo "${cdtA_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        cdtA_IDN=$(echo "${cdtA_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        cdtA_length=$(echo "${cdtA_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${cdtA_matchtype}" = *"Trunc"* ]]; then
             cdtA="Trunc:Codon"
         elif (( $(echo "$cdtA_length*100 < 90" | bc -l) )); then
@@ -519,7 +519,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtA=1
         fi
-        cdtA_set="${cdtA}\t${cdtA_IDN}|${cdtA_IDA}|${cdtA_length}"
+        cdtA_set="${cdtA}\t${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}"
     else
         readarray -t cdtA_arr < <(grep "cdtA" "${tox_input}")
         cdtA_count_array=${#cdtA_arr[@]}
@@ -531,9 +531,9 @@ if [[ -f "${tox_input}" ]]; then
         cdtA_stats=""
         cdtA=""
         while [[ ${count} -lt ${cdtA_count_array} ]]; do
-            cdtA_IDA=$(echo "${cdtA_arr[count]}" | cut -d$'\t' -f10)
-            cdtA_IDN=$(echo "${cdtA_arr[count]}" | cut -d$'\t' -f11)
-            cdtA_length=$(echo "${cdtA_arr[count]}" | cut -d$'\t' -f12)
+            cdtA_IDA=$(echo "${cdtA_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            cdtA_IDN=$(echo "${cdtA_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            cdtA_length=$(echo "${cdtA_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             cdtA_matchtype=$(echo "${cdtA_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${cdtA} = "" ]]; then
                 if [[ "${cdtA_matchtype}" = *"Trunc"* ]]; then
@@ -553,9 +553,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtA_stats}" == "" ]]; then
-                cdtA_stats="${cdtA_IDN}|${cdtA_IDA}|${cdtA_length}"
+                cdtA_stats="${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}"
             else
-                cdtA_stats="${cdtA_stats}-${cdtA_IDN}|${cdtA_IDA}|${cdtA_length}"
+                cdtA_stats="${cdtA_stats}-${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -570,9 +570,9 @@ if [[ -f "${tox_input}" ]]; then
     elif [[ "${cdtB_count}" -eq 1 ]]; then
         cdtB_line=$(grep 'cdtB_' "${tox_input}")
         cdtB_matchtype=$(echo "${cdtB_line}" | cut -d$'\t' -f5)
-        cdtB_IDA=$(echo "${cdtB_line}" | cut -d$'\t' -f10)
-        cdtB_IDN=$(echo "${cdtB_line}" | cut -d$'\t' -f11)
-        cdtB_length=$(echo "${cdtB_line}" | cut -d$'\t' -f12)
+        cdtB_IDA=$(echo "${cdtB_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        cdtB_IDN=$(echo "${cdtB_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        cdtB_length=$(echo "${cdtB_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${cdtB_matchtype}" = *"Trunc"* ]]; then
             cdtB="Trunc:Codon"
         elif (( $(echo "$cdtB_length*100 < 90" | bc -l) )); then
@@ -580,7 +580,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtB=1
         fi
-        cdtB_set="${cdtB}\t${cdtB_IDN}|${cdtB_IDA}|${cdtB_length}"
+        cdtB_set="${cdtB}\t${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}"
     else
         readarray -t cdtB_arr < <(grep "cdtB" "${tox_input}")
         cdtB_count_array=${#cdtB_arr[@]}
@@ -592,9 +592,9 @@ if [[ -f "${tox_input}" ]]; then
         cdtB_stats=""
         cdtB=""
         while [[ ${count} -lt ${cdtB_count_array} ]]; do
-            cdtB_IDA=$(echo "${cdtB_arr[count]}" | cut -d$'\t' -f10)
-            cdtB_IDN=$(echo "${cdtB_arr[count]}" | cut -d$'\t' -f11)
-            cdtB_length=$(echo "${cdtB_arr[count]}" | cut -d$'\t' -f12)
+            cdtB_IDA=$(echo "${cdtB_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            cdtB_IDN=$(echo "${cdtB_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            cdtB_length=$(echo "${cdtB_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             cdtB_matchtype=$(echo "${cdtB_arr[count]}" | cut -d$'\t' -f5)
            if [[ ${cdtB} = "" ]]; then
                 if [[ "${cdtB_matchtype}" = *"Trunc"* ]]; then
@@ -614,9 +614,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtB_stats}" == "" ]]; then
-                cdtB_stats="${cdtB_IDN}|${cdtB_IDA}|${cdtB_length}"
+                cdtB_stats="${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}"
             else
-                cdtB_stats="${cdtB_stats}-${cdtB_IDN}|${cdtB_IDA}|${cdtB_length}"
+                cdtB_stats="${cdtB_stats}-${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -632,9 +632,9 @@ if [[ -f "${tox_input}" ]]; then
         cdtR_line=$(grep 'cdtR' "${tox_input}")
         cdtR_matchtype=$(echo "${cdtR_line}" | cut -d$'\t' -f5)
         cdtR_allele=$(extract_gama_elements 3 "${cdtR_line}")
-        cdtR_IDA=$(echo "${cdtR_line}" | cut -d$'\t' -f10)
-        cdtR_IDN=$(echo "${cdtR_line}" | cut -d$'\t' -f11)
-        cdtR_length=$(echo "${cdtR_line}" | cut -d$'\t' -f12)
+        cdtR_IDA=$(echo "${cdtR_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        cdtR_IDN=$(echo "${cdtR_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        cdtR_length=$(echo "${cdtR_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${cdtR_matchtype}" = *"Trunc"* ]]; then
             cdtR="Trunc:Codon"
         elif (( $(echo "$cdtR_length*100 < 90" | bc -l) )); then
@@ -642,7 +642,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtR=1
         fi
-        cdtR_set="${cdtA}\t${cdtR_allele}\t${cdtR_IDN}|${cdtR_IDA}|${cdtR_length}"
+        cdtR_set="${cdtA}\t${cdtR_allele}\t${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
     else
         cdtA=1
         readarray -t cdtR_arr < <(grep "cdtR" "${tox_input}")
@@ -656,9 +656,9 @@ if [[ -f "${tox_input}" ]]; then
         cdtR_allele=""
         while [[ ${count} -lt ${cdtR_count_array} ]]; do
             cdtR_allele=$(extract_gama_elements 3 "${cdtR_arr[count]}")
-            cdtR_IDA=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f10)
-            cdtR_IDN=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f11)
-            cdtR_length=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f12)
+            cdtR_IDA=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            cdtR_IDN=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            cdtR_length=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             cdtR_matchtype=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${cdtR} = "" ]]; then
                 if [[ "${cdtR_matchtype}" = *"Trunc"* ]]; then
@@ -683,9 +683,9 @@ if [[ -f "${tox_input}" ]]; then
                 cdtR_allele="${cdtR_allele}-${cdtR_allele_current}"
             fi
             if [[ "${cdtR_stats}" == "" ]]; then
-                cdtR_stats="${cdtR_IDN}|${cdtR_IDA}|${cdtR_length}"
+                cdtR_stats="${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
             else
-                cdtR_stats="${cdtR_stats}-${cdtR_IDN}|${cdtR_IDA}|${cdtR_length}"
+                cdtR_stats="${cdtR_stats}-${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -700,16 +700,16 @@ if [[ -f "${tox_input}" ]]; then
     elif [[ "${cdtAB1_count}" -eq 1 ]]; then
         cdtAB1_line=$(grep 'cdtAB1' "${tox_input}")
         cdtAB1_matchtype=$(echo "${cdtAB1_line}" | cut -d$'\t' -f5)
-        cdtAB1_IDA=$(echo "${cdtAB1_line}" | cut -d$'\t' -f10)
-        cdtAB1_IDN=$(echo "${cdtAB1_line}" | cut -d$'\t' -f11)
-        cdtAB1_length=$(echo "${cdtAB1_line}" | cut -d$'\t' -f12)
+        cdtAB1_IDA=$(echo "${cdtAB1_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        cdtAB1_IDN=$(echo "${cdtAB1_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        cdtAB1_length=$(echo "${cdtAB1_line}" | cut -d$'\t' -f12 | printf "%.0f")
         # Dont need normal trunc check since we cdtAB1 is a codon truncation already
         if (( $(echo "$cdtAB1_length*100 < 90" | bc -l) )); then
             cdtAB1="Trunc:Length<90"
         else
             cdtAB1=1
         fi
-        cdtAB1_set="${cdtAB1}\t${cdtAB1_IDN}|${cdtAB1_IDA}|${cdtAB1_length}"
+        cdtAB1_set="${cdtAB1}\t${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}"
     else
         cdtAB1=1
         readarray -t cdtAB1_arr < <(grep "cdtAB1" "${tox_input}")
@@ -721,9 +721,9 @@ if [[ -f "${tox_input}" ]]; then
 
         cdtAB1_stats=""
         while [[ ${count} -lt ${cdtAB1_count_array} ]]; do
-            cdtAB1_IDA=$(echo "${cdtAB1_arr[count]}" | cut -d$'\t' -f10)
-            cdtAB1_IDN=$(echo "${cdtAB1_arr[count]}" | cut -d$'\t' -f11)
-            cdtAB1_length=$(echo "${cdtAB1_arr[count]}" | cut -d$'\t' -f12)
+            cdtAB1_IDA=$(echo "${cdtAB1_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            cdtAB1_IDN=$(echo "${cdtAB1_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            cdtAB1_length=$(echo "${cdtAB1_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             cdtAB1_matchtype=$(echo "${cdtAB1_arr[count]}" | cut -d$'\t' -f5)
             # Dont need trunc codon check since we know it is already part of the sequence
             if [[ ${cdtAB1} = "" ]]; then
@@ -740,9 +740,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtAB1_stats}" == "" ]]; then
-                cdtAB1_stats="${cdtAB1_IDN}|${cdtAB1_IDA}|${cdtAB1_length}"
+                cdtAB1_stats="${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}"
             else
-                cdtAB1_stats="${cdtAB1_stats}-${cdtAB1_IDN}|${cdtAB1_IDA}|${cdtAB1_length}"
+                cdtAB1_stats="${cdtAB1_stats}-${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -757,16 +757,16 @@ if [[ -f "${tox_input}" ]]; then
     elif [[ "${cdtAB2_count}" -eq 1 ]]; then
         cdtAB2_line=$(grep 'cdtAB2' "${tox_input}")
         cdtAB2_matchtype=$(echo "${cdtAB2_line}" | cut -d$'\t' -f5)
-        cdtAB2_IDA=$(echo "${cdtAB2_line}" | cut -d$'\t' -f10)
-        cdtAB2_IDN=$(echo "${cdtAB2_line}" | cut -d$'\t' -f11)
-        cdtAB2_length=$(echo "${cdtAB2_line}" | cut -d$'\t' -f12)
+        cdtAB2_IDA=$(echo "${cdtAB2_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        cdtAB2_IDN=$(echo "${cdtAB2_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        cdtAB2_length=$(echo "${cdtAB2_line}" | cut -d$'\t' -f12 | printf "%.0f")
         # Dont need normal trunc check since we cdtAB1 is a codon truncation already
         if (( $(echo "$cdtAB2_length*100 < 90" | bc -l) )); then
             cdtAB2="Trunc:Length<90"
         else
             cdtAB2=1
         fi
-        cdtAB2_set="${cdtAB2}\t${cdtAB2_IDN}|${cdtAB2_IDA}|${cdtAB2_length}"
+        cdtAB2_set="${cdtAB2}\t${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}"
     else
         cdtAB2=1
         readarray -t cdtAB2_arr < <(grep "cdtAB2" "${tox_input}")
@@ -778,9 +778,9 @@ if [[ -f "${tox_input}" ]]; then
 
         cdtAB2_stats=""
         while [[ ${count} -lt ${cdtAB2_count_array} ]]; do
-            cdtAB2_IDA=$(echo "${cdtAB2_arr[count]}" | cut -d$'\t' -f10)
-            cdtAB2_IDN=$(echo "${cdtAB2_arr[count]}" | cut -d$'\t' -f11)
-            cdtAB2_length=$(echo "${cdtAB2_arr[count]}" | cut -d$'\t' -f12)
+            cdtAB2_IDA=$(echo "${cdtAB2_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            cdtAB2_IDN=$(echo "${cdtAB2_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            cdtAB2_length=$(echo "${cdtAB2_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             cdtAB2_matchtype=$(echo "${cdtAB2_arr[count]}" | cut -d$'\t' -f5)
             # Dont need trunc codon check since we know it is already part of the sequence
             if [[ ${cdtAB2} = "" ]]; then
@@ -797,9 +797,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtAB2_stats}" == "" ]]; then
-                cdtAB2_stats="${cdtAB2_IDN}|${cdtAB2_IDA}|${cdtAB2_length}"
+                cdtAB2_stats="${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}"
             else
-                cdtAB2_stats="${cdtAB2_stats}-${cdtAB2_IDN}|${cdtAB2_IDA}|${cdtAB2_length}"
+                cdtAB2_stats="${cdtAB2_stats}-${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}"
             fi
             count=$(( count + 1 ))
         done
@@ -814,9 +814,9 @@ if [[ -f "${tox_input}" ]]; then
     elif [[ "${nontox_count}" -eq 1 ]]; then
         nontox_line=$(grep 'cdtNonTox' "${tox_input}")
         nontox_matchtype=$(echo "${nontox_line}" | cut -d$'\t' -f5)
-        nontox_IDA=$(echo "${nontox_line}" | cut -d$'\t' -f10)
-        nontox_IDN=$(echo "${nontox_line}" | cut -d$'\t' -f11)
-        nontox_length=$(echo "${nontox_line}" | cut -d$'\t' -f12)
+        nontox_IDA=$(echo "${nontox_line}" | cut -d$'\t' -f10 | printf "%.0f")
+        nontox_IDN=$(echo "${nontox_line}" | cut -d$'\t' -f11 | printf "%.0f")
+        nontox_length=$(echo "${nontox_line}" | cut -d$'\t' -f12 | printf "%.0f")
         if [[ "${nontox_matchtype}" = *"Trunc"* ]]; then
             nontox="Trunc:Codon"
         elif (( $(echo "$nontox_length*100 < 90" | bc -l) )); then
@@ -824,7 +824,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             nontox=1
         fi
-        nontox_set="${nontox}\t${nontox_IDN}|${nontox_IDA}|${nontox_length}"
+        nontox_set="${nontox}\t${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}"
     else
         nontox=1
         readarray -t nontox_arr < <(grep "cdtnontox" "${tox_input}")
@@ -836,9 +836,9 @@ if [[ -f "${tox_input}" ]]; then
 
         nontox_stats=""
         while [[ ${count} -lt ${nontox_count_array} ]]; do
-            nontox_IDA=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f10)
-            nontox_IDN=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f11)
-            nontox_length=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f12)
+            nontox_IDA=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+            nontox_IDN=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+            nontox_length=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
             nontox_matchtype=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${nontox} = "" ]]; then
                 if [[ "${nontox_matchtype}" = *"Trunc"* ]]; then
@@ -858,243 +858,384 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${nontox_stats}" == "" ]]; then
-                nontox_stats="${nontox_IDN}|${nontox_IDA}|${nontox_length}"
+                nontox_stats="${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}"
             else
-                nontox_stats="${nontox_stats}-${nontox_IDN}|${nontox_IDA}|${nontox_length}"
+                nontox_stats="${nontox_stats}-${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}"
             fi
             count=$(( count + 1 ))
         done
         nontox_set="${nontox}\t${nontox_stats}"
     fi
 
- # Check and format for gyrA count, these are ALL point mutations and must be handled differently
-    gyrA_count=$(grep -c 'gyrA' "${tox_input}")
-    if [[ "${gyrA_count}" -eq 0 ]]; then
-        gyrA=0
-        gyrA_set="0\tNA\tN/A\tNA|NA|NA"
-    elif [[ "${gyrA_count}" -eq 1 ]]; then
-        gyrA_line=$(grep 'gyrA' "${tox_input}")
-        gyrA_matchtype=$(echo "${gyrA_line}" | cut -d$'\t' -f5)
-        gyrA_AA_codon_ID=$(echo "${gyrA_line}" | cut -d$'\t' -f10)
-        gyrA_AA_length=$(echo "${gyrA_line}" | cut -d$'\t' -f12)
-        gyrA_allele=$(extract_gama_elements 3 "${gyrA_line}")
-        if [[ "${gyrA_matchtype}" = "Native" ]]; then
-            if [[ "${gyrA_AA_codon_ID}" -eq 1 ]] && [[ "${gyrA_AA_length}" -eq 1 ]]; then
-                gyrA=1
-                gyrA_additional_info=""
-            # What to do if it is not a full length match
-            else
-                gyrA="1*"
-                gyrA_allele="${gyrA_allele}*"
-                gyrA_additional_info="Trunc:Length<100"
-            fi
-        elif [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
-                gyrA_allele_current="${gyrA_allele_current}*"
-                gyrA_additional_info_current=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
-                gyrA="Trunc:Codon"
-        elif [[ "${gyrA_matchtype}" = "Mutant" ]] || [[ "${gyrA_matchtype}" = "Indel" ]]; then
-            gyrA="1*"
-            gyrA_allele="${gyrA_allele}*"
-            gyrA_additional_info=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
-        # Hit is some other kind of match, i.e. Mutant, Indel, Trunc
-        else
-            echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
-        fi
-        if [[ "${gyrA_additional_info: -1}" = "," ]]; then
-                gyrA_additional_info="${gyrA_additional_info:0:-1}"
-        fi
+#  # Check and format for gyrA count, these are ALL point mutations and must be handled differently
+#     gyrA_count=$(grep -c 'gyrA' "${tox_input}")
+#     if [[ "${gyrA_count}" -eq 0 ]]; then
+#         gyrA=0
+#         gyrA_set="0\tNA\tN/A\tNA|NA|NA"
+#     elif [[ "${gyrA_count}" -eq 1 ]]; then
+#         gyrA_line=$(grep 'gyrA' "${tox_input}")
+#         gyrA_matchtype=$(echo "${gyrA_line}" | cut -d$'\t' -f5)
+#         gyrA_AA_codon_ID=$(echo "${gyrA_line}" | cut -d$'\t' -f10 | printf "%.0f")
+#         gyrA_AA_length=$(echo "${gyrA_line}" | cut -d$'\t' -f12 | printf "%.0f")
+#         gyrA_allele=$(extract_gama_elements 3 "${gyrA_line}")
+#         if [[ "${gyrA_matchtype}" = "Native" ]]; then
+#             if [[ "${gyrA_AA_codon_ID}" -eq 1 ]] && [[ "${gyrA_AA_length}" -eq 1 ]]; then
+#                 gyrA=1
+#                 gyrA_additional_info=""
+#             # What to do if it is not a full length match
+#             else
+#                 gyrA="1*"
+#                 gyrA_allele="${gyrA_allele}*"
+#                 gyrA_additional_info="Trunc:Length<100"
+#             fi
+#         elif [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
+#                 gyrA_allele_current="${gyrA_allele_current}*"
+#                 gyrA_additional_info_current=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
+#                 gyrA="Trunc:Codon"
+#         elif [[ "${gyrA_matchtype}" = "Mutant" ]] || [[ "${gyrA_matchtype}" = "Indel" ]]; then
+#             gyrA="1*"
+#             gyrA_allele="${gyrA_allele}*"
+#             gyrA_additional_info=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
+#         # Hit is some other kind of match, i.e. Mutant, Indel, Trunc
+#         else
+#             echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
+#         fi
+#         if [[ "${gyrA_additional_info: -1}" = "," ]]; then
+#                 gyrA_additional_info="${gyrA_additional_info:0:-1}"
+#         fi
         
-        gyrA_IDA=$(echo "${gyrA_line}" | cut -d$'\t' -f10)
-        gyrA_IDN=$(echo "${gyrA_line}" | cut -d$'\t' -f11)
-        gyrA_set="${gyrA}\t${gyrA_allele}\t${gyrA_additional_info}\t${gyrA_IDN}|${gyrA_IDA}|${gyrA_length}"
-    else
-        readarray -t gyrA_arr < <(grep "gyrA" "${tox_input}")
-        gyrA_count_array=${#gyrA_arr[@]}
-        if [[ ${gyrA_count} != ${gyrA_count_array} ]]; then 
-            echo "wut?!"
-        fi
-        count=0
+#         gyrA_IDA=$(echo "${gyrA_line}" | cut -d$'\t' -f10 | printf "%.0f")
+#         gyrA_IDN=$(echo "${gyrA_line}" | cut -d$'\t' -f11 | printf "%.0f")
+#         gyrA_set="${gyrA}\t${gyrA_allele}\t${gyrA_additional_info}\t${gyrA_IDN}NT|${gyrA_IDA}AA|${gyrA_length}"
+#     else
+#         readarray -t gyrA_arr < <(grep "gyrA" "${tox_input}")
+#         gyrA_count_array=${#gyrA_arr[@]}
+#         if [[ ${gyrA_count} != ${gyrA_count_array} ]]; then 
+#             echo "wut?!"
+#         fi
+#         count=0
 
-        gyrA_allele="NA"
-        gyrA_additional_info=""
-        gyrA_stats=""
-        gyrA=""
-        while [[ ${count} -lt ${gyrA_count_array} ]]; do
-            gyrA_allele_current=$(extract_gama_elements 3 "${gyrA_arr[count]}")
-            gyrA_IDA=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f10)
-            gyrA_IDN=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f11)
-            gyrA_length=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f12)
-            gyrA_matchtype=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f5)
-            if [[ "${gyrA_matchtype}" = "Native" ]]; then
-                if [[ "${gyrA_AA_codon_ID}" -eq 1 ]] && [[ "${gyrA_AA_length}" -eq 1 ]]; then
-                    gyrA_additional_info_current=""
-                # What to do if it is not a full length match
-                else
-                    gyrA_allele_current="${gyrA_allele_current}*"
-                    gyrA_additional_info_current="Trunc:Length<100"
-                fi
-            elif [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
-                gyrA_allele_current="${gyrA_allele_current}*"
-                gyrA_additional_info_current=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
-            elif [[ "${gyrA_matchtype}" = "Mutant" ]] || [[ "${gyrA_matchtype}" = "Indel" ]]; then
-                gyrA_allele_current="${gyrA_allele_current}*"
-                gyrA_additional_info_current=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
-            # Hit is some other kind of match, i.e. Mutatnt, Indel, Trunc
-            else
-                echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
-            fi
+#         gyrA_allele="NA"
+#         gyrA_additional_info=""
+#         gyrA_stats=""
+#         gyrA=""
+#         while [[ ${count} -lt ${gyrA_count_array} ]]; do
+#             gyrA_allele_current=$(extract_gama_elements 3 "${gyrA_arr[count]}")
+#             gyrA_IDA=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+#             gyrA_IDN=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+#             gyrA_length=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
+#             gyrA_matchtype=$(echo "${gyrA_arr[count]}" | cut -d$'\t' -f5)
+#             if [[ "${gyrA_matchtype}" = "Native" ]]; then
+#                 if [[ "${gyrA_AA_codon_ID}" -eq 1 ]] && [[ "${gyrA_AA_length}" -eq 1 ]]; then
+#                     gyrA_additional_info_current=""
+#                 # What to do if it is not a full length match
+#                 else
+#                     gyrA_allele_current="${gyrA_allele_current}*"
+#                     gyrA_additional_info_current="Trunc:Length<100"
+#                 fi
+#             elif [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
+#                 gyrA_allele_current="${gyrA_allele_current}*"
+#                 gyrA_additional_info_current=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
+#             elif [[ "${gyrA_matchtype}" = "Mutant" ]] || [[ "${gyrA_matchtype}" = "Indel" ]]; then
+#                 gyrA_allele_current="${gyrA_allele_current}*"
+#                 gyrA_additional_info_current=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
+#             # Hit is some other kind of match, i.e. Mutatnt, Indel, Trunc
+#             else
+#                 echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
+#             fi
 
-            if [[ "${gyrA_additional_info_current: -1}" = "," ]]; then
-                gyrA_additional_info_current="${gyrA_additional_info_current:0:-1}"
-            fi
+#             if [[ "${gyrA_additional_info_current: -1}" = "," ]]; then
+#                 gyrA_additional_info_current="${gyrA_additional_info_current:0:-1}"
+#             fi
 
 
-            if [[ ${gyrA} = "" ]]; then
-                if [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
-                    gyrA="Trunc:Codon"
-                elif (( $(echo "$gyrA_length*100 < 90" | bc -l) )); then
-                    gyrA="Trunc:Length<90"
-                else
-                    gyrA=1
-                fi
-            else
-                if [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
-                    gyrA="${gyrA}-Trunc:Codon"
-                elif (( $(echo "$gyrA_length*100 < 90" | bc -l) )); then
-                    gyrA="${gyrA}-Trunc:Length<90"
-                else
-                    gyrA="${gyrA}-1"
-                fi
-            fi
-            if [[ "${gyrA_allele}" = "" ]]; then
-                gyrA_allele=${gyrA_allele_current}
-            else
-                gyrA_allele="${gyrA_allele}-${gyrA_allele_current}"
-            fi
-            if [[ "${gyrA_stats}" == "" ]]; then
-                gyrA_stats="${gyrA_IDN}|${gyrA_IDA}|${gyrA_length}"
-            else
-                gyrA_stats="${gyrA_stats}-${gyrA_IDN}|${gyrA_IDA}|${gyrA_length}"
-            fi
-            count=$(( count + 1 ))
-        done
-        gyrA_set="${gyrA}\t${gyrA_allele}\t${gyrA_additional_info}\t${gyrA_stats}"
-    fi
+#             if [[ ${gyrA} = "" ]]; then
+#                 if [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
+#                     gyrA="Trunc:Codon"
+#                 elif (( $(echo "$gyrA_length*100 < 90" | bc -l) )); then
+#                     gyrA="Trunc:Length<90"
+#                 else
+#                     gyrA=1
+#                 fi
+#             else
+#                 if [[ "${gyrA_matchtype}" = *"Trunc"* ]]; then
+#                     gyrA="${gyrA}-Trunc:Codon"
+#                 elif (( $(echo "$gyrA_length*100 < 90" | bc -l) )); then
+#                     gyrA="${gyrA}-Trunc:Length<90"
+#                 else
+#                     gyrA="${gyrA}-1"
+#                 fi
+#             fi
+#             if [[ "${gyrA_allele}" = "" ]]; then
+#                 gyrA_allele=${gyrA_allele_current}
+#             else
+#                 gyrA_allele="${gyrA_allele}-${gyrA_allele_current}"
+#             fi
+#             if [[ "${gyrA_stats}" == "" ]]; then
+#                 gyrA_stats="${gyrA_IDN}NT|${gyrA_IDA}AA|${gyrA_length}"
+#             else
+#                 gyrA_stats="${gyrA_stats}-${gyrA_IDN}NT|${gyrA_IDA}AA|${gyrA_length}"
+#             fi
+#             count=$(( count + 1 ))
+#         done
+#         gyrA_set="${gyrA}\t${gyrA_allele}\t${gyrA_additional_info}\t${gyrA_stats}"
+#     fi
 
-    # Check and format for gyrB count, these are ALL point mutations and must be handled differently
-    gyrB_count=$(grep -c 'gyrB' "${tox_input}")
-    if [[ "${gyrB_count}" -eq 0 ]]; then
-        gyrB=0
-        gyrB_set="0\tNA\tN/A\tNA|NA|NA"
-    elif [[ "${gyrB_count}" -eq 1 ]]; then
-        gyrB_line=$(grep 'gyrB' "${tox_input}")
-        gyrB_matchtype=$(echo "${gyrB_line}" | cut -d$'\t' -f5)
-        gyrB_AA_codon_ID=$(echo "${gyrB_line}" | cut -d$'\t' -f10)
-        gyrB_AA_length=$(echo "${gyrB_line}" | cut -d$'\t' -f12)
-        gyrB_allele=$(extract_gama_elements 3 "${gyrB_line}")
-        if [[ "${gyrB_matchtype}" = "Native" ]]; then
-            if [[ "${gyrB_AA_codon_ID}" -eq 1 ]] && [[ "${gyrB_AA_length}" -eq 1 ]]; then
-                gyrB=1
-                gyrB_additional_info=""
-            # What to do if it is not a full length match
-            else
-                gyrB="1*"
-                gyrB_allele="${gyrB_allele}*"
-                gyrB_additional_info="Trunc:Length<100"
-            fi
-        elif [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
-                gyrB_allele_current="${gyrB_allele_current}*"
-                gyrB_additional_info_current=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
-                gyrB="Trunc:Codon"
-        elif [[ "${gyrB_matchtype}" = "Mutant" ]] || [[ "${gyrB_matchtype}" = "Indel" ]]; then
-            gyrB="1*"
-            gyrB_allele="${gyrB_allele}*"
-            gyrB_additional_info=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
-        # Hit is some other kind of match, i.e. Mutatnt, Indel, Trunc
-        else
-            echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
-        fi
+#     # Check and format for gyrB count, these are ALL point mutations and must be handled differently
+#     gyrB_count=$(grep -c 'gyrB' "${tox_input}")
+#     if [[ "${gyrB_count}" -eq 0 ]]; then
+#         gyrB=0
+#         gyrB_set="0\tNA\tN/A\tNA|NA|NA"
+#     elif [[ "${gyrB_count}" -eq 1 ]]; then
+#         gyrB_line=$(grep 'gyrB' "${tox_input}")
+#         gyrB_matchtype=$(echo "${gyrB_line}" | cut -d$'\t' -f5)
+#         gyrB_AA_codon_ID=$(echo "${gyrB_line}" | cut -d$'\t' -f10 | printf "%.0f")
+#         gyrB_AA_length=$(echo "${gyrB_line}" | cut -d$'\t' -f12 | printf "%.0f")
+#         gyrB_allele=$(extract_gama_elements 3 "${gyrB_line}")
+#         if [[ "${gyrB_matchtype}" = "Native" ]]; then
+#             if [[ "${gyrB_AA_codon_ID}" -eq 1 ]] && [[ "${gyrB_AA_length}" -eq 1 ]]; then
+#                 gyrB=1
+#                 gyrB_additional_info=""
+#             # What to do if it is not a full length match
+#             else
+#                 gyrB="1*"
+#                 gyrB_allele="${gyrB_allele}*"
+#                 gyrB_additional_info="Trunc:Length<100"
+#             fi
+#         elif [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
+#                 gyrB_allele_current="${gyrB_allele_current}*"
+#                 gyrB_additional_info_current=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
+#                 gyrB="Trunc:Codon"
+#         elif [[ "${gyrB_matchtype}" = "Mutant" ]] || [[ "${gyrB_matchtype}" = "Indel" ]]; then
+#             gyrB="1*"
+#             gyrB_allele="${gyrB_allele}*"
+#             gyrB_additional_info=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
+#         # Hit is some other kind of match, i.e. Mutatnt, Indel, Trunc
+#         else
+#             echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
+#         fi
         
-        if [[ "${gyrB_additional_info: -1}" = "," ]]; then
-                gyrB_additional_info="${gyrB_additional_info:0:-1}"
-        fi
+#         if [[ "${gyrB_additional_info: -1}" = "," ]]; then
+#                 gyrB_additional_info="${gyrB_additional_info:0:-1}"
+#         fi
 
-        gyrB_IDA=$(echo "${gyrB_line}" | cut -d$'\t' -f10)
-        gyrB_IDN=$(echo "${gyrB_line}" | cut -d$'\t' -f11)
-        gyrB_length=$(echo "${gyrB_line}" | cut -d$'\t' -f12)
-        gyrB_set="${gyrB}\t${gyrB_allele}\t${gyrB_additional_info}\t${gyrB_IDN}|${gyrB_IDA}|${gyrB_length}"
-    else
-        readarray -t gyrB_arr < <(grep "gyrB" "${tox_input}")
-        gyrB_count_array=${#gyrB_arr[@]}
-        if [[ ${gyrB_count} != ${gyrB_count_array} ]]; then 
-            echo "wut?!"
-        fi
-        count=0
+#         gyrB_IDA=$(echo "${gyrB_line}" | cut -d$'\t' -f10 | printf "%.0f")
+#         gyrB_IDN=$(echo "${gyrB_line}" | cut -d$'\t' -f11 | printf "%.0f")
+#         gyrB_length=$(echo "${gyrB_line}" | cut -d$'\t' -f12 | printf "%.0f")
+#         gyrB_set="${gyrB}\t${gyrB_allele}\t${gyrB_additional_info}\t${gyrB_IDN}NT|${gyrB_IDA}AA|${gyrB_length}"
+#     else
+#         readarray -t gyrB_arr < <(grep "gyrB" "${tox_input}")
+#         gyrB_count_array=${#gyrB_arr[@]}
+#         if [[ ${gyrB_count} != ${gyrB_count_array} ]]; then 
+#             echo "wut?!"
+#         fi
+#         count=0
 
-        gyrB_allele="NA"
-        gyrB_additional_info=""
-        gyrB_stats=""
-        gyrB=""
-        while [[ ${count} -lt ${gyrB_count_array} ]]; do
-            gyrB_allele_current=$(extract_gama_elements 3 "${gyrB_arr[count]}")
-            gyrB_IDA=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f10)
-            gyrB_IDN=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f11)
-            gyrB_length=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f12)
-            gyrB_matchtype=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f5)
-            if [[ "${gyrB_matchtype}" = "Native" ]]; then
-                if [[ "${gyrB_AA_codon_ID}" -eq 1 ]] && [[ "${gyrB_AA_length}" -eq 1 ]]; then
-                    gyrB_additional_info_current=""
-                # What to do if it is not a full length match
-                else
-                    gyrB_allele_current="${gyrB_allele_current}*"
-                    gyrB_additional_info_current="Trunc:Length<90"
-                fi
-            elif [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
-                gyrB_allele_current="${gyrB_allele_current}*"
-                gyrB_additional_info_current=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
-            elif [[ "${gyrB_matchtype}" = "Mutant" ]] || [[ "${gyrB_matchtype}" = "Indel" ]]; then
-                gyrB_allele_current="${gyrB_allele_current}*"
-                gyrB_additional_info_current=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
-            # Hit is some other kind of match, i.e. Mutatnt, Indel, Trunc
-            else
-                echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
-            fi
+#         gyrB_allele="NA"
+#         gyrB_additional_info=""
+#         gyrB_stats=""
+#         gyrB=""
+#         while [[ ${count} -lt ${gyrB_count_array} ]]; do
+#             gyrB_allele_current=$(extract_gama_elements 3 "${gyrB_arr[count]}")
+#             gyrB_IDA=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f10 | printf "%.0f")
+#             gyrB_IDN=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f11 | printf "%.0f")
+#             gyrB_length=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f12 | printf "%.0f")
+#             gyrB_matchtype=$(echo "${gyrB_arr[count]}" | cut -d$'\t' -f5)
+#             if [[ "${gyrB_matchtype}" = "Native" ]]; then
+#                 if [[ "${gyrB_AA_codon_ID}" -eq 1 ]] && [[ "${gyrB_AA_length}" -eq 1 ]]; then
+#                     gyrB_additional_info_current=""
+#                 # What to do if it is not a full length match
+#                 else
+#                     gyrB_allele_current="${gyrB_allele_current}*"
+#                     gyrB_additional_info_current="Trunc:Length<90"
+#                 fi
+#             elif [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
+#                 gyrB_allele_current="${gyrB_allele_current}*"
+#                 gyrB_additional_info_current=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
+#             elif [[ "${gyrB_matchtype}" = "Mutant" ]] || [[ "${gyrB_matchtype}" = "Indel" ]]; then
+#                 gyrB_allele_current="${gyrB_allele_current}*"
+#                 gyrB_additional_info_current=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
+#             # Hit is some other kind of match, i.e. Mutatnt, Indel, Trunc
+#             else
+#                 echo "UNKNOWN MATCHTYPE, PLEASE ADD TO CHECK (CENTAR CONSOLIDATOR.sh)"
+#             fi
 
-            if [[ "${gyrB_additional_info_current: -1}" = "," ]]; then
-                gyrB_additional_info_current="${gyrB_additional_info_current:0:-1}"
-            fi
+#             if [[ "${gyrB_additional_info_current: -1}" = "," ]]; then
+#                 gyrB_additional_info_current="${gyrB_additional_info_current:0:-1}"
+#             fi
 
-            if [[ ${gyrB} = "" ]]; then
-                if [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
-                    gyrB="Trunc:Codon"
-                elif (( $(echo "$gyrB_length*100 < 90" | bc -l) )); then
-                    gyrB="Trunc:Length<90"
-                else
-                    gyrB=1
-                fi
-            else
-                if [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
-                    gyrB="${gyrB}-Trunc:Codon"
-                elif (( $(echo "$gyrB_length*100 < 90" | bc -l) )); then
-                    gyrB="${gyrB}-Trunc:Length<90"
-                else
-                    gyrB="${gyrB}-1"
-                fi
-            fi
-            if [[ "${gyrB_allele}" = "" ]]; then
-                gyrB_allele=${gyrB_allele_current}
-            else
-                gyrB_allele="${gyrB_allele}-${gyrB_allele_current}"
-            fi
-            if [[ "${gyrB_stats}" == "" ]]; then
-                gyrB_stats="${gyrB_IDN}|${gyrB_IDA}|${gyrB_length}"
-            else
-                gyrB_stats="${gyrB_stats}-${gyrB_IDN}|${gyrB_IDA}|${gyrB_length}"
-            fi
-            count=$(( count + 1 ))
-        done
-        gyrB_set="${gyrB}\t${gyrB_allele}\t${gyrB_additional_info}\t${gyrB_stats}"
-    fi
+#             if [[ ${gyrB} = "" ]]; then
+#                 if [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
+#                     gyrB="Trunc:Codon"
+#                 elif (( $(echo "$gyrB_length*100 < 90" | bc -l) )); then
+#                     gyrB="Trunc:Length<90"
+#                 else
+#                     gyrB=1
+#                 fi
+#             else
+#                 if [[ "${gyrB_matchtype}" = *"Trunc"* ]]; then
+#                     gyrB="${gyrB}-Trunc:Codon"
+#                 elif (( $(echo "$gyrB_length*100 < 90" | bc -l) )); then
+#                     gyrB="${gyrB}-Trunc:Length<90"
+#                 else
+#                     gyrB="${gyrB}-1"
+#                 fi
+#             fi
+#             if [[ "${gyrB_allele}" = "" ]]; then
+#                 gyrB_allele=${gyrB_allele_current}
+#             else
+#                 gyrB_allele="${gyrB_allele}-${gyrB_allele_current}"
+#             fi
+#             if [[ "${gyrB_stats}" == "" ]]; then
+#                 gyrB_stats="${gyrB_IDN}NT|${gyrB_IDA}AA|${gyrB_length}"
+#             else
+#                 gyrB_stats="${gyrB_stats}-${gyrB_IDN}NT|${gyrB_IDA}AA|${gyrB_length}"
+#             fi
+#             count=$(( count + 1 ))
+#         done
+#         gyrB_set="${gyrB}\t${gyrB_allele}\t${gyrB_additional_info}\t${gyrB_stats}"
+#     fi
+
+    # if grep -q 'gyrA' ${tox_file}; then
+    #     gyrA_count=$(grep -c 'gyrA' "${tox_input}")
+    #     if [[ "${gyrA_count}" -gt 1 ]]; then
+    #         echo "ALERT: MORE THAN 1 gyrA FOUND, check contents to see if representeed properly!!!"
+    #     else
+    #         gyrA_line=$(grep 'gyrA' ${tox_file})
+    #         all_muts=$(echo "${gyrA_line}" | cut -d$'\t' -f6)
+    #         if [[ ${all_muts: -1} = "," ]]; then
+    #             all_muts="${all_muts::-1}"
+    #         elif [[ "${all_muts}" = "Native" ]]; then
+    #             all_muts=""
+    #         fi
+    #         line_IDAA=$(echo "${aa_mut_line}" | cut -d$'\t' -f10 | $( printf "%.0f" ))
+    #         line_IDNT=$(echo "${aa_mut_line}" | cut -d$'\t' -f11 | $( printf "%.0f" ))
+    #         line_length=$(echo "${aa_mut_line}" | cut -d$'\t' -f12 | $( printf "%.0f" ))
+    #         #echo "AM:${all_muts}"
+    #         IFS=',' read -r -a mut_array <<< "$all_muts"
+    #         known_muts=()
+    #         other_muts=()
+    #         for j in "${mut_array[@]}"; do
+    #             added="False"
+    #             for k in ${AA_POINTS[$i]}; do
+    #                 trim_j=$(echo -e "${j//__/ }" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    #                 trim_k=$(echo -e "${k//__/ }" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    #                 #echo "${j}/${trim_j} VS ${k}/${trim_k}"    
+    #                 if [[ "${trim_j//__/ }" = "${trim_k//__/ }" ]]; then
+    #                     echo "FOUND - ${trim_j//__/ }"
+    #                     added="True"
+    #                     known_muts+=("${trim_j//__/ }")
+    #                 fi
+    #             done
+    #             if [[ "${added}" = "False" ]]; then
+    #                 other_muts+=("${trim_j//__/ }")
+    #             fi
+    #         done
+    #         muts_string=""
+    #         #echo "KM: ${known_muts[@]}"
+    #         for item in "${known_muts[@]}"; do
+    #             if [[ "${muts_string}" = "" ]]; then
+    #                 muts_string="${item}"
+    #             else
+    #                 muts_string="${muts_string},${item}"
+    #             fi
+    #         done
+    #         other_muts_string=""
+    #         #echo "OM: ${other_muts[@]}"
+    #         for item in "${other_muts[@]}"; do
+    #             #echo "OMS-pre:${other_muts_string},${item}"
+    #             if [[ "${other_muts_string}" = "" ]]; then
+    #                 other_muts_string="${item}"
+    #             else
+    #                 other_muts_string="${other_muts_string},${item}"
+    #             fi
+    #             #echo "OMS-post:${other_muts_string}"
+    #         done
+    #        # echo "0-${i}"
+    #        # echo "1-${aa_mut_line}"
+    #        # echo "2-${all_muts}"
+    #        # echo "3-${line_IDAA}"
+    #        # echo "4-${line_IDNT}"
+    #        # echo "5-${line_length}"
+    #        # echo "6-${known_muts}"
+    #        # echo "7-${AA_POINTS[$i]}"
+
+    #         gyrA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+    # else
+    #     echo "gyrB not found in toxin gamma file (${tox_file})"
+    # fi
+
+    # if grep -q 'gyrB' ${tox_file}; then
+    #     gyrB_count=$(grep -c 'gyrB' "${tox_input}")
+    #     if [[ "${gyrB_count}" -gt 1 ]]; then
+    #         echo "ALERT: MORE THAN 1 gyrB FOUND, check contents to see if representeed properly!!!"
+    #     else
+    #         gyrB_line=$(grep 'gyrB' ${tox_file})
+    #         all_muts=$(echo "${gyrB_line}" | cut -d$'\t' -f6)
+    #         if [[ ${all_muts: -1} = "," ]]; then
+    #             all_muts="${all_muts::-1}"
+    #         elif [[ "${all_muts}" = "Native" ]]; then
+    #             all_muts=""
+    #         fi
+    #         line_IDAA=$(echo "${gyrB_line}" | cut -d$'\t' -f10 | printf "%.0f" )
+    #         line_IDNT=$(echo "${gyrB_line}" | cut -d$'\t' -f11 | printf "%.0f" )
+    #         line_length=$(echo "${gyrB_line}" | cut -d$'\t' -f12 | printf "%.0f" )
+    #         #echo "AM:${all_muts}"
+    #         IFS=',' read -r -a mut_array <<< "$all_muts"
+    #         known_muts=()
+    #         other_muts=()
+    #         for j in "${mut_array[@]}"; do
+    #             added="False"
+    #             for k in ${AA_POINTS[$i]}; do
+    #                 trim_j=$(echo -e "${j//__/ }" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    #                 trim_k=$(echo -e "${k//__/ }" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    #                 #echo "${j}/${trim_j} VS ${k}/${trim_k}"    
+    #                 if [[ "${trim_j//__/ }" = "${trim_k//__/ }" ]]; then
+    #                     echo "FOUND - ${trim_j//__/ }"
+    #                     added="True"
+    #                     known_muts+=("${trim_j//__/ }")
+    #                 fi
+    #             done
+    #             if [[ "${added}" = "False" ]]; then
+    #                 other_muts+=("${trim_j//__/ }")
+    #             fi
+    #         done
+    #         muts_string=""
+    #         #echo "KM: ${known_muts[@]}"
+    #         for item in "${known_muts[@]}"; do
+    #             if [[ "${muts_string}" = "" ]]; then
+    #                 muts_string="${item}"
+    #             else
+    #                 muts_string="${muts_string},${item}"
+    #             fi
+    #         done
+    #         other_muts_string=""
+    #         #echo "OM: ${other_muts[@]}"
+    #         for item in "${other_muts[@]}"; do
+    #             #echo "OMS-pre:${other_muts_string},${item}"
+    #             if [[ "${other_muts_string}" = "" ]]; then
+    #                 other_muts_string="${item}"
+    #             else
+    #                 other_muts_string="${other_muts_string},${item}"
+    #             fi
+    #             #echo "OMS-post:${other_muts_string}"
+    #         done
+    #        # echo "0-${i}"
+    #        # echo "1-${aa_mut_line}"
+    #        # echo "2-${all_muts}"
+    #        # echo "3-${line_IDAA}"
+    #        # echo "4-${line_IDNT}"
+    #        # echo "5-${line_length}"
+    #        # echo "6-${known_muts}"
+    #        # echo "7-${AA_POINTS[$i]}"
+
+    #         gyrB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+    # else
+    #     echo "gyrB not found in toxin gamma file (${tox_file})"
+    # fi
+
+
+
 else
     echo "No tox file found"
     tcdA_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
@@ -1108,8 +1249,6 @@ else
     cdtAB2_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
     cdtR_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
     nontox_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file"
-    gyrA_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
-    gyrB_set="No_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file\tNo_Tox_file"
 fi
 
 if [[ -f "${clade_input}" ]]; then
@@ -1132,7 +1271,7 @@ else
     clade="No_clade/MLST_file"
 fi
 
-declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [lscR]="V76A" [murG]="P109L" [nifJ]="G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I")
+declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [lscR]="V76A" [murG]="P109L" [nifJ]="G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I" [gyrA]="A117S A118S A118T A384D A92E D103N D71G D71V D81N E123K L345I P116A R90K T82A T82I T82V V43D" [gyrB]="D426N D426V E466K E466V I139R L444F Q434K R377G R447K R447L S366V S464T V130I")
 declare -A NT_POINTS=( [feoB]="117DelA 1__bp__Deletion__at__119" [hemN]="Y214Stop 1__bp__Deletion__at__641" [hsmA]="372DelA 1__bp__Deletion__at__371" [lscR]="153DelA 1__bp__Deletion__at__152" [marR]="349DelT 1__bp__Deletion__at__355" [PNimB]="T115G" [sdaB]="883DelGCA 879DelACG 3__bp__Deletion__at__886" )
 
 printf "%s\n" "${!AA_POINTS[@]}"
@@ -1142,6 +1281,8 @@ echo "Done"
 if [[ -f "${aa_mut_file}" ]]; then
     ## Parse the AR file once ready and figure out how to make it expandable
     echo "NO_OTHER_aa_mut_file_YET"
+    gyrA_set="NA\tNA\tNA"
+    gyrB_set="NA\tNA\tNA"
     dacS_set="NA\tNA\tNA"
     fur_set="NA\tNA\tNA"
     gdpP_set="NA\tNA\tNA"
@@ -1164,9 +1305,9 @@ if [[ -f "${aa_mut_file}" ]]; then
             elif [[ "${all_muts}" = "No coding mutations" ]]; then
                 all_muts=""
             fi
-            line_IDAA=$(echo "${aa_mut_line}" | cut -d$'\t' -f10)
-            line_IDNT=$(echo "${aa_mut_line}" | cut -d$'\t' -f11)
-            line_length=$(echo "${aa_mut_line}" | cut -d$'\t' -f12)
+            line_IDAA=$(echo "${aa_mut_line}" | cut -d$'\t' -f10 | printf "%.0f" )
+            line_IDNT=$(echo "${aa_mut_line}" | cut -d$'\t' -f11 | printf "%.0f" )
+            line_length=$(echo "${aa_mut_line}" | cut -d$'\t' -f12 | printf "%.0f" )
             #echo "AM:${all_muts}"
             IFS=',' read -r -a mut_array <<< "$all_muts"
             known_muts=()
@@ -1217,30 +1358,34 @@ if [[ -f "${aa_mut_file}" ]]; then
            # echo "7-${AA_POINTS[$i]}"
 
             case "$i" in
+                gyrA)
+                    gyrA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                gyrB)
+                    gyrB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 dacS)
-                    dacS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    dacS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 fur)
-                    fur_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    fur_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 gdpP)
-                    gdpP_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    gdpP_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 glyC)
-                    glyC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    glyC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 lscR)
-                    lscRAA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    lscRAA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 murG)
-                    murG_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    murG_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 rpoB)
-                    rpoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    rpoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 rpoC)
-                    rpoC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    rpoC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 thiH)
-                    thiH_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    thiH_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 vanR)
-                    vanR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    vanR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 vanS)
-                    vanS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    vanS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 nifJ)
-                    nifJ_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_IDAA}|${line_length}";;
+                    nifJ_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
                 *)
                     echo "Unknown gene: $i" ;;
             esac
@@ -1250,6 +1395,8 @@ if [[ -f "${aa_mut_file}" ]]; then
     done
 else
     echo "NO_AA_mut_file"
+    gyrA_set="NO_AA_mut_file\tNO_AA_mut_file\tNO_AA_mut_file"
+    gyrB_set="NO_AA_mut_file\tNO_AA_mut_file\tNO_AA_mut_file"
     dacS_set="NO_AA_mut_file\tNO_AA_mut_file\tNO_AA_mut_file"
     fur_set="NO_AA_mut_file\tNO_AA_mut_file\tNO_AA_mut_file"
     gdpP_set="NO_AA_mut_file\tNO_AA_mut_file\tNO_AA_mut_file"
@@ -1286,8 +1433,8 @@ if [[ -f "${nt_mut_file}" ]]; then
             elif [[ "${all_muts}" = "Exact match" ]]; then
                 all_muts=""
             fi
-            line_IDNT=$(echo "${nt_mut_line}" | cut -d$'\t' -f14)
-            line_length=$(echo "${nt_mut_line}" | cut -d$'\t' -f15)
+            line_IDNT=$(echo "${nt_mut_line}" | cut -d$'\t' -f14 | printf "%.0f" )
+            line_length=$(echo "${nt_mut_line}" | cut -d$'\t' -f15 | printf "%.0f" )
             IFS=',' read -r -a mut_array <<< "$all_muts"
             known_muts=()
             other_muts=()
@@ -1336,19 +1483,19 @@ if [[ -f "${nt_mut_file}" ]]; then
             #echo "7-${NT_POINTS[$i]}"
             case "$i" in
                 feoB)
-                    feoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_length}";;
+                    feoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                 hemN)
-                    hemN_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_length}";;
+                    hemN_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                 hsmA)
-                    hsmA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_length}";;
+                    hsmA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                 lscR)
-                    lscRNT_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_length}";;
+                    lscRNT_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                 marR)
-                    marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_length}";;
+                    marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                 PNimB)
-                    PNimB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_length}";;
+                    PNimB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                 sdaB)
-                    sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}|${line_length}";;
+                    sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                 *)
                     echo "Unknown gene: $i" ;;
             esac
