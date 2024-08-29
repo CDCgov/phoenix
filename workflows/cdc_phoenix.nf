@@ -94,6 +94,11 @@ include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_st
 include { MULTIQC                                                 } from '../modules/nf-core/modules/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
+/*
+========================================================================================
+    GROOVY FUNCTIONS
+========================================================================================
+*/
 
 def get_taxa(input_ch){ 
         def genus = ""

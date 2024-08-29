@@ -59,7 +59,6 @@ include { GRIPHIN                        } from '../modules/local/griphin'
 ========================================================================================
 */
 include { CREATE_SCAFFOLDS_INPUT_CHANNEL           } from '../subworkflows/local/create_scaffolds_input_channel'
-include { ADD_EMPTY_CHANNEL                        } from '../subworkflows/local/add_empty_channel'
 include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'

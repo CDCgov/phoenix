@@ -36,6 +36,12 @@ def add_meta(folder) {
     return output_array
 }
 
+/*
+========================================================================================
+    RUN MAIN WORKFLOW
+========================================================================================
+*/
+
 workflow SRA_PREP {
     take:
         sra_samplesheet //params.input_sra
