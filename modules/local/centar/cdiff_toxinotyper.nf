@@ -33,7 +33,7 @@ process CDIFF_TOXINOTYPER {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        blat_toxinotypes.sh: \$(${ica}blat_toxinotypes.sh -V)
+        \$(${ica}blat_toxinotypes.sh -V)
         gamma_container: ${container}
     END_VERSIONS
     """
