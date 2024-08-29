@@ -22,7 +22,7 @@ process CDIFF_PLASMIDS {
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     def container_version = "base_v2.1.0"
-    def container = task.container.toString() - "staphb/gamma@"
+    def container = task.container.toString() - "jvhagey/phoenix@"
     """
     # Call the real internal scripts to infer the ribotpes
 
@@ -31,8 +31,8 @@ process CDIFF_PLASMIDS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        pladmid script: 0.0.0
-        gamma_container: ${container}
+        plasmid script: 0.0.0
+        plasmid_container: ${container}
     END_VERSIONS
     """
 }
