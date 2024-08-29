@@ -2,7 +2,7 @@ process CDIFF_RIBOTYPER {
     tag "$meta.id"
     label 'process_single'
     // v1.0.1 - MUST manually change below (line 27)!!!
-    container 'quay.io/jvhagey/newtype@sha256:ca1edc26d6f64f62b3d4e09f167f15965d86520f630c23f0ceb6fd97fb3cab7e'
+    container 'quay.io/jvhagey/newtype@sha256:0b1b49acc633f88a071fb9157de405b88fb5e5aa4016e3afed46e43c4db03b30'
 
     input:
     tuple val(meta), path(csv_core)

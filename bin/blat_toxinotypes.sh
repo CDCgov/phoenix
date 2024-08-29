@@ -29,7 +29,7 @@ version=1.0
 
 # Parse command line options
 options_found=0
-while getopts ":h?i:o:d:t:V:" option; do
+while getopts ":h?i:o:d:t:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)

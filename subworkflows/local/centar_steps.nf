@@ -18,6 +18,19 @@ include { KRAKEN2_WF as KRAKEN2_PLASMID  } from './kraken2krona'
 
 /*
 ========================================================================================
+    GROOVY FUNCTIONS
+========================================================================================
+*/
+
+// Groovy funtion to make [ meta.id, [] ] - just an empty channel
+def create_empty_ch(input_for_meta) { // We need meta.id associated with the empty list which is why .ifempty([]) won't work
+    meta_id = input_for_meta[0]
+    output_array = [ meta_id, [] ]
+    return output_array
+}
+
+/*
+========================================================================================
     RUN MAIN WORKFLOW
 ========================================================================================
 */
@@ -96,16 +109,22 @@ workflow CENTAR_SUBWORKFLOW {
                 allele_calls_ch.map{meta, csv_core, csv_accessory -> [ meta, csv_accessory ]}
             )
             ch_versions = ch_versions.mix(CDIFF_RIBOTYPER.out.versions)
+
+            ribotype_file_ch = CDIFF_RIBOTYPER.out.ribotype_file
+
+        } else {
+            //create an empty channel for ribotyper if it is not run
+            ribotype_file_ch = combined_mlst.map{ it -> create_empty_ch(it)}
         }
 
         // Join everything together based on meta.id
-        cdiff_summary_ch = CDIFF_TOX_GENES.out.gamma.map{        meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]}\
-        .join(CDIFF_CLADE.out.clade.map{                         meta, clade           -> [[id:meta.id, project_id:meta.project_id], clade]},         by: [[0][0],[0][1]])\
-        .join(CDIFF_TOXINOTYPER.out.tox_file.map{                meta, tox_file        -> [[id:meta.id, project_id:meta.project_id], tox_file]},      by: [[0][0],[0][1]])\
-        .join(CDIFF_AR_GENES_AA.out.gamma.map{                   meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
-        .join(CDIFF_AR_GENES_NT.out.gamma.map{                   meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
-        .join(CDIFF_PLASMIDS.out.plasmids_file.map{              meta, plasmids_file   -> [[id:meta.id, project_id:meta.project_id], plasmids_file]}, by: [[0][0],[0][1]])\
-        .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype_file   -> [[id:meta.id, project_id:meta.project_id], ribotype_file]}, by: [[0][0],[0][1]])
+        cdiff_summary_ch = CDIFF_TOX_GENES.out.gamma.map{meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]}\
+        .join(CDIFF_CLADE.out.clade.map{                 meta, clade           -> [[id:meta.id, project_id:meta.project_id], clade]},         by: [[0][0],[0][1]])\
+        .join(CDIFF_TOXINOTYPER.out.tox_file.map{        meta, tox_file        -> [[id:meta.id, project_id:meta.project_id], tox_file]},      by: [[0][0],[0][1]])\
+        .join(CDIFF_AR_GENES_AA.out.gamma.map{           meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
+        .join(CDIFF_AR_GENES_NT.out.gamma.map{           meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
+        .join(CDIFF_PLASMIDS.out.plasmids_file.map{      meta, plasmids_file   -> [[id:meta.id, project_id:meta.project_id], plasmids_file]}, by: [[0][0],[0][1]])\
+        .join(ribotype_file_ch.map{                      meta, ribotype_file   -> [[id:meta.id, project_id:meta.project_id], ribotype_file]}, by: [[0][0],[0][1]])
 
         CENTAR_CONSOLIDATER (
            cdiff_summary_ch
