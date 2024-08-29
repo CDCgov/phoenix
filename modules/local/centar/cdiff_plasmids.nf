@@ -31,8 +31,7 @@ process CDIFF_PLASMIDS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        # Replace with proper container when module is filled in
-        # blat_toxinotypes.sh: \$(${ica}blat_toxinotypes.sh -V)
+        pladmid script: 0.0.0
         gamma_container: ${container}
     END_VERSIONS
     """

@@ -100,15 +100,20 @@ def get_taxa(input_ch){
         def species = ""
         input_ch[1].eachLine { line ->
             if (line.startsWith("G:")) {
-                genus = line.split(":")[1].trim()
+                genus = line.split(":")[1].trim().split('\t')[1]
             } else if (line.startsWith("s:")) {
-                species = line.split(":")[1].trim()
+                species = line.split(":")[1].trim().split('\t')[1]
             }
         }
         return "$genus $species"
 }
 
-
+def add_project_id(input_ch){
+    def meta = [:] // create meta array
+    meta.id = input_ch[0].id
+    meta.project_id = "group_1" //just making a project id for
+    return [meta, input_ch[1]]
+}
 
 /*
 ========================================================================================
@@ -366,12 +371,14 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
         // Run centar if necessary
-        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)} == "Clostridioides difficile" && params.centar == true) {
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+
+            // centar subworkflow requires project_ID as part of the meta
             CENTAR_SUBWORKFLOW (
-                DO_MLST.out.combined_mlst,
-                SCAFFOLD_COUNT_CHECK.out.outcome,
-                filtered_scaffolds_ch,
-                ASSET_CHECK.out.mlst_db,
+                DO_MLST.out.checked_MLSTs.map{it -> add_project_id(it)},
+                SCAFFOLD_COUNT_CHECK.out.outcome.map{it -> add_project_id(it)},
+                filtered_scaffolds_ch.map{it -> add_project_id(it)},
+                ASSET_CHECK.out.mlst_db
             )
             ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
         }
@@ -480,6 +487,17 @@ workflow PHOENIX_EXQC {
         .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
         .ifEmpty( [] )
 
+        //pull in species specific files
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+            CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.view()
+            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch)
+        } else {
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
+        }
+
         // pulling it all together
         all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
 
@@ -491,7 +509,7 @@ workflow PHOENIX_EXQC {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false, params.centar
+            griphin_input_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

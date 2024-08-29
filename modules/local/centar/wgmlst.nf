@@ -11,7 +11,6 @@ process WGMLST {
     path(qc_kb)
 
     output:
-    //tuple val(meta), path("*.tsv"),                                                               emit: wgmlst_alleles_file
     tuple val(meta), path("outputs.json"),                                                        emit: outputs
     tuple val(meta), path("stats_calls.json.gz"),                                                 emit: stats
     tuple val(meta), path("allele_calls.bam"),                                                    emit: allele_calls_bam

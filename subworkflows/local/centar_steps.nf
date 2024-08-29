@@ -93,8 +93,7 @@ workflow CENTAR_SUBWORKFLOW {
             // Running blat to identify diffbase toxin genes for specific toxinotyping
             CDIFF_RIBOTYPER (
                 allele_calls_ch.map{meta, csv_core, csv_accessory -> [ meta, csv_core ]},
-                allele_calls_ch.map{meta, csv_core, csv_accessory -> [ meta, csv_accessory ]},
-                params.newtype_bin_dir
+                allele_calls_ch.map{meta, csv_core, csv_accessory -> [ meta, csv_accessory ]}
             )
             ch_versions = ch_versions.mix(CDIFF_RIBOTYPER.out.versions)
         }
@@ -108,9 +107,7 @@ workflow CENTAR_SUBWORKFLOW {
         .join(CDIFF_PLASMIDS.out.plasmids_file.map{              meta, plasmids_file   -> [[id:meta.id, project_id:meta.project_id], plasmids_file]}, by: [[0][0],[0][1]])\
         .join(CDIFF_RIBOTYPER.out.ribotype_file.map{             meta, ribotype_file   -> [[id:meta.id, project_id:meta.project_id], ribotype_file]}, by: [[0][0],[0][1]])
 
-        cdiff_summary_ch.view()
-
-        CENTAR_CONSOLIDATER(
+        CENTAR_CONSOLIDATER (
            cdiff_summary_ch
         )
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)

@@ -25,9 +25,11 @@ show_help () {
 	echo "Usage is ./blat_toxinotypes.sh -i input_assembly -o output_file -d AA_database_to_compare_to -t toxinotype_def_file"
 }
 
+version=1.0
+
 # Parse command line options
 options_found=0
-while getopts ":h?i:o:d:t:" option; do
+while getopts ":h?i:o:d:t:V:" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -44,9 +46,11 @@ while getopts ":h?i:o:d:t:" option; do
 		d)
 			echo "Option -d triggered, argument = ${OPTARG}"
 			DB=${OPTARG};;
-        t)
+		t)
 			echo "Option -f triggered, argument = ${OPTARG}"
 			tox_def_file=${OPTARG};;
+		V)
+			show_version="True";;
 		:)
 			echo "Option -${OPTARG} requires as argument";;
 		h)
@@ -55,6 +59,11 @@ while getopts ":h?i:o:d:t:" option; do
 			;;
 	esac
 done
+
+if [[ "${show_version}" = "True" ]]; then
+	echo "blat_toxinotypes.sh: ${version}"
+	exit
+fi
 
 # Show help info for when no options are given
 if [[ "${options_found}" -eq 0 ]]; then
