@@ -16,6 +16,7 @@ process SHIGAPASS {
     "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
+    def container = task.container.toString() - "jvhagey/newtype:"
     """
     #first we create a list of the reads to pass
     gunzip ${scaffolds}
@@ -31,7 +32,7 @@ process SHIGAPASS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         shigapass: \$(echo \$(ShigaPass.sh -v 2>&1) | sed 's/^ShigaPass version //' ))
-        shigapass_container: ${container_version}
+        shigapass_container: ${container}
     END_VERSIONS
     """
 }
