@@ -54,6 +54,7 @@ include { FASTANI                        } from '../modules/local/fastani'
 include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/determine_top_mash_hits'
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
+include { SHIGAPASS                      } from '../modules/local/shigapass'
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
@@ -334,6 +335,15 @@ workflow PHOENIX_EXQC {
             best_hit_ch, params.nodes, params.names
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
+
+         // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it.contains("Escherichia") || it.contains("Shigella") }) {
+            // Get ID from ShigaPass
+            SHIGAPASS (
+                filtered_scaffolds_ch
+            )
+            ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
+        }
 
         // Perform MLST steps on isolates (with srst2 on internal samples)
         DO_MLST (
