@@ -59,10 +59,12 @@ include { GRIPHIN                        } from '../modules/local/griphin'
 ========================================================================================
 */
 include { CREATE_SCAFFOLDS_INPUT_CHANNEL           } from '../subworkflows/local/create_scaffolds_input_channel'
+include { ADD_EMPTY_CHANNEL                        } from '../subworkflows/local/add_empty_channel'
 include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'
 include { DO_MLST                                  } from '../subworkflows/local/do_mlst'
+include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_steps'
 
 /*
 ========================================================================================
@@ -113,6 +115,26 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     return output_array
 }
 
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        return "$genus $species"
+}
+
+def add_project_id(input_ch){
+    def meta = [:] // create meta array
+    meta.id = input_ch[0].id
+    meta.project_id = "group_1" //just making a project id for
+    return [meta, input_ch[1]]
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -144,7 +166,7 @@ workflow SCAFFOLDS_EXQC {
 
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            CREATE_INPUT_CHANNEL.out.scaffolds_ch
+            CREATE_SCAFFOLDS_INPUT_CHANNEL.out.scaffolds_ch
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -279,6 +301,19 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
+                // Run centar if necessary
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+
+            // centar subworkflow requires project_ID as part of the meta
+            CENTAR_SUBWORKFLOW (
+                DO_MLST.out.checked_MLSTs.map{it -> add_project_id(it)},
+                SCAFFOLD_COUNT_CHECK.out.outcome.map{it -> add_project_id(it)},
+                filtered_scaffolds_ch.map{it -> add_project_id(it)},
+                ASSET_CHECK.out.mlst_db
+            )
+            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        }
+
         // get gff and protein files for amrfinder+
         PROKKA (
             filtered_scaffolds_ch, [], []
@@ -384,7 +419,7 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         GRIPHIN (
-            summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false
+            summaries_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
