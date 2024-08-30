@@ -61,7 +61,7 @@ while getopts ":h?i:o:d:t:V" option; do
 done
 
 if [[ "${show_version}" = "True" ]]; then
-	echo "blat_toxinotypes.sh: ${version}"
+	echo "${version}"
 	exit
 fi
 
