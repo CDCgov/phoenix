@@ -12,6 +12,7 @@ process CENTAR_CONSOLIDATER {
     path(other_AR_NT_file), 
     path(plasmids_file),
     path(rt_file)
+    path(st_rt_xwalk)
 
     output:
     tuple val(meta), path("*.tsv"), emit: centar_summary_line
@@ -38,7 +39,8 @@ process CENTAR_CONSOLIDATER {
         -r ${rt_file} \\
         -p ${plasmids_file} \\
         -o ${prefix}_centar_output.tsv \\
-        -s ${prefix}
+        -s ${prefix} \\
+        -x ${st_rt_xwalk}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
