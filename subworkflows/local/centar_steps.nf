@@ -127,7 +127,7 @@ workflow CENTAR_SUBWORKFLOW {
         .join(ribotype_file_ch.map{                      meta, ribotype_file   -> [[id:meta.id, project_id:meta.project_id], ribotype_file]}, by: [[0][0],[0][1]])
 
         CENTAR_CONSOLIDATER (
-           cdiff_summary_ch
+           cdiff_summary_ch, params.cemb_strt_xwalk
         )
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
 
