@@ -61,7 +61,7 @@ if [[ "${options_found}" -eq 0 ]]; then
 fi
 
 if [[ "${show_version}" = "True" ]]; then
-	echo "get_CDiff_clade.sh: ${version}"
+	echo "${version}"
 	exit
 fi
 

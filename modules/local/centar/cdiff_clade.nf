@@ -29,7 +29,7 @@ process CDIFF_CLADE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        get_Cdiff_clade.sh: \$(${ica}get_Cdiff_clade.sh -V | sed 's/^get_Cdiff_clade.sh: //' ))
+        get_Cdiff_clade.sh: \$(${ica}get_Cdiff_clade.sh -V | sed 's/^get_Cdiff_clade.sh: //' )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

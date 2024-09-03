@@ -221,15 +221,27 @@ if [[ -f "${tox_input}" ]]; then
         tcdA_set="${tcdA}\t${subtype_A}\t${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}"
     else
         tcdA=1
-        readarray -t tcdA_arr < <(grep "tcdA" "${tox_input}")
+        tcdA_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"tcdA"* ]]; then
+                tcdA_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         tcdA_count_array=${#tcdA_arr[@]}
+
         if [[ ${tcdA_count} != ${tcdA_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         tcdA_stats=""
+        tcdA_allele=""
         while [[ ${count} -lt ${tcdA_count_array} ]]; do
+            tcdA_line="${tcdA_arr[count]}"
+            tcdA_allele_current=$(extract_gama_elements 3 "${tcdA_line}")
             tcdA_raw_IDA=$(echo "${tcdA_line}" | cut -d$'\t' -f10)
             tcdA_raw_IDN=$(echo "${tcdA_line}" | cut -d$'\t' -f11)
             tcdA_raw_length=$(echo "${tcdA_line}" | cut -d$'\t' -f12)
@@ -289,15 +301,27 @@ if [[ -f "${tox_input}" ]]; then
         tcdB_set="${tcdB}\t${subtype_B}\t${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}"
     else
         tcdB=1
-        readarray -t tcdB_arr < <(grep "tcdB" "${tox_input}")
+        tcdB_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"tcdB"* ]]; then
+                tcdB_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         tcdB_count_array=${#tcdB_arr[@]}
+
         if [[ ${tcdB_count} != ${tcdB_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         tcdB_stats=""
+        tcdB_allele=""
         while [[ ${count} -lt ${tcdB_count_array} ]]; do
+            tcdB_line="${tcdB_arr[count]}"
+            tcdB_allele_current=$(extract_gama_elements 3 "${tcdB_line}")
             tcdB_raw_IDA=$(echo "${tcdB_line}" | cut -d$'\t' -f10)
             tcdB_raw_IDN=$(echo "${tcdB_line}" | cut -d$'\t' -f11)
             tcdB_raw_length=$(echo "${tcdB_line}" | cut -d$'\t' -f12)
@@ -358,19 +382,28 @@ if [[ -f "${tox_input}" ]]; then
         fi
         tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
     else
-        readarray -t tcdC_arr < <(grep "tcdC" "${tox_input}")
+        tcdC=1
+        tcdC_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"tcdC"* ]]; then
+                tcdC_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         tcdC_count_array=${#tcdC_arr[@]}
+
         if [[ ${tcdC_count} != ${tcdC_count_array} ]]; then 
-            echo "wut?! ${tcdC_count}!=${tcdC_count_array}"
-            echo -e "${tcdC_arr[0]}\n${tcdC_arr[1]}"
+            echo "wut?!"
         fi
         count=0
 
-        tcdC_allele=""
         tcdC_stats=""
-        tcdC=""
+        tcdC_allele=""
         while [[ ${count} -lt ${tcdC_count_array} ]]; do
-            tcdC_allele_current=$(extract_gama_elements 3 "${tcdC_arr[count]}")
+            tcdC_line="${tcdC_arr[count]}"
+            tcdC_allele_current=$(extract_gama_elements 3 "${tcdC_line}")
             tcdC_raw_IDA=$(echo "${tcdC_line}" | cut -d$'\t' -f10)
             tcdC_raw_IDN=$(echo "${tcdC_line}" | cut -d$'\t' -f11)
             tcdC_raw_length=$(echo "${tcdC_line}" | cut -d$'\t' -f12)
@@ -434,15 +467,27 @@ if [[ -f "${tox_input}" ]]; then
         tcdD_set="${tcdD}\t${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}"
     else
         tcdD=1
-        readarray -t tcdD_arr < <(grep "tcdD" "${tox_input}")
+        tcdD_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"tcdD"* ]]; then
+                tcdD_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         tcdD_count_array=${#tcdD_arr[@]}
+
         if [[ ${tcdD_count} != ${tcdD_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         tcdD_stats=""
+        tcdD_allele=""
         while [[ ${count} -lt ${tcdD_count_array} ]]; do
+            tcdD_line="${tcdD_arr[count]}"
+            tcdD_allele_current=$(extract_gama_elements 3 "${tcdD_line}")
             tcdD_raw_IDA=$(echo "${tcdD_line}" | cut -d$'\t' -f10)
             tcdD_raw_IDN=$(echo "${tcdD_line}" | cut -d$'\t' -f11)
             tcdD_raw_length=$(echo "${tcdD_line}" | cut -d$'\t' -f12)
@@ -501,15 +546,27 @@ if [[ -f "${tox_input}" ]]; then
         tcdE_set="${tcdE}\t${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}"
     else
         tcdE=1
-        readarray -t tcdE_arr < <(grep "tcdE" "${tox_input}")
+        tcdE_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"tcdE"* ]]; then
+                tcdE_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         tcdE_count_array=${#tcdE_arr[@]}
+
         if [[ ${tcdE_count} != ${tcdE_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         tcdE_stats=""
+        tcdE_allele=""
         while [[ ${count} -lt ${tcdE_count_array} ]]; do
+            tcdE_line="${tcdE_arr[count]}"
+            tcdE_allele_current=$(extract_gama_elements 3 "${cdtE_line}")
             tcdD_raw_IDA=$(echo "${tcdD_line}" | cut -d$'\t' -f10)
             tcdD_raw_IDN=$(echo "${tcdD_line}" | cut -d$'\t' -f11)
             tcdD_raw_length=$(echo "${tcdD_line}" | cut -d$'\t' -f12)
@@ -567,16 +624,28 @@ if [[ -f "${tox_input}" ]]; then
         fi
         cdtA_set="${cdtA}\t${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}"
     else
-        readarray -t cdtA_arr < <(grep "cdtA" "${tox_input}")
+        cdtA=1
+        cdtA_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"cdtA"* ]]; then
+                cdtA_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         cdtA_count_array=${#cdtA_arr[@]}
+
         if [[ ${cdtA_count} != ${cdtA_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         cdtA_stats=""
-        cdtA=""
+        cdtA_allele=""
         while [[ ${count} -lt ${cdtA_count_array} ]]; do
+            cdtA_line="${cdtA_arr[count]}"
+            cdtA_allele_current=$(extract_gama_elements 3 "${cdtA_line}")
             cdtA_raw_IDA=$(echo "${cdtA_line}" | cut -d$'\t' -f10)
             cdtA_raw_IDN=$(echo "${cdtA_line}" | cut -d$'\t' -f11)
             cdtA_raw_length=$(echo "${cdtA_line}" | cut -d$'\t' -f12)
@@ -634,16 +703,28 @@ if [[ -f "${tox_input}" ]]; then
         fi
         cdtB_set="${cdtB}\t${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}"
     else
-        readarray -t cdtB_arr < <(grep "cdtB" "${tox_input}")
+        cdtA=1
+        cdtB_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"cdtB"* ]]; then
+                cdtB_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         cdtB_count_array=${#cdtB_arr[@]}
+
         if [[ ${cdtB_count} != ${cdtB_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         cdtB_stats=""
-        cdtB=""
+        cdtB_allele=""
         while [[ ${count} -lt ${cdtB_count_array} ]]; do
+            cdtB_line="${cdtB_arr[count]}"
+            cdtB_allele_current=$(extract_gama_elements 3 "${cdtB_line}")
             cdtB_raw_IDA=$(echo "${cdtB_line}" | cut -d$'\t' -f10)
             cdtB_raw_IDN=$(echo "${cdtB_line}" | cut -d$'\t' -f11)
             cdtB_raw_length=$(echo "${cdtB_line}" | cut -d$'\t' -f12)
@@ -703,8 +784,17 @@ if [[ -f "${tox_input}" ]]; then
         cdtR_set="${cdtA}\t${cdtR_allele}\t${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
     else
         cdtA=1
-        readarray -t cdtR_arr < <(grep "cdtR" "${tox_input}")
+        cdtR_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"cdtR"* ]]; then
+                cdtR_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         cdtR_count_array=${#cdtR_arr[@]}
+
         if [[ ${cdtR_count} != ${cdtR_count_array} ]]; then 
             echo "wut?!"
         fi
@@ -713,7 +803,8 @@ if [[ -f "${tox_input}" ]]; then
         cdtR_stats=""
         cdtR_allele=""
         while [[ ${count} -lt ${cdtR_count_array} ]]; do
-            cdtR_allele=$(extract_gama_elements 3 "${cdtR_arr[count]}")
+            cdtR_line="${cdtR_arr[count]}"
+            cdtR_allele_current=$(extract_gama_elements 3 "${cdtR_line}")
             cdtR_raw_IDA=$(echo "${cdtR_line}" | cut -d$'\t' -f10)
             cdtR_raw_IDN=$(echo "${cdtR_line}" | cut -d$'\t' -f11)
             cdtR_raw_length=$(echo "${cdtR_line}" | cut -d$'\t' -f12)
@@ -738,6 +829,7 @@ if [[ -f "${tox_input}" ]]; then
                     cdtR="${cdtR}-1"
                 fi
             fi
+          
             if [[ "${cdtR_allele}" = "" ]]; then
                 cdtR_allele=${cdtR_allele_current}
             else
@@ -748,6 +840,7 @@ if [[ -f "${tox_input}" ]]; then
             else
                 cdtR_stats="${cdtR_stats}-${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
             fi
+
             count=$(( count + 1 ))
         done
         cdtR_set="${cdtR}\t${cdtR_allele}\t${cdtR_stats}"
@@ -775,16 +868,28 @@ if [[ -f "${tox_input}" ]]; then
         fi
         cdtAB1_set="${cdtAB1}\t${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}"
     else
-        cdtAB1=1
-        readarray -t cdtAB1_arr < <(grep "cdtAB1" "${tox_input}")
+        cdtAB1=""
+        cdtAB1_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"cdtAB1"* ]]; then
+                cdtAB1_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         cdtAB1_count_array=${#cdtAB1_arr[@]}
+
         if [[ ${cdtAB1_count} != ${cdtAB1_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         cdtAB1_stats=""
+        cdtAB1_allele=""
         while [[ ${count} -lt ${cdtAB1_count_array} ]]; do
+            cdtAB1_line="${cdtAB1_arr[count]}"
+            cdtAB1_allele_current=$(extract_gama_elements 3 "${cdtAB1_line}")
             cdtAB1_raw_IDA=$(echo "${cdtAB1_line}" | cut -d$'\t' -f10)
             cdtAB1_raw_IDN=$(echo "${cdtAB1_line}" | cut -d$'\t' -f11)
             cdtAB1_raw_length=$(echo "${cdtAB1_line}" | cut -d$'\t' -f12)
@@ -838,16 +943,28 @@ if [[ -f "${tox_input}" ]]; then
         fi
         cdtAB2_set="${cdtAB2}\t${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}"
     else
-        cdtAB2=1
-        readarray -t cdtAB2_arr < <(grep "cdtAB2" "${tox_input}")
+        cdtAB2=""
+        cdtAB2_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"cdtAB2"* ]]; then
+                cdtAB2_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         cdtAB2_count_array=${#cdtAB2_arr[@]}
+
         if [[ ${cdtAB2_count} != ${cdtAB2_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         cdtAB2_stats=""
+        cdtAB2_allele=""
         while [[ ${count} -lt ${cdtAB2_count_array} ]]; do
+            cdtAB2_line="${cdtAB2_arr[count]}"
+            cdtAB2_allele_current=$(extract_gama_elements 3 "${cdtAB2_line}")
             cdtAB2_raw_IDA=$(echo "${cdtAB2_line}" | cut -d$'\t' -f10)
             cdtAB2_raw_IDN=$(echo "${cdtAB2_line}" | cut -d$'\t' -f11)
             cdtAB2_raw_length=$(echo "${cdtAB2_line}" | cut -d$'\t' -f12)
@@ -903,15 +1020,27 @@ if [[ -f "${tox_input}" ]]; then
         nontox_set="${nontox}\t${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}"
     else
         nontox=1
-        readarray -t nontox_arr < <(grep "cdtnontox" "${tox_input}")
+        nontox_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"nontox"* ]]; then
+                nontox_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
         nontox_count_array=${#nontox_arr[@]}
+
         if [[ ${nontox_count} != ${nontox_count_array} ]]; then 
             echo "wut?!"
         fi
         count=0
 
         nontox_stats=""
+        nontox_allele=""
         while [[ ${count} -lt ${nontox_count_array} ]]; do
+            nontox_line="${nontox_arr[count]}"
+            nontox_allele_current=$(extract_gama_elements 3 "${nontox_line}")
             nontox_raw_IDA=$(echo "${nontox_line}" | cut -d$'\t' -f10)
             nontox_raw_IDN=$(echo "${nontox_line}" | cut -d$'\t' -f11)
             nontox_raw_length=$(echo "${nontox_line}" | cut -d$'\t' -f12)

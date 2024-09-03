@@ -633,7 +633,7 @@ if [[ "${internal_phoenix}" == "true" ]]; then
 			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
 			# 3rd element is the taxon level classification
 			lassification=${arrLine[3]}
-			printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
+			#printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
 			if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
 				number_of_genera=$(( number_of_genera + 1 ))
 			fi
