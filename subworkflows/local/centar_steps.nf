@@ -57,10 +57,10 @@ workflow CENTAR_SUBWORKFLOW {
         filtered_scaffolds_ch = filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
         .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
 
-        /*CDIFF_PLASMIDS (
+        CDIFF_PLASMIDS (
             filtered_scaffolds_ch, params.cdiff_plasmid_db
         )
-        ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)*/
+        ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)
 
         // Running gamma to identify toxin genes in scaffolds for general presence
         CDIFF_TOX_GENES (
@@ -123,7 +123,7 @@ workflow CENTAR_SUBWORKFLOW {
         .join(CDIFF_TOXINOTYPER.out.tox_file.map{        meta, tox_file        -> [[id:meta.id, project_id:meta.project_id], tox_file]},      by: [[0][0],[0][1]])\
         .join(CDIFF_AR_GENES_AA.out.gamma.map{           meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
         .join(CDIFF_AR_GENES_NT.out.gamma.map{           meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},         by: [[0][0],[0][1]])\
-        //.join(CDIFF_PLASMIDS.out.plasmids_file.map{      meta, plasmids_file   -> [[id:meta.id, project_id:meta.project_id], plasmids_file]}, by: [[0][0],[0][1]])\
+        .join(CDIFF_PLASMIDS.out.plasmids_file.map{      meta, plasmids_file   -> [[id:meta.id, project_id:meta.project_id], plasmids_file]}, by: [[0][0],[0][1]])\
         .join(ribotype_file_ch.map{                      meta, ribotype_file   -> [[id:meta.id, project_id:meta.project_id], ribotype_file]}, by: [[0][0],[0][1]])
 
         CENTAR_CONSOLIDATER (
