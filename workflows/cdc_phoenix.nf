@@ -95,6 +95,25 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS                             } from '../mod
 
 /*
 ========================================================================================
+    GROOVY FUNCTIONS
+========================================================================================
+*/
+
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        return "$genus $species"
+}
+
+/*
+========================================================================================
     RUN MAIN WORKFLOW
 ========================================================================================
 */
@@ -309,7 +328,7 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(DETERMINE_TOP_MASH_HITS.out.versions)
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
-        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}\
+        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{     meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}\
         .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{              meta, top_taxa_list      -> [[id:meta.id], top_taxa_list ]}, by: [0])\
         .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{              meta, reference_dir      -> [[id:meta.id], reference_dir ]}, by: [0])
 
@@ -338,11 +357,22 @@ workflow PHOENIX_EXQC {
 
          // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID
         if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it.contains("Escherichia") || it.contains("Shigella") }) {
+
+            //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+            scaffolds_and_taxa_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
+            .join(DETERMINE_TAXA_ID.out.taxonomy.map{                             meta, taxonomy           -> [[id:meta.id], taxonomy ]},  by: [0])\
+            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+
             // Get ID from ShigaPass
             SHIGAPASS (
-                filtered_scaffolds_ch
+                scaffolds_and_taxa_ch, params.shigapass_database
             )
             ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
+
+            // create channel for summary_line
+            shigapass_ch = SHIGAPASS.out.summary
+        } else {
+            shigapass_ch = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> create_empty_ch(it) }
         }
 
         // Perform MLST steps on isolates (with srst2 on internal samples)
@@ -434,7 +464,8 @@ workflow PHOENIX_EXQC {
         .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
         .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])\
-        .join(FORMAT_ANI.out.ani_best_hit.map{                           meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
+        .join(FORMAT_ANI.out.ani_best_hit.map{                           meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])\
+        .join(shigapass_ch.map{                                          meta, shigapass_ch    -> [[id:meta.id], shigapass_ch]},    by: [0])
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
@@ -470,9 +501,20 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
+        //pull in species specific files
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it.contains("Escherichia") || it.contains("Shigella") }) {
+            params.shigapass = true
+            shigapass_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty( [] )
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_ch)
+        } else {
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
+        }
+
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false
+            griphin_input_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false, params.shigapass
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

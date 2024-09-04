@@ -38,6 +38,7 @@ def parseArgs(args=None):
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
     parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX, which is the default.')
+    parser.add_argument('--shigapass', dest="shigapass", default=False, action='store_true', required=False, help='Use for when there are E. coli or Shigella isolates in samplesheet.')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
@@ -58,7 +59,6 @@ def Get_Parent_Folder(directory):
     project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
     # get everything after CEMB
     parent_folder = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
-    #parent_folder = os.path.split(cemb_path)[1].lstrip("/") # remove backslash on left side to make it clean  #this is only the last name of the folder not full path
     return project, parent_folder
 
 def make_ar_dictionary(ar_db):
@@ -717,6 +717,19 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_srst2_df
 
+# Define the custom function to update the Taxa_ID based on conditions
+def fill_taxa_id(row):
+    if row['Taxa_Source'] == 'ANI_REFSEQ':
+        return row['FastANI_Organism']
+    elif row['Taxa_Source'] == 'kraken2_wtasmbld':
+        return row['Kraken_ID_WtAssembly_%']
+    elif row['Taxa_Source'] == 'kraken2_trimmed':
+        return row['Kraken_ID_Raw_Reads_%']
+    elif row['Taxa_Source'] == 'ShigaPass':
+        return row['Shigella_Serotype']
+    else:
+        return ''  # Default case if no condition matches
+
 def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
@@ -999,6 +1012,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Assembly_Length'            : Assembly_Length_L,
         'Assembly_Ratio'             : assembly_ratio_L,
         'Assembly_StDev'             : assembly_stdev_L,
+        'Taxa_ID'                    : "", # we will fill this later
         'Taxa_Source'                : tax_method_L,
         'Kraken_ID_Raw_Reads_%'      : Trim_kraken_L,
         'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
@@ -1034,6 +1048,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Assembly_Length'            : Assembly_Length_L,
         'Assembly_Ratio'             : assembly_ratio_L,
         'Assembly_StDev'             : assembly_stdev_L,
+        'Taxa_ID'                    : "", # we will fill this later
         'Taxa_Source'                : tax_method_L,
         'BUSCO_Lineage'              : busco_lineage_L,
         'BUSCO_%Match'               : percent_busco_L,
@@ -1268,7 +1283,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     pf_db = ",".join(pf_db)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
-def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix):
+def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
         writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
@@ -1325,19 +1340,31 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     cell_format_grey = workbook.add_format({'bg_color': '#AEB6BF', 'font_color': '#000000', 'bold': True})
     cell_format_darkgrey = workbook.add_format({'bg_color': '#808B96', 'font_color': '#000000', 'bold': True})
     # Headers
-    #worksheet.set_column('', "PHoeNIx Summary", cell_format_light_blue)
-    #worksheet.write('A1', "PHoeNIx Summary") #use for only 1 column in length
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
     worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
+    #taxa columns 
     if phoenix == True: #for non-CDC entry points
-        worksheet.merge_range('S1:Y1', "Taxonomic Information", cell_format_green)
-    else:
-        worksheet.merge_range('S1:AA1', "Taxonomic Information", cell_format_green)
+        if shigapass == True:
+            worksheet.merge_range('S1:AB1', "Taxonomic Information", cell_format_green)
+        else:
+            worksheet.merge_range('S1:Z1', "Taxonomic Information", cell_format_green)
+    else: # for CDC entry points
+        if shigapass == True:
+            worksheet.merge_range('S1:AD1', "Taxonomic Information", cell_format_green)
+        else:
+            worksheet.merge_range('S1:AB1', "Taxonomic Information", cell_format_green)
+    #MLST columns 
     if phoenix == True: #for non-CDC entry points
-        worksheet.merge_range('Z1:AG1', "MLST Schemes", cell_format_green_blue)
+        if shigapass == True:
+            worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
+        else:
+            worksheet.merge_range('AA1:AH1', "MLST Schemes", cell_format_green_blue)
     else:
-        worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)
+        if shigapass == True:
+            worksheet.merge_range('AE1:AL1', "MLST Schemes", cell_format_green_blue)
+        else:
+            worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
     worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
     worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
@@ -1459,6 +1486,36 @@ def convert_excel_to_tsv(output):
     #Write dataframe into csv
     data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
 
+def create_shiga_df(directory, sample_name,shiga_df):
+    '''If Shigapass was run get info to add to the dataframe.'''
+    # if there is a trailing / remove it
+    directory = directory.rstrip('/')
+    # create file names
+    shiga_summary = directory + "/ANI/" + sample_name + "_ShigaPass_summary.csv"
+    # Create a dictionary to store row information
+    row_data = { "WGS_ID": sample_name, "Shigella_Serotype": "", "Shigella_flexneri_Serotype": ""} # need to add ShigaPass_MLST if we are going to use
+    row_data["WGS_ID"] = sample_name
+    with open(shiga_summary) as shiga_file:
+        for line in shiga_file.readlines()[1:]:  # Skip the first line
+            if line.split(";")[9] == 'Not Shigella/EIEC\n':
+                row_data["Shigella_Serotype"] = ""
+                row_data["Shigella_flexneri_Serotype"] = ""
+                #row_data["ShigaPass_MLST"] = ""
+            else:
+                row_data["Shigella_Serotype"] = line.split(";")[7]
+                row_data["Shigella_flexneri_Serotype"] = line.split(";")[8]
+                #row_data["ShigaPass_MLST"] = line.split(";")[3]
+            # Convert the row data into a DataFrame and concatenate with the main DataFrame
+            shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
+    # Define the mapping of short strings to longer strings
+    mapping_dict = {'SB': 'Shigella boydii',
+                    'SD': 'Shigella dysenteriae',
+                    'SS': 'Shigella sonnei',
+                    'SF1-5': 'Shigella flexneri'}
+    # Apply the mapping using map()
+    shiga_df['Shigella_Serotype'] = shiga_df['Shigella_Serotype'].replace(mapping_dict)
+    return shiga_df
+
 def main():
     args = parseArgs()
     # create empty lists to append to later
@@ -1468,6 +1525,7 @@ def main():
     pf_df = pd.DataFrame() #create another empty dataframe to fill later for Plasmid markers
     hv_df = pd.DataFrame() #create another empty dataframe to fill later for hypervirulence genes
     srst2_ar_df = pd.DataFrame()
+    shiga_df = pd.DataFrame()
     # Since srst2 currently doesn't handle () in the gene names we will make a quick detour to fix this... first making a dictionary
     ar_dic = make_ar_dictionary(args.ar_db)
     # check if a directory or samplesheet was given
@@ -1486,6 +1544,10 @@ def main():
         for row in csv_reader:
             sample_name = row[0]
             directory = row[1]
+            # check if species specific information is present
+            if args.shigapass == True:
+                shiga_df = create_shiga_df(directory, sample_name, shiga_df)
+                print(shiga_df)
             data_location, parent_folder = Get_Parent_Folder(directory)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
@@ -1501,6 +1563,10 @@ def main():
     # combine all lists into a dataframe
     df = Create_df(args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
+    if args.shigapass == True:
+        df = double_check_taxa_id(shiga_df, df)
+    else:
+        df['Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
@@ -1510,9 +1576,30 @@ def main():
         final_df = blind_samples(final_df, args.control_list)
     else:
         final_df = final_df
-    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix)
+    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix, args.shigapass)
     convert_excel_to_tsv(args.output)
 
+def double_check_taxa_id(shiga_df, phx_df):
+    # Merge the DataFrames on 'WGS_ID'
+    merged_df = pd.merge(phx_df, shiga_df, on='WGS_ID', how='left')
+    print(merged_df)
+    # Identify the position of the insertion point
+    insert_position = merged_df.columns.get_loc("FastANI_Organism")
+    # Reorder the columns: place the new columns at the desired position
+    columns = list(merged_df.columns)
+    # Reorder columns to insert the new columns between 'Column_A' and 'Column_B'
+    new_columns = ['Shigella_Serotype', 'Shigella_flexneri_Serotype']
+    # Reorder columns: place the new columns between 'Column_A' and 'Column_B'
+    columns_reordered = (
+        columns[:insert_position] +  # Columns before the insertion point
+        new_columns +                # New columns to be inserted
+        [col for col in columns if col not in new_columns and col not in columns[:insert_position]]) # Remaining columns
+    # Reorder the merged DataFrame columns
+    merged_df = merged_df[columns_reordered]
+    # Apply the custom function to fill the Taxa_ID column
+    merged_df['Taxa_ID'] = merged_df.apply(fill_taxa_id, axis=1)
+    print(merged_df)
+    return merged_df
 
 if __name__ == '__main__':
     main()

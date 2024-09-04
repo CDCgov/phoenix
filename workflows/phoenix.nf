@@ -429,7 +429,7 @@ workflow PHOENIX_EXTERNAL {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false, false
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false, false, params.shigapass
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
