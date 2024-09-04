@@ -781,7 +781,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtR=1
         fi
-        cdtR_set="${cdtA}\t${cdtR_allele}\t${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
+        cdtR_set="${cdtR}\t${cdtR_allele}\t${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
     else
         cdtA=1
         cdtR_array=()
