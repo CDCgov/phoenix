@@ -73,13 +73,13 @@ if [[ "${options_found}" -eq 0 ]]; then
 fi
 
 # Checks for proper argumentation
- if [[ ! -f "${input}" ]] || [[-z "${input}" ]]; then
+ if [[ ! -f "${input}" ]] || [[ -z "${input}" ]]; then
  	echo "Assembly empty or non-existent, exiting"
  	exit 1
  fi
 
 # Checks for proper argumentation
- if [[ ! -f "${DB}" ]] || [[-z "${DB}" ]]; then
+ if [[ ! -f "${DB}" ]] || [[ -z "${DB}" ]]; then
  	echo "Database empty or non-existent, exiting"
  	exit 1
  fi
@@ -94,7 +94,7 @@ ToxA_default="${sample_name}\tToxin-A\tN/A\tN/A\tN/A\tN/A\n"
 ToxB_default="${sample_name}\tToxin-B\tN/A\tN/A\tN/A\tN/A\n"
 
 A_found="False"
-B_Found="False"
+B_found="False"
 A_count=0
 B_count=0
 
@@ -143,15 +143,19 @@ while IFS= read -r var; do
     fi
 done < "${sample_name}_${db_name}.psl"
 
+#echo -e "AF:${A_found}\nAD:${ToxA_default}\nBF:${B_found}\nBD:${ToxB_default}"
+
 if [[ "${A_found}" = "False" ]]; then
-    echo -e "${ToxA_default}" >> ${sample_name}_${db_name}.tmx
+    echo "${ToxA_default}" >> ${sample_name}_${db_name}.tmx
 fi
 if [[ "${B_found}" = "False" ]]; then
-    echo -e "${ToxB_default}" >> ${sample_name}_${db_name}.tmx
+    echo "${ToxB_default}" >> ${sample_name}_${db_name}.tmx
 fi
 total_toxs_count=$(( A_count + B_count))
 echo "Count check ${A_count},${B_count},${total_toxs_count}"
-if [[ "${total_toxs_count}" -eq 1 ]] || [[ "${total_toxs_count}" -eq 2 ]]; then
+if [[ "${total_toxs_count}" -eq 0 ]]; then
+    toxinotype="No subtypes found"
+elif [[ "${total_toxs_count}" -eq 1 ]] || [[ "${total_toxs_count}" -eq 2 ]]; then
     # Look up toxinotype
     if [[ "${A_sub_type}" = "unset" ]] || [[ "${A_sub_type}" = "" ]] || [[ -z ${A_sub_type} ]]; then
         tmp_A_subtype="-"
