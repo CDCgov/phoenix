@@ -1469,17 +1469,18 @@ if [[ -f "${clade_input}" ]]; then
             xrt="unset"
             while IFS= read -r var; do
                 lst=$(echo "${var}" | cut -d$'\t' -f1)
-                if [[ "ST${mlst}" = "${lst}" ]]; then
+                echo "X:${lst}-M:${mlst}"
+                if [[ "${lst}" = "${mlst}" ]]; then
                     xrt=$(echo "${var}" | cut -d$'\t' -f2)
                     break
                 fi
-            done < "${xwalk}"
-            xrt="something"
+            done < "${xwalkRT_file}"
+            #xrt="something"
         else
             xrt="No_lookup_file"
         fi
         if [[ "${xrt}" = "unset" ]]; then
-            xrt="No croswalk match"
+            xrt="${mlst} has no croswalk match"
         fi
     else
         clade="Clade_file_incorrect"
@@ -1666,9 +1667,11 @@ if [[ -f "${nt_mut_file}" ]]; then
                 elif [[ "${all_muts}" = "Exact match" ]]; then
                     all_muts=""
                 fi
+                line_raw_IDA=$(echo "${nt_mut_line}" | cut -d$'\t' -f13)
                 line_raw_IDN=$(echo "${nt_mut_line}" | cut -d$'\t' -f14)
                 line_raw_length=$(echo "${nt_mut_line}" | cut -d$'\t' -f15)
                 line_IDNT=$(echo "$line_raw_IDN * 100" | bc | cut -d'.' -f1)
+                line_IDNT=$(echo "$line_raw_IDA * 100" | bc | cut -d'.' -f1)
                 line_length=$(echo "$line_raw_length * 100" | bc | cut -d'.' -f1)
                 IFS=',' read -r -a mut_array <<< "$all_muts"
                 known_muts=()
@@ -1723,19 +1726,19 @@ if [[ -f "${nt_mut_file}" ]]; then
                 #echo "7-${NT_POINTS[$i]}"
                 case "$i" in
                     feoB)
-                        feoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
+                        feoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
                     hemN)
-                        hemN_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
+                        hemN_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
                     hsmA)
-                        hsmA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
+                        hsmA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
                     lscR)
-                        lscRNT_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
+                        lscRNT_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
                     marR)
-                        marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
+                        marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
                     PNimB)
                         PNimB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
                     sdaB)
-                        sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
+                        sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
                     *)
                         echo "Unknown gene: $i" ;;
                 esac
@@ -1798,6 +1801,6 @@ plasmids:${plasmids}
 
 # Loop through the genes in the list and format to match desired output style
 if [[ ! -f "${output}" ]]; then
-    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\tDiffbase_Toxin-A_sub-type\ttcdA [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdB_presence\tDiffbase_Toxin-B_sub-type\ttcdB [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdC_presence\ttcdC_Variant\ttcdC [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdR_presence\ttcdR [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdE_presence\ttcdE [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtA_presence\tcdtA [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtB_presence\tcdtB [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtR_presence\tcdtR_Variant\tcdtR [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB1_presence\tcdtAB1 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB2_presence\tcdtAB2 [%Nuc_Identity | %AA_Identity | %Coverage]\tnon-tox_presence\tnon-tox [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrA known mutations\tgyrA other mutations\tgyrA [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrB known mutations\tgyrB other mutations\tgyrB [%Nuc_Identity | %AA_Identity | %Coverage]\tdacS known mutations\tdacS other mutations\tdacS [%Nuc_Identity | %AA_Identity | %Coverage]\tfeoB known mutations\tfeoB other mutations\tfeoB [%Nuc_Identity | %Coverage]\tfur known mutations\tfur other mutations\tfur [%Nuc_Identity | %AA_Identity | %Coverage]\tgdpP known mutations\tgdpP other mutations\tgdpP [%Nuc_Identity | %AA_Identity | %Coverage]\tglyC known mutations\tglyC other mutations\tglyC [%Nuc_Identity | %AA_Identity | %Coverage]\themN known mutations\themN other mutations\themN [%Nuc_Identity | %Coverage]\thsmA known mutations\thsmA other mutations\thsmA [%Nuc_Identity | %Coverage]\tlscRAA known mutations\tlscRAA other mutations\tlscRAA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRNT known mutations\tlscRNT other mutations\tlscRNT [%Nuc_Identity | %Coverage]\tmarR known mutations\tmarR other mutations\tmarR [%Nuc_Identity | %Coverage]\tmurG known mutations\tmurG other mutations\tmurG [%Nuc_Identity | %AA_Identity | %Coverage]\tnifJ known mutations\tnifJ other mutations\tnifJ [%Nuc_Identity | %AA_Identity | %Coverage]\tPNimB known mutations\tPNimB other mutations\tPNimB [%Nuc_Identity | %Coverage]\trpoB known mutations\trpoB other mutations\trpoB [%Nuc_Identity | %AA_Identity | %Coverage]\trpoC known mutations\trpoC other mutations\trpoC [%Nuc_Identity | %AA_Identity | %Coverage]\tsdaB known mutations\tsdaB other mutations\tsdaB [%Nuc_Identity | %Coverage]\tthiH known mutations\tthiH other mutations\tthiH [%Nuc_Identity | %AA_Identity | %Coverage]\tvanR known mutations\tvanR other mutations\tvanR [%Nuc_Identity | %AA_Identity | %Coverage]\tvanS known mutations\tvanS other mutations\tvanS [%Nuc_Identity | %AA_Identity | %Coverage]\tCEMB RT Crosswalk\tInferred RT\tProbability\tML Method\t ML Note\tPlasmid Info\t${other_AR_header}" > "${output}"
+    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\tDiffbase_Toxin-A_sub-type\ttcdA [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdB_presence\tDiffbase_Toxin-B_sub-type\ttcdB [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdC_presence\ttcdC_Variant\ttcdC [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdR_presence\ttcdR [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdE_presence\ttcdE [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtA_presence\tcdtA [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtB_presence\tcdtB [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtR_presence\tcdtR_Variant\tcdtR [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB1_presence\tcdtAB1 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB2_presence\tcdtAB2 [%Nuc_Identity | %AA_Identity | %Coverage]\tnon-tox_presence\tnon-tox [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrA known mutations\tgyrA other mutations\tgyrA [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrB known mutations\tgyrB other mutations\tgyrB [%Nuc_Identity | %AA_Identity | %Coverage]\tdacS known mutations\tdacS other mutations\tdacS [%Nuc_Identity | %AA_Identity | %Coverage]\tfeoB known mutations\tfeoB other mutations\tfeoB [%Nuc_Identity | %AA_Identity | %Coverage]\tfur known mutations\tfur other mutations\tfur [%Nuc_Identity | %AA_Identity | %Coverage]\tgdpP known mutations\tgdpP other mutations\tgdpP [%Nuc_Identity | %AA_Identity | %Coverage]\tglyC known mutations\tglyC other mutations\tglyC [%Nuc_Identity | %AA_Identity | %Coverage]\themN known mutations\themN other mutations\themN [%Nuc_Identity | %AA_Identity | %Coverage]\thsmA known mutations\thsmA other mutations\thsmA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRAA known mutations\tlscRAA other mutations\tlscRAA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRNT known mutations\tlscRNT other mutations\tlscRNT [%Nuc_Identity | %AA_Identity | %Coverage]\tmarR known mutations\tmarR other mutations\tmarR [%Nuc_Identity | %AA_Identity | %Coverage]\tmurG known mutations\tmurG other mutations\tmurG [%Nuc_Identity | %AA_Identity | %Coverage]\tnifJ known mutations\tnifJ other mutations\tnifJ [%Nuc_Identity | %AA_Identity | %Coverage]\tPNimB known mutations\tPNimB other mutations\tPNimB [%Nuc_Identity | %Coverage]\trpoB known mutations\trpoB other mutations\trpoB [%Nuc_Identity | %AA_Identity | %Coverage]\trpoC known mutations\trpoC other mutations\trpoC [%Nuc_Identity | %AA_Identity | %Coverage]\tsdaB known mutations\tsdaB other mutations\tsdaB [%Nuc_Identity | %AA_Identity | %Coverage]\tthiH known mutations\tthiH other mutations\tthiH [%Nuc_Identity | %AA_Identity | %Coverage]\tvanR known mutations\tvanR other mutations\tvanR [%Nuc_Identity | %AA_Identity | %Coverage]\tvanS known mutations\tvanS other mutations\tvanS [%Nuc_Identity | %AA_Identity | %Coverage]\tCEMB RT Crosswalk\tInferred RT\tProbability\tML Method\t ML Note\tPlasmid Info\t${other_AR_header}" > "${output}"
 fi
 echo -e "${sample_name}\t${clade}\t${toxinotype}\t${tcdA_set}\t${tcdB_set}\t${tcdC_set}\t${tcdD_set}\t${tcdE_set}\t${cdtA_set}\t${cdtB_set}\t${cdtR_set}\t${cdtAB1_set}\t${cdtAB2_set}\t${nontox_set}\t${gyrA_set}\t${gyrB_set}\t${dacS_set}\t${feoB_set}\t${fur_set}\t${gdpP_set}\t${glyC_set}\t${hemN_set}\t${hsmA_set}\t${lscRAA_set}\t${lscRNT_set}\t${marR_set}\t${murG_set}\t${nifJ_set}\t${PNimB_set}\t${rpoB_set}\t${rpoC_set}\t${sdaB_set}\t${thiH_set}\t${vanR_set}\t${vanS_set}\t${xrt}\t${ML_RT}\t${plasmids}"  >> "${output}"

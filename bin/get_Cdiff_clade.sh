@@ -185,8 +185,8 @@ if [[ -z "${clade}" ]] || [[ "${clade}" = '' ]]; then
     clade="clade_Not_defined"
 fi
 
-echo -e "Sample name\tClade" > "${sample_name}_cdifficile_clade.tsv"
-echo -e "${sample_name}\t${clade}" >> "${sample_name}_cdifficile_clade.tsv"
+echo -e "Sample name\tClade\tMLST" > "${sample_name}_cdifficile_clade.tsv"
+echo -e "${sample_name}\t${clade}\t${type}" >> "${sample_name}_cdifficile_clade.tsv"
 #echo -e "Sample name\tClade"
 #echo -e "${sample_name}\t${clade}"
 
