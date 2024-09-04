@@ -10,7 +10,7 @@ process CENTAR_CONSOLIDATER {
     path(toxinotype_file), 
     path(other_AR_AA_file),
     path(other_AR_NT_file), 
-    //path(plasmids_file),
+    path(plasmids_file),
     path(rt_file)
     path(st_rt_xwalk)
 
@@ -44,7 +44,7 @@ process CENTAR_CONSOLIDATER {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        \$(${ica}Centar_Consolidater.sh -V)
+        Centar_Consolidater.sh: \$(${ica}Centar_Consolidater.sh -V)
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

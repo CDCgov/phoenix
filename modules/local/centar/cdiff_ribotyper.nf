@@ -2,7 +2,7 @@ process CDIFF_RIBOTYPER {
     tag "$meta.id"
     label 'process_medium'
     // v1.0.1 - MUST manually change below (line 27)!!!
-    container 'quay.io/jvhagey/newtype@sha256:0b1b49acc633f88a071fb9157de405b88fb5e5aa4016e3afed46e43c4db03b30'
+    container 'quay.io/jvhagey/newtype@sha256:c6e1aa3022330e0cf645e46523ea7de3706a04f03e5a3b24ffdb24f9d7b2d63c'
 
     input:
     tuple val(meta), path(csv_core)
@@ -23,10 +23,12 @@ process CDIFF_RIBOTYPER {
     # Call the real internal scripts to infer the ribotpes
     newtype.py -i ./ -s PN2.0 -o ${prefix}_ribotype.tsv
 
+    newtype_version=\$(newtype.py --version)
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        newtype.py: \$(newtype.py --version)
+        newtype.py: \${newtype_version}
         container_tag: ${container_version}
         newtype_container: ${container}
     END_VERSIONS

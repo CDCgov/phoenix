@@ -87,7 +87,7 @@ fi
 
 
 if [[ "${show_version}" = "True" ]]; then
-	echo "Centar_Consolidater.sh: ${version}"
+	echo "${version}"
 	exit
 fi
 
