@@ -1563,6 +1563,7 @@ if [[ -f "${aa_mut_file}" ]]; then
                     fi
                 done
                 other_muts_string=""
+                other_mut_count=0
                 #echo "OM: ${other_muts[@]}"
                 for item in "${other_muts[@]}"; do
                     #echo "OMS-pre:${other_muts_string},${item}"
@@ -1575,9 +1576,13 @@ if [[ -f "${aa_mut_file}" ]]; then
                         else
                             other_muts_string="${other_muts_string},${item}"
                         fi
+                        other_mut_count=$(( other_mut_count + 1 ))
                         #echo "OMS-post:${other_muts_string}"
                     fi
                 done
+                if [[ "${other_mut_count}" -gt 10 ]]; then
+                    other_muts_string="${other_mut_count} other mutations"
+                fi
             # echo "0-${i}"
             # echo "1-${aa_mut_line}"
             # echo "2-${all_muts}"
@@ -1702,6 +1707,7 @@ if [[ -f "${nt_mut_file}" ]]; then
                     fi
                 done
                 other_muts_string=""
+                other_mut_count=0
                 #echo "OM: ${other_muts[@]}"
                 for item in "${other_muts[@]}"; do
                     if [[ "${item}" = "No mutations" ]]; then
@@ -1714,9 +1720,13 @@ if [[ -f "${nt_mut_file}" ]]; then
                         else
                             other_muts_string="${other_muts_string},${item}"
                         fi
+                        other_mut_count=$(( other_mut_count + 1 ))
                         #echo "OMS-post:${other_muts_string}"
                     fi
                 done
+                if [[ "${other_mut_count}" -gt 10 ]]; then
+                    other_muts_string="${other_mut_count} other mutations"
+                fi
                 #echo "0-${i}"
                 #echo "1-${nt_mut_line}"
                 #echo "2-${all_muts}"
