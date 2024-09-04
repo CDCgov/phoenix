@@ -182,7 +182,7 @@ if [[ -n "%{profile_line}" ]] && [[ "${profile_line}" != "" ]]; then
     clade=$(echo "${profile_line}" | cut -d$'\t' -f9)
 fi
 if [[ -z "${clade}" ]] || [[ "${clade}" = '' ]]; then
-    clade="clade_Not_defined"
+    clade="Undefined"
 fi
 
 echo -e "Sample name\tClade\tMLST" > "${sample_name}_cdifficile_clade.tsv"

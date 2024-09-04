@@ -179,6 +179,9 @@ elif [[ "${total_toxs_count}" -eq 1 ]] || [[ "${total_toxs_count}" -eq 2 ]]; the
             break
         fi
     done < "${tox_def_file}"
+    if [[ "${toxinotype}" = "Unknown" ]]; then
+        toxinotype="Undefined"
+    fi
 else
     toxinotype="Too_many_subtypes"
 fi
