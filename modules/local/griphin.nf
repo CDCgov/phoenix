@@ -13,7 +13,7 @@ process GRIPHIN {
     val(entry)
     val(scaffolds_entry)
     val(update)
-    //val(run_centar)
+    val(run_centar)
 
     output:
     path("*_GRiPHin*.xlsx"),                 emit: griphin_report
@@ -29,14 +29,14 @@ process GRIPHIN {
     // define variables
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
-    //def centar = run_centar ? "--centar" : ""
+    def centar = run_centar ? "--centar" : ""
     def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     full_path=\$(readlink -f ${outdir})
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${scaffolds}
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${centar} ${scaffolds}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
