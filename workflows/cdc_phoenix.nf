@@ -494,10 +494,12 @@ workflow PHOENIX_EXQC {
 
         //pull in species specific files
         if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+            centar_var = true
             centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
             // pulling it all together
             griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch)
         } else {
+            centar_var = false
             // pulling it all together
             griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
         }
@@ -513,7 +515,7 @@ workflow PHOENIX_EXQC {
 
         //create GRiPHin report
         GRIPHIN (
-            griphin_input_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false
+            griphin_input_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false, centar_var
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
