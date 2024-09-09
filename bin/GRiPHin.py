@@ -1368,14 +1368,26 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     #MLST columns 
     if phoenix == True: #for non-CDC entry points
         if shigapass == True:
-            worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)#
+            if centar == True:
+                worksheet.merge_range('AB1:AJ1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)#
         else:
-            worksheet.merge_range('AA1:AH1', "MLST Schemes", cell_format_green_blue)
+            if centar == True:
+                worksheet.merge_range('AA1:AI1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AA1:AH1', "MLST Schemes", cell_format_green_blue)
     else:
         if shigapass == True:
-            worksheet.merge_range('AD1:AK1', "MLST Schemes", cell_format_green_blue)
+            if centar == True:
+                worksheet.merge_range('AD1:AL1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AD1:AK1', "MLST Schemes", cell_format_green_blue)
         else:
-            worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
+            if centar == True:
+                worksheet.merge_range('AC1:AK1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
     if centar == True:
         phx_minus_centar = qc_max_col - sum(centar_df_lens)
         worksheet.merge_range(0, phx_minus_centar, 0, (phx_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)

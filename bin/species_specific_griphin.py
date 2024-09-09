@@ -47,7 +47,7 @@ def clean_and_format_centar_dfs(centar_df):
     mutants = [ 'gyr','dac','feo','fur','gdp','gly','hem','hsm','Isc','mur', 'mur','nifJ','PNim','rpo','sda','thi','Van','mutations' ]
     mutations_col = [col for col in clean_centar_df.columns if any(substring in col for substring in mutants) ]
     mutant_len = len(mutations_col)
-    existing_columns_in_order = A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col
+    existing_columns_in_order = ["MLST Clade"] + A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col
     ordered_centar_df = clean_centar_df[existing_columns_in_order]
     return ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len
 
@@ -60,7 +60,6 @@ def create_centar_combined_df(directory, sample_name):
     #clean up the dataframe
     centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
     return centar_df
-
 
 ######################################## ShigaPass functions ##############################################
 def create_shiga_df(directory, sample_name, shiga_df):
