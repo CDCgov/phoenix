@@ -362,11 +362,12 @@ if [[ -f "${tox_input}" ]]; then
     tcdC_count=$(grep -c 'tcdC' "${tox_input}")
     if [[ "${tcdC_count}" -eq 0 ]]; then
         tcdC=0
-        tcdC_set="0\tNA\tNA|NA|NA"
+        tcdC_set="0\tNA\tNA\tNA|NA|NA"
     elif [[ "${tcdC_count}" -eq 1 ]]; then
         tcdC_line=$(grep 'tcdC' "${tox_input}")
         tcdC_matchtype=$(echo "${tcdC_line}" | cut -d$'\t' -f5)
         tcdC_allele=$(extract_gama_elements 3 "${tcdC_line}")
+        tcdC_muts=$(echo "${tcdC_line}" | cut -d$'\t' -f6)
         tcdC_raw_IDA=$(echo "${tcdC_line}" | cut -d$'\t' -f10)
         tcdC_raw_IDN=$(echo "${tcdC_line}" | cut -d$'\t' -f11)
         tcdC_raw_length=$(echo "${tcdC_line}" | cut -d$'\t' -f12)
@@ -380,9 +381,9 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdC=1
         fi
-        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
+        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_muts}\t${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
     else
-        tcdC=1
+        tcdC=""
         tcdC_array=()
         tc=0
         while IFS= read -r var; do
@@ -401,12 +402,14 @@ if [[ -f "${tox_input}" ]]; then
 
         tcdC_stats=""
         tcdC_allele=""
+        tcdC_muts=""
         while [[ ${count} -lt ${tcdC_count_array} ]]; do
             tcdC_line="${tcdC_arr[count]}"
             tcdC_allele_current=$(extract_gama_elements 3 "${tcdC_line}")
             tcdC_raw_IDA=$(echo "${tcdC_line}" | cut -d$'\t' -f10)
             tcdC_raw_IDN=$(echo "${tcdC_line}" | cut -d$'\t' -f11)
             tcdC_raw_length=$(echo "${tcdC_line}" | cut -d$'\t' -f12)
+            tcdC_muts_current=$(echo "${tcdC_line}" | cut -d$'\t' -f6)
             tcdC_IDA=$(echo "$tcdC_raw_IDA * 100" | bc | cut -d'.' -f1)
             tcdC_IDN=$(echo "$tcdC_raw_IDN * 100" | bc | cut -d'.' -f1)
             tcdC_length=$(echo "$tcdC_raw_length * 100" | bc | cut -d'.' -f1)
@@ -433,14 +436,19 @@ if [[ -f "${tox_input}" ]]; then
             else
                 tcdC_allele="${tcdC_allele}-${tcdC_allele_current}"
             fi
-            if [[ "${tcdC_stats}" == "" ]]; then
+            if [[ "${tcdC_stats}" = "" ]]; then
                 tcdC_stats="${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
             else
                 tcdC_stats="${tcdC_stats}-${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
             fi
+            if [[ "${tcdC_muts}" = "" ]]; then
+                tcdC_muts="${tcdC_muts_current}"
+            else
+                tcdC_muts="${tcdC_muts}-${tcdC_muts_current}"
+            fi
             count=$(( count + 1 ))
         done
-        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_stats}"
+        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_muts}\t${tcdC_stats}"
     fi
 
     # Check and format for tcdD count
@@ -599,6 +607,99 @@ if [[ -f "${tox_input}" ]]; then
             count=$(( count + 1 ))
         done
         tcdE_set="${tcdE}\t${tcdE_stats}"
+    fi
+
+        # Check and format for PaLoc_NonTox count
+    PaLoc_NonTox_count=$(grep -c 'PaLoc_NonTox' "${tox_input}")
+    if [[ "${PaLoc_NonTox_count}" -eq 0 ]]; then
+        PaLoc_NonTox=0
+        PaLoc_NonTox_set="0\tNA\tNA\tNA|NA|NA"
+    elif [[ "${PaLoc_NonTox_count}" -eq 1 ]]; then
+        PaLoc_NonTox_line=$(grep 'PaLoc_NonTox' "${tox_input}")
+        PaLoc_NonTox_matchtype=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f5)
+        PaLoc_NonTox_allele=$(extract_gama_elements 3 "${PaLoc_NonTox_line}")
+        PaLoc_NonTox_muts=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f6)
+        PaLoc_NonTox_raw_IDA=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f10)
+        PaLoc_NonTox_raw_IDN=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f11)
+        PaLoc_NonTox_raw_length=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f12)
+        PaLoc_NonTox_IDA=$(echo "$PaLoc_NonTox_raw_IDA * 100" | bc | cut -d'.' -f1)
+        PaLoc_NonTox_IDN=$(echo "$PaLoc_NonTox_raw_IDN * 100" | bc | cut -d'.' -f1)
+        PaLoc_NonTox_length=$(echo "$PaLoc_NonTox_raw_length * 100" | bc | cut -d'.' -f1)
+        if [[ "${PaLoc_NonTox_matchtype}" = *"Trunc"* ]]; then
+            PaLoc_NonTox="Trunc:Codon"
+        elif (( $(echo "$PaLoc_NonTox_length*100 < 90" | bc -l) )); then
+            PaLoc_NonTox="Trunc:Length<90"
+        else
+            PaLoc_NonTox=1
+        fi
+        PaLoc_NonTox_set="${PaLoc_NonTox}\t${PaLoc_NonTox_allele}\t${PaLoc_NonTox_muts}\t${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}"
+    else
+        PaLoc_NonTox=""
+        PaLoc_NonTox_array=()
+        tc=0
+        while IFS= read -r var; do
+            hit=$(echo "${var}" | cut -d$'\t' -f1)
+            if [[ "${hit}" == *"PaLoc_NonTox"* ]]; then
+                PaLoc_NonTox_arr[$tc]="${var}"
+                tc=$(( tc + 1))
+            fi
+        done < "${tox_input}"
+        PaLoc_NonTox_count_array=${#PaLoc_NonTox_arr[@]}
+
+        if [[ ${PaLoc_NonTox_count} != ${PaLoc_NonTox_count_array} ]]; then 
+            echo "wut?!"
+        fi
+        count=0
+
+        PaLoc_NonTox_stats=""
+        PaLoc_NonTox_allele=""
+        PaLoc_NonTox_muts=""
+        while [[ ${count} -lt ${PaLoc_NonTox_count_array} ]]; do
+            PaLoc_NonTox_line="${PaLoc_NonTox_arr[count]}"
+            PaLoc_NonTox_allele_current=$(extract_gama_elements 3 "${PaLoc_NonTox_line}")
+            PaLoc_NonTox_raw_IDA=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f10)
+            PaLoc_NonTox_raw_IDN=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f11)
+            PaLoc_NonTox_raw_length=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f12)
+            PaLoc_NonTox_muts_current=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f6)
+            PaLoc_NonTox_IDA=$(echo "$PaLoc_NonTox_raw_IDA * 100" | bc | cut -d'.' -f1)
+            PaLoc_NonTox_IDN=$(echo "$PaLoc_NonTox_raw_IDN * 100" | bc | cut -d'.' -f1)
+            PaLoc_NonTox_length=$(echo "$PaLoc_NonTox_raw_length * 100" | bc | cut -d'.' -f1)
+            PaLoc_NonTox_matchtype=$(echo "${PaLoc_NonTox_arr[count]}" | cut -d$'\t' -f5)
+            if [[ ${PaLoc_NonTox} = "" ]]; then
+                if [[ "${PaLoc_NonTox_matchtype}" = *"Trunc"* ]]; then
+                    PaLoc_NonTox="Trunc:Codon"
+                elif (( $(echo "$PaLoc_NonTox_length*100 < 90" | bc -l) )); then
+                    PaLoc_NonTox="Trunc:Length<90"
+                else
+                    PaLoc_NonTox=1
+                fi
+            else
+                if [[ "${PaLoc_NonTox_matchtype}" = *"Trunc"* ]]; then
+                    PaLoc_NonTox="${PaLoc_NonTox}-Trunc:Codon"
+                elif (( $(echo "$PaLoc_NonTox_length*100 < 90" | bc -l) )); then
+                    PaLoc_NonTox="${PaLoc_NonTox}-Trunc:Length<90"
+                else
+                    PaLoc_NonTox="${PaLoc_NonTox}-1"
+                fi
+            fi
+            if [[ "${PaLoc_NonTox_allele}" = "" ]]; then
+                PaLoc_NonTox_allele=${PaLoc_NonTox_allele_current}
+            else
+                PaLoc_NonTox_allele="${PaLoc_NonTox_allele}-${PaLoc_NonTox_allele_current}"
+            fi
+            if [[ "${PaLoc_NonTox_stats}" = "" ]]; then
+                PaLoc_NonTox_stats="${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}"
+            else
+                PaLoc_NonTox_stats="${PaLoc_NonTox_stats}-${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}"
+            fi
+            if [[ "${PaLoc_NonTox_muts}" = "" ]]; then
+                PaLoc_NonTox_muts="${PaLoc_NonTox_muts_current}"
+            else
+                PaLoc_NonTox_muts="${PaLoc_NonTox_muts}-${PaLoc_NonTox_muts_current}"
+            fi
+            count=$(( count + 1 ))
+        done
+        PaLoc_NonTox_set="${PaLoc_NonTox}\t${PaLoc_NonTox_allele}\t${PaLoc_NonTox_muts}\t${PaLoc_NonTox_stats}"
     fi
 
     # Check and format for cdtA count
@@ -1811,6 +1912,6 @@ plasmids:${plasmids}
 
 # Loop through the genes in the list and format to match desired output style
 if [[ ! -f "${output}" ]]; then
-    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\tDiffbase_Toxin-A_sub-type\ttcdA [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdB_presence\tDiffbase_Toxin-B_sub-type\ttcdB [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdC_presence\ttcdC_Variant\ttcdC [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdR_presence\ttcdR [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdE_presence\ttcdE [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtA_presence\tcdtA [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtB_presence\tcdtB [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtR_presence\tcdtR_Variant\tcdtR [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB1_presence\tcdtAB1 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB2_presence\tcdtAB2 [%Nuc_Identity | %AA_Identity | %Coverage]\tnon-tox_presence\tnon-tox [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrA known mutations\tgyrA other mutations\tgyrA [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrB known mutations\tgyrB other mutations\tgyrB [%Nuc_Identity | %AA_Identity | %Coverage]\tdacS known mutations\tdacS other mutations\tdacS [%Nuc_Identity | %AA_Identity | %Coverage]\tfeoB known mutations\tfeoB other mutations\tfeoB [%Nuc_Identity | %AA_Identity | %Coverage]\tfur known mutations\tfur other mutations\tfur [%Nuc_Identity | %AA_Identity | %Coverage]\tgdpP known mutations\tgdpP other mutations\tgdpP [%Nuc_Identity | %AA_Identity | %Coverage]\tglyC known mutations\tglyC other mutations\tglyC [%Nuc_Identity | %AA_Identity | %Coverage]\themN known mutations\themN other mutations\themN [%Nuc_Identity | %AA_Identity | %Coverage]\thsmA known mutations\thsmA other mutations\thsmA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRAA known mutations\tlscRAA other mutations\tlscRAA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRNT known mutations\tlscRNT other mutations\tlscRNT [%Nuc_Identity | %AA_Identity | %Coverage]\tmarR known mutations\tmarR other mutations\tmarR [%Nuc_Identity | %AA_Identity | %Coverage]\tmurG known mutations\tmurG other mutations\tmurG [%Nuc_Identity | %AA_Identity | %Coverage]\tnifJ known mutations\tnifJ other mutations\tnifJ [%Nuc_Identity | %AA_Identity | %Coverage]\tPNimB known mutations\tPNimB other mutations\tPNimB [%Nuc_Identity | %Coverage]\trpoB known mutations\trpoB other mutations\trpoB [%Nuc_Identity | %AA_Identity | %Coverage]\trpoC known mutations\trpoC other mutations\trpoC [%Nuc_Identity | %AA_Identity | %Coverage]\tsdaB known mutations\tsdaB other mutations\tsdaB [%Nuc_Identity | %AA_Identity | %Coverage]\tthiH known mutations\tthiH other mutations\tthiH [%Nuc_Identity | %AA_Identity | %Coverage]\tvanR known mutations\tvanR other mutations\tvanR [%Nuc_Identity | %AA_Identity | %Coverage]\tvanS known mutations\tvanS other mutations\tvanS [%Nuc_Identity | %AA_Identity | %Coverage]\tCEMB RT Crosswalk\tInferred RT\tProbability\tML Method\t ML Note\tPlasmid Info\t${other_AR_header}" > "${output}"
+    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\tDiffbase_Toxin-A_sub-type\ttcdA [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdB_presence\tDiffbase_Toxin-B_sub-type\ttcdB [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdC_presence\ttcdC_Variant\ttcdC Other Mutations\ttcdC [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdR_presence\ttcdR [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdE_presence\ttcdE [%Nuc_Identity | %AA_Identity | %Coverage]\tPaLoc_NonTox_Presence\tPaLoc_NonTox_Variant\tPaLOC_NonTox_Other_Mutations\PaLoc_NonTox [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtA_presence\tcdtA [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtB_presence\tcdtB [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtR_presence\tcdtR_Variant\tcdtR [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB1_presence\tcdtAB1 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB2_presence\tcdtAB2 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdt_NonTox_presence\tcdt_NonTox[%Nuc_Identity | %AA_Identity | %Coverage]\tgyrA known mutations\tgyrA other mutations\tgyrA [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrB known mutations\tgyrB other mutations\tgyrB [%Nuc_Identity | %AA_Identity | %Coverage]\tdacS known mutations\tdacS other mutations\tdacS [%Nuc_Identity | %AA_Identity | %Coverage]\tfeoB known mutations\tfeoB other mutations\tfeoB [%Nuc_Identity | %AA_Identity | %Coverage]\tfur known mutations\tfur other mutations\tfur [%Nuc_Identity | %AA_Identity | %Coverage]\tgdpP known mutations\tgdpP other mutations\tgdpP [%Nuc_Identity | %AA_Identity | %Coverage]\tglyC known mutations\tglyC other mutations\tglyC [%Nuc_Identity | %AA_Identity | %Coverage]\themN known mutations\themN other mutations\themN [%Nuc_Identity | %AA_Identity | %Coverage]\thsmA known mutations\thsmA other mutations\thsmA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRAA known mutations\tlscRAA other mutations\tlscRAA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRNT known mutations\tlscRNT other mutations\tlscRNT [%Nuc_Identity | %AA_Identity | %Coverage]\tmarR known mutations\tmarR other mutations\tmarR [%Nuc_Identity | %AA_Identity | %Coverage]\tmurG known mutations\tmurG other mutations\tmurG [%Nuc_Identity | %AA_Identity | %Coverage]\tnifJ known mutations\tnifJ other mutations\tnifJ [%Nuc_Identity | %AA_Identity | %Coverage]\tPNimB known mutations\tPNimB other mutations\tPNimB [%Nuc_Identity | %Coverage]\trpoB known mutations\trpoB other mutations\trpoB [%Nuc_Identity | %AA_Identity | %Coverage]\trpoC known mutations\trpoC other mutations\trpoC [%Nuc_Identity | %AA_Identity | %Coverage]\tsdaB known mutations\tsdaB other mutations\tsdaB [%Nuc_Identity | %AA_Identity | %Coverage]\tthiH known mutations\tthiH other mutations\tthiH [%Nuc_Identity | %AA_Identity | %Coverage]\tvanR known mutations\tvanR other mutations\tvanR [%Nuc_Identity | %AA_Identity | %Coverage]\tvanS known mutations\tvanS other mutations\tvanS [%Nuc_Identity | %AA_Identity | %Coverage]\tCEMB RT Crosswalk\tInferred RT\tProbability\tML Method\t ML Note\tPlasmid Info\t${other_AR_header}" > "${output}"
 fi
-echo -e "${sample_name}\t${clade}\t${toxinotype}\t${tcdA_set}\t${tcdB_set}\t${tcdC_set}\t${tcdD_set}\t${tcdE_set}\t${cdtA_set}\t${cdtB_set}\t${cdtR_set}\t${cdtAB1_set}\t${cdtAB2_set}\t${nontox_set}\t${gyrA_set}\t${gyrB_set}\t${dacS_set}\t${feoB_set}\t${fur_set}\t${gdpP_set}\t${glyC_set}\t${hemN_set}\t${hsmA_set}\t${lscRAA_set}\t${lscRNT_set}\t${marR_set}\t${murG_set}\t${nifJ_set}\t${PNimB_set}\t${rpoB_set}\t${rpoC_set}\t${sdaB_set}\t${thiH_set}\t${vanR_set}\t${vanS_set}\t${xrt}\t${ML_RT}\t${plasmids}"  >> "${output}"
+echo -e "${sample_name}\t${clade}\t${toxinotype}\t${tcdA_set}\t${tcdB_set}\t${tcdC_set}\t${tcdD_set}\t${tcdE_set}\t${PaLoc_NonTox_set}\t${cdtA_set}\t${cdtB_set}\t${cdtR_set}\t${cdtAB1_set}\t${cdtAB2_set}\t${nontox_set}\t${gyrA_set}\t${gyrB_set}\t${dacS_set}\t${feoB_set}\t${fur_set}\t${gdpP_set}\t${glyC_set}\t${hemN_set}\t${hsmA_set}\t${lscRAA_set}\t${lscRNT_set}\t${marR_set}\t${murG_set}\t${nifJ_set}\t${PNimB_set}\t${rpoB_set}\t${rpoC_set}\t${sdaB_set}\t${thiH_set}\t${vanR_set}\t${vanS_set}\t${xrt}\t${ML_RT}\t${plasmids}"  >> "${output}"
