@@ -437,14 +437,10 @@ workflow CENTAR {
     main:
         RUN_CENTAR ( ch_input, ch_input_indir, ch_versions )
 
-    /*emit:
-        mlst             = RUN_CENTAR.out.mlst
-        amrfinder_output = RUN_CENTAR.out.amrfinder_output
-        gamma_ar         = RUN_CENTAR.out.gamma_ar
-        phx_summary      = RUN_CENTAR.out.phx_summary
+    emit:
         //output for phylophoenix
-        griphin_tsv      = UPDATE_PHOENIX_WF.out.griphin_tsv
-        griphin_excel    = UPDATE_PHOENIX_WF.out.griphin_excel*/
+        griphin_tsv      = RUN_CENTAR.out.griphin_tsv
+        griphin_excel    = RUN_CENTAR.out.griphin_excel
 }
 
 /*

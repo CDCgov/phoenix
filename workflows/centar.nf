@@ -25,7 +25,7 @@ include { ASSET_CHECK                    } from '../modules/local/asset_check'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { GRIPHIN as GRIPHIN_COPY        } from '../modules/local/griphin'
+include { GRIPHIN                        } from '../modules/local/griphin'
 include { UPDATE_GRIPHIN                 } from '../modules/local/updater/update_griphin'
 
 /*
@@ -117,12 +117,10 @@ workflow RUN_CENTAR {
         // Extract the list of project folders from input_dir channel
         project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map { it[1] }.collect().toList()
 
-        /*/ Collect all the summary files and filter to keep those that have the correct project_id
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.collect().filter { line_summary ->
-            def project_id = line_summary[0].project_id
-            project_ids.contains(project_id)}
-            .join(CREATE_INPUT_CHANNELS.out.directory_ch, by: [[0][0],[0][1]])
-            .map { it -> filter_out_meta(it) }// Convert to a list to use indexing
+        // get summary lines and directory information to make sure all samples for a particular project folder stay together. 
+        summaries_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.collect()
+            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [[project_id:meta.project_id], dir]}, by: [0])
+            .map { it -> filter_out_meta(it) }
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
@@ -130,24 +128,20 @@ workflow RUN_CENTAR {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-        GRIPHIN_COPY (
-            summaries_ch.map{ summary_line, dir -> summary_line}, \
-            CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            summaries_ch.map{ summary_line, dir -> dir.toString()}, params.coverage, true, false
+        // collect centar output and summary lines to make the griphin report
+        griphin_input = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
+            .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> [[project_id:meta.project_id], consolidated_file]}.groupTuple(by: [0]), by: [0])\
+            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [[project_id:meta.project_id], dir]}, by: [0])
+        // separate the summary and centar files from dir
+        griphin_input_ch = griphin_input.map{meta, summary_line, centar_files, dir -> [summary_line, centar_files].flatten()}
+        // get project dir - indir
+        griphin_dir_path = griphin_input.map{meta, summary_line, centar_files, dir -> [dir]}
+
+        //create GRiPHin report
+        GRIPHIN (
+            griphin_input_ch, CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, griphin_dir_path, params.coverage, false, false, false, true
         )
-        ch_versions = ch_versions.mix(GRIPHIN_COPY.out.versions)
-
-        // combine by project_id - > this will need to be adjusted in CDC_PHOENIX and PHOENIX
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{         meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-        .join(GRIPHIN_COPY.out.griphin_report.map{ it -> create_meta(it)}.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [0])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                     meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [0])
-
-        griphins_ch.view()
-
-        UPDATE_GRIPHIN (
-            griphins_ch, params.coverage
-        )
-        ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
         /// need to figure out how to do this on a per directory 
         // Collecting the software versions
@@ -155,20 +149,9 @@ workflow RUN_CENTAR {
             ch_versions.unique().collectFile(name: 'collated_versions.yml')
         )
 
-        //
-        // MODULE: MultiQC
-        //
-        workflow_summary    = WorkflowPhoenix.paramsSummaryMultiqc(workflow, summary_params)
-        ch_workflow_summary = Channel.value(workflow_summary)
-
-        ch_multiqc_files = Channel.empty()
-        ch_multiqc_files = ch_multiqc_files.mix(Channel.from(ch_multiqc_config))
-        ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
-        ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-        ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-
     emit:
-        amrfinder_output = CENTAR_CONSOLIDATER.out.report*/
+        griphin_tsv      = GRIPHIN.out.griphin_tsv_report
+        griphin_excel    = GRIPHIN.out.griphin_report
 
 }
 
