@@ -6,6 +6,7 @@ include { SAMPLESHEET_CHECK     } from '../../modules/local/samplesheet_check'
 include { CREATE_SAMPLESHEET    } from '../../modules/local/create_samplesheet'
 include { COLLECT_SAMPLE_FILES  } from '../../modules/local/updater/collect_sample_files'
 include { COLLECT_PROJECT_FILES } from '../../modules/local/updater/collect_project_files'
+include { CREATE_FAIRY_FILE     } from '../../modules/local/updater/create_fairy_file'
 
 workflow CREATE_INPUT_CHANNELS {
     take:
@@ -24,7 +25,42 @@ workflow CREATE_INPUT_CHANNELS {
             id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
 
             // Check if the channel is empty and throw an error as this is required for the pipeline
-            id_channel.subscribe { result -> if (result.isEmpty()) {  throw new IllegalArgumentException("Error: No files were in */file_integrity/*_*_summary.txt these are required for running the pipeline.")} }
+            id_channel.subscribe { result -> if (result.isEmpty()) {  println("Error: There is no files were in */file_integrity/*_*_summary.txt. This file is required so we will make it.")} }
+
+            // for older versions of phx there will be no file_integrity file, so we will try make this file. 
+            // Check if the id channel is empty and if so get failed sample information
+            if (id_channel.isEmpty()) {
+
+                all_ids = indir.map{ it -> get_ids(it)}
+                indir_with_meta = all_ids.flatten().combine(indir).map{ id, indir -> 
+                    def meta = [:] // create meta array
+                    meta.id = id
+                    meta.project_id = indir.toString().split('/')[-1]
+                    return [meta, indir]}
+
+                CREATE_FAIRY_FILE(
+                    indir_with_meta
+                )
+                ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
+
+                // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
+                id_channel = CREATE_FAIRY_FILE.out.fairy_outcome.map{ meta, fairy_outcome -> fairy_outcome }.collect().map{ fairy_outcome -> get_only_passing_samples(fairy_outcome)}.filter { it != null }.toList()
+
+                // get file_integrity file for MLST updating
+                file_integrity_ch = CREATE_FAIRY_FILE.out.fairy_outcome.combine(id_channel).filter{ meta, file_integrity, id_channel -> id_channel.contains(meta.id)}
+                    .map{ meta, file_integrity, id_channel -> [meta, file_integrity]} //remove id_channel from output
+
+            } else {
+                // get file_integrity file for MLST updating
+                def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
+                //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
+                file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
+                    .map{ it -> create_meta(it, "_summary.txt", params.indir.toString(), true)}
+                    .combine(id_channel).filter{ meta, file_integrity, id_channel -> id_channel.contains(meta.id)}
+                    .map{ meta, file_integrity, id_channel -> [meta, file_integrity]} //remove id_channel from output
+            }
+
+            /////////////////////////// COLLECT ISOLATE LEVEL FILES ///////////////////////////////
 
             //make relative path full and get 
             directory_ch = id_channel.flatten().combine(indir.map{ dir -> 
@@ -35,14 +71,6 @@ workflow CREATE_INPUT_CHANNELS {
                         meta.id = id
                         meta.project_id = dir.toString().split('/')[-1]
                         return [meta, dir]} //even though there is only one directory we have to add this so the code works for indir and input
-
-            // get file_integrity file for MLST updating
-            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
-            //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
-            file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_summary.txt", params.indir.toString(), true)}
-                .combine(id_channel).filter{ meta, file_integrity, id_channel -> id_channel.contains(meta.id)}
-                .map{ meta, file_integrity, id_channel -> [meta, file_integrity]} //remove id_channel from output
 
             // Get reads
             def r1_glob = append_to_path(params.indir.toString(),'*/fastp_trimd/*_1.trim.fastq.gz')
@@ -130,8 +158,6 @@ workflow CREATE_INPUT_CHANNELS {
                 .combine(id_channel).filter{ meta, assembly_ratio, id_channel -> id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, assembly_ratio, id_channel -> [meta, assembly_ratio]} //remove id_channel from output
 
-            filtered_assembly_ratio_ch.view()
-
             // get prokka files
             def prokka_gff_glob = append_to_path(params.indir.toString(),'*/annotation/*.gff')
             //create .gff and .faa files channel with meta information 
@@ -160,10 +186,7 @@ workflow CREATE_INPUT_CHANNELS {
                 .combine(id_channel).filter{ meta, combined_mlst, id_channel -> id_channel.contains(meta.id)} //filtering out failured samples - keep those in id_channel
                 .map{ meta, combined_mlst, id_channel -> [meta, combined_mlst]} //remove id_channel from output
 
-            /////////////////////////// PROJECT LEVEL FILES ///////////////////////////////
-
-            //filtering out failured samples
-            //filtered_line_summary_ch = line_summary_ch.combine(id_channel).filter{ meta, line_summary, id_channel -> id_channel.contains(meta.id)}.map{ meta, line_summary, id_channel -> [ meta, line_summary ]}
+            /////////////////////////// COLLECT PROJECT LEVEL FILES ///////////////////////////////
 
             def synopsis_glob = append_to_path(params.indir.toString(),'*/*.synopsis')
             synopsis_ch = Channel.fromPath(synopsis_glob) // use created regrex to get samples
@@ -301,6 +324,27 @@ workflow CREATE_INPUT_CHANNELS {
 ========================================================================================
 */
 
+def get_ids(dir) {
+    // Initialize an empty list to store directory names
+    List<String> dirNames = []
+
+    // Define the directories to be excluded
+    List<String> excludeDirs = ['multiqc', 'pipeline_info']
+
+    // Check if the path is indeed a directory
+    if (dir.isDirectory()) {
+        // Collect only first-level subdirectories
+        dir.eachFile { file ->
+            if (file.isDirectory()) {
+                // Add directory name if it's not in the exclude list
+                if (!excludeDirs.contains(file.name)) {
+                    dirNames << file.name
+                }
+            }
+        }
+    return dirNames
+    }
+}
 
 def modifiedFileChannel(input_ch, old_string, new_string) {
     def newFileName = input_ch[1].getName().replaceAll(old_string, new_string)

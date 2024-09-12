@@ -427,8 +427,12 @@ workflow CENTAR {
             ch_input = null //keep samplesheet input null if not passed
             def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = Channel.fromPath(params.indir, relative: true)
-            //ch_input_indir.view()
+            //make sure a directory is passed 
+            if (new File(params.indir).isDirectory()){
+                ch_input_indir = Channel.fromPath(params.indir, relative: true)
+            } else {
+                exit 1, 'You passed a file with --indir and a directory is required. Or use --input'
+            }
         } else { // if no samplesheet is passed and no input directory is given
             exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
         }
