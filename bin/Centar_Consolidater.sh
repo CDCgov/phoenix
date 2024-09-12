@@ -200,7 +200,7 @@ if [[ -f "${tox_input}" ]]; then
     tcdA_count=$(grep -c 'tcdA' "${tox_input}")
     if [[ "${tcdA_count}" -eq 0 ]]; then
         tcdA=0
-        tcdA_set="0\tNA\tNA|NA|NA"
+        tcdA_set="0\tNA\t[NA|NA|NA]"
     elif [[ "${tcdA_count}" -eq 1 ]]; then
         tcdA_line=$(grep 'tcdA' "${tox_input}")
         tcdA_matchtype=$(echo "${tcdA_line}" | cut -d$'\t' -f5)
@@ -218,7 +218,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdA=1
         fi
-        tcdA_set="${tcdA}\t${subtype_A}\t${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}"
+        tcdA_set="${tcdA}\t${subtype_A}\t${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}COV"
     else
         tcdA=1
         tcdA_array=()
@@ -267,9 +267,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdA_stats}" == "" ]]; then
-                tcdA_stats="${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}"
+                tcdA_stats="${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}COV"
             else
-                tcdA_stats="${tcdA_stats}-${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}"
+                tcdA_stats="${tcdA_stats}-${tcdA_IDN}NT|${tcdA_IDA}AA|${tcdA_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -280,7 +280,7 @@ if [[ -f "${tox_input}" ]]; then
     tcdB_count=$(grep -c 'tcdB' "${tox_input}")
     if [[ "${tcdB_count}" -eq 0 ]]; then
         tcdB=0
-        tcdB_set="0\tNA\tNA|NA|NA"
+        tcdB_set="0\tNA\t[NA|NA|NA]"
     elif [[ "${tcdB_count}" -eq 1 ]]; then
         tcdB_line=$(grep 'tcdB' "${tox_input}")
         tcdB_matchtype=$(echo "${tcdB_line}" | cut -d$'\t' -f5)
@@ -298,7 +298,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdB=1
         fi
-        tcdB_set="${tcdB}\t${subtype_B}\t${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}"
+        tcdB_set="${tcdB}\t${subtype_B}\t${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}COV"
     else
         tcdB=1
         tcdB_array=()
@@ -347,10 +347,10 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdB_stats}" == "" ]]; then
-                tcdB_stats="${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}"
+                tcdB_stats="${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}COV"
             else
                 echo "extra"
-                tcdB_stats="${tcdB_stats}-${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}"
+                tcdB_stats="${tcdB_stats}-${tcdB_IDN}NT|${tcdB_IDA}AA|${tcdB_length}COV"
             fi
             #echo "${count}-${tcdB}\t${tcdB_count_array}\t${tcdB_stats}"
             count=$(( count + 1 ))
@@ -362,7 +362,7 @@ if [[ -f "${tox_input}" ]]; then
     tcdC_count=$(grep -c 'tcdC' "${tox_input}")
     if [[ "${tcdC_count}" -eq 0 ]]; then
         tcdC=0
-        tcdC_set="0\tNA\tNA\tNA|NA|NA"
+        tcdC_set="0\tNA\tNA\t[NA|NA|NA]"
     elif [[ "${tcdC_count}" -eq 1 ]]; then
         tcdC_line=$(grep 'tcdC' "${tox_input}")
         tcdC_matchtype=$(echo "${tcdC_line}" | cut -d$'\t' -f5)
@@ -381,7 +381,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdC=1
         fi
-        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_muts}\t${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
+        tcdC_set="${tcdC}\t${tcdC_allele}\t${tcdC_muts}\t${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}COV"
     else
         tcdC=""
         tcdC_array=()
@@ -437,9 +437,9 @@ if [[ -f "${tox_input}" ]]; then
                 tcdC_allele="${tcdC_allele}-${tcdC_allele_current}"
             fi
             if [[ "${tcdC_stats}" = "" ]]; then
-                tcdC_stats="${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
+                tcdC_stats="${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}COV"
             else
-                tcdC_stats="${tcdC_stats}-${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}"
+                tcdC_stats="${tcdC_stats}-${tcdC_IDN}NT|${tcdC_IDA}AA|${tcdC_length}COV"
             fi
             if [[ "${tcdC_muts}" = "" ]]; then
                 tcdC_muts="${tcdC_muts_current}"
@@ -455,7 +455,7 @@ if [[ -f "${tox_input}" ]]; then
     tcdD_count=$(grep -c 'tcdD' "${tox_input}")
     if [[ "${tcdD_count}" -eq 0 ]]; then
         tcdD=0
-        tcdD_set="0\tNA|NA|NA"
+        tcdD_set="0\t[NA|NA|NA]"
     elif [[ "${tcdD_count}" -eq 1 ]]; then
         tcdD_line=$(grep 'tcdD' "${tox_input}")
         tcdD_matchtype=$(echo "${tcdD_line}" | cut -d$'\t' -f5)
@@ -472,7 +472,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdD=1
         fi
-        tcdD_set="${tcdD}\t${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}"
+        tcdD_set="${tcdD}\t${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}COV"
     else
         tcdD=1
         tcdD_array=()
@@ -521,9 +521,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdD_stats}" == "" ]]; then
-                tcdD_stats="${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}"
+                tcdD_stats="${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}COV"
             else
-                tcdD_stats="${tcdD_stats}-${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}"
+                tcdD_stats="${tcdD_stats}-${tcdD_IDN}NT|${tcdD_IDA}AA|${tcdD_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -534,7 +534,7 @@ if [[ -f "${tox_input}" ]]; then
     tcdE_count=$(grep -c 'tcdE' "${tox_input}")
     if [[ "${tcdE_count}" -eq 0 ]]; then
         tcdE=0
-        tcdE_set="0\tNA|NA|NA"
+        tcdE_set="0\t[NA|NA|NA]"
     elif [[ "${tcdE_count}" -eq 1 ]]; then
         tcdE_line=$(grep 'tcdE' "${tox_input}")
         tcdE_matchtype=$(echo "${tcdE_line}" | cut -d$'\t' -f5)
@@ -551,7 +551,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             tcdE=1
         fi
-        tcdE_set="${tcdE}\t${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}"
+        tcdE_set="${tcdE}\t${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}COV"
     else
         tcdE=1
         tcdE_array=()
@@ -600,9 +600,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${tcdE_stats}" == "" ]]; then
-                tcdE_stats="${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}"
+                tcdE_stats="${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}COV"
             else
-                tcdE_stats="${tcdE_stats}-${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}"
+                tcdE_stats="${tcdE_stats}-${tcdE_IDN}NT|${tcdE_IDA}AA|${tcdE_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -613,7 +613,7 @@ if [[ -f "${tox_input}" ]]; then
     PaLoc_NonTox_count=$(grep -c 'PaLoc_NonTox' "${tox_input}")
     if [[ "${PaLoc_NonTox_count}" -eq 0 ]]; then
         PaLoc_NonTox=0
-        PaLoc_NonTox_set="0\tNA\tNA\tNA|NA|NA"
+        PaLoc_NonTox_set="0\tNA\tNA\t[NA|NA|NA]"
     elif [[ "${PaLoc_NonTox_count}" -eq 1 ]]; then
         PaLoc_NonTox_line=$(grep 'PaLoc_NonTox' "${tox_input}")
         PaLoc_NonTox_matchtype=$(echo "${PaLoc_NonTox_line}" | cut -d$'\t' -f5)
@@ -632,7 +632,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             PaLoc_NonTox=1
         fi
-        PaLoc_NonTox_set="${PaLoc_NonTox}\t${PaLoc_NonTox_allele}\t${PaLoc_NonTox_muts}\t${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}"
+        PaLoc_NonTox_set="${PaLoc_NonTox}\t${PaLoc_NonTox_allele}\t${PaLoc_NonTox_muts}\t${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}COV"
     else
         PaLoc_NonTox=""
         PaLoc_NonTox_array=()
@@ -688,9 +688,9 @@ if [[ -f "${tox_input}" ]]; then
                 PaLoc_NonTox_allele="${PaLoc_NonTox_allele}-${PaLoc_NonTox_allele_current}"
             fi
             if [[ "${PaLoc_NonTox_stats}" = "" ]]; then
-                PaLoc_NonTox_stats="${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}"
+                PaLoc_NonTox_stats="${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}COV"
             else
-                PaLoc_NonTox_stats="${PaLoc_NonTox_stats}-${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}"
+                PaLoc_NonTox_stats="${PaLoc_NonTox_stats}-${PaLoc_NonTox_IDN}NT|${PaLoc_NonTox_IDA}AA|${PaLoc_NonTox_length}COV"
             fi
             if [[ "${PaLoc_NonTox_muts}" = "" ]]; then
                 PaLoc_NonTox_muts="${PaLoc_NonTox_muts_current}"
@@ -706,7 +706,7 @@ if [[ -f "${tox_input}" ]]; then
     cdtA_count=$(grep -c 'cdtA_' "${tox_input}")
     if [[ "${cdtA_count}" -eq 0 ]]; then
         cdtA=0
-        cdtA_set="0\tNA|NA|NA"
+        cdtA_set="0\t[NA|NA|NA]"
     elif [[ "${cdtA_count}" -eq 1 ]]; then
         cdtA_line=$(grep 'cdtA_' "${tox_input}")
         cdtA_matchtype=$(echo "${cdtA_line}" | cut -d$'\t' -f5)
@@ -723,7 +723,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtA=1
         fi
-        cdtA_set="${cdtA}\t${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}"
+        cdtA_set="${cdtA}\t${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}COV"
     else
         cdtA=1
         cdtA_array=()
@@ -772,9 +772,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtA_stats}" == "" ]]; then
-                cdtA_stats="${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}"
+                cdtA_stats="${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}COV"
             else
-                cdtA_stats="${cdtA_stats}-${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}"
+                cdtA_stats="${cdtA_stats}-${cdtA_IDN}NT|${cdtA_IDA}AA|${cdtA_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -785,7 +785,7 @@ if [[ -f "${tox_input}" ]]; then
     cdtB_count=$(grep -c 'cdtB_' "${tox_input}")
     if [[ "${cdtB_count}" -eq 0 ]]; then
         cdtB=0
-        cdtB_set="0\tNA|NA|NA"
+        cdtB_set="0\t[NA|NA|NA]"
     elif [[ "${cdtB_count}" -eq 1 ]]; then
         cdtB_line=$(grep 'cdtB_' "${tox_input}")
         cdtB_matchtype=$(echo "${cdtB_line}" | cut -d$'\t' -f5)
@@ -802,7 +802,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtB=1
         fi
-        cdtB_set="${cdtB}\t${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}"
+        cdtB_set="${cdtB}\t${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}COV"
     else
         cdtA=1
         cdtB_array=()
@@ -851,9 +851,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtB_stats}" == "" ]]; then
-                cdtB_stats="${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}"
+                cdtB_stats="${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}COV"
             else
-                cdtB_stats="${cdtB_stats}-${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}"
+                cdtB_stats="${cdtB_stats}-${cdtB_IDN}NT|${cdtB_IDA}AA|${cdtB_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -864,7 +864,7 @@ if [[ -f "${tox_input}" ]]; then
     cdtR_count=$(grep -c 'cdtR' "${tox_input}")
     if [[ "${cdtR_count}" -eq 0 ]]; then
         cdtA=0
-        cdtR_set="0\tNA\tNA|NA|NA"
+        cdtR_set="0\tNA\t[NA|NA|NA]"
     elif [[ "${cdtR_count}" -eq 1 ]]; then
         cdtR_line=$(grep 'cdtR' "${tox_input}")
         cdtR_matchtype=$(echo "${cdtR_line}" | cut -d$'\t' -f5)
@@ -882,7 +882,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtR=1
         fi
-        cdtR_set="${cdtR}\t${cdtR_allele}\t${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
+        cdtR_set="${cdtR}\t${cdtR_allele}\t${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}COV"
     else
         cdtA=1
         cdtR_array=()
@@ -937,9 +937,9 @@ if [[ -f "${tox_input}" ]]; then
                 cdtR_allele="${cdtR_allele}-${cdtR_allele_current}"
             fi
             if [[ "${cdtR_stats}" == "" ]]; then
-                cdtR_stats="${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
+                cdtR_stats="${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}COV"
             else
-                cdtR_stats="${cdtR_stats}-${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}"
+                cdtR_stats="${cdtR_stats}-${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}COV"
             fi
 
             count=$(( count + 1 ))
@@ -951,7 +951,7 @@ if [[ -f "${tox_input}" ]]; then
     cdtAB1_count=$(grep -c 'cdtAB1' "${tox_input}")
     if [[ "${cdtAB1_count}" -eq 0 ]]; then
         cdtAB1=0
-        cdtAB1_set="0\tNA|NA|NA"
+        cdtAB1_set="0\t[NA|NA|NA]"
     elif [[ "${cdtAB1_count}" -eq 1 ]]; then
         cdtAB1_line=$(grep 'cdtAB1' "${tox_input}")
         cdtAB1_matchtype=$(echo "${cdtAB1_line}" | cut -d$'\t' -f5)
@@ -967,7 +967,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtAB1=1
         fi
-        cdtAB1_set="${cdtAB1}\t${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}"
+        cdtAB1_set="${cdtAB1}\t${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}COV"
     else
         cdtAB1=""
         cdtAB1_array=()
@@ -1013,9 +1013,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtAB1_stats}" == "" ]]; then
-                cdtAB1_stats="${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}"
+                cdtAB1_stats="${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}COV"
             else
-                cdtAB1_stats="${cdtAB1_stats}-${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}"
+                cdtAB1_stats="${cdtAB1_stats}-${cdtAB1_IDN}NT|${cdtAB1_IDA}AA|${cdtAB1_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -1026,7 +1026,7 @@ if [[ -f "${tox_input}" ]]; then
     cdtAB2_count=$(grep -c 'cdtAB2' "${tox_input}")
     if [[ "${cdtAB2_count}" -eq 0 ]]; then
         cdtAB2=0
-        cdtAB2_set="0\tNA|NA|NA"
+        cdtAB2_set="0\t[NA|NA|NA]"
     elif [[ "${cdtAB2_count}" -eq 1 ]]; then
         cdtAB2_line=$(grep 'cdtAB2' "${tox_input}")
         cdtAB2_matchtype=$(echo "${cdtAB2_line}" | cut -d$'\t' -f5)
@@ -1042,7 +1042,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             cdtAB2=1
         fi
-        cdtAB2_set="${cdtAB2}\t${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}"
+        cdtAB2_set="${cdtAB2}\t${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}COV"
     else
         cdtAB2=""
         cdtAB2_array=()
@@ -1088,9 +1088,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${cdtAB2_stats}" == "" ]]; then
-                cdtAB2_stats="${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}"
+                cdtAB2_stats="${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}COV"
             else
-                cdtAB2_stats="${cdtAB2_stats}-${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}"
+                cdtAB2_stats="${cdtAB2_stats}-${cdtAB2_IDN}NT|${cdtAB2_IDA}AA|${cdtAB2_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -1101,7 +1101,7 @@ if [[ -f "${tox_input}" ]]; then
     nontox_count=$(grep -c 'cdtNonTox' "${tox_input}")
     if [[ "${nontox_count}" -eq 0 ]]; then
         nontox=0
-        nontox_set="0\tNA|NA|NA"
+        nontox_set="0\t[NA|NA|NA]"
     elif [[ "${nontox_count}" -eq 1 ]]; then
         nontox_line=$(grep 'cdtNonTox' "${tox_input}")
         nontox_matchtype=$(echo "${nontox_line}" | cut -d$'\t' -f5)
@@ -1118,7 +1118,7 @@ if [[ -f "${tox_input}" ]]; then
         else
             nontox=1
         fi
-        nontox_set="${nontox}\t${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}"
+        nontox_set="${nontox}\t${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}COV"
     else
         nontox=1
         nontox_array=()
@@ -1167,9 +1167,9 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             fi
             if [[ "${nontox_stats}" == "" ]]; then
-                nontox_stats="${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}"
+                nontox_stats="${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}COV"
             else
-                nontox_stats="${nontox_stats}-${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}"
+                nontox_stats="${nontox_stats}-${nontox_IDN}NT|${nontox_IDA}AA|${nontox_length}COV"
             fi
             count=$(( count + 1 ))
         done
@@ -1180,7 +1180,7 @@ if [[ -f "${tox_input}" ]]; then
 #     gyrA_count=$(grep -c 'gyrA' "${tox_input}")
 #     if [[ "${gyrA_count}" -eq 0 ]]; then
 #         gyrA=0
-#         gyrA_set="0\tNA\tN/A\tNA|NA|NA"
+#         gyrA_set="0\tNA\tN/A\t[NA|NA|NA]"
 #     elif [[ "${gyrA_count}" -eq 1 ]]; then
 #         gyrA_line=$(grep 'gyrA' "${tox_input}")
 #         gyrA_matchtype=$(echo "${gyrA_line}" | cut -d$'\t' -f5)
@@ -1294,7 +1294,7 @@ if [[ -f "${tox_input}" ]]; then
 #     gyrB_count=$(grep -c 'gyrB' "${tox_input}")
 #     if [[ "${gyrB_count}" -eq 0 ]]; then
 #         gyrB=0
-#         gyrB_set="0\tNA\tN/A\tNA|NA|NA"
+#         gyrB_set="0\tNA\tN/A\t[NA|NA|NA]"
 #     elif [[ "${gyrB_count}" -eq 1 ]]; then
 #         gyrB_line=$(grep 'gyrB' "${tox_input}")
 #         gyrB_matchtype=$(echo "${gyrB_line}" | cut -d$'\t' -f5)
@@ -1592,8 +1592,11 @@ else
     clade="No_clade/MLST_file"
 fi
 
-declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [lscR]="V76A" [murG]="P109L" [nifJ]="G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I" [gyrA]="A117S A118S A118T A384D A92E D103N D71G D71V D81N E123K L345I P116A R90K T82A T82I T82V V43D" [gyrB]="D426N D426V E466K E466V I139R L444F Q434K R377G R447K R447L S366V S464T V130I")
-declare -A NT_POINTS=( [feoB]="117DelA 1__bp__Deletion__at__119" [hemN]="Y214Stop 1__bp__Deletion__at__641" [hsmA]="372DelA 1__bp__Deletion__at__371" [lscR]="153DelA 1__bp__Deletion__at__152" [marR]="349DelT 1__bp__Deletion__at__355" [PNimB]="T115G" [sdaB]="883DelGCA 879DelACG 3__bp__Deletion__at__886" )
+#declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [lscR]="V76A" [murG]="P109L" [nifJ]="G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I" [gyrA]="A117S A118S A118T A384D A92E D103N D71G D71V D81N E123K L345I P116A R90K T82A T82I T82V V43D" [gyrB]="D426N D426V E466K E466V I139R L444F Q434K R377G R447K R447L S366V S464T V130I")
+#declare -A NT_POINTS=( [feoB]="117DelA 1__bp__Deletion__at__119" [hemN]="Y214Stop 1__bp__Deletion__at__641" [hsmA]="372DelA 1__bp__Deletion__at__371" [lscR]="153DelA 1__bp__Deletion__at__152" [marR]="349DelT 1__bp__Deletion__at__355" [PNimB]="T115G" [sdaB]="883DelGCA 879DelACG 3__bp__Deletion__at__886" )
+declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [lscR]="V76A" [murG]="P109L" [nifJ]="G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I" [gyrA]="A117S A118S A118T A384D A92E D103N D71G D71V D81N E123K L345I P116A R90K T82A T82I T82V V43D" [gyrB]="D426N D426V E466K E466V I139R L444F Q434K R377G R447K R447L S366V S464T V130I" [feoB]="117DelA 1__bp__Deletion__at__120" [hemN]="Y214Stop 1__bp__Deletion__at__642" [hsmA]="372DelA 1__bp__Deletion__at__372" [lscR]="153DelA 1__bp__Deletion__at__153" [marR]="349DelT 1__bp__Deletion__at__356" [sdaB]="883DelGCA 879DelACG 3__bp__Deletion__at__887")
+declare -A NT_POINTS=(  [PNimB]="T115G" )
+
 
 #printf "%s\n" "${!AA_POINTS[@]}"
 #printf "%s\n" "${!NT_POINTS[@]}"
@@ -1606,7 +1609,7 @@ if [[ -f "${aa_mut_file}" ]]; then
     fur_set="NA\tNA\tNA"
     gdpP_set="NA\tNA\tNA"
     glyC_set="NA\tNA\tNA"
-    lscRAA_set="NA\tNA\tNA"
+    lscR_set="NA\tNA\tNA"
     murG_set="NA\tNA\tNA"
     rpoB_set="NA\tNA\tNA"
     rpoC_set="NA\tNA\tNA"
@@ -1614,6 +1617,14 @@ if [[ -f "${aa_mut_file}" ]]; then
     vanR_set="NA\tNA\tNA"
     vanS_set="NA\tNA\tNA"
     nifJ_set="NA\tNA\tNA"
+    feoB_set="NA\tNA\tNA"
+    hemN_set="NA\tNA\tNA"
+    hsmA_set="NA\tNA\tNA"
+    #lscRNT_set="NA\tNA\tNA"
+    marR_set="NA\tNA\tNA"
+    PNimB_set="NA\tNA\tNA"
+    sdaB_set="NA\tNA\tNA"
+
     for i in "${!AA_POINTS[@]}"
         do
         #echo "Doing $i"
@@ -1695,33 +1706,43 @@ if [[ -f "${aa_mut_file}" ]]; then
 
                 case "$i" in
                     gyrA)
-                        gyrA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        gyrA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     gyrB)
-                        gyrB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        gyrB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     dacS)
-                        dacS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        dacS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     fur)
-                        fur_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        fur_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     gdpP)
-                        gdpP_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        gdpP_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     glyC)
-                        glyC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        glyC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     lscR)
-                        lscRAA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        lscR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     murG)
-                        murG_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        murG_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     rpoB)
-                        rpoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        rpoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     rpoC)
-                        rpoC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        rpoC_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     thiH)
-                        thiH_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        thiH_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     vanR)
-                        vanR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        vanR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     vanS)
-                        vanS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        vanS_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
                     nifJ)
-                        nifJ_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}";;
+                        nifJ_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDAA}AA|${line_length}COV";;
+                    feoB)
+                        feoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    hemN)
+                        hemN_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    hsmA)
+                        hsmA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    marR)
+                        marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    sdaB)
+                        sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
                     *)
                         echo "Unknown gene: $i" ;;
                 esac
@@ -1752,13 +1773,13 @@ fi
 
 if [[ -f "${nt_mut_file}" ]]; then
     ## Parse the AR file once ready and figure out how to make it expandable
-    feoB_set="NA\tNA\tNA"
-    hemN_set="NA\tNA\tNA"
-    hsmA_set="NA\tNA\tNA"
-    lscRNT_set="NA\tNA\tNA"
-    marR_set="NA\tNA\tNA"
+    #feoB_set="NA\tNA\tNA"
+    #hemN_set="NA\tNA\tNA"
+    #hsmA_set="NA\tNA\tNA"
+    #lscRNT_set="NA\tNA\tNA"
+    #marR_set="NA\tNA\tNA"
     PNimB_set="NA\tNA\tNA"
-    sdaB_set="NA\tNA\tNA"
+    #sdaB_set="NA\tNA\tNA"
     #cat "${nt_mut_file}"
     for i in "${!NT_POINTS[@]}"
     do
@@ -1836,20 +1857,20 @@ if [[ -f "${nt_mut_file}" ]]; then
                 #echo "6-${known_muts}"
                 #echo "7-${NT_POINTS[$i]}"
                 case "$i" in
-                    feoB)
-                        feoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
-                    hemN)
-                        hemN_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
-                    hsmA)
-                        hsmA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
-                    lscR)
-                        lscRNT_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
-                    marR)
-                        marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
+                    #feoB)
+                    #    feoB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    #hemN)
+                    #    hemN_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    #hsmA)
+                    #    hsmA_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    #lscR)
+                    #    lscRNT_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
+                    #marR)
+                    #    marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
                     PNimB)
-                        PNimB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}";;
-                    sdaB)
-                        sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}";;
+                        PNimB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_length}COV";;
+                    #sdaB)
+                    #    sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
                     *)
                         echo "Unknown gene: $i" ;;
                 esac
@@ -1862,13 +1883,13 @@ if [[ -f "${nt_mut_file}" ]]; then
     done
 else
     echo "NO_NT_mut_file"
-    feoB_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
-    hemN_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
-    hsmA_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
-    lscRNT_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
-    marR_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
+    #feoB_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
+    #hemN_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
+    #hsmA_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
+    #lscRNT_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
+    #marR_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
     PNimB_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
-    sdaB_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
+    #sdaB_set="NO_NT_mut_file\tNO_NT_mut_file\tNO_NT_mut_file"
 fi
 
 echo -e "clade:${clade}
@@ -1893,8 +1914,7 @@ gdpP:${gdpP_set}
 glyC:${glyC_set}
 hemN:${hemN_set}
 hsmA:${hsmA_set}
-lscRAA:${lscRAA_set}
-lscRNT:${lscRNT_set}
+lscR:${lscR_set}
 marR:${marR_set}
 murG:${murG_set}
 nifJ:${nifJ_set}
@@ -1912,6 +1932,6 @@ plasmids:${plasmids}
 
 # Loop through the genes in the list and format to match desired output style
 if [[ ! -f "${output}" ]]; then
-    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\tDiffbase_Toxin-A_sub-type\ttcdA [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdB_presence\tDiffbase_Toxin-B_sub-type\ttcdB [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdC_presence\ttcdC_Variant\ttcdC Other Mutations\ttcdC [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdR_presence\ttcdR [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdE_presence\ttcdE [%Nuc_Identity | %AA_Identity | %Coverage]\tPaLoc_NonTox_Presence\tPaLoc_NonTox_Variant\tPaLOC_NonTox_Other_Mutations\PaLoc_NonTox [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtA_presence\tcdtA [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtB_presence\tcdtB [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtR_presence\tcdtR_Variant\tcdtR [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB1_presence\tcdtAB1 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB2_presence\tcdtAB2 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdt_NonTox_presence\tcdt_NonTox[%Nuc_Identity | %AA_Identity | %Coverage]\tgyrA known mutations\tgyrA other mutations\tgyrA [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrB known mutations\tgyrB other mutations\tgyrB [%Nuc_Identity | %AA_Identity | %Coverage]\tdacS known mutations\tdacS other mutations\tdacS [%Nuc_Identity | %AA_Identity | %Coverage]\tfeoB known mutations\tfeoB other mutations\tfeoB [%Nuc_Identity | %AA_Identity | %Coverage]\tfur known mutations\tfur other mutations\tfur [%Nuc_Identity | %AA_Identity | %Coverage]\tgdpP known mutations\tgdpP other mutations\tgdpP [%Nuc_Identity | %AA_Identity | %Coverage]\tglyC known mutations\tglyC other mutations\tglyC [%Nuc_Identity | %AA_Identity | %Coverage]\themN known mutations\themN other mutations\themN [%Nuc_Identity | %AA_Identity | %Coverage]\thsmA known mutations\thsmA other mutations\thsmA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRAA known mutations\tlscRAA other mutations\tlscRAA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscRNT known mutations\tlscRNT other mutations\tlscRNT [%Nuc_Identity | %AA_Identity | %Coverage]\tmarR known mutations\tmarR other mutations\tmarR [%Nuc_Identity | %AA_Identity | %Coverage]\tmurG known mutations\tmurG other mutations\tmurG [%Nuc_Identity | %AA_Identity | %Coverage]\tnifJ known mutations\tnifJ other mutations\tnifJ [%Nuc_Identity | %AA_Identity | %Coverage]\tPNimB known mutations\tPNimB other mutations\tPNimB [%Nuc_Identity | %Coverage]\trpoB known mutations\trpoB other mutations\trpoB [%Nuc_Identity | %AA_Identity | %Coverage]\trpoC known mutations\trpoC other mutations\trpoC [%Nuc_Identity | %AA_Identity | %Coverage]\tsdaB known mutations\tsdaB other mutations\tsdaB [%Nuc_Identity | %AA_Identity | %Coverage]\tthiH known mutations\tthiH other mutations\tthiH [%Nuc_Identity | %AA_Identity | %Coverage]\tvanR known mutations\tvanR other mutations\tvanR [%Nuc_Identity | %AA_Identity | %Coverage]\tvanS known mutations\tvanS other mutations\tvanS [%Nuc_Identity | %AA_Identity | %Coverage]\tCEMB RT Crosswalk\tInferred RT\tProbability\tML Method\t ML Note\tPlasmid Info\t${other_AR_header}" > "${output}"
+    echo -e "isolate_ID\tMLST Clade\tDiffbase_Toxinotype\ttcdA_presence\tDiffbase_Toxin-A_sub-type\ttcdA [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdB_presence\tDiffbase_Toxin-B_sub-type\ttcdB [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdC_presence\ttcdC_Variant\ttcdC Other Mutations\ttcdC [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdR_presence\ttcdR [%Nuc_Identity | %AA_Identity | %Coverage]\ttcdE_presence\ttcdE [%Nuc_Identity | %AA_Identity | %Coverage]\tPaLoc_NonTox_Presence\tPaLoc_NonTox_Variant\tPaLOC_NonTox_Other_Mutations\tPaLoc_NonTox [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtA_presence\tcdtA [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtB_presence\tcdtB [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtR_presence\tcdtR_Variant\tcdtR [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB1_presence\tcdtAB1 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdtAB2_presence\tcdtAB2 [%Nuc_Identity | %AA_Identity | %Coverage]\tcdt_NonTox_presence\tcdt_NonTox[%Nuc_Identity | %AA_Identity | %Coverage]\tgyrA known mutations\tgyrA other mutations\tgyrA [%Nuc_Identity | %AA_Identity | %Coverage]\tgyrB known mutations\tgyrB other mutations\tgyrB [%Nuc_Identity | %AA_Identity | %Coverage]\tdacS known mutations\tdacS other mutations\tdacS [%Nuc_Identity | %AA_Identity | %Coverage]\tfeoB known mutations\tfeoB other mutations\tfeoB [%Nuc_Identity | %AA_Identity | %Coverage]\tfur known mutations\tfur other mutations\tfur [%Nuc_Identity | %AA_Identity | %Coverage]\tgdpP known mutations\tgdpP other mutations\tgdpP [%Nuc_Identity | %AA_Identity | %Coverage]\tglyC known mutations\tglyC other mutations\tglyC [%Nuc_Identity | %AA_Identity | %Coverage]\themN known mutations\themN other mutations\themN [%Nuc_Identity | %AA_Identity | %Coverage]\thsmA known mutations\thsmA other mutations\thsmA [%Nuc_Identity | %AA_Identity | %Coverage]\tlscR known mutations\tlscR other mutations\tlscR [%Nuc_Identity | %AA_Identity | %Coverage]\tmarR known mutations\tmarR other mutations\tmarR [%Nuc_Identity | %AA_Identity | %Coverage]\tmurG known mutations\tmurG other mutations\tmurG [%Nuc_Identity | %AA_Identity | %Coverage]\tnifJ known mutations\tnifJ other mutations\tnifJ [%Nuc_Identity | %AA_Identity | %Coverage]\tPNimB known mutations\tPNimB other mutations\tPNimB [%Nuc_Identity | %Coverage]\trpoB known mutations\trpoB other mutations\trpoB [%Nuc_Identity | %AA_Identity | %Coverage]\trpoC known mutations\trpoC other mutations\trpoC [%Nuc_Identity | %AA_Identity | %Coverage]\tsdaB known mutations\tsdaB other mutations\tsdaB [%Nuc_Identity | %AA_Identity | %Coverage]\tthiH known mutations\tthiH other mutations\tthiH [%Nuc_Identity | %AA_Identity | %Coverage]\tvanR known mutations\tvanR other mutations\tvanR [%Nuc_Identity | %AA_Identity | %Coverage]\tvanS known mutations\tvanS other mutations\tvanS [%Nuc_Identity | %AA_Identity | %Coverage]\tCEMB RT Crosswalk\tInferred RT\tProbability\tML Method\t ML Note\tPlasmid Info\t${other_AR_header}" > "${output}"
 fi
-echo -e "${sample_name}\t${clade}\t${toxinotype}\t${tcdA_set}\t${tcdB_set}\t${tcdC_set}\t${tcdD_set}\t${tcdE_set}\t${PaLoc_NonTox_set}\t${cdtA_set}\t${cdtB_set}\t${cdtR_set}\t${cdtAB1_set}\t${cdtAB2_set}\t${nontox_set}\t${gyrA_set}\t${gyrB_set}\t${dacS_set}\t${feoB_set}\t${fur_set}\t${gdpP_set}\t${glyC_set}\t${hemN_set}\t${hsmA_set}\t${lscRAA_set}\t${lscRNT_set}\t${marR_set}\t${murG_set}\t${nifJ_set}\t${PNimB_set}\t${rpoB_set}\t${rpoC_set}\t${sdaB_set}\t${thiH_set}\t${vanR_set}\t${vanS_set}\t${xrt}\t${ML_RT}\t${plasmids}"  >> "${output}"
+echo -e "${sample_name}\t${clade}\t${toxinotype}\t${tcdA_set}\t${tcdB_set}\t${tcdC_set}\t${tcdD_set}\t${tcdE_set}\t${PaLoc_NonTox_set}\t${cdtA_set}\t${cdtB_set}\t${cdtR_set}\t${cdtAB1_set}\t${cdtAB2_set}\t${nontox_set}\t${gyrA_set}\t${gyrB_set}\t${dacS_set}\t${feoB_set}\t${fur_set}\t${gdpP_set}\t${glyC_set}\t${hemN_set}\t${hsmA_set}\t${lscR_set}\t${marR_set}\t${murG_set}\t${nifJ_set}\t${PNimB_set}\t${rpoB_set}\t${rpoC_set}\t${sdaB_set}\t${thiH_set}\t${vanR_set}\t${vanS_set}\t${xrt}\t${ML_RT}\t${plasmids}"  >> "${output}"

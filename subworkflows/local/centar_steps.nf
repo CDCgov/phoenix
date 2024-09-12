@@ -68,11 +68,11 @@ workflow CENTAR_SUBWORKFLOW {
         )
         ch_versions = ch_versions.mix(CDIFF_TOX_GENES.out.versions)
 
-        // Running gamma to identify Cdiff specific AR genes in scaffolds
+/*        // Running gamma to identify Cdiff specific AR genes in scaffolds
         CDIFF_AR_GENES_ALL (
             filtered_scaffolds_ch, params.cdiff_ar_gene_ALL_db
         )
-        ch_versions = ch_versions.mix(CDIFF_AR_GENES_ALL.out.versions)
+        ch_versions = ch_versions.mix(CDIFF_AR_GENES_ALL.out.versions) */
 
         // Running gamma to identify Cdiff specific AR genes in scaffolds
         CDIFF_AR_GENES_AA (
