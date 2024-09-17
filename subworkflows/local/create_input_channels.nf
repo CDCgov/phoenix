@@ -32,6 +32,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             // for older versions of phx there will be no file_integrity file, so we will try make this file. 
             // Check if the id channel is empty and if so get failed sample information
+            id_channel.view()
             if (id_channel.isEmpty()) {
 
                 all_ids = indir.map{ it -> get_ids(it)}
@@ -48,10 +49,10 @@ workflow CREATE_INPUT_CHANNELS {
                 ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
 
                 // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
-                id_channel = CREATE_FAIRY_FILE.out.fairy_outcome.map{ meta, fairy_outcome -> fairy_outcome }.collect().map{ fairy_outcome -> get_only_passing_samples(fairy_outcome)}.filter { it != null }.toList()
+                id_channel = CREATE_FAIRY_FILE.out.created_fairy_file.map{ meta, created_fairy_file -> created_fairy_file }.collect().map{ created_fairy_file -> get_only_passing_samples(created_fairy_file)}.filter { it != null }.toList()
 
                 // get file_integrity file for MLST updating
-                file_integrity_ch = CREATE_FAIRY_FILE.out.fairy_outcome.combine(id_channel).filter{ meta, file_integrity, id_channel -> id_channel.contains(meta.id)}
+                file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.combine(id_channel).filter{ meta, file_integrity, id_channel -> id_channel.contains(meta.id)}
                     .map{ meta, file_integrity, id_channel -> [meta, file_integrity]} //remove id_channel from output
 
             } else {
@@ -472,11 +473,10 @@ def get_only_passing_samples(filePaths) {
 
 def append_to_path(full_path, string) {
     if (full_path.toString().endsWith('/')) {
-        def new_string = full_path.toString() + string
-    }  else {
-        def new_string = full_path.toString() + '/' + string
+        return full_path.toString() + string
+    } else {
+        return full_path.toString() + '/' + string
     }
-    return new_string
 }
 
 def create_meta_with_wildcard(sample, file_extension, indir){
