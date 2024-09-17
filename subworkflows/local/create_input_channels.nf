@@ -8,6 +8,10 @@ include { COLLECT_SAMPLE_FILES  } from '../../modules/local/updater/collect_samp
 include { COLLECT_PROJECT_FILES } from '../../modules/local/updater/collect_project_files'
 include { CREATE_FAIRY_FILE     } from '../../modules/local/updater/create_fairy_file'
 
+// ANSI escape code for orange (bright yellow)
+def orange = '\033[38;5;208m'
+def reset = '\033[0m'
+
 workflow CREATE_INPUT_CHANNELS {
     take:
         indir        // params.indir
@@ -17,7 +21,6 @@ workflow CREATE_INPUT_CHANNELS {
     main:
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
-
             //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
             def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
 
@@ -25,7 +28,7 @@ workflow CREATE_INPUT_CHANNELS {
             id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
 
             // Check if the channel is empty and throw an error as this is required for the pipeline
-            id_channel.subscribe { result -> if (result.isEmpty()) {  println("Error: There is no files were in */file_integrity/*_*_summary.txt. This file is required so we will make it.")} }
+            id_channel.subscribe { result -> if (result.isEmpty()) {  println("${orange}Warning: There is no files were in */file_integrity/*_*_summary.txt. This file is required so we will make it.${reset}")} }
 
             // for older versions of phx there will be no file_integrity file, so we will try make this file. 
             // Check if the id channel is empty and if so get failed sample information
@@ -36,10 +39,11 @@ workflow CREATE_INPUT_CHANNELS {
                     def meta = [:] // create meta array
                     meta.id = id
                     meta.project_id = indir.toString().split('/')[-1]
-                    return [meta, indir]}
-
-                CREATE_FAIRY_FILE(
-                    indir_with_meta
+                    return [meta, indir, false]}
+                
+                //create fairy file for samples that do not have one
+                CREATE_FAIRY_FILE (
+                    indir_with_meta, true
                 )
                 ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
 
@@ -240,6 +244,14 @@ workflow CREATE_INPUT_CHANNELS {
             )
             ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
 
+            // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
+            file_integrity_exists = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }
+
+            CREATE_FAIRY_FILE (
+                file_integrity_exists, false
+            )
+            ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
+
             directory_ch = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> create_dir_channels(it) }
             //adding meta.id to end of dir - otherwise too many files are copied and it takes forever. 
             sample_directory_ch = SAMPLESHEET_CHECK.out.csv.splitCsv( header:true, sep:',' ).map{ it -> create_sample_dir_channels(it) }
@@ -250,9 +262,12 @@ workflow CREATE_INPUT_CHANNELS {
             )
             ch_versions = ch_versions.mix(COLLECT_SAMPLE_FILES.out.versions)
 
-            combined_reads_ch = COLLECT_SAMPLE_FILES.out.read1.join(COLLECT_SAMPLE_FILES.out.read2, by: [0]).map{ meta, read1, read2 -> [meta, [read1, read2]]}
+            //collect all fairy files and then recreate meta groups with flatten and buffer.
+            file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(COLLECT_SAMPLE_FILES.out.fairy_summary.collect().ifEmpty([])).flatten().buffer(size:2)
 
-            file_integrity_ch = COLLECT_SAMPLE_FILES.out.fairy_summary
+            //combine reads to get into one channel
+            combined_reads_ch = COLLECT_SAMPLE_FILES.out.read1.join(COLLECT_SAMPLE_FILES.out.read2, by: [0]).map{ meta, read1, read2 -> [meta, [read1, read2]]}
+            // get other files
             filtered_scaffolds_ch = COLLECT_SAMPLE_FILES.out.scaffolds
             filtered_gff_ch = COLLECT_SAMPLE_FILES.out.gff
             filtered_faa_ch = COLLECT_SAMPLE_FILES.out.faa
@@ -324,6 +339,24 @@ workflow CREATE_INPUT_CHANNELS {
 ========================================================================================
 */
 
+def check_file_integrity(LinkedHashMap row) {
+    def meta = [:] // create meta array
+    meta.id = row.sample
+    meta.project_id = row.directory.toString().split('/')[-2]
+    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    def pattern = "*_summary.txt"
+    // Convert the wildcard pattern to regex: "*_summary.txt" to ".*_summary\.txt"
+    def regexPattern = pattern.replace("*", ".*").replace("?", ".")
+    File dir = new File(clean_path + "/file_integrity/")
+     // List files matching the regex pattern
+    def files = dir.listFiles { file -> file.name ==~ /${regexPattern}/ }
+    if (files && files.length > 0) {
+        return [ meta, clean_path, true ]
+    } else {
+        return [ meta, clean_path, false ]
+    }
+}
+
 def get_ids(dir) {
     // Initialize an empty list to store directory names
     List<String> dirNames = []
@@ -356,14 +389,14 @@ def modifiedFileChannel(input_ch, old_string, new_string) {
 def create_summary_files_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-1]
+    meta.project_id = row.directory.toString().split('/')[-2]
     def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
-    def software_versions = clean_path + "/pipeline_info/"
-    def griphin_summary_tsv = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.tsv"
-    def griphin_summary_excel = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.xlsx"
-    def phx_summary = clean_path + "/Phoenix_Summary.tsv"
-    array = [ meta, griphin_summary_excel, griphin_summary_tsv, phx_summary, software_versions ]
-    return array
+    def cleaned_path = new File(clean_path).getParent()
+    def software_versions = cleaned_path + "/pipeline_info/"
+    def griphin_summary_tsv = cleaned_path + "/" + meta.project_id + "_GRiPHin_Summary.tsv"
+    def griphin_summary_excel = cleaned_path + "/" + meta.project_id +  "_GRiPHin_Summary.xlsx"
+    def phx_summary = cleaned_path + "/Phoenix_Summary.tsv"
+    return [ meta, griphin_summary_excel, griphin_summary_tsv, phx_summary, software_versions ]
 }
 
 // Function to get list of [ meta, [ directory ] ]
@@ -371,8 +404,7 @@ def create_dir_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
     meta.project_id = row.directory.toString().split('/')[-1]
-    array = [ meta, row.directory ]
-    return array
+    return [ meta, row.directory ]
 }
 
 def add_entry_meta(input_ch){
@@ -401,27 +433,10 @@ def create_groups_id_and_busco(input_ch, project_folder){
 def create_sample_dir_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-1]
+    meta.project_id = row.directory.toString().split('/')[-2]
     def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
-    def dir = clean_path + "/" + row.sample
-    array = [ meta, dir ]
-    return array
+    return [ meta, clean_path ]
 }
-
-
-/*/ Function to get list of [ meta, [ directory ] ]
-def create_summary_files_channels(LinkedHashMap row) {
-    def meta = [:] // create meta array
-    meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-1]
-    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
-    def software_versions = clean_path + "/pipeline_info/software_versions.yml"
-    def griphin_summary_tsv = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.tsv"
-    def griphin_summary_excel = clean_path + "/" + meta.project_id + "_GRiPHin_Summary.xlsx"
-    def phx_summary = clean_path + "/Phoenix_Summary.tsv"
-    array = [ meta, software_versions, griphin_summary_tsv, griphin_summary_excel, phx_summary ]
-    return array
-}*/
 
 def create_groups_and_id(input_ch, project_folder){
     """samples needed to be grouped by their project directory for editing summary files."""
@@ -457,9 +472,9 @@ def get_only_passing_samples(filePaths) {
 
 def append_to_path(full_path, string) {
     if (full_path.toString().endsWith('/')) {
-        new_string = full_path.toString() + string
+        def new_string = full_path.toString() + string
     }  else {
-        new_string = full_path.toString() + '/' + string
+        def new_string = full_path.toString() + '/' + string
     }
     return new_string
 }
@@ -469,8 +484,7 @@ def create_meta_with_wildcard(sample, file_extension, indir){
     def meta = [:] // create meta array
     meta.id = sample.getName().replaceAll(file_extension, "").split('_')[0] // get file name without extention
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]
-    return array
+    return [ meta, sample ]
 }
 
 def create_meta(sample, file_extension, indir, extra_check){
@@ -487,8 +501,7 @@ def create_meta(sample, file_extension, indir, extra_check){
         meta.id = sample.getName().replaceAll(file_extension, "") // get file name without extention
     }
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]
-    return array
+    return [ meta, sample ]
 }
 
 def create_meta_non_extension(sample, indir){
@@ -496,8 +509,7 @@ def create_meta_non_extension(sample, indir){
     def meta = [:] // create meta array
     meta.id = sample.getSimpleName()//.split('_')[0] // get the last string after the last backslash
     meta.project_id = indir.toString().split('/')[-1]
-    def array = [ meta, sample ]
-    return array
+    return [ meta, sample ]
 }
 
 def check_scaffolds(scaffold_channel) {

@@ -8,7 +8,9 @@ import re
 ######################################## Centar functions ##############################################
 def transform_value(value):
     # Split the value into components
-    if value != "NA|NA|NA":
+    if (isinstance(value, float) and np.isnan(value)):
+        return ""
+    elif value != "NA|NA|NA" and value != "[NA|NA|NA]":
         parts = value.split('|')
         if len(parts) == 3:
             # Reorder and format the components into the desired format

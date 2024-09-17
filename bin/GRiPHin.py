@@ -1104,7 +1104,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
                         # Check if there is a value in the corresponding column in the second DataFrame
                         srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
-                        #print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
+                        print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
     # Check if DataFrame is not empty
@@ -1575,7 +1575,6 @@ def main():
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
         full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
-        print(full_centar_df)
         ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
         centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
         # combing centar with phx qc information

@@ -29,6 +29,37 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     return output_array
 }
 
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            try {
+                if (line.startsWith("G:")) {
+                    genus = line.split(":")[1].trim().split('\t')[1]
+                } else if (line.startsWith("s:")) {
+                    species = line.split(":")[1].trim().split('\t')[1]
+                }
+            } catch (IndexOutOfBoundsException e) {
+                // Handle specific "Index 1 out of bounds for length 1" error
+                if (e.message.contains("Index 1 out of bounds for length 1")) {
+                    if (line.startsWith("G:")) {
+                        // Use the fallback logic if accessing index 1 fails
+                        genus = line.split(":")[1].trim()
+                    } else if (line.startsWith("s:")) {
+                        species = line.split(":")[1].trim()
+                    }
+                } else {
+                    // Re-throw or handle other IndexOutOfBoundsExceptions if necessary
+                    println "Unexpected IndexOutOfBoundsException: ${e.message}"
+                }
+        } catch (Exception e) {
+            // Catch any other exceptions that might occur
+            println "An unexpected error occurred: ${e.message}"
+        }
+    }
+    return [input_ch[0], "$genus $species" ]
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -41,6 +72,7 @@ workflow CENTAR_SUBWORKFLOW {
         fairy_outcome       // CREATE_INPUT_CHANNELS.out.fairy_outcome
         filtered_scaffolds  // CREATE_INPUT_CHANNELS.out.filtered_scaffolds
         mlst_db             // ASSET_CHECK.out.mlst_db
+        taxonomy            // taxa information
 
     main:
         // Allow outdir to be relative
@@ -48,14 +80,19 @@ workflow CENTAR_SUBWORKFLOW {
         ch_versions = Channel.empty() // Used to collect the software versions
         mlst_db_value=mlst_db.first()
 
+        // Check the taxa file to confirm the organism is Clostridioides difficile
+        cdiff_check = taxonomy.map{it -> get_taxa(it)} // get organism from file
+
         CDIFF_CLADE (
-            combined_mlst, mlst_db_value
+            combined_mlst.join(cdiff_check, by: [[0][0],[0][1]]), mlst_db_value
         )
         ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        // we will filter out an samples that aren't Clostridioides difficile
         filtered_scaffolds_ch = filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
         .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+        .join(cdiff_check, by: [[0][0],[0][1]]).filter{meta, filtered_scaffolds, fairy_outcome, taxa_id -> taxa_id == "Clostridioides difficile" }.map{ meta, filtered_scaffolds, fairy_outcome, taxa_id -> [meta, filtered_scaffolds, fairy_outcome]}
 
         CDIFF_PLASMIDS (
             filtered_scaffolds_ch, params.cdiff_plasmid_db
@@ -68,11 +105,11 @@ workflow CENTAR_SUBWORKFLOW {
         )
         ch_versions = ch_versions.mix(CDIFF_TOX_GENES.out.versions)
 
-/*        // Running gamma to identify Cdiff specific AR genes in scaffolds
+        /*// Running gamma to identify Cdiff specific AR genes in scaffolds
         CDIFF_AR_GENES_ALL (
             filtered_scaffolds_ch, params.cdiff_ar_gene_ALL_db
         )
-        ch_versions = ch_versions.mix(CDIFF_AR_GENES_ALL.out.versions) */
+        ch_versions = ch_versions.mix(CDIFF_AR_GENES_ALL.out.versions)*/
 
         // Running gamma to identify Cdiff specific AR genes in scaffolds
         CDIFF_AR_GENES_AA (

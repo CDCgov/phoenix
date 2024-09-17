@@ -13,9 +13,6 @@ process CDIFF_TOXINOTYPER {
     tuple val(meta), path("*.psl"), emit: tox_psl_file
     path "versions.yml"           , emit: versions
 
-    when:
-    task.ext.when == null || task.ext.when
-
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.

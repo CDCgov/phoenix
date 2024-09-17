@@ -77,6 +77,37 @@ def create_meta(input_ch) {
     return array
 }
 
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            try {
+                if (line.startsWith("G:")) {
+                    genus = line.split(":")[1].trim().split('\t')[1]
+                } else if (line.startsWith("s:")) {
+                    species = line.split(":")[1].trim().split('\t')[1]
+                }
+            } catch (IndexOutOfBoundsException e) {
+                // Handle specific "Index 1 out of bounds for length 1" error
+                if (e.message.contains("Index 1 out of bounds for length 1")) {
+                    if (line.startsWith("G:")) {
+                        // Use the fallback logic if accessing index 1 fails
+                        genus = line.split(":")[1].trim()
+                    } else if (line.startsWith("s:")) {
+                        species = line.split(":")[1].trim()
+                    }
+                } else {
+                    // Re-throw or handle other IndexOutOfBoundsExceptions if necessary
+                    println "Unexpected IndexOutOfBoundsException: ${e.message}"
+                }
+        } catch (Exception e) {
+            // Catch any other exceptions that might occur
+            println "An unexpected error occurred: ${e.message}"
+        }
+    }
+    return [input_ch[0], "$genus $species" ]
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -106,11 +137,13 @@ workflow RUN_CENTAR {
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
+        // run centar workflow
         CENTAR_SUBWORKFLOW (
             CREATE_INPUT_CHANNELS.out.combined_mlst,
             CREATE_INPUT_CHANNELS.out.fairy_outcome,
             CREATE_INPUT_CHANNELS.out.filtered_scaffolds,
-            ASSET_CHECK.out.mlst_db
+            ASSET_CHECK.out.mlst_db,
+            CREATE_INPUT_CHANNELS.out.taxonomy
         )
         ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
 
@@ -150,9 +183,8 @@ workflow RUN_CENTAR {
         )
 
     emit:
-        griphin_tsv      = GRIPHIN.out.griphin_tsv_report
-        griphin_excel    = GRIPHIN.out.griphin_report
-
+        griphin_tsv   = GRIPHIN.out.griphin_tsv_report
+        griphin_excel = GRIPHIN.out.griphin_report
 }
 
 /*
