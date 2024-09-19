@@ -146,12 +146,9 @@ workflow RUN_CENTAR {
         )
         ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
 
-        // Extract the list of project folders from input_dir channel
-        project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map { it[1] }.collect().toList()
-
         // get summary lines and directory information to make sure all samples for a particular project folder stay together. 
         summaries_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.collect()
-            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [[project_id:meta.project_id], dir]}, by: [0])
+            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{     meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])
             .map { it -> filter_out_meta(it) }
 
         // Combining sample summaries into final report
@@ -161,10 +158,11 @@ workflow RUN_CENTAR {
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         // collect centar output and summary lines to make the griphin report
-        griphin_input = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
-            .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> [[project_id:meta.project_id], consolidated_file]}.groupTuple(by: [0]), by: [0])\
-            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [[project_id:meta.project_id], dir]}, by: [0])
-        // separate the summary and centar files from dir
+        griphin_input = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary      -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
+            .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{  meta, consolidated_file -> [[project_id:meta.project_id], consolidated_file]}.groupTuple(by: [0]), by: [0])\
+            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{      meta, dir               -> [[project_id:meta.project_id], dir]}, by: [0])
+
+       // separate the summary and centar files from dir
         griphin_input_ch = griphin_input.map{meta, summary_line, centar_files, dir -> [summary_line, centar_files].flatten()}
         // get project dir - indir
         griphin_dir_path = griphin_input.map{meta, summary_line, centar_files, dir -> [dir]}

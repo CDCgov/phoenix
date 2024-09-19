@@ -1,12 +1,13 @@
 //
 // workflow handles taking in either a samplesheet or directory and creates correct channels for scaffolds entry point
 //
-
-include { SAMPLESHEET_CHECK as SAMPLESHEET_CHECK          } from '../../modules/local/samplesheet_check'
-include { CREATE_SAMPLESHEET as CREATE_SAMPLESHEET        } from '../../modules/local/create_samplesheet'
 // for centar entry
 include { SAMPLESHEET_CHECK as CENTAR_SAMPLESHEET_CHECK   } from '../../modules/local/samplesheet_check'
 include { CREATE_SAMPLESHEET as CENTAR_CREATE_SAMPLESHEET } from '../../modules/local/create_samplesheet'
+// for cdc_phoenix, phoenix entry
+include { SAMPLESHEET_CHECK as SAMPLESHEET_CHECK          } from '../../modules/local/samplesheet_check'
+include { CREATE_SAMPLESHEET as CREATE_SAMPLESHEET        } from '../../modules/local/create_samplesheet'
+
 include { COLLECT_SAMPLE_FILES  }                           from '../../modules/local/updater/collect_sample_files'
 include { COLLECT_PROJECT_FILES }                           from '../../modules/local/updater/collect_project_files'
 include { CREATE_FAIRY_FILE     }                           from '../../modules/local/updater/create_fairy_file'
@@ -337,7 +338,6 @@ workflow CREATE_INPUT_CHANNELS {
         directory_ch       = directory_ch
         valid_samplesheet  = valid_samplesheet
         versions           = ch_versions
-        directory_ch       = directory_ch
         pipeline_info      = pipeline_info_ch
 
         // sample specific files
@@ -429,8 +429,10 @@ def create_summary_files_channels(LinkedHashMap row) {
 def create_dir_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-1]
-    return [ meta, row.directory ]
+    meta.project_id = row.directory.toString().split('/')[-2]
+    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    def cleaned_path = new File(clean_path).getParent()
+    return [ meta, cleaned_path ]
 }
 
 def add_entry_meta(input_ch){
