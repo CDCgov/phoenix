@@ -10,6 +10,10 @@
 
 nextflow.enable.dsl = 2
 
+// ANSI escape code for orange (bright yellow)
+def orange = '\033[38;5;208m'
+def reset = '\033[0m'
+
 /*
 ========================================================================================
     VALIDATE & PRINT PARAMETER SUMMARY
@@ -354,7 +358,6 @@ workflow CLIA {
 //
 
 workflow UPDATE_PHOENIX {
-
     //Regardless of what is passed outdir needs to be the same as the input dir 
     //if you don't pass outdir then the indir
     //if (params.outdir == "${launchDir}/phx_output" ) { params.outdir = params.indir } else { println("You didn't specify an outdir so phx assumes its the same as the indir.") }
@@ -406,8 +409,7 @@ workflow UPDATE_PHOENIX {
 // WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
 
-workflow CENTAR {
-
+/*workflow CENTAR {
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
     // Check input path parameters to see if they exist
@@ -421,6 +423,8 @@ workflow CENTAR {
             ch_input_indir = null //keep input directory null if not passed
             // get full path for input and make channel
             if (params.input) { ch_input = file(params.input) }
+            // Allow outdir to be relative
+            outdir = Channel.fromPath(params.outdir, relative: true)
         }
     } else {
         if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
@@ -433,19 +437,26 @@ workflow CENTAR {
             } else {
                 exit 1, 'You passed a file with --indir and a directory is required. Or use --input'
             }
+            if (params.outdir == "${launchDir}/phx_output" ) { 
+                outdir = params.indir
+                println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${outdir}.${reset}")
+            } else {
+                // Allow outdir to be relative
+                outdir = Channel.fromPath(params.outdir, relative: true)
+            }
         } else { // if no samplesheet is passed and no input directory is given
             exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
     main:
-        RUN_CENTAR ( ch_input, ch_input_indir, ch_versions )
+        RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
 
     emit:
         //output for phylophoenix
         griphin_tsv      = RUN_CENTAR.out.griphin_tsv
         griphin_excel    = RUN_CENTAR.out.griphin_excel
-}
+}*/
 
 /*
 ========================================================================================

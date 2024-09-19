@@ -384,7 +384,7 @@ workflow PHOENIX_EXQC {
                 SCAFFOLD_COUNT_CHECK.out.outcome.map{it -> add_project_id(it)},
                 filtered_scaffolds_ch.map{it -> add_project_id(it)},
                 ASSET_CHECK.out.mlst_db,
-                DETERMINE_TAXA_ID.out.taxonomy
+                DETERMINE_TAXA_ID.out.taxonomy.map{it -> add_project_id(it)}
             )
             ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
         }

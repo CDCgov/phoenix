@@ -94,15 +94,10 @@ workflow CENTAR_SUBWORKFLOW {
         .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\
         .join(cdiff_check, by: [[0][0],[0][1]]).filter{meta, filtered_scaffolds, fairy_outcome, taxa_id -> taxa_id == "Clostridioides difficile" }.map{ meta, filtered_scaffolds, fairy_outcome, taxa_id -> [meta, filtered_scaffolds, fairy_outcome]}
 
-        //fairy_outcome.splitCsv(strip:true, by:5).view()
-        //filtered_scaffolds_ch.view()
-
         CDIFF_PLASMIDS (
             filtered_scaffolds_ch, params.cdiff_plasmid_db
         )
         ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)
-
-        //CDIFF_PLASMIDS.out.plasmids_file.view()
 
         // Running gamma to identify toxin genes in scaffolds for general presence
         CDIFF_TOX_GENES (

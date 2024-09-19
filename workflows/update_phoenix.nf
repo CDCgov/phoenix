@@ -116,7 +116,7 @@ workflow UPDATE_PHOENIX_WF {
         kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
         CREATE_INPUT_CHANNELS (
-            ch_input_indir, ch_input, ch_versions
+            ch_input_indir, ch_input, update
         )
         ch_versions = ch_versions.mix(CREATE_INPUT_CHANNELS.out.versions)
 

@@ -47,7 +47,7 @@ include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_st
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { CUSTOM_DUMPSOFTWAREVERSIONS as CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
 /*
 ========================================================================================
@@ -119,15 +119,14 @@ workflow RUN_CENTAR {
         ch_input
         ch_input_indir
         ch_versions
+        outdir_path
 
     main:
-        // Allow outdir to be relative
-        outdir_path = Channel.fromPath(params.outdir, relative: true)
         // Allow relative paths for krakendb argument
         kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
         CREATE_INPUT_CHANNELS (
-            ch_input_indir, ch_input, ch_versions
+            ch_input_indir, ch_input, true
         )
         ch_versions = ch_versions.mix(CREATE_INPUT_CHANNELS.out.versions)
 
@@ -178,7 +177,7 @@ workflow RUN_CENTAR {
 
         /// need to figure out how to do this on a per directory 
         // Collecting the software versions
-        CUSTOM_DUMPSOFTWAREVERSIONS (
+        CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
             ch_versions.unique().collectFile(name: 'collated_versions.yml')
         )
 
