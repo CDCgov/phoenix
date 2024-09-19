@@ -409,7 +409,7 @@ workflow UPDATE_PHOENIX {
 // WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
 
-/*workflow CENTAR {
+workflow CENTAR {
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
     // Check input path parameters to see if they exist
@@ -456,7 +456,7 @@ workflow UPDATE_PHOENIX {
         //output for phylophoenix
         griphin_tsv      = RUN_CENTAR.out.griphin_tsv
         griphin_excel    = RUN_CENTAR.out.griphin_excel
-}*/
+}
 
 /*
 ========================================================================================
