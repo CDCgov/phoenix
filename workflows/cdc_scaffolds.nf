@@ -309,7 +309,8 @@ workflow SCAFFOLDS_EXQC {
                 DO_MLST.out.checked_MLSTs.map{it -> add_project_id(it)},
                 SCAFFOLD_COUNT_CHECK.out.outcome.map{it -> add_project_id(it)},
                 filtered_scaffolds_ch.map{it -> add_project_id(it)},
-                ASSET_CHECK.out.mlst_db
+                ASSET_CHECK.out.mlst_db,
+                DETERMINE_TAXA_ID.out.taxonomy.map{it -> add_project_id(it)}
             )
             ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
         }
@@ -419,7 +420,7 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         GRIPHIN (
-            summaries_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false
+            summaries_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, "--scaffolds", false, true, false
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
