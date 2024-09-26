@@ -16,6 +16,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
 from Bio import SeqIO
 from itertools import chain
+from pathlib import Path
 from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value
 
 # Set display options to show all rows and columns
@@ -50,18 +51,24 @@ CRED = '\033[91m'+'\nWarning: '
 CEND = '\033[0m'
 
 def Get_Parent_Folder(directory):
+    print("UNGA:", directory)
     '''getting project and parent_folder info from the paths'''
     #Project - parent folder (first folder that is in the outdir)
     #relative/submission - rest of the path
     #first make sure we have an absolute path
     directory = os.path.abspath(directory)
     #handing if trailing backslash isn't in there.
-    if directory[-1] != "/": 
-        directory = directory + "/"
+    #if directory[-1] != "/": 
+    #    directory = directory + "/"
+    if directory[-1] == "\\":
+        directory = directory[::-1]
+    path=Path(directory)
+    project=os.path.basename(os.path.dirname(directory))
     # get project from directory path
-    project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
+    #project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
+    parent_folder=path.parent.parent.absolute()
     # get everything after CEMB
-    parent_folder = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
+    #parent_folder = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
     return project, parent_folder
 
 def make_ar_dictionary(ar_db):
@@ -1326,6 +1333,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
         worksheet.conditional_format('Y3:Z' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
         #worksheet.set_column('W:X', None, number_dec_2_format) # FastANI ID and Coverage
     # getting values to set column widths automatically
+    # print(list(df.columns))
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
         #print(series)  # uncomment this to see what the issue is with the "mad" error
@@ -1574,9 +1582,16 @@ def main():
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
+        #cou=0
+        #for i in centar_dfs:
+        #    print("0-"+str(cou), i)
+        #    cou+=1
         full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
+        #print("A", list(full_centar_df.columns))
         ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
         centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
+        #print("B", ordered_centar_df.columns)
+        #print("C", centar_df_lens)
         # combing centar with phx qc information
         df = pd.concat([df, ordered_centar_df], axis=1)
     else:

@@ -48,6 +48,10 @@ def clean_and_format_centar_dfs(centar_df):
     other_Tox_len = len(other_Tox_col)
     mutants = [ 'gyr','dac','feo','fur','gdp','gly','hem','hsm','Isc','mur', 'mur','nifJ','PNim','rpo','sda','thi','Van','mutations' ]
     mutations_col = [col for col in clean_centar_df.columns if any(substring in col for substring in mutants) ]
+    if 'tcdC other mutations' in mutations_col:
+        mutations_col.remove('tcdC other mutations')
+    if 'cdtR other mutations' in mutations_col:
+        mutations_col.remove('cdtR other mutations')
     mutant_len = len(mutations_col)
     existing_columns_in_order = ["MLST Clade"] + A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col
     if clean_centar_df.empty: #for cases where centar wasn't run for that sample - not c. diff or a qc failure sample

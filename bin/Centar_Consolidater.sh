@@ -1301,7 +1301,7 @@ if [[ -f "${aa_mut_file}" ]]; then
             #echo "Checking $i against ${gene_section}"
             if [[ "${gene_section}" == *"${i}"* ]]; then
                 aa_mut_line="${var}"
-                all_muts=$(clean_mut "${AA_mut_line}")
+                all_muts=$(clean_mut "${aa_mut_line}")
                 if [[ "${all_muts}" = "No coding mutations" ]]; then
                     all_muts=""
                 fi
