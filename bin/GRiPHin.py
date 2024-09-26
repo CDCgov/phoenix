@@ -51,15 +51,12 @@ CRED = '\033[91m'+'\nWarning: '
 CEND = '\033[0m'
 
 def Get_Parent_Folder(directory):
-    print("UNGA:", directory)
     '''getting project and parent_folder info from the paths'''
     #Project - parent folder (first folder that is in the outdir)
     #relative/submission - rest of the path
     #first make sure we have an absolute path
     directory = os.path.abspath(directory)
     #handing if trailing backslash isn't in there.
-    #if directory[-1] != "/": 
-    #    directory = directory + "/"
     if directory[-1] == "\\":
         directory = directory[::-1]
     path=Path(directory)
