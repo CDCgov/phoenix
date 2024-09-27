@@ -114,13 +114,9 @@ def get_taxa(input_ch){
 }
 
 def add_project_id(old_meta, input_ch, outdir_path){
-    println(old_meta.id) 
-    println(input_ch)
-    println(outdir_path)
     def meta = [:] // create meta array
     meta.id = old_meta.id
     meta.project_id = outdir_path
-    println([meta, input_ch])
     return [meta, input_ch]
 }
 

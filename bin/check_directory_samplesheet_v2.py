@@ -120,6 +120,7 @@ def check_samplesheet(file_in, file_out):
             try:
                 full_path = path + "/file_integrity/"
                 fairy_file = glob.glob(path + "/file_integrity/" + sample_name + "*summary.txt")[0]
+                print(f"fairy_file found at " + fairy_file)
                 # check that the sample did not fail the file_integrity check
                 with open(fairy_file, 'r') as file:
                     for line in file:
@@ -196,7 +197,6 @@ def main(args=None):
     args = parse_args(args)
     check_for_duplicates(args.FILE_IN)
     check_samplesheet(args.FILE_IN, args.FILE_OUT)
-
 
 if __name__ == "__main__":
     sys.exit(main())
