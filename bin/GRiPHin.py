@@ -1592,8 +1592,9 @@ def main():
         # combing centar with phx qc information
         df = pd.concat([df, ordered_centar_df], axis=1)
     else:
-        ordered_centar_df = None
-        centar_df_lens = None
+        ordered_centar_df = pd.DataFrame()
+        A_B_Tox_len = other_Tox_len = mutant_len = RB_type_len = 0
+        centar_df_lens = 0
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column

@@ -21,6 +21,7 @@ process CDIFF_CLADE {
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     def container_version = "base_v2.1.0"
+    //def outdir_path = meta.project_id
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}get_Cdiff_clade.sh \\

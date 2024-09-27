@@ -242,7 +242,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             // pulling all the necessary project level files into channels - need to do this for the name change.
             COLLECT_PROJECT_FILES (
-                summary_files_ch
+                summary_files_ch, false
             )
             ch_versions = ch_versions.mix(COLLECT_PROJECT_FILES.out.versions)
 
@@ -314,7 +314,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
-                summary_files_ch
+                summary_files_ch, true
             )
             ch_versions = ch_versions.mix(COLLECT_PROJECT_FILES.out.versions)
 
@@ -331,10 +331,10 @@ workflow CREATE_INPUT_CHANNELS {
 
     emit:
         //project level summary files
-        griphin_excel_ch = griphin_excel_ch
-        griphin_tsv_ch = griphin_tsv_ch
-        phoenix_tsv_ch = phoenix_tsv_ch
-        pipeline_info_ch = pipeline_info_ch
+        griphin_excel_ch   = griphin_excel_ch
+        griphin_tsv_ch     = griphin_tsv_ch
+        phoenix_tsv_ch     = phoenix_tsv_ch
+        pipeline_info_ch   = pipeline_info_ch
         directory_ch       = directory_ch
         valid_samplesheet  = valid_samplesheet
         versions           = ch_versions
@@ -368,13 +368,15 @@ workflow CREATE_INPUT_CHANNELS {
 def check_file_integrity(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-2]
+    //meta.project_id = row.directory.toString().split('/')[-2]
+    //meta.project_id = row.directory
     def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    meta.project_id = new File(clean_path).getParent()
     def pattern = "*_summary.txt"
     // Convert the wildcard pattern to regex: "*_summary.txt" to ".*_summary\.txt"
     def regexPattern = pattern.replace("*", ".*").replace("?", ".")
     File dir = new File(clean_path + "/file_integrity/")
-     // List files matching the regex pattern
+    // List files matching the regex pattern
     def files = dir.listFiles { file -> file.name ==~ /${regexPattern}/ }
     if (files && files.length > 0) {
         return [ meta, clean_path, true ]
@@ -388,7 +390,7 @@ def get_ids(dir) {
     List<String> dirNames = []
 
     // Define the directories to be excluded
-    List<String> excludeDirs = ['multiqc', 'pipeline_info']
+    List<String> excludeDirs = ['multiqc', 'pipeline_info', 'centar_pipeline_info']
 
     // Check if the path is indeed a directory
     if (dir.isDirectory()) {
@@ -415,12 +417,14 @@ def modifiedFileChannel(input_ch, old_string, new_string) {
 def create_summary_files_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-2]
+    def project_id = row.directory.toString().split('/')[-2]
+    //meta.project_id = row.directory
     def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
     def cleaned_path = new File(clean_path).getParent()
+    meta.project_id = cleaned_path
     def software_versions = cleaned_path + "/pipeline_info/"
-    def griphin_summary_tsv = cleaned_path + "/" + meta.project_id + "_GRiPHin_Summary.tsv"
-    def griphin_summary_excel = cleaned_path + "/" + meta.project_id +  "_GRiPHin_Summary.xlsx"
+    def griphin_summary_tsv = cleaned_path + "/" + project_id + "_GRiPHin_Summary.tsv"
+    def griphin_summary_excel = cleaned_path + "/" + project_id +  "_GRiPHin_Summary.xlsx"
     def phx_summary = cleaned_path + "/Phoenix_Summary.tsv"
     return [ meta, griphin_summary_excel, griphin_summary_tsv, phx_summary, software_versions ]
 }
@@ -429,9 +433,11 @@ def create_summary_files_channels(LinkedHashMap row) {
 def create_dir_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-2]
+    //meta.project_id = row.directory.toString().split('/')[-2]
+    //meta.project_id = row.directory
     def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
     def cleaned_path = new File(clean_path).getParent()
+    meta.project_id = cleaned_path
     return [ meta, cleaned_path ]
 }
 
@@ -461,8 +467,10 @@ def create_groups_id_and_busco(input_ch, project_folder){
 def create_sample_dir_channels(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
-    meta.project_id = row.directory.toString().split('/')[-2]
+    //meta.project_id = row.directory.toString().split('/')[-2]
+    //meta.project_id = row.directory
     def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
+    meta.project_id = new File(clean_path).getParent()
     return [ meta, clean_path ]
 }
 

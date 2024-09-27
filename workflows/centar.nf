@@ -21,12 +21,12 @@ def multiqc_report = []
 ========================================================================================
 */
 
-include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
-include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { GRIPHIN                        } from '../modules/local/griphin'
-include { UPDATE_GRIPHIN                 } from '../modules/local/updater/update_griphin'
+include { ASSET_CHECK                                         } from '../modules/local/asset_check'
+include { CREATE_SUMMARY_LINE                                 } from '../modules/local/phoenix_summary_line'
+include { FETCH_FAILED_SUMMARIES                              } from '../modules/local/fetch_failed_summaries'
+include { GATHER_SUMMARY_LINES as CENTAR_GATHER_SUMMARY_LINES } from '../modules/local/phoenix_summary' // calling it centar so output can stay together. 
+include { GRIPHIN as CENTAR_GRIPHIN                           } from '../modules/local/griphin' // calling it centar so output can stay together.
+include { UPDATE_GRIPHIN                                      } from '../modules/local/updater/update_griphin' 
 
 /*
 ========================================================================================
@@ -47,7 +47,7 @@ include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_st
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { CUSTOM_DUMPSOFTWAREVERSIONS as CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { CUSTOM_DUMPSOFTWAREVERSIONS as CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_centar'
 
 /*
 ========================================================================================
@@ -75,37 +75,6 @@ def create_meta(input_ch) {
     meta.project_id = input_ch.getName().replaceAll("_GRiPHin_Summary.xlsx", "")
     array = [ meta, input_ch ]
     return array
-}
-
-def get_taxa(input_ch){ 
-        def genus = ""
-        def species = ""
-        input_ch[1].eachLine { line ->
-            try {
-                if (line.startsWith("G:")) {
-                    genus = line.split(":")[1].trim().split('\t')[1]
-                } else if (line.startsWith("s:")) {
-                    species = line.split(":")[1].trim().split('\t')[1]
-                }
-            } catch (IndexOutOfBoundsException e) {
-                // Handle specific "Index 1 out of bounds for length 1" error
-                if (e.message.contains("Index 1 out of bounds for length 1")) {
-                    if (line.startsWith("G:")) {
-                        // Use the fallback logic if accessing index 1 fails
-                        genus = line.split(":")[1].trim()
-                    } else if (line.startsWith("s:")) {
-                        species = line.split(":")[1].trim()
-                    }
-                } else {
-                    // Re-throw or handle other IndexOutOfBoundsExceptions if necessary
-                    println "Unexpected IndexOutOfBoundsException: ${e.message}"
-                }
-        } catch (Exception e) {
-            // Catch any other exceptions that might occur
-            println "An unexpected error occurred: ${e.message}"
-        }
-    }
-    return [input_ch[0], "$genus $species" ]
 }
 
 /*
@@ -152,10 +121,10 @@ workflow RUN_CENTAR {
             .map { it -> filter_out_meta(it) }
 
         // Combining sample summaries into final report
-        GATHER_SUMMARY_LINES (
+        CENTAR_GATHER_SUMMARY_LINES (
             summaries_ch.map{ summary_line, dir -> summary_line}, summaries_ch.map{ summary_line, dir -> dir}, true
         )
-        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
+        ch_versions = ch_versions.mix(CENTAR_GATHER_SUMMARY_LINES.out.versions)
 
         // collect centar output and summary lines to make the griphin report
         griphin_input = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary      -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
@@ -168,20 +137,20 @@ workflow RUN_CENTAR {
         griphin_dir_path = griphin_input.map{meta, summary_line, centar_files, dir -> [dir]}
 
         //create GRiPHin report
-        GRIPHIN (
+        CENTAR_GRIPHIN (
             griphin_input_ch, CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, griphin_dir_path, params.coverage, false, false, false, true
         )
-        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
+        ch_versions = ch_versions.mix(CENTAR_GRIPHIN.out.versions)
+
+        // to be able to create software_versions.yml 
+        software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
+        .combine(CENTAR_GRIPHIN.out.griphin_report).map{version, meta_file, griphin -> [meta_file.splitText().first().trim(), version]}
 
         /// need to figure out how to do this on a per directory 
         // Collecting the software versions
         CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-            ch_versions.unique().collectFile(name: 'collated_versions.yml')
+            software_versions_ch
         )
-
-    emit:
-        griphin_tsv   = GRIPHIN.out.griphin_tsv_report
-        griphin_excel = GRIPHIN.out.griphin_report
 }
 
 /*
@@ -195,7 +164,7 @@ if (params.ica==false) {
     workflow.onComplete {
         if (count == 0) {
             if (params.email || params.email_on_fail) {
-                NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
+                NfcoreTemplate.centar_email(workflow, params, summary_params, projectDir, log, multiqc_report)
             }
             NfcoreTemplate.summary(workflow, params, log)
             count++

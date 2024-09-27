@@ -113,11 +113,15 @@ def get_taxa(input_ch){
         return "$genus $species"
 }
 
-def add_project_id(input_ch){
+def add_project_id(old_meta, input_ch, outdir_path){
+    println(old_meta.id) 
+    println(input_ch)
+    println(outdir_path)
     def meta = [:] // create meta array
-    meta.id = input_ch[0].id
-    meta.project_id = "group_1" //just making a project id for
-    return [meta, input_ch[1]]
+    meta.id = old_meta.id
+    meta.project_id = outdir_path
+    println([meta, input_ch])
+    return [meta, input_ch]
 }
 
 /*
@@ -337,8 +341,8 @@ workflow PHOENIX_EXQC {
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
         top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}\
-        .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{              meta, top_taxa_list      -> [[id:meta.id], top_taxa_list ]}, by: [0])\
-        .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{              meta, reference_dir      -> [[id:meta.id], reference_dir ]}, by: [0])
+        .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{         meta, top_taxa_list      -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+        .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{         meta, reference_dir      -> [[id:meta.id], reference_dir ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -380,11 +384,11 @@ workflow PHOENIX_EXQC {
 
             // centar subworkflow requires project_ID as part of the meta
             CENTAR_SUBWORKFLOW (
-                DO_MLST.out.checked_MLSTs.map{it -> add_project_id(it)},
-                SCAFFOLD_COUNT_CHECK.out.outcome.map{it -> add_project_id(it)},
-                filtered_scaffolds_ch.map{it -> add_project_id(it)},
+                DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
+                SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
+                BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
                 ASSET_CHECK.out.mlst_db,
-                DETERMINE_TAXA_ID.out.taxonomy.map{it -> add_project_id(it)}
+                DETERMINE_TAXA_ID.out.taxonomy.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
             )
             ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
         }

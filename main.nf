@@ -425,6 +425,13 @@ workflow CENTAR {
             if (params.input) { ch_input = file(params.input) }
             // Allow outdir to be relative
             outdir = Channel.fromPath(params.outdir, relative: true)
+            /*if (params.outdir == "${launchDir}/phx_output" ) { 
+                outdir = params.indir
+                println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${outdir}.${reset}")
+            } else {
+                // Allow outdir to be relative
+                outdir = Channel.fromPath(params.outdir, relative: true)
+            }*/
         }
     } else {
         if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
@@ -451,11 +458,6 @@ workflow CENTAR {
 
     main:
         RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
-
-    emit:
-        //output for phylophoenix
-        griphin_tsv      = RUN_CENTAR.out.griphin_tsv
-        griphin_excel    = RUN_CENTAR.out.griphin_excel
 }
 
 /*

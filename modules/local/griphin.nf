@@ -16,10 +16,10 @@ process GRIPHIN {
     val(run_centar)
 
     output:
-    path("*_GRiPHin*.xlsx"),                 emit: griphin_report
-    path("*_GRiPHin*.tsv"),                  emit: griphin_tsv_report
-    path("Directory_samplesheet.csv"),       emit: converted_samplesheet
-    path("versions.yml"),                    emit: versions
+    tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), emit: griphin_report
+    path("*_GRiPHin*.tsv"),                                    emit: griphin_tsv_report
+    path("Directory_samplesheet.csv"),                         emit: converted_samplesheet
+    path("versions.yml"),                                      emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -35,6 +35,9 @@ process GRIPHIN {
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     full_path=\$(readlink -f ${outdir})
+
+    # Save the value of full_path to a file (this file will be captured in the output block)
+    echo \$full_path > full_path_file.txt
 
     ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${centar} ${scaffolds}
 
