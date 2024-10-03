@@ -1262,7 +1262,7 @@ fi
 
 #declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [lscR]="V76A" [murG]="P109L" [nifJ]="G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I" [gyrA]="A117S A118S A118T A384D A92E D103N D71G D71V D81N E123K L345I P116A R90K T82A T82I T82V V43D" [gyrB]="D426N D426V E466K E466V I139R L444F Q434K R377G R447K R447L S366V S464T V130I")
 #declare -A NT_POINTS=( [feoB]="117DelA 1__bp__Deletion__at__119" [hemN]="Y214Stop 1__bp__Deletion__at__641" [hsmA]="372DelA 1__bp__Deletion__at__371" [lscR]="153DelA 1__bp__Deletion__at__152" [marR]="349DelT 1__bp__Deletion__at__355" [PNimB]="T115G" [sdaB]="883DelGCA 879DelACG 3__bp__Deletion__at__886" )
-declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [lscR]="V76A" [murG]="P109L" [nifJ]="G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I" [gyrA]="A117S A118S A118T A384D A92E D103N D71G D71V D81N E123K L345I P116A R90K T82A T82I T82V V43D" [gyrB]="D426N D426V E466K E466V I139R L444F Q434K R377G R447K R447L S366V S464T V130I" [feoB]="117DelA 1__bp__Deletion__at__120" [hemN]="Y214Stop 1__bp__Deletion__at__642" [hsmA]="372DelA 1__bp__Deletion__at__372" [lscR]="153DelA 1__bp__Deletion__at__153" [marR]="349DelT 1__bp__Deletion__at__356" [sdaB]="883DelGCA 879DelACG 3__bp__Deletion__at__887")
+declare -A AA_POINTS=( [dacS]="E238D V183A" [fur]="E41K" [gdpP]="E328Stop truncation__at__codon__328__(of__665__codons)" [glyC]="A229T" [murG]="P109L" [nifJ]="Q803R G423E" [rpoB]="V1143D V1143F V1143G V1143L Q1074R Q1074H Q1074K" [rpoC]="D245Y D1127E D237Y Q781R R89G" [thiH]="S328F" [vanR]="T115A" [vanS]="G319D R314L R314H S313F T349I" [gyrA]="A117S A118S A118T A384D A92E D103N D71G D71V D81N E123K L345I P116A R90K T82A T82I T82V V43D" [gyrB]="D426N D426V E466K E466V I139R L444F Q434K R377G R447K R447L S366V S464T V130I" [feoB]="117DelA 1__bp__Deletion__at__120" [hemN]="Y214Stop 1__bp__Deletion__at__642" [hsmA]="372DelA 1__bp__Deletion__at__372" [lscR]="V76A 153DelA 1__bp__Deletion__at__153" [marR]="349DelT 1__bp__Deletion__at__356" [sdaB]="883DelGCA 879DelACG 3__bp__Deletion__at__887")
 declare -A NT_POINTS=(  [PNimB]="T115G" )
 
 
@@ -1330,9 +1330,9 @@ if [[ -f "${aa_mut_file}" ]]; then
                 known_muts=()
                 other_muts=()
                 if [[ "${matchtype}" = "Truncation" ]] || [[ "${matchtype}" = "Indel Truncation" ]]; then
-                    known_muts[0]="TRUNC:CODON[${line_IDAA}AA]"
+                    other_muts[0]="TRUNC:CODON[${line_IDAA}AA]"
                 elif [[ "${line_length}" -le 90 ]]; then
-                    known_muts[0]="TRUNC:LENGTH<90[${line_length}COV]"
+                    other_muts[0]="TRUNC:LENGTH<90[${line_length}COV]"
                 fi
                 for j in "${mut_array[@]}"; do
                     added="False"
@@ -1495,7 +1495,7 @@ if [[ -f "${nt_mut_file}" ]]; then
                 known_muts=()
                 other_muts=()
                 if [[ "${line_length}" -le 90 ]]; then
-                    known_muts[0]="TRUNC:LENGTH<90[${line_length}COV]"
+                    other_muts[0]="TRUNC:LENGTH<90[${line_length}COV]"
                 fi
                 for j in "${mut_array[@]}"; do
                     added="False"
