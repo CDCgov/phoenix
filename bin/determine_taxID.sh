@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 #
 # Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.kraken2 assembly 3.kraken2 reads
 # 	The taxon is chosen based on the highest ranked classifier first
@@ -189,7 +189,8 @@ if [[ -n ${species} ]]; then
 		species="${species/sp./sp. }"
 	fi
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
-	#echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
+	species_taxID=0
+	echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
 	IFS=$'\n'
 	for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
 		taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
@@ -220,7 +221,7 @@ fi
 
 
 # See if we can at least start at genus level to fill in upper taxonomy
-if [[ -z "${species_taxID}" ]]; then
+if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
 	# Check if genus was assigned
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
 	#echo "${Genus} - zgrep '	|	${Genus}	|	${names}'"
@@ -252,14 +253,18 @@ declare -A tax_name_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA
 
 echo "${species_taxID}-${genus_taxID}"
 
-if [[ -z "${species_taxID}" ]]; then
+if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
 	if [[ -z "${genus_taxID}" ]]; then
 		echo -e "${source}	${confidence_index}	${source_file}\nK:	Unknown\nP:	Unknown\nC:	Unknown\nO:	Unknown\nF:	Unknown\nG:	Unknown\ns:	Unknown\n" > "${sample_name}.tax"
 		exit
 	else
 		max_counter=6
 		taxID_list[species]=0
-		tax_name_list[species]="Unknown"
+		if [[ -z "${species}" ]]; then
+			tax_name_list[species]="Unknown"
+		else
+			tax_name_list[species]="${species}"
+		fi
 		taxID="${genus_taxID}"
 	fi
 else
