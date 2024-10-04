@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #
 # Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.kraken2 assembly 3.kraken2 reads
 # 	The taxon is chosen based on the highest ranked classifier first
@@ -190,7 +190,7 @@ if [[ -n ${species} ]]; then
 	fi
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
 	species_taxID=0
-	echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
+	#echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
 	IFS=$'\n'
 	for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
 		taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
@@ -205,7 +205,7 @@ if [[ -n ${species} ]]; then
 	if [[ "${genus_taxID}" != "Not_needed,species_found" ]]; then
 		echo "No species match found converting - to space and trying again."
 		species="${species//-/ }"
-		echo $species
+		#echo $species
 		for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
 			taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
 			name=$(echo "${name_line}" | cut -d$'\t' -f3)
@@ -251,7 +251,7 @@ taxa_indices=( "kingdom" "phylum" "class" "order" "family" "genus" "species")
 declare -A taxID_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 declare -A tax_name_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 
-echo "${species_taxID}-${genus_taxID}"
+#echo "${species_taxID}-${genus_taxID}"
 
 if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
 	if [[ -z "${genus_taxID}" ]]; then
