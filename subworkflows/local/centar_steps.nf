@@ -78,13 +78,12 @@ workflow CENTAR_SUBWORKFLOW {
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
         ch_versions = Channel.empty() // Used to collect the software versions
-        mlst_db_value=mlst_db.first()
 
         // Check the taxa file to confirm the organism is Clostridioides difficile
         cdiff_check = taxonomy.map{it -> get_taxa(it)} // get organism from file
 
         CDIFF_CLADE (
-            combined_mlst.join(cdiff_check, by: [[0][0],[0][1]]), mlst_db_value
+            combined_mlst.join(cdiff_check, by: [[0][0],[0][1]]), mlst_db
         )
         ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
 
@@ -150,7 +149,7 @@ workflow CENTAR_SUBWORKFLOW {
             ribotype_file_ch = CDIFF_RIBOTYPER.out.ribotype_file
 
         } else {
-            //create an empty channel for ribotyper if it is not run
+            //create an empty channel for ribotyper if it is not run -- this causes a failure right now
             ribotype_file_ch = combined_mlst.map{ it -> create_empty_ch(it)}
         }
 

@@ -10,7 +10,7 @@ process CENTAR_CONSOLIDATER {
     path(toxinotype_file), 
     path(other_AR_AA_file),
     path(other_AR_NT_file), 
-    path(plasmids_file),
+    path(plasmids_file), 
     path(rt_file)
     path(st_rt_xwalk)
 

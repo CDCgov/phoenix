@@ -27,42 +27,56 @@ workflow CREATE_INPUT_CHANNELS {
 
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
+
+            excludedDirs = ["centar_pipeline_info", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", ".nextflow"]  // List of directories to exclude
+
+            def pattern = params.indir.toString()
+
+            // Create a channel that emits the names of all directories inside the parent directory - we will use this if no samples have a fairy file
+            dir_names_ch = indir.map{ parent -> parent.listFiles()  // Load the directory as a Path channel
+                    .findAll { it.isDirectory() && !(it.name in excludedDirs) }}.flatten().map{dir -> dir.toString().replaceFirst(pattern, '').replaceFirst("/", '')}.collect() // Filter only directories and Filter out excluded directories
+
             //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
             def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
 
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
-            passed_id_channel = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
+            passed_id_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList() 
 
-            // Check if the channel is empty and throw an error as this is required for the pipeline
-            passed_id_channel.subscribe { result -> if (result.isEmpty()) {  println("${orange}Warning: There is no files were in */file_integrity/*_*_summary.txt. This file is required so we will make it.${reset}")} }
+            // Check if the channel is empty and print warning for user as this is required for the pipeline
+            Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
+                    .subscribe { result -> if (result.isEmpty()) {  println("${orange}Warning: There is no files were in */file_integrity/*_*_summary.txt. This file is required so we will make it.${reset}")}}
+
+            // Fallback to dir_names_ch if passed_id_channel is empty
+            passed_id_channel = passed_id_ch ? dir_names_ch : passed_id_ch
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
-            all_ids = indir.map{ it -> get_ids(it) }
             // Collect all ids and combine with indir
-            file_integrity_exists_ch = all_ids.flatten().combine(indir).combine(passed_id_channel).map{ old_meta, indir, passed_id_channel -> 
+            file_integrity_exists_ch = indir.map{ it -> get_ids(it) }.flatten().combine(indir).combine(passed_id_channel).map{ tuple -> def (old_meta, indir, passed_ids) = tuple  // Safely destructure the combined tuple
                 def meta = [:]
                 meta.id = old_meta
                 def cleanPath = indir.toString().startsWith('./') ? indir.toString()[2..-1] : indir.toString()
                 def cleanerPath = cleanPath.toString().split('/')[-1]
                 meta.project_id = cleanerPath
                 def cleaned_path = new File(cleanerPath).getAbsolutePath()
-                def file_integrity_exists = passed_id_channel.contains(meta.id) // Check if the sample is in id_channel
-                return [meta, cleaned_path, file_integrity_exists]}
+                //def file_integrity_exists = (passed_id_channel ?: []).contains(meta.id) // Check if the sample is in id_channel
+                def file_integrity_exists = passed_ids.contains(meta.id)
+                return [ meta, cleaned_path, file_integrity_exists ]}
 
+            // Now that we have list of samples that need fairy files created make them
             CREATE_FAIRY_FILE (
                 file_integrity_exists_ch, true
             )
             ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
 
             // get file_integrity file for MLST updating
-            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
+            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'/file_integrity/*_summary.txt')
             //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
             glob_file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
                     .map{ it -> create_meta(it, "_summary.txt", params.indir.toString(), true)}
                     .combine(passed_id_channel).filter{ meta, file_integrity, passed_id_channel -> passed_id_channel.contains(meta.id)}
                     .map{ meta, file_integrity, passed_id_channel -> [meta, file_integrity]} //remove id_channel from output
 
-            //get all integrity files
+            //get all integrity files - ones that where already made and ones we just made.
             file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(glob_file_integrity_ch.collect().ifEmpty([])).flatten().buffer(size:2)
 
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
@@ -80,7 +94,7 @@ workflow CREATE_INPUT_CHANNELS {
                         meta.project_id = dir.toString().split('/')[-1]
                         return [meta, dir]} //even though there is only one directory we have to add this so the code works for indir and input
 
-            // Get reads
+            // Get reads -- tuple -> def (old_meta, indir, passed_ids) = tuple
             def r1_glob = append_to_path(params.indir.toString(),'*/fastp_trimd/*_1.trim.fastq.gz')
             def r2_glob = append_to_path(params.indir.toString(),'*/fastp_trimd/*_2.trim.fastq.gz')
             //create reads channel with meta information
@@ -159,7 +173,7 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ meta, ani_best_hit, all_passed_id_channel -> [meta, ani_best_hit]} //remove all_passed_id_channel from output
 
             // get .tax files for MLST updating
-            def assembly_ratio_glob = append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
+            def assembly_ratio_glob = append_to_path(params.indir.toString(),'*/_Assembly_ratio_*.txt')
             //create .tax file channel with meta information 
             filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob) // use created regrex to get samples
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
@@ -188,6 +202,11 @@ workflow CREATE_INPUT_CHANNELS {
 
             // get files for MLST updating 
             def combined_mlst_glob = append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
+
+            /*filtered_combined_mlst_ch = Channel.fromPath(combined_mlst_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, combined_mlst, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}.view()*/
+
             //create .tax file channel with meta information 
             filtered_combined_mlst_ch = Channel.fromPath(combined_mlst_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString(),false)} // create meta for sample
@@ -196,7 +215,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             /////////////////////////// COLLECT PROJECT LEVEL FILES ///////////////////////////////
 
-            def synopsis_glob = append_to_path(params.indir.toString(),'*/*.synopsis')
+            def synopsis_glob = append_to_path(params.indir.toString(),'/*.synopsis')
             synopsis_ch = Channel.fromPath(synopsis_glob) // use created regrex to get samples
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample and adding group ID
             //filtering out failured samples
@@ -390,7 +409,7 @@ def get_ids(dir) {
     List<String> dirNames = []
 
     // Define the directories to be excluded
-    List<String> excludeDirs = ['multiqc', 'pipeline_info', 'centar_pipeline_info']
+    List<String> excludeDirs = ['multiqc', 'pipeline_info', 'centar_pipeline_info', '.nextflow']
 
     // Check if the path is indeed a directory
     if (dir.isDirectory()) {
@@ -494,6 +513,11 @@ def create_groups(input_ch, project_folder){
 def get_only_passing_samples(filePaths) {
     def passingFiles = [] // Initialize an empty list to store passing file names
     filePaths.each { filePath ->
+        // Exclude file paths containing ".nextflow"
+        if (filePath.toString().contains('.nextflow')) {
+            println("Skipping: ${filePath} (contains .nextflow dir).")
+            return  // Skip this iteration
+        }
         def fileObj = new File(filePath.toString())
         if (!fileObj.text.contains('FAILED')) {
             // Get the file name by removing the path and extension
@@ -543,6 +567,15 @@ def create_meta_non_extension(sample, indir){
     '''Creating meta: [[id:sample1], $PATH/sample1.filtered.scaffolds.fa.gz]'''
     def meta = [:] // create meta array
     meta.id = sample.getSimpleName()//.split('_')[0] // get the last string after the last backslash
+    // Regex patterns to match _HyperVirulence_YYYYMMDD and _PF-Replicons_YYYYMMDD
+    def hyperVirulencePattern = /_HyperVirulence_\d{8}/
+    def pfRepliconsPattern = /_PF-Replicons_\d{8}/
+
+    // Check if the id contains either of the patterns
+    if (meta.id =~ hyperVirulencePattern || meta.id =~ pfRepliconsPattern) {
+        // Remove the pattern if it matches
+        meta.id = meta.id.replaceAll(hyperVirulencePattern, '').replaceAll(pfRepliconsPattern, '').trim()} // Trim any trailing or leading spaces
+
     meta.project_id = indir.toString().split('/')[-1]
     return [ meta, sample ]
 }

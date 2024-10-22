@@ -351,6 +351,7 @@ class NfcoreTemplate {
         colorcodes['bipurple']   = monochrome_logs ? '' : "\033[1;95m"
         colorcodes['bicyan']     = monochrome_logs ? '' : "\033[1;96m"
         colorcodes['biwhite']    = monochrome_logs ? '' : "\033[1;97m"
+        colorcodes['biorange'] = monochrome_logs ? '' : "\033[1;38;5;214m"
 
         return colorcodes
     }
@@ -360,7 +361,7 @@ class NfcoreTemplate {
     //
     public static String dashedLine(monochrome_logs) {
         Map colors = logColours(monochrome_logs)
-        return "-${colors.dim}----------------------------------------------------${colors.reset}-"
+        return "-${colors.dim}--------------------------------------------------------------------------------${colors.reset}-"
     }
 
     //
@@ -371,11 +372,14 @@ class NfcoreTemplate {
         String.format(
             """\n
             ${dashedLine(monochrome_logs)}
+            ${colors.bired}                                            ${colors.reset}
             ${colors.bired}  ___                           _____       ${colors.reset}
             ${colors.bired} |   \\  |   |   __   ___  |\\  |   |    \\  / ${colors.reset}
             ${colors.bired} |___/  |___|  /  \\ |___  | \\ |   |     \\/  ${colors.reset}
             ${colors.bired} |      |   |  \\__/ |___  |  \\| __|__  /  \\ ${colors.reset}
-            ${colors.bired}                                                        ${colors.reset}
+            ${colors.bired}                                               ${colors.reset}
+            ${colors.biorange} Built and Maintained by CDC's Division of Healthcare Quality Promotion (DHQP)  ${colors.reset}
+            ${colors.bired}                                               ${colors.reset}
             ${colors.bicyan}  ${workflow.manifest.name} v${workflow.manifest.version}${colors.reset}
             ${dashedLine(monochrome_logs)}
             """.stripIndent()

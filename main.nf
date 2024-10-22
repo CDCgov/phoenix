@@ -24,8 +24,6 @@ WorkflowMain.initialise(workflow, params, log)
 
 //Check coverage is above its threshold
 if (params.coverage < 30) { exit 1, 'The minimum coverage allowed for QA/QC purposes is 30 and is the default. Please choose a value >=30.' }
-//Check path of kraken2db
-if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
 
 /*
 ========================================================================================
@@ -41,11 +39,14 @@ include { SRA_PREP                    } from './workflows/sra_prep'
 include { CLIA_INTERNAL               } from './workflows/clia'
 include { UPDATE_PHOENIX_WF           } from './workflows/update_phoenix'
 include { RUN_CENTAR                  } from './workflows/centar'
+include { COMBINE_GRIPHINS_WF         } from './workflows/combine_griphins'
 
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
 //
 workflow PHOENIX {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
@@ -79,6 +80,8 @@ workflow PHOENIX {
 // WORKFLOW: Run internal version of cdcgov/phoenix analysis pipeline that includes BUSCO, SRST2 and KRAKEN_ASMBLED
 //
 workflow CDC_PHOENIX {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db]
@@ -119,6 +122,8 @@ workflow CDC_PHOENIX {
 // WORKFLOW: Run internal version of phx based on sample SRA names, these will be pulled from NCBI for you. 
 //
 workflow SRA {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db ]
@@ -168,8 +173,9 @@ workflow SRA {
 //
 // WORKFLOW: Run cdc version of phx based on sample SRA names, the fastq will be pulled from NCBI for you. 
 //
-
 workflow CDC_SRA {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db]
@@ -226,6 +232,8 @@ workflow CDC_SRA {
 // WORKFLOW: Entry point to analyze scaffold file(s) and run everything after Spades
 //
 workflow SCAFFOLDS {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Checking that --create_ncbi_sheet wasn't passed
     if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry SCAFFOLDS.' }
 
@@ -267,6 +275,8 @@ workflow SCAFFOLDS {
 // WORKFLOW: Entry point to analyze scaffold file(s) and run everything after Spades
 //
 workflow CDC_SCAFFOLDS {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Checking that --create_ncbi_sheet wasn't passed
     if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CDC_SCAFFOLDS.' }
 
@@ -309,8 +319,9 @@ workflow CDC_SCAFFOLDS {
 //
 // WORKFLOW: Entry point for CLIA analysis
 //
-
 workflow CLIA {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Checking that --create_ncbi_sheet wasn't passed
     if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CLIA.' }
 
@@ -352,11 +363,15 @@ workflow CLIA {
         summary_report   = CLIA_INTERNAL.out.summary_report*/
 }
 
+/*
+========================================================================================
+    RUN PHX Utilities WORKFLOWS
+========================================================================================
+*/
 
 //
 // WORKFLOW: Entry point for updating phoenix mlst and ar output
 //
-
 workflow UPDATE_PHOENIX {
     //Regardless of what is passed outdir needs to be the same as the input dir 
     //if you don't pass outdir then the indir
@@ -406,9 +421,52 @@ workflow UPDATE_PHOENIX {
 }
 
 //
+// WORKFLOW: Entry point for combining multiple griphin files
+//
+workflow COMBINE_GRIPHINS {
+    // Check mandatory parameters
+    ch_versions = Channel.empty() // Used to collect the software versions
+    // Check input path parameters to see if they exist
+    if (params.input != null ) {  // if a samplesheet is passed
+        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
+        if (params.indir != null ) { //if samplesheet is passed and an input directory exit
+            exit 1, 'For -entry COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
+        } else { // if only samplesheet is passed check to make sure input is an actual file
+            def checkPathParamList = [ params.input, params.multiqc_config ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            // get full path for input and make channel
+            if (params.input) { ch_input = file(params.input) }
+            //check outdir
+            if (params.outdir == "${launchDir}/phx_output" ) { 
+                println("${orange}Warning: No outdir was passed, combined griphin file will be saved to the default ${launchDir}/phx_output.${reset}")
+            } else {
+                // Allow outdir to be relative
+                outdir = Channel.fromPath(params.outdir, relative: true)
+                outdir.view()
+            }
+        }
+    } else {
+        exit 1, 'For -entry COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
+    }
+
+    //no griphins to start - they should be in the input samplesheet
+    input_griphins_ch = null
+    //input_griphins_tsv_ch = null
+
+    main:
+        COMBINE_GRIPHINS_WF ( input_griphins_ch, ch_input, outdir, ch_versions )
+
+}
+
+/*
+========================================================================================
+    RUN Species specific WORKFLOWS
+========================================================================================
+*/
+
+//
 // WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
-
 workflow CENTAR {
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
@@ -425,13 +483,6 @@ workflow CENTAR {
             if (params.input) { ch_input = file(params.input) }
             // Allow outdir to be relative
             outdir = Channel.fromPath(params.outdir, relative: true)
-            /*if (params.outdir == "${launchDir}/phx_output" ) { 
-                outdir = params.indir
-                println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${outdir}.${reset}")
-            } else {
-                // Allow outdir to be relative
-                outdir = Channel.fromPath(params.outdir, relative: true)
-            }*/
         }
     } else {
         if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
@@ -456,8 +507,37 @@ workflow CENTAR {
         }
     }
 
+    if (params.combine_griphins == true){
+        //make sure outdir was passed
+        if (params.outdir == "${launchDir}/phx_output"){ exit 1, 'If --combine_griphins is passed you need to also pass --outdir.' } 
+        // Makes no sense to use combine_griphins with indir - as you only have one project
+        if (params.indir != null){ exit 1, "Only pass --combine_griphins when using --input with samples from different projects (i.e. folders).\n You don't need to combine griphins when there is only one project in the input." } 
+    } 
+    // check if the wgmlst_container was passed
+    if (params.wgmlst_container == null) { println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}") }
+
     main:
         RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
+
+        if (params.combine_griphins == true) {
+
+            // make null input because we already have griphin files.
+            combine_input = null
+
+            COMBINE_GRIPHINS_WF ( 
+                RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [griphin]},
+                //RUN_CENTAR.out.griphins_tsv,
+                combine_input,
+                RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [meta_file.splitText().first().toString().trim()]},
+                RUN_CENTAR.out.ch_versions
+            )
+        }
+
+    emit:
+        //output for phylophoenix
+        griphins_tsv     = RUN_CENTAR.out.griphins_tsv
+        griphins_excel   = RUN_CENTAR.out.griphins_excel
+        dir_samplesheet  = RUN_CENTAR.out.dir_samplesheet
 }
 
 /*

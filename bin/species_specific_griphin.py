@@ -14,11 +14,11 @@ def transform_value(value):
         parts = value.split('|')
         if len(parts) == 3:
             # Reorder and format the components into the desired format
-            nuc_identity = parts[0][:-2]  # Extract the number from '98NT'
+            nuc_identity = parts[0][:-2].replace("[","")   # Extract the number from '98NT'
             aa_identity = parts[1][:-2]   # Extract the number from '98AA'
-            coverage = parts[2]           # Extract the coverage number
+            coverage = parts[2].replace("COV]","")           # Extract the coverage number
             # Format the new string
-            return f'[{coverage}NT/{aa_identity}AA/{nuc_identity}]G'
+            return f'[{nuc_identity}NT/{aa_identity}AA/{coverage}]G'
     else:
         return ""
     return value
@@ -33,6 +33,7 @@ def clean_and_format_centar_dfs(centar_df):
     clean_centar_df = centar_df.drop(columns=columns_to_drop)
     # Remove the substring from all column headers
     clean_centar_df.rename(columns=lambda x: re.sub(r'\[%Nuc_Identity \| %AA_Identity \| %Coverage\]', '', x).strip(), inplace=True)
+    clean_centar_df.rename(columns=lambda x: re.sub(r'\[%Nuc_Identity | %Coverage]', '', x).strip(), inplace=True)
     clean_centar_df.rename(columns=lambda x: re.sub(r'Diffbase_', '', x).strip(), inplace=True)
     #Replace empty strings with NaN and drop columns that are completely blank
     clean_centar_df = clean_centar_df.replace('', np.nan).dropna(axis=1, how='all')

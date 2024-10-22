@@ -8,7 +8,9 @@ process CUSTOM_DUMPSOFTWAREVERSIONS {
         'quay.io/biocontainers/multiqc:1.14--pyhdfd78af_0' }"
 
     input:
-    tuple val(project_id), path(versions)
+    path(versions)
+    path(project_id_dir)
+    val(project_id)
 
     output:
     path "software_versions.yml"    , emit: yml

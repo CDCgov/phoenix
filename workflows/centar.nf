@@ -91,8 +91,6 @@ workflow RUN_CENTAR {
         outdir_path
 
     main:
-        // Allow relative paths for krakendb argument
-        kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
         CREATE_INPUT_CHANNELS (
             ch_input_indir, ch_input, true
@@ -101,7 +99,7 @@ workflow RUN_CENTAR {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
+            params.zipped_sketch, params.custom_mlstdb, []
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -116,7 +114,7 @@ workflow RUN_CENTAR {
         ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
 
         // get summary lines and directory information to make sure all samples for a particular project folder stay together. 
-        summaries_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.collect()
+        summaries_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{     meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])
             .map { it -> filter_out_meta(it) }
 
@@ -144,56 +142,68 @@ workflow RUN_CENTAR {
 
         // to be able to create software_versions.yml 
         software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
-        .combine(CENTAR_GRIPHIN.out.griphin_report).map{version, meta_file, griphin -> [meta_file.splitText().first().trim(), version]}
+        .combine(CENTAR_GRIPHIN.out.griphin_report).map{version, meta_file, griphin -> [meta_file.splitText().first().toString().trim(), version]}
 
-        /// need to figure out how to do this on a per directory 
-        // Collecting the software versions
-        CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-            software_versions_ch
-        )
+        if (params.combine_griphins == false) { // don't run if combined workflow is going to run
+            /// need to figure out how to do this on a per directory 
+            // Collecting the software versions
+            CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
+                software_versions_ch.map{meta_file, version -> version},
+                software_versions_ch.map{meta_file, version -> meta_file},
+                software_versions_ch.map{meta_file, version -> meta_file.toString()}
+            )
+        }
+
+    emit:
+        //output for phylophoenix
+        griphins_tsv    = CENTAR_GRIPHIN.out.griphin_tsv_report
+        griphins_excel  = CENTAR_GRIPHIN.out.griphin_report
+        dir_samplesheet = CENTAR_GRIPHIN.out.converted_samplesheet
+        ch_versions     = software_versions_ch
 }
 
-/*
-========================================================================================
-    COMPLETION EMAIL AND SUMMARY
-========================================================================================
-*/
+if (params.combine_griphins == false) { // don't run if combined workflow is going to run
+    /*
+    ========================================================================================
+        COMPLETION EMAIL AND SUMMARY
+    ========================================================================================
+    */
 
-// Adding if/else for running on ICA
-if (params.ica==false) {
-    workflow.onComplete {
-        if (count == 0) {
-            if (params.email || params.email_on_fail) {
-                NfcoreTemplate.centar_email(workflow, params, summary_params, projectDir, log, multiqc_report)
+    // Adding if/else for running on ICA
+    if (params.ica==false) {
+        workflow.onComplete {
+            if (count == 0) {
+                if (params.email || params.email_on_fail) {
+                    NfcoreTemplate.centar_email(workflow, params, summary_params, projectDir, log, multiqc_report)
+                }
+                NfcoreTemplate.summary(workflow, params, log)
+                count++
             }
-            NfcoreTemplate.summary(workflow, params, log)
-            count++
         }
-    }
-} else if (params.ica==true) {
-    workflow.onComplete { 
-        if (workflow.success) {
-            println("Pipeline Completed Successfully")
-            NfcoreTemplate.summary(workflow, params, log)
-            System.exit(0)
-        } else {
-            println("Pipeline Completed with Errors")
-            NfcoreTemplate.summary(workflow, params, log)
-            System.exit(1)
+    } else if (params.ica==true) {
+        workflow.onComplete { 
+            if (workflow.success) {
+                println("Pipeline Completed Successfully")
+                NfcoreTemplate.summary(workflow, params, log)
+                System.exit(0)
+            } else {
+                println("Pipeline Completed with Errors")
+                NfcoreTemplate.summary(workflow, params, log)
+                System.exit(1)
+            }
         }
+        workflow.onError { 
+            // copy intermediate files + directories
+            println("Getting intermediate files from ICA")
+            ['cp','-r',"${workflow.workDir}","${workflow.launchDir}/out"].execute()
+            // return trace files
+            println("Returning workflow run-metric reports from ICA")
+            ['find','/ces','-type','f','-name','\"*.ica\"','2>','/dev/null', '|', 'grep','"report"' ,'|','xargs','-i','cp','-r','{}',"${workflow.launchDir}/out"].execute()
+        }
+    } else {
+            error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
     }
-    workflow.onError { 
-        // copy intermediate files + directories
-        println("Getting intermediate files from ICA")
-        ['cp','-r',"${workflow.workDir}","${workflow.launchDir}/out"].execute()
-        // return trace files
-        println("Returning workflow run-metric reports from ICA")
-        ['find','/ces','-type','f','-name','\"*.ica\"','2>','/dev/null', '|', 'grep','"report"' ,'|','xargs','-i','cp','-r','{}',"${workflow.launchDir}/out"].execute()
-    }
-} else {
-        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
 }
-
 /*
 ========================================================================================
     THE END

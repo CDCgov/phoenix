@@ -112,8 +112,6 @@ workflow UPDATE_PHOENIX_WF {
     main:
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
-        // Allow relative paths for krakendb argument
-        kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
         CREATE_INPUT_CHANNELS (
             ch_input_indir, ch_input, update
@@ -134,7 +132,7 @@ workflow UPDATE_PHOENIX_WF {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
+            params.zipped_sketch, params.custom_mlstdb, []
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 

@@ -1294,6 +1294,11 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens, ordered_centar_df):
+    print(ar_df)
+    print(df)
+    print(ar_df)
+    print(centar_df_lens)
+    print(ordered_centar_df)
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
         writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
@@ -1481,7 +1486,7 @@ def create_samplesheet(directory):
     skip_list_a2 = glob.glob(directory + "/*_comparison") # for comparinator script
     skip_list_a = skip_list_a1 + skip_list_a2
     skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
-    skip_list_b = ["BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "Phoenix_Summary.tsv", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "Directory_samplesheet.csv", "sra_samplesheet.csv"]
+    skip_list_b = ["BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "Phoenix_Summary.tsv", "centar_pipeline_info", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "Directory_samplesheet.csv", "sra_samplesheet.csv"]
     skip_list = skip_list_a + skip_list_b
     #remove unwanted files
     dirs_cleaned = [item for item in dirs if item not in skip_list]
@@ -1579,22 +1584,15 @@ def main():
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
-        #cou=0
-        #for i in centar_dfs:
-        #    print("0-"+str(cou), i)
-        #    cou+=1
         full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
-        #print("A", list(full_centar_df.columns))
         ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
         centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
-        #print("B", ordered_centar_df.columns)
-        #print("C", centar_df_lens)
         # combing centar with phx qc information
         df = pd.concat([df, ordered_centar_df], axis=1)
     else:
         ordered_centar_df = pd.DataFrame()
         A_B_Tox_len = other_Tox_len = mutant_len = RB_type_len = 0
-        centar_df_lens = 0
+        centar_df_lens = [0,0,0,0] # we sum later so needs to be a list of numbers
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
