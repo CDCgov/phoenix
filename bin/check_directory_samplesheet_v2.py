@@ -59,6 +59,7 @@ def check_samplesheet(file_in, file_out):
     SAMPLE_PE,SAMPLE_PE_RUN2_1.fastq.gz,SAMPLE_PE_RUN2_2.fastq.gz
     SAMPLE_SE,SAMPLE_SE_RUN1_1.fastq.gz,
 
+
     For an example see:
     https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/samplesheet/samplesheet_test_illumina_amplicon.csv
     """
@@ -97,19 +98,21 @@ def check_samplesheet(file_in, file_out):
             sample_folder = line.split(",")[0]
             if str(dir).strip().endswith('/'):
                 path = str(dir).strip()[:-1]
-                project_path = os.path.dirname(path)
+                project_path = path
+                sample_path = project_path+"/"+sample_name
             else:
                 path = str(dir).strip()
-                project_path = os.path.dirname(path)
+                project_path = path
+                sample_path = project_path+"/"+sample_name
             #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
-            files.append(path + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
-            files.append(path + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
-            files.append(path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
-            files.append(path + "/annotation/" + sample_name + ".faa")
-            files.append(path + "/annotation/" + sample_name + ".gff")
-            files.append(path + "/" + sample_name + ".tax")
-            files.append(path + "/" + sample_name + "_summaryline.tsv")
-            files.append(path + "/" + sample_name + ".synopsis")
+            files.append(sample_path + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
+            files.append(sample_path + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
+            files.append(sample_path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
+            files.append(sample_path + "/annotation/" + sample_name + ".faa")
+            files.append(sample_path + "/annotation/" + sample_name + ".gff")
+            files.append(sample_path + "/" + sample_name + ".tax")
+            files.append(sample_path + "/" + sample_name + "_summaryline.tsv")
+            files.append(sample_path + "/" + sample_name + ".synopsis")
             files.append(project_path + "/" + "Phoenix_Summary.tsv")
             # Handle glob searches with potential errors
             #try:
@@ -119,7 +122,7 @@ def check_samplesheet(file_in, file_out):
                 #project_path = path[:last_slash_index + 1]
             try:
                 full_path = path + "/file_integrity/"
-                fairy_file = glob.glob(path + "/file_integrity/" + sample_name + "*summary.txt")[0]
+                fairy_file = glob.glob(path + "/"+ sample_name + "/file_integrity/" + sample_name + "*summary.txt")[0]
                 print(f"fairy_file found at " + fairy_file)
                 # check that the sample did not fail the file_integrity check
                 with open(fairy_file, 'r') as file:
