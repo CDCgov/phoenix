@@ -18,10 +18,11 @@ process ASSET_CHECK {
     task.ext.when == null || task.ext.when
 
     script:
+    def kraken_db_path = kraken_db ? "${kraken_db}" : "false" //checking if its null or an empty list
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
-    def kraken_db_path = (!kraken_db || kraken_db.size() == 0) ? "false" : "${kraken_db}" //checking if its null or an empty list
+   // def kraken_db_path = (!kraken_db || kraken_db.size() == 0) ? "false" : "${kraken_db}" //checking if its null or an empty list
     """
     if [[ ${zipped_sketch} = *.gz ]]
     then

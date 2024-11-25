@@ -127,12 +127,33 @@ function clean_mut {
 
 if [[ -f "${rt_file}" ]]; then
     ML_RT="unset"
+    rt="unset"
     prob="unset"
     type="unset"
     note=""
     ## Parse the RT file once ready and figure out how to make it expandable
     line=$(tail -n1 ${rt_file})
     rt=$(echo "${line}" | cut -d$'\t' -f2)
+    IFS=',' read -a rts <<< "${rt}"
+    rt_count=${#rts[@]}
+    if [ ${rt_count} -gt 0 ]; then
+        new_rt=""
+        for rib in "${rts[@]}"; do
+            rt_length=${#rib}
+            if [ $rt_length -eq 2 ] && [[ "${rib}" != "NA" ]]; then
+                new_rt="0${rib}"
+            elif [ $rt_length -eq 1 ]; then
+                new_rt="00${rib}"
+            else
+                new_rt="${rib}"
+            fi
+        done
+        if [[ ${new_rt:0:1} == "," ]] ; then
+            new_rt="${new_rt:1}"
+        fi
+    else
+        new_rt="unset"
+    fi
     raw_prob=$(echo "${line}" | cut -d$'\t' -f3)
     temp_prob=$(echo "$raw_prob * 100" | bc)
     prob=$(printf "%2.2f" "${temp_prob}")
@@ -140,11 +161,10 @@ if [[ -f "${rt_file}" ]]; then
     type=$(echo "${line}" | cut -d$'\t' -f4)
     note=$(echo "${line}" | cut -d$'\t' -f5)
     if [[ "${note}" = "" ]]; then
-        ML_RT="${rt}\t${prob}-${type}"
+        ML_RT="${new_rt}\t${prob}\t${type}"
     else
-        ML_RT="${rt}\t${prob}\t${type}\t${note}"
+        ML_RT="${new_rt}\t${prob}\t${type}\t${note}"
     fi
-
 else
     echo "No Ribotype file"
     ML_RT="NO_RT_FILE_YET\tNO_RT_FILE"
@@ -1241,6 +1261,27 @@ if [[ -f "${clade_input}" ]]; then
                 echo "X:${lst}-M:${mlst}"
                 if [[ "${lst}" = "${mlst}" ]]; then
                     xrt=$(echo "${var}" | cut -d$'\t' -f2)
+                    IFS=',' read -a rts <<< "${xrt}"
+                    rt_count=${#rts[@]}
+                    if [ ${rt_count} -gt 0 ]; then
+                        new_xrt=""
+                        for rib in "${rts[@]}"; do
+                            rt_length=${#rib}
+                            if [ $rt_length -eq 2 ]; then
+                                new_xrt="${new_rt},0${rib}"
+                            elif [ $rt_length -eq 1 ]; then
+                                new_xrt="${new_xrt},00${rib}"
+                            else
+                                new_xrt="${new_xrt},${rib}"
+                            fi
+                        done
+                        if [[ ${new_xrt:0:1} == "," ]] ; then
+                            new_xrt="${new_xrt:1}"
+                        fi
+                    else
+                        new_xrt="unset"
+                    fi
+                    xrt="${new_xrt}"
                     break
                 fi
             done < "${xwalkRT_file}"

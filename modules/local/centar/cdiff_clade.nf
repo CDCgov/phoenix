@@ -5,8 +5,7 @@ process CDIFF_CLADE {
     container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
-    tuple val(meta), path(mlst_combined_file), val(taxa_id)
-    path(mlst_database)
+    tuple val(meta), path(mlst_combined_file), val(taxa_id), path(mlst_database)
 
     output:
     tuple val(meta), path("*clade.tsv"), emit: clade

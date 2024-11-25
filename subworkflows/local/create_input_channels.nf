@@ -254,7 +254,13 @@ workflow CREATE_INPUT_CHANNELS {
                 valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
             }
 
-            // combing all summary files into one channel
+            all_griphin_excel_ch.view()
+            all_phoenix_tsv_ch.view()
+            all_pipeline_info_ch.view()
+            exit()
+
+
+            // combining all summary files into one channel
             summary_files_ch = all_griphin_excel_ch.join(all_griphin_tsv_ch.map{meta, griphin_tsv   -> [[id:meta.id, project_id:meta.project_id], griphin_tsv]},   by: [[0][0],[0][1]])
                                     .join(all_phoenix_tsv_ch.map{               meta, phoenix_tsv   -> [[id:meta.id, project_id:meta.project_id], phoenix_tsv]},   by: [[0][0],[0][1]])
                                     .join(all_pipeline_info_ch.map{             meta, pipeline_info -> [[id:meta.id, project_id:meta.project_id], pipeline_info]}, by: [[0][0],[0][1]])

@@ -17,7 +17,7 @@ import csv
 from Bio import SeqIO
 from itertools import chain
 from pathlib import Path
-from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value
+from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value, create_shiga_df
 
 # Set display options to show all rows and columns
 #pd.set_option('display.max_rows', None)  # Show all rows
@@ -479,7 +479,7 @@ def duplicate_column_clean(df):
             df[dup] = new_col
     return df
 
-def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
+def parse_gamma_ar(gamma_ar_file, sample_name, final_df, unique_id):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_ar_file, sep='\t', header=0)
     DB = (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2] + "([XNT/98AA/90]G:[98NT/90]S)"
@@ -513,22 +513,27 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
     if df.empty:
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'AR_Database':[DB], 'No_AR_Genes_Found':['[-/-]'] })
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id], 'AR_Database':[DB], 'No_AR_Genes_Found':['[-/-]'] })
+        df.index = [unique_id]
     else:
         df.columns = column_name # add column names
-        df["WGS_ID"] = sample_name
+        df["UNI"] = unique_id
         df["AR_Database"] = DB
         df["No_AR_Genes_Found"] = ""
-        df.index = [sample_name]
+        df.index = [unique_id]
+    ###!print("333A:", df.columns.tolist())
     # Check for duplicate column names, multiple hits 
-    #print(df["blaFOX-5_NG_049105.1(beta-lactam)"])
+    ###!print(df["blaFOX-5_NG_049105.1(beta-lactam)"])
     df = duplicate_column_clean(df)
+    ###!print("333B:", df.columns.tolist())
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
-    #print(final_df["mph(D)_NC_017312(macrolide_lincosamide_streptogramin)"])
+    col = final_df.pop('UNI')
+    final_df.insert(0, 'UNI', col)
+    ###!print("333C:", final_df.columns.tolist())
+    ###!print(final_df["mph(D)_NC_017312(macrolide_lincosamide_streptogramin)"])
     return final_df
 
-def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
+def parse_gamma_hv(gamma_hv_file, sample_name, final_df, unique_id):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_hv_file, sep='\t', header=0)
     DB = (gamma_hv_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_hv_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2].strip(".gamma")
@@ -543,21 +548,24 @@ def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
     if df.empty:
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'HV_Database':[DB], 'No_HVGs_Found':['[-/-]'] })
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id], 'HV_Database':[DB], 'No_HVGs_Found':['[-/-]'] })
+        df.index = [unique_id]
     else:
         df.columns = hv_column_name # add column names
-        df["WGS_ID"] = sample_name
+        df["UNI"] = unique_id
         df["HV_Database"] = DB
         df["No_HVGs_Found"] = ""
-        df.index = [sample_name]
+        df.index = [unique_id]
     # Check for duplicate column names
     df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+    col = final_df.pop('UNI')
+    final_df.insert(0, 'UNI', col)
     return final_df
 
-def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
+def parse_gamma_pf(gamma_pf_file, sample_name, pf_df, unique_id):
     """Parsing the gamma file run on the plasmid marker database."""
+    ###!print("CCC0:", pf_df.columns.tolist())
     gamma_df = pd.read_csv(gamma_pf_file, sep='\t', header=0)
     DB = (gamma_pf_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_pf_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2].strip(".gamma") + "([95NT/60]) "
     if DB == "":
@@ -589,18 +597,23 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
             del percent_lengths[index]
     #building a new dataframe - create giant row
     df = pd.DataFrame(pf_coverage).T
+    ###!print("CCC1:", df.columns.tolist())
     if df.empty:
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'Plasmid_Replicon_Database':[DB], 'No_Plasmid_Markers':['[-/-]'] })
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id], 'Plasmid_Replicon_Database':[DB], 'No_Plasmid_Markers':['[-/-]'] })
+        df.index = [unique_id]
     else:
         df.columns = pf_column_name # add column 'HV_Database':[DB], names
-        df["WGS_ID"] = sample_name
+        df["UNI"] = unique_id
         df["Plasmid_Replicon_Database"] = DB
         df['No_Plasmid_Markers'] = ""
-        df.index = [sample_name]
+        df.index = [unique_id]
+    ###!print("CCC2:", df.columns.tolist())
     # Check for duplicate column names
     df = duplicate_column_clean(df)
     pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+    col = pf_df.pop('UNI')
+    pf_df.insert(0, 'UNI', col)
+    ###!print("CCC3:", pf_df.columns.tolist())
     return pf_df
 
 def parse_mlst(mlst_file, scheme_guess, sample_name):
@@ -681,7 +694,7 @@ def parse_ani(fast_ani_file):
         scheme_guess = organism.split(' ')[0][0].lower() + organism.split(' ')[1][0:4]
     return FastANI_output_list, scheme_guess, fastani_warning
 
-def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
+def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, unique_id):
     """Parsing the srst2 file run on the ar gene database."""
     srst2_df = pd.read_csv(srst2_file, sep='\t', header=0)
     percent_lengths = np.floor(srst2_df["coverage"]).tolist()
@@ -715,13 +728,15 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     #building a new dataframe - create giant row
     df = pd.DataFrame(coverage).T
     if df.empty: #check if its empty - which would be when nothing is found and/or no hits passed the filter
-        df = pd.DataFrame({'WGS_ID':[sample_name]})
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id]})
+        df.index = [unique_id]
     else:
         df.columns = column_name # add column names
-        df["WGS_ID"] = sample_name
-        df.index = [sample_name]
+        df["UNI"] = unique_id
+        df.index = [unique_id]
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+    col = final_srst2_df.pop('UNI')
+    final_srst2_df.insert(0, 'UNI', col)
     return final_srst2_df
 
 # Define the custom function to update the Taxa_ID based on conditions
@@ -741,7 +756,9 @@ def fill_taxa_id(row):
     else:
         return ''  # Default case if no condition matches
 
-def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
+def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, parent_dir, data_loc):
+    # Create the unique identifier for the sample
+    unique_id = parent_dir+'/'+data_loc+'/'+sample_name
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
         Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
@@ -798,25 +815,25 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
         scheme_guess_fastani = fastani_warning = ""
     try:
-        ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df)
+        ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df, unique_id)
     except FileNotFoundError: 
         print("Warning: Gamma file for ar database on " + sample_name + " not found")
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['GAMMA file not found'] })
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['GAMMA file not found'] })
+        df.index = [unique_id]
         ar_df = pd.concat([ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
-        pf_df = parse_gamma_pf(gamma_pf_file, sample_name, pf_df)
+        pf_df = parse_gamma_pf(gamma_pf_file, sample_name, pf_df, unique_id)
     except FileNotFoundError: 
         print("Warning: Gamma file for pf database on " + sample_name + " not found")
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_Plasmid_Markers':['File not found'], 'Plasmid_Replicon_Database':['GAMMA file not found'] })
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id], 'No_Plasmid_Markers':['File not found'], 'Plasmid_Replicon_Database':['GAMMA file not found'] })
+        df.index = [unique_id]
         pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
-        hv_df = parse_gamma_hv(gamma_hv_file, sample_name, hv_df)
+        hv_df = parse_gamma_hv(gamma_hv_file, sample_name, hv_df, unique_id)
     except FileNotFoundError: 
         print("Warning: Gamma file for hv database on " + sample_name + " not found")
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_HVGs_Found':['File not found'], 'HV_Database':['GAMMA file not found'] })
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id], 'No_HVGs_Found':['File not found'], 'HV_Database':['GAMMA file not found'] })
+        df.index = [unique_id]
         hv_df = pd.concat([hv_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         #handling for if srst2 quietly failed
@@ -828,17 +845,17 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
                 srst2_warning = None
             else:
                 srst2_warning = "failed srst2 gene detection."
-            df = pd.DataFrame({'WGS_ID':[sample_name]})
-            df.index = [sample_name]
+            df = pd.DataFrame({'UNI':[unique_id]})
+            df.index = [unique_id]
             srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
         else:
-            srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
+            srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, unique_id)
             srst2_warning = None
     except (FileNotFoundError, pd.errors.EmptyDataError) : # second one for an empty dataframe - srst2 module creates a blank file
         if phoenix_entry == False: #supress warning when srst2 is not run
             print("Warning: " + sample_name + "__fullgenes__ResGANNCBI__*_srst2__results.txt not found")
-        df = pd.DataFrame({'WGS_ID':[sample_name]})
-        df.index = [sample_name]
+        df = pd.DataFrame({'UNI':[unique_id]})
+        df.index = [unique_id]
         srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
         srst2_warning = None
     try:
@@ -903,7 +920,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     except:
         warnings = ""
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
-    Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2
+    Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, unique_id
 
 def Get_Files(directory, sample_name):
     '''Create file paths to collect files from sample folder.'''
@@ -957,9 +974,9 @@ def Get_Files(directory, sample_name):
     return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
 def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
-            Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
+            Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, unique_id, \
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L,Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
-            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, unique_L ):
         data_location_L.append(data_location)
         parent_folder_L.append(parent_folder)
         Sample_Names.append(str(sample_name))
@@ -996,14 +1013,17 @@ def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_p
         MLST_alleles_2_L.append(MLST_alleles_2)
         MLST_source_1_L.append(MLST_source_1)
         MLST_source_2_L.append(MLST_source_2)
+        ###!print("YYY0:", type(parent_folder), type(data_location), type(sample_name))
+        unique_L.append(unique_id)
         return data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
-        Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L
+        Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, unique_L
 
 def Create_df(phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
-Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
+Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, unique_L):
     #combine all metrics into a dataframe
     if phoenix == True:
-        data = {'WGS_ID'             : Sample_Names,
+        data = {'UNI'                : unique_L,
+        'WGS_ID'                     : Sample_Names,
         'Parent_Folder'              : parent_folder_L,
         'Data_Location'              : data_location_L,
         'Minimum_QC_Check'           : QC_result_L,
@@ -1039,7 +1059,8 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Secondary_MLST'             : MLST_type_2_L,
         'Secondary_MLST_Alleles'     : MLST_alleles_2_L}
     else:
-        data = {'WGS_ID'             : Sample_Names,
+        data = {'UNI'                : unique_L,
+        'WGS_ID'                     : Sample_Names,
         'Parent_Folder'              : parent_folder_L,
         'Data_Location'              : data_location_L,
         'Minimum_QC_Check'           : QC_result_L,
@@ -1080,7 +1101,9 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     return df
 
 def srst2_dedup(srst2_ar_df, gamma_ar_df):
-    ##### First, we will drop columns with "partial" in the name
+    ###!print("ZZZ0:", srst2_ar_df.columns.tolist())
+    ###!print("ZZZ1:", gamma_ar_df.columns.tolist())
+    ##### First, we will drop columns with "partial" in the name #####
     # Filter out columns that contain the substring
     columns_to_drop = [col for col in srst2_ar_df.columns if "partial" in col]
     # Drop the columns
@@ -1100,7 +1123,11 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
         unique_gene_list = list(set(gene_list))
         # Check if the gene name (column name) exists in the GAMMA AR DataFrame -> if there is a match these would be GAMMA +, but a different allele and we want to remove these.
         for gene in unique_gene_list:
-            if gamma_ar_df.columns.str.contains(gene).any():
+            if '(' in gene and ')' not in gene:
+                print("Fixing", gene, "to", gene+')')
+                gene = gene + ')'
+            ###! print("0000A:", gene)
+            if gamma_ar_df.columns.str.match(gene).any():
                 # Check for partial string match in the column names of the gamma DataFrame
                 matching_columns = gamma_ar_df.columns[gamma_ar_df.columns.str.contains(gene)].tolist()
                 for column in matching_columns:
@@ -1109,7 +1136,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                         # Check if there is a value in the corresponding column in the second DataFrame
                         srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
                         print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
-    ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
+    ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. #####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
     # Check if DataFrame is not empty
     if not srst2_ar_df.empty:
@@ -1128,14 +1155,14 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
                     #get a dataframe of the gene in question
-                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.match(val)])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
                     df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
                     # Convert extracted values to integer type and keep NA values
                     df['Percent_Match'] = pd.to_numeric(df['Percent_Match'], errors='coerce')
                     df['Coverage'] = pd.to_numeric(df['Coverage'], errors='coerce')
                     df = df.dropna(subset=['Percent_Match']) #drop rows with no values
-                    ### Filtering steps to get the top hit for srst2
+                    # Filtering steps to get the top hit for srst2
                     # Step 1: Identify the Max Percent_Match
                     max_percent_match = df['Percent_Match'].max()
 
@@ -1159,12 +1186,14 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     srst2_ar_df.at[index, index_diff.tolist()] = ""
                 multiple_occurrences.append(val)
         srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
+    ###!print("ZZZ2:", srst2_ar_df.columns.tolist())
     return srst2_ar_df
 
 def order_ar_gene_columns(ar_combined_df):
     ar_combined_ordered_df = pd.DataFrame() #create new dataframe to fill
     #fixing column orders
-    ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID','No_AR_Genes_Found']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
+    ###!print("VVV0:", ar_combined_df.columns.tolist())
+    ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'UNI','No_AR_Genes_Found']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\\((.*)\\).*').values.tolist() # get all ar drug names form column names
     sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
@@ -1180,18 +1209,20 @@ def order_ar_gene_columns(ar_combined_df):
     all_column_names = list(chain(*all_column_names))
     #add back AR_DB and WGS_ID to front of list
     all_column_names.insert(0, "No_AR_Genes_Found")
-    all_column_names.insert(0, "WGS_ID")
     all_column_names.insert(0, "AR_Database")
+    all_column_names.insert(0, "UNI")
     # reorder columns - should be alphabetical by drug name and within drug name genes are alphabetically listed
     ar_combined_ordered_df = ar_combined_ordered_df.reindex(all_column_names, axis=1)
     return ar_combined_ordered_df
 
 def add_srst2(ar_df, srst2_ar_df):
+    ###!print("SSS0:", ar_df.columns.tolist())
+    ###!print("SSS1:", srst2_ar_df.columns.tolist())
     ar_combined_df = pd.DataFrame() #create new dataframe to fill
     common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
     # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
     for col in common_cols:
-        if col != "WGS_ID":
+        if col != "WGS_ID" and col != "UNI":
             ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
             ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
             ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
@@ -1201,9 +1232,14 @@ def add_srst2(ar_df, srst2_ar_df):
     # drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
     srst2_ar_df.drop(common_cols, axis = 1, inplace=True) # This will leave GAMMA- samples
     ar_df.drop(common_cols, axis = 1, inplace=True)
+    ###!print("SSS2:", srst2_ar_df.columns.tolist())
     # Add cols that are unique to srst2
-    ############### DEDUPING FOR SRST2 ###############
-    srst2_ar_df = srst2_dedup(srst2_ar_df, ar_df.join(ar_combined_df))
+    ########## DEDUPING FOR SRST2 ##########
+    ###!print("SSS3:", ar_combined_df.columns.tolist())
+    df_combined_deduped = ar_df.join(ar_combined_df)
+    col = df_combined_deduped.pop('UNI')
+    df_combined_deduped.insert(0, 'UNI', col)
+    srst2_ar_df = srst2_dedup(srst2_ar_df, df_combined_deduped)
     ar_combined_df = ar_combined_df.join(srst2_ar_df)
     # Add cols that are unique to gamma ar_df
     ar_combined_df = ar_combined_df.join(ar_df)
@@ -1214,7 +1250,7 @@ def add_srst2(ar_df, srst2_ar_df):
 def big5_check(final_ar_df):
     """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
     columns_to_highlight = []
-    final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
+    final_ar_df = final_ar_df.drop(['AR_Database', 'UNI'], axis=1)
     all_genes = final_ar_df.columns.tolist()
     big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
     blaOXA_48_like = [ "48", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", "731", \
@@ -1248,40 +1284,83 @@ def big5_check(final_ar_df):
     for bad_gene in big5_drop:
         #search for big5 gene substring in the gene name and remove if it is
         [columns_to_highlight.remove(gene) for gene in columns_to_highlight if bad_gene in gene]
+    print("5550:", columns_to_highlight)
     return columns_to_highlight
 
-def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
+def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, centar, centar_df):
+    df.to_csv('df.csv')
+    final_df=sort_qc_through_spec2_dataframe(df, False)
     hv_cols = list(hv_df)
     pf_cols = list(pf_df)
     ar_cols = list(ar_df)
+    ###!print("\nEEE0A:", ar_df.columns.tolist())
+    ###!print("\nEEE0B:", df.columns.tolist())
     # move the column to head of list using index, pop and insert
     pf_cols.insert(0, pf_cols.pop(pf_cols.index('No_Plasmid_Markers')))
     pf_cols.insert(0, pf_cols.pop(pf_cols.index('Plasmid_Replicon_Database')))
+    pf_cols.insert(0, pf_cols.pop(pf_cols.index('UNI')))
     hv_cols.insert(0, hv_cols.pop(hv_cols.index('No_HVGs_Found')))
     hv_cols.insert(0, hv_cols.pop(hv_cols.index('HV_Database')))
+    hv_cols.insert(0, hv_cols.pop(hv_cols.index('UNI')))
     ar_cols.insert(0, ar_cols.pop(ar_cols.index('No_AR_Genes_Found')))
     ar_cols.insert(0, ar_cols.pop(ar_cols.index('AR_Database')))
+    ar_cols.insert(0, ar_cols.pop(ar_cols.index('UNI')))
     # use ix to reorder
     pf_df = pf_df.loc[:, pf_cols]
     hv_df = hv_df.loc[:, hv_cols]
     ar_df = ar_df.loc[:, ar_cols]
     # if we run -entry PHOENIX then skip
-    if phoenix == True:
+    ###!print("\nEEE1:\n", pf_df.columns.tolist())
+    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    ###!    print(df)
+    if phoenix == True or srst2_ar_df.empty:
+       ###! print("\nEEE1A:\n")
         final_ar_df = ar_df
     else:
+        ###!print("\nEEE1B:", ar_df.columns.tolist())
         # combining srst2 and gamma ar dataframes
         final_ar_df = add_srst2(ar_df, srst2_ar_df)
     ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
     # now we will check for the "big 5" genes for highlighting later.
     columns_to_highlight = big5_check(final_ar_df)
     # combining all dataframes
-    final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
-    final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
-    final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
+    if centar:
+        ###!print("\nEEE1.4\n")
+        ###!print(df['WGS_ID'])
+        ###!print("\nEEE1.5\n")
+        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        ###!#   print(centar_df)
+        ###!print("\nEEE1.6\n",df['WGS_ID'])
+        ###!print("\nEEE1.61\n",df.columns)
+        ###!print("\nEEE1.7\n",centar_df['WGS_ID'])
+        ###!print("\nEEE1.71\n",centar_df.columns)
+        ###!print("EEE72:", final_df.columns.tolist())
+        ###!print("EEE72:\n") #, centar_df.columns.tolist())
+        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        ###!    print(df)
+        ###!print("EEE73:\n") #, centar_df.columns.tolist())
+        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        ###!    print(centar_df)
+        centar_df = sort_qc_through_spec2_dataframe(centar_df, False)
+        final_df = pd.merge(final_df, centar_df, how="left", on=["UNI","UNI"])
+        ###!print("\nEEE2:\n")
+        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        ###!    print(final_df)
+    ###!print("EEE74:", final_ar_df.columns.tolist())
+    final_df = pd.merge(final_df, final_ar_df, how="left", on=["UNI","UNI"])
+    ###!print("EEE75:", final_ar_df.columns.tolist())
+    final_df = pd.merge(final_df, hv_df, how="left", on=["UNI","UNI"])
+    ###!print("EEE76:", final_ar_df.columns.tolist())
+    final_df = pd.merge(final_df, pf_df, how="left", on=["UNI","UNI"])
+    ###!print("EEE3:")
+    ###!print(final_df.columns)
+    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    ###!    print(final_df)
     #get database names and remove if file is not found in the database list
     ar_db = final_df['AR_Database'].unique().tolist()
     if 'GAMMA file not found' in ar_db:
         ar_db.remove('GAMMA file not found') #Don't want this reported as the ar_db
+    ###!print(type(ar_db), ar_db)
     ar_db = ",".join(ar_db)
     hv_db = final_df['HV_Database'].unique().tolist()
     if 'GAMMA file not found' in hv_db:
@@ -1291,14 +1370,17 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     if 'GAMMA file not found' in pf_db:
         pf_db.remove("GAMMA file not found")
     pf_db = ",".join(pf_db)
+    ###!print("EEE8:", columns_to_highlight)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
-def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens, ordered_centar_df):
-    print(ar_df)
-    print(df)
-    print(ar_df)
-    print(centar_df_lens)
-    print(ordered_centar_df)
+def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens, ordered_centar_df, ar_start):
+    ###!#print("111A:",ar_df)
+    ###!print("111B:", qc_max_col, len(df.columns.tolist()), df.columns.tolist())
+    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    ###!    print(df)
+    ###!print("111C:",ar_df)
+    ###!print("111D:",centar, centar_df_lens)
+    ###!print("111E:",ordered_centar_df)
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
         writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
@@ -1335,10 +1417,11 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
         worksheet.conditional_format('Y3:Z' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
         #worksheet.set_column('W:X', None, number_dec_2_format) # FastANI ID and Coverage
     # getting values to set column widths automatically
-    # print(list(df.columns))
+    ###!print("EEEEE:", list(df.columns))
     for idx, col in enumerate(df):  # loop through all columns
+        ###!print("MMM", idx, col)
         series = df[col]
-        #print(series)  # uncomment this to see what the issue is with the "mad" error
+        ###!print("MMM0:", series)  # uncomment this to see what the issue is with the "mad" error
         if col == "Parent_Folder": #name is real long due to path so just making the width of the column header
             max_len = len("Parent_Folder")
         else:
@@ -1364,7 +1447,8 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
     worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
-    #taxa columns 
+    #taxa columns
+    ###!print("MMM1:", phoenix, shigapass, centar)
     if phoenix == True: #for non-CDC entry points
         if shigapass == True:
             worksheet.merge_range('S1:AA1', "Taxonomic Information", cell_format_green)#
@@ -1399,15 +1483,34 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
             else:
                 worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
     if centar == True:
-        phx_minus_centar = qc_max_col - sum(centar_df_lens)
+        phx_minus_centar = qc_max_col #- sum(centar_df_lens)
+        ###!print("AA-2",type(centar_df_lens), type(centar_df_lens[0]), type(centar_df_lens[1]), type(centar_df_lens[2]), type(centar_df_lens[3]), type(ar_gene_count), type(hv_gene_count), type(pf_gene_count))
+        ###!print("AA-1", centar_df_lens, centar_df_lens[0], centar_df_lens[1], centar_df_lens[2], centar_df_lens[3], ar_gene_count, hv_gene_count, pf_gene_count)
+        ###!print("AA:",qc_max_col, sum(centar_df_lens), phx_minus_centar,centar_df_lens[0],centar_df_lens[1],centar_df_lens[2])
+        ###!print("AA1: QC -> QC+size_df0-1",phx_minus_centar, (phx_minus_centar + centar_df_lens[0] - 1))
+        ###!print("AA2: QC+size_df0 -> QC+size_df0+size_of_df1-1",(phx_minus_centar + centar_df_lens[0]), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1))
+        ###!print("AA3: QC+size_df0+size_df1 -> QC+size_df0+size_df1+size_df2-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1]), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1))
+        ###!print("AA4: QC+size_df0+size_df1+size_df2 -> QC_max_col-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), (qc_max_col - 1))
+        ###!print("AA4.F: QC+size_df0+size_df1+size_df2 -> QC+size_df0+size_df1+size_df2+size_df3-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] - 1) )
+        ###!print("AA5: QC_max_col -> QC_max_col + size_AR",qc_max_col,(qc_max_col + ar_gene_count - 1))
+        ###!print("AA5.F: QC+size_df0+size_df1+size_df2+size_df3 -> QC+size_df0+size_df1+size_df2+size_df3+size_AR-1", (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3]) ,(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count - 1))
+        ###!print("AA6 : QC_max_col + size_AR -> QC_max_col + size_AR + size_HV",(qc_max_col + ar_gene_count),(qc_max_col + ar_gene_count + hv_gene_count - 1))
+        ###!print("AA6.F: QC+size_df0+size_df1+size_df2+size_df3+size_AR -> QC+size_df0+size_df1+size_df2+size_df3+size_AR+size_HV-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count),(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count - 1))
+        ###!print("AA7: QC_max_col + size_AR + size_HV -> QC_max_col + size_AR + size_HV + size _PF",(qc_max_col + ar_gene_count + hv_gene_count), (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1))
+        ###!print("AA7.F: QC+size_df0+size_df1+size_df2+size_df3+size_AR+size_HV -> QC+size_df0+size_df1+size_df2+size_df3+size_AR+size_HV+size_PF-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count + pf_gene_count - 1))
         worksheet.merge_range(0, phx_minus_centar, 0, (phx_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
         worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0]), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3)
         worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
-        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_max_col - 1), "ML Predicted Ribotype", cell_format_p1)
-        worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
-        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
-        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        #worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_max_col - 1), "ML Predicted Ribotype", cell_format_p1)
+        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] - 1), "ML Predicted Ribotype", cell_format_p1)
+        #worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
+        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3]) , 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
+        #worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
+        #worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count + pf_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
     else:
+        print("AAA:",qc_max_col, (qc_max_col + ar_gene_count - 1))
         worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
         worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
         worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
@@ -1431,7 +1534,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     for column in ar_df.columns:
         for gene in columns_to_highlight:
             if column == gene: # if the column is one of the big 5 genes to highlight
-                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+                col_adjustment = column_count + ar_start - 1 # adjust starting place to account for qc columns 
                 cell = xl_rowcol_to_cell(1, col_adjustment)   # Gets the excel location like A1
                 #cell_value = ar_df.iloc[2, column_count] # get the value in that cell
                 worksheet.write(cell, column, orange_format)
@@ -1529,11 +1632,36 @@ def convert_excel_to_tsv(output):
     #Write dataframe into csv
     data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
 
+def sort_qc_through_spec2_dataframe( in_dataframe, keep_extras ):
+    ###!print("9999A:", keep_extras, in_dataframe.columns.tolist())
+    reference_header = ['UNI', 'WGS_ID', 'Parent_Folder', 'Data_Location', 'Minimum_QC_Check', 'Minimum_QC_Issues', 'Warnings', 'Alerts', 'Raw_Q30_R1_[%]', 'Raw_Q30_R2_[%]', 'Total_Raw_[reads]', 'Paired_Trimmed_[reads]', 'Total_Trimmed_[reads]', 'Estimated_Trimmed_Coverage', 'GC[%]', 'Scaffolds', 'Assembly_Length', 'Assembly_Ratio', 'Assembly_StDev', 'Final_Taxa_ID', 'Taxa_Source', 'BUSCO_Lineage', 'BUSCO_%Match', 'Kraken_ID_Raw_Reads_%', 'Kraken_ID_WtAssembly_%', 'FastANI_Organism', 'FastANI_%ID', 'FastANI_%Coverage', 'Species_Support_ANI', 'Primary_MLST_Scheme', 'Primary_MLST_Source', 'Primary_MLST', 'Primary_MLST_Alleles', 'Secondary_MLST_Scheme', 'Secondary_MLST_Source', 'Secondary_MLST', 'Secondary_MLST_Alleles', 'MLST Clade','Toxinotype', 'Toxin-A_sub-type', 'tcdA', 'Toxin-B_sub-type', 'tcdB', 'tcdC_Variant', 'tcdC other mutations', 'tcdC', 'tcdR', 'tcdE', 'cdtA', 'cdtB', 'cdtR_Variant', 'cdtR other mutations', 'cdtR', 'cdtAB1', 'cdtAB2', 'PaLoc_NonTox_Variant', 'PaLoc_NonTox other mutations', 'PaLoc_NonTox', 'gyrA known mutations', 'gyrA other mutations', 'gyrA', 'gyrB known mutations', 'gyrB other mutations', 'gyrB', 'dacS known mutations', 'dacS other mutations', 'dacS', 'feoB known mutations', 'feoB other mutations', 'feoB', 'fur known mutations', 'fur other mutations', 'fur', 'gdpP known mutations', 'gdpP other mutations', 'gdpP', 'glyC known mutations', 'glyC other mutations', 'glyC', 'hemN known mutations', 'hemN other mutations', 'hemN', 'hsmA known mutations', 'hsmA other mutations', 'hsmA', 'lscR known mutations', 'lscR other mutations', 'lscR', 'marR known mutations', 'marR other mutations', 'marR', 'murG known mutations', 'murG other mutations', 'murG', 'nifJ known mutations', 'nifJ other mutations', 'nifJ', 'PNimB known mutations', 'PNimB other mutations', 'PNimB', 'PNimB |','rpoB known mutations', 'rpoB other mutations', 'rpoB', 'rpoC known mutations', 'rpoC other mutations', 'rpoC', 'sdaB known mutations', 'sdaB other mutations', 'sdaB', 'thiH known mutations', 'thiH other mutations', 'thiH', 'vanR known mutations', 'vanR other mutations', 'vanR', 'vanS known mutations', 'vanS other mutations', 'vanS', 'CEMB RT Crosswalk', 'Inferred RT', 'Probability', 'ML Note', 'Plasmid Info']
+    found_headers = []
+    other_headers = []
+    for ref_header in reference_header:
+        if ref_header in in_dataframe.columns.tolist():
+            found_headers.append(ref_header)
+    for in_header in in_dataframe.columns.tolist():
+        if in_header not in ref_header:
+            other_headers.append(in_header)
+    if len(found_headers) > 0:
+        ###!print("9999C:", found_headers)
+        if keep_extras is True:
+            ###!print("9999D:", other_headers)
+            found_headers.extend(other_headers)
+        ###!print("9999E:", found_headers)
+        out_dataframe = in_dataframe[found_headers]
+        ###!print("9999B:", keep_extras, out_dataframe.columns.tolist())
+        return out_dataframe
+    else:
+        print("The provided dataframe does not have any columns matching the reference, returning it as is")
+        return in_dataframe
+
 def main():
     args = parseArgs()
+    has_any_centar=False
     # create empty lists to append to later
     Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
-    busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, data_location_L, parent_folder_L= ([] for i in range(36))
+    busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, data_location_L, parent_folder_L, unique_L= ([] for i in range(37))
     ar_df = pd.DataFrame() #create empty dataframe to fill later for AR genes
     pf_df = pd.DataFrame() #create another empty dataframe to fill later for Plasmid markers
     hv_df = pd.DataFrame() #create another empty dataframe to fill later for hypervirulence genes
@@ -1562,47 +1690,118 @@ def main():
             if args.shigapass == True:
                 shiga_df = create_shiga_df(directory, sample_name, shiga_df)
             if args.centar == True:
-                    centar_df = create_centar_combined_df(directory, sample_name)
+                    centar_df, really_is_centar = create_centar_combined_df(directory, sample_name)
+                    if really_is_centar:
+                        ###!print("4440: Changing centar to true", has_any_centar, centar_df)
+                        has_any_centar = True
+                        # Correct Ribotyping Calls to match expected leading Zeroes. Doing 'manually' since some may be bigger
+                        ###!print(centar_df.columns.tolist())
+                        xcol = centar_df.columns.get_loc("CEMB RT Crosswalk")
+                        inf_col = centar_df.columns.get_loc("Inferred RT")
+                        rows = centar_df.shape[0]
+                        ###!print("Rows:", rows)
+                        for y in range(0,rows):
+                            ###!print(y,centar_df.iloc[ y, xcol], type(centar_df.iloc[ y, xcol]), centar_df.iloc[ y, inf_col], type(centar_df.iloc[ y, inf_col]))
+                            if isinstance(centar_df.iloc[ y, xcol], np.int64) and int(centar_df.iloc[y, xcol]) < 100:
+                                ###!print(y,centar_df.iloc[ y, xcol], "YES")
+                                centar_df.iloc[y,xcol] = str("{:03d}".format(centar_df.iloc[y,xcol]))
+                            ###!else:
+                                ###!print(y,centar_df.iloc[ y, xcol], "NO")
+                            if isinstance(centar_df.iloc[ y, inf_col], np.int64) and int(centar_df.iloc[y, inf_col]) < 100:
+                                centar_df.iloc[y,inf_col] = str("{:03d}".format(centar_df.iloc[y,inf_col]))
+                                ###!print(y,centar_df.iloc[ y, inf_col], "YES")
+                            ###!else:
+                                ###!print(y,centar_df.iloc[ y, inf_col], "NO")
+            ###!        else:
+            ###!            print("4440: No centar for", directory)
                     centar_dfs.append(centar_df)
             data_location, parent_folder = Get_Parent_Folder(directory)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
-            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)
+            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, unique_id = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, str(parent_folder), data_location)
             #Collect this mess of variables into appeneded lists
+            ###!print("444A:", ar_df)
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
-            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = Append_Lists(data_location, parent_folder, sample_name, \
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, unique_L = Append_Lists(data_location, parent_folder, sample_name, \
             Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, \
-            gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
+            gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, unique_id, \
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
-            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
+            Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, unique_L)
     # combine all lists into a dataframe
     df = Create_df(args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
-    Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
+    Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, unique_L)
     if args.shigapass == True:
         df = species_specific_griphin.double_check_taxa_id(shiga_df, df)
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
-    if args.centar == True:
+    
+    #if args.centar == True:
+    if has_any_centar:
+        ###!print("BBB",centar_dfs)
         full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
         ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
         centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
-        # combing centar with phx qc information
-        df = pd.concat([df, ordered_centar_df], axis=1)
+        ###!print("BBB-1:", ordered_centar_df.columns.tolist(), ordered_centar_df['MLST Clade'])
     else:
         ordered_centar_df = pd.DataFrame()
         A_B_Tox_len = other_Tox_len = mutant_len = RB_type_len = 0
         centar_df_lens = [0,0,0,0] # we sum later so needs to be a list of numbers
     (qc_max_row, qc_max_col) = df.shape
+    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    ###!    print(df)
+    ###!print("BBB0:", qc_max_col,qc_max_row)
+    ###!print("BBBBBB0: df")
+    ###!for x in range(0,qc_max_col):
+    ###!    print(x, df.columns.tolist()[x], df.iloc[0,x])
+    ###!print("BBBBBB0: centar_df")
+    ###!for x in range(0,centar_df.shape[1]):
+    ###!    print(x, centar_df.columns.tolist()[x], centar_df.iloc[0,x])
+    ###!print("BBBBBB0: ar_df")
+    ###!for x in range(0,ar_df.shape[1]):
+    ###!    print(x, ar_df.columns.tolist()[x], ar_df.iloc[0,x])
+    ###!print("BBBBBB0: hv_df")
+    ###!for x in range(0,hv_df.shape[1]):
+    ###!    print(x, hv_df.columns.tolist()[x], hv_df.iloc[0,x])
+    ###!print("BBBBBB0: pf_df")     
+    ###!for x in range(0,pf_df.shape[1]):
+    ###!    print(x, pf_df.columns.tolist()[x], pf_df.iloc[0,x])
+    qc_max_col = df.shape[1] # remove one for the UNI column
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix)
+    ###!print("BBB1:", len(df.columns.tolist()), df.columns.tolist())
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix, has_any_centar, ordered_centar_df)
+    ###!print("BBB1:", qc_max_col,qc_max_row, ar_max_col, columns_to_highlight)
+    ###!print("BBBBBB1: final_df")
+    ###!for x in range(0,final_df.shape[1]):
+    ###!    print(x, final_df.columns.tolist()[x], final_df.iloc[0,x])
+    ###!print("BBBBBB1: final_ar")
+    ###!for x in range(0,final_ar_df.shape[1]):
+    ###!    print(x, final_ar_df.columns.tolist()[x], final_ar_df.iloc[0,x])
+    ###!print("BBBBBB1: ar_df")
+    ###!for x in range(0,ar_df.shape[1]):
+    ###!    print(x, ar_df.columns.tolist()[x], ar_df.iloc[0,x])
+    ###!print("BBBBBB1: hv_df")
+    ###!for x in range(0,hv_df.shape[1]):
+    ###!    print(x, hv_df.columns.tolist()[x], hv_df.iloc[0,x])
+    ###!print("BBBBBB1: pf_df")
+    ###!for x in range(0,pf_df.shape[1]):
+    ###!    print(x, pf_df.columns.tolist()[x], pf_df.iloc[0,x])
+    ###!print("BBB2:", len(final_df.columns.tolist()), final_df.columns.tolist())
+    ###!print("BBB3:", final_ar_df.columns.tolist())
+    ###!print("BBB4:", len(ordered_centar_df.columns.tolist()), ordered_centar_df.columns.tolist())
+    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    ###!    print(final_df)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
     else:
         final_df = final_df
-    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix, args.shigapass, args.centar, centar_df_lens, ordered_centar_df)
+    final_df=final_df.drop('UNI', axis=1)
+    ar_start_index = qc_max_col + sum(centar_df_lens)
+    ###!for x in range(0,qc_max_col):
+    ###!    print(x, final_df.columns.tolist()[x], final_df.iloc[0,x])
+    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix, args.shigapass, has_any_centar, centar_df_lens, ordered_centar_df, ar_start_index)
     convert_excel_to_tsv(args.output)
 
 if __name__ == '__main__':

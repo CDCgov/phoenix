@@ -98,12 +98,12 @@ def check_samplesheet(file_in, file_out):
             sample_folder = line.split(",")[0]
             if str(dir).strip().endswith('/'):
                 path = str(dir).strip()[:-1]
-                project_path = path
-                sample_path = project_path+"/"+sample_name
+                sample_path = path
+                project_path = "/".join(sample_path.split("/")[:-1])
             else:
                 path = str(dir).strip()
-                project_path = path
-                sample_path = project_path+"/"+sample_name
+                sample_path = path
+                project_path = "/".join(sample_path.split("/")[:-1])
             #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
             files.append(sample_path + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
             files.append(sample_path + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")

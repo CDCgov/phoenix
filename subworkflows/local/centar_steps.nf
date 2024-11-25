@@ -83,7 +83,7 @@ workflow CENTAR_SUBWORKFLOW {
         cdiff_check = taxonomy.map{it -> get_taxa(it)} // get organism from file
 
         CDIFF_CLADE (
-            combined_mlst.join(cdiff_check, by: [[0][0],[0][1]]), mlst_db
+            combined_mlst.join(cdiff_check, by: [[0][0],[0][1]]).combine(mlst_db)
         )
         ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
 
