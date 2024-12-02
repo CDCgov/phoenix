@@ -1126,15 +1126,19 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
             if '(' in gene and ')' not in gene:
                 print("Fixing", gene, "to", gene+')')
                 gene = gene + ')'
-            ###! print("0000A:", gene)
             if gamma_ar_df.columns.str.match(gene).any():
                 # Check for partial string match in the column names of the gamma DataFrame
                 matching_columns = gamma_ar_df.columns[gamma_ar_df.columns.str.contains(gene)].tolist()
                 for column in matching_columns:
                     # check that for the column in question there is also a value found in the GAMMA column
+                    print("0000A:", gene, column, gamma_ar_df.at[str(idx), column], idx, row)
                     if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
                         # Check if there is a value in the corresponding column in the second DataFrame
-                        srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
+                        print("0000B", srst2_ar_df.columns.str.contains(gene))
+                        if gene in srst2_ar_df.columns.tolist():
+                            print("0000C:, Found", gene, "in srst2ar_df and changed it to nothing" )
+                            srst2_ar_df.loc[:,gene] = ""
+                        #srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
                         print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. #####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
