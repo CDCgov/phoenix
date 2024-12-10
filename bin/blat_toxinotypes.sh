@@ -9,7 +9,7 @@
 #
 # Description: Quick and dirty way to run blat with dnaX mode AND to sort and trim the output psl files
 #
-# Usage: ./blat_toxinotypes.sh -i input_psl_file -o output_trimmed_file -d AA_database_to_compare_to -t toxinotype_def_file
+# Usage: ./blat_toxinotypes.sh -i input_assembly -o output_file -d AA_database_to_compare_to -t toxinotype_def_file
 #
 # Output location: Varies on contents
 #
@@ -146,10 +146,10 @@ done < "${sample_name}_${db_name}.psl"
 #echo -e "AF:${A_found}\nAD:${ToxA_default}\nBF:${B_found}\nBD:${ToxB_default}"
 
 if [[ "${A_found}" = "False" ]]; then
-    echo "${ToxA_default}" >> ${sample_name}_${db_name}.tmx
+    echo -e "${ToxA_default}" >> ${sample_name}_${db_name}.tmx
 fi
 if [[ "${B_found}" = "False" ]]; then
-    echo "${ToxB_default}" >> ${sample_name}_${db_name}.tmx
+    echo -e "${ToxB_default}" >> ${sample_name}_${db_name}.tmx
 fi
 total_toxs_count=$(( A_count + B_count))
 echo "Count check ${A_count},${B_count},${total_toxs_count}"
@@ -169,11 +169,11 @@ elif [[ "${total_toxs_count}" -eq 1 ]] || [[ "${total_toxs_count}" -eq 2 ]]; the
     fi
     while IFS= read -r var2; do
         IFS='	' read -r -a line_array2 <<< "$var2"
-        echo "${line_array2[@]}"
+        echo -e "${line_array2[@]}"
         file_subA=${line_array2[4]}
         file_subB=${line_array2[5]}
         file_ttype=${line_array2[0]}
-        echo "|${tmp_A_subtype}| = |${file_subA}| : |${tmp_B_subtype}| = |${file_subB}|"
+        echo -e "|${tmp_A_subtype}| = |${file_subA}| : |${tmp_B_subtype}| = |${file_subB}|"
         if [[ "${tmp_A_subtype}" = "${file_subA}" ]] && [[ "${tmp_B_subtype}" = "${file_subB}" ]]; then
             toxinotype="${file_ttype}"
             break
@@ -187,10 +187,10 @@ else
 fi
 
 
-sort -k2 ${sample_name}_${db_name}.tmx > ${sample_name}_${db_name}.tox
+sort -k2 ${sample_name}_${db_name}.tmx > ${sample_name}_${db_name}.tsx
 
 echo -e "${header}" > ${sample_name}_${db_name}.tmp
-cat ${sample_name}_${db_name}.tmp ${sample_name}_${db_name}.tmx > ${sample_name}_${db_name}.tox
+cat ${sample_name}_${db_name}.tmp ${sample_name}_${db_name}.tsx > ${sample_name}_${db_name}.tox
 echo -e "Toxinotype:\t${toxinotype}" >> ${sample_name}_${db_name}.tox
 
 rm ${sample_name}_${db_name}.tmx ${sample_name}_${db_name}.tmp

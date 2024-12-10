@@ -84,7 +84,8 @@ workflow COMBINE_GRIPHINS_WF {
                 input_griphins_excel_ch.collect(),
                 //input_griphins_tsv_ch.collect(),
                 outdir_path,
-                outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
+                outdir_path.toString().split('/')[-1], 
+                //outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
                 params.coverage
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
