@@ -503,18 +503,19 @@ workflow PHOENIX_EXQC {
 
         //pull in species specific files
         if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it.contains("Escherichia") || it.contains("Shigella") }) {
-            params.shigapass = true
+            shigapass_var = true
             shigapass_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty( [] )
             // pulling it all together
             griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_ch)
         } else {
+            shigapass_var = false
             // pulling it all together
             griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
         }
 
         //create GRiPHin report
         GRIPHIN (
-            griphin_input_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false, params.shigapass
+            griphin_input_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false, shigapass_var
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

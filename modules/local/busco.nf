@@ -90,7 +90,7 @@ process BUSCO {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        busco: \$( busco --version 2>&1 | sed 's/^BUSCO //' )
+        busco: \$(busco --version 2>&1 | sed 's/^BUSCO //')
         busco_container: ${container}
     END_VERSIONS
 
