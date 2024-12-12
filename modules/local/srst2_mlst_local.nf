@@ -94,6 +94,13 @@ process SRST2_MLST {
                 echo "${prefix}	No match found for \${mlst_db}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
             else
                 raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
+                # Account for the cases where multi-databases require extra genes ID's during processing, but remove here.
+                # Current known list is only populated by Abaumannii
+                to_remove_prefixes=['Pas_', 'Ox_']
+                trimmed_header="${raw_header}"
+                for prefix in \${to_remove_prefixes[@]; do
+                    trimmed_header="\${trimmed_header//\${prefix}/}"
+                done
                 raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
                 formatted_trailer="${prefix}	\${mlst_db}"
                 IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
