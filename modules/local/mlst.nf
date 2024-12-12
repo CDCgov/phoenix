@@ -69,6 +69,19 @@ process MLST {
         mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
+    elif [[ \${genus,,} == "mycobacterium" ]]; then
+        if [[ \$scheme == "mabscessus" ]]; then
+            mv ${prefix}.tsv ${prefix}_1.tsv
+            mlst --scheme mycobacteria --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+            cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+            rm ${prefix}_*.tsv
+        elif [[ \$scheme == "mycobacteria" && \${species,,} == "abscessus" ]]; then
+            mv ${prefix}.tsv ${prefix}_1.tsv
+            mlst --scheme mabscessus --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+            cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+            rm ${prefix}_*.tsv
+        fi
+
     # New as of MLST 2.23.0, correctness score update results in some other species outperforming instrinsic ecoli_2 alleles in some cases. Force ecoli to run if ANI taxonomy says so
     elif [[ \${genus,,} == "escherichia" ]]; then
         if [[ \$scheme == "aeromonas" ]]; then

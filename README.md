@@ -1,5 +1,7 @@
 # :fire::bird::fire: PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens
 
+PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality Promotion (DHQP)](https://www.cdc.gov/ncezid/dhqp/index.html) to standardize genomic analysis of bacterial pathogens causing healthcare-associated infections, with a focus on antimicrobial resistance (AR). The pipeline supports the aims of the Antimicrobial Resistance Laboratory Network (AR Lab Network) to rapidly detect emerging and novel AR threats.
+
 <!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->
 
 [![DOI](https://zenodo.org/badge/490844937.svg)](https://zenodo.org/badge/latestdoi/490844937)  
@@ -16,7 +18,7 @@
 
 <!--- ![GitHub Clones](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Clones-)  --->
 
-[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%202092-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)  
+[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%202287-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)  
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
