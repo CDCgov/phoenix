@@ -33,7 +33,7 @@ process GRIPHIN {
     """
     full_path=\$(readlink -f ${outdir})
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage}  ${phoenix} ${shigapass} ${scaffolds} 
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${shigapass} ${scaffolds} 
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
