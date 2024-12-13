@@ -853,25 +853,42 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
             if Scheme_list[0][0] < Scheme_list[0][1]: # this if else is all just to make sure things are printing out in the same order.
                 MLST_scheme_1 = Scheme_list[0][0] # get 1st scheme name from the list
                 mlst_types_1=sorted(Scheme_list[1][0])[::-1]
+                # Added to maintain ordering of later lists, since sorting possibly changed order of types
+                order_1 = [Scheme_list[1][0].index(item) for item in mlst_types_1]
+                sorted_alleles_1=[Scheme_list[2][0][i] for i in order_1]
+                sorted_sources_1=[Scheme_list[3][0][i] for i in order_1]
                 MLST_type_1 = ", ".join(mlst_types_1)
-                MLST_alleles_1 = ",".join(Scheme_list[2][0])
-                MLST_source_1 = ",".join(Scheme_list[3][0])
+                MLST_alleles_1 = ",".join(sorted_alleles_1)
+                MLST_source_1 = ",".join(sorted_sources_1)
                 MLST_scheme_2 = Scheme_list[0][1] # get 2nd scheme name from the list
                 mlst_types_2=sorted(Scheme_list[1][1])[::-1]
+                # Added to maintain ordering of later lists, since sorting possibly changed order of types
+                
+                order_2 = [Scheme_list[1][1].index(item) for item in mlst_types_2]
+                sorted_alleles_2=[Scheme_list[2][1][i] for i in order_2]
+                sorted_sources_2=[Scheme_list[3][1][i] for i in order_2]
                 MLST_type_2 = ", ".join(mlst_types_2)
-                MLST_alleles_2 = ",".join(Scheme_list[2][1])
-                MLST_source_2 = ",".join(Scheme_list[3][1])
+                MLST_alleles_2 = ",".join(sorted_alleles_2)
+                MLST_source_2 = ",".join(sorted_sources_2)
             else:
                 MLST_scheme_1 = Scheme_list[0][1] # get 1st scheme name from the list, in this case its the 2nd element
                 mlst_types_1=sorted(Scheme_list[1][1])[::-1]
+                # Added to maintain ordering of later lists, since sorting possibly changed order of types
+                order_1 = [Scheme_list[1][1].index(item) for item in mlst_types_1]
+                sorted_alleles_1=[Scheme_list[2][1][i] for i in order_1]
+                sorted_sources_1=[Scheme_list[3][1][i] for i in order_1]
                 MLST_type_1 = ", ".join(mlst_types_1)
-                MLST_alleles_1 = ",".join(Scheme_list[2][1])
-                MLST_source_1 = ",".join(Scheme_list[3][1])
+                MLST_alleles_1 = ",".join(sorted_alleles_1)
+                MLST_source_1 = ",".join(sorted_sources_1)
                 MLST_scheme_2 = Scheme_list[0][0] # get 2nd scheme name from the list, in this case its the first element
                 mlst_types_2=sorted(Scheme_list[1][0])[::-1]
+                # Added to maintain ordering of later lists, since sorting possibly changed order of types
+                order_2 = [Scheme_list[1][0].index(item) for item in mlst_types_2]
+                sorted_alleles_2=[Scheme_list[2][0][i] for i in order_2]
+                sorted_sources_2=[Scheme_list[3][0][i] for i in order_2]
                 MLST_type_2 = ", ".join(mlst_types_2)
-                MLST_alleles_2 = ",".join(Scheme_list[2][0])
-                MLST_source_2 = ",".join(Scheme_list[3][0])
+                MLST_alleles_2 = ",".join(sorted_alleles_2)
+                MLST_source_2 = ",".join(sorted_sources_2)
         else: # If there is only one scheme then the last scheme and type are just "-"
             MLST_scheme_1 = Scheme_list[0][0]
             MLST_type_1 = ", ".join(Scheme_list[1][0]) # join together the STs for this one scheme
@@ -1090,7 +1107,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
         unique_gene_list = list(set(gene_list))
         # Check if the gene name (column name) exists in the GAMMA AR DataFrame -> if there is a match these would be GAMMA +, but a different allele and we want to remove these.
         for gene in unique_gene_list:
-            if gamma_ar_df.columns.str.contains(gene).any():
+            if gamma_ar_df.columns.str.match(gene).any():
                 # Check for partial string match in the column names of the gamma DataFrame
                 matching_columns = gamma_ar_df.columns[gamma_ar_df.columns.str.contains(gene)].tolist()
                 for column in matching_columns:

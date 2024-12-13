@@ -96,15 +96,16 @@ process SRST2_MLST {
                 raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
                 # Account for the cases where multi-databases require extra genes ID's during processing, but remove here.
                 # Current known list is only populated by Abaumannii
-                to_remove_prefixes=['Pas_', 'Ox_']
-                trimmed_header="${raw_header}"
-                for prefix in \${to_remove_prefixes[@]; do
+                to_remove_prefixes=('Pas_' 'Ox_')
+                trimmed_header="\${raw_header}"
+                for prefix in \${to_remove_prefixes[@]}; do
                     trimmed_header="\${trimmed_header//\${prefix}/}"
+                    echo "\${prefix}, \${trimmed_header}"
                 done
                 raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
                 formatted_trailer="${prefix}	\${mlst_db}"
                 IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
-                IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
+                IFS=\$'\t' read -r -a header_list <<< "\$trimmed_header"
                 header_length="\${#header_list[@]}"
                 ST_index=1
                 mismatch_index=\$(( header_length - 4 ))
