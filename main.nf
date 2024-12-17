@@ -259,9 +259,11 @@ workflow SCAFFOLDS {
             exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
         }
     }
+    
+    ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        SCAFFOLDS_EXTERNAL ( ch_input, ch_input_indir )
+        SCAFFOLDS_EXTERNAL ( ch_input, ch_input_indir, ch_versions, null )
 
     emit:
         scaffolds        = SCAFFOLDS_EXTERNAL.out.scaffolds
@@ -305,8 +307,10 @@ workflow CDC_SCAFFOLDS {
         }
     }
 
+    ch_versions = Channel.empty() // Used to collect the software versions
+
     main:
-        SCAFFOLDS_EXQC ( ch_input, ch_input_indir )
+        SCAFFOLDS_EXQC ( ch_input, ch_input_indir, ch_versions, null )
 
     emit:
         scaffolds        = SCAFFOLDS_EXQC.out.scaffolds
@@ -361,6 +365,40 @@ workflow CLIA {
         trimmed_reads    = CLIA_INTERNAL.out.trimmed_reads
         amrfinder_report = CLIA_INTERNAL.out.amrfinder_report
         summary_report   = CLIA_INTERNAL.out.summary_report*/
+}
+
+//
+// WORKFLOW: Entry point for long read analysis
+//
+workflow PHOENIX_LR {
+
+    //input on command line
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX_LR: Input samplesheet not specified!' }
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+
+    main:
+
+        //Run QC and assembly
+        PHOENIX_LR_WF (
+             ch_input 
+        ) 
+
+        // pass assembly to the scaffolds entry
+        SCAFFOLDS_EXTERNAL ( 
+            PHOENIX_LR_WF.out.valid_samplesheet, 
+            null, 
+            PHOENIX_LR_WF.out.versions,
+            PHOENIX_LR_WF.out.scaffolds
+        )
+
+    emit:
+        scaffolds        = PHOENIX_LR_WF.out.scaffolds
+        mlst             = SCAFFOLDS_EXTERNAL.out.mlst
+        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
+        gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
+        //phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
+
 }
 
 /*
@@ -539,36 +577,7 @@ workflow CENTAR {
         griphins_excel   = RUN_CENTAR.out.griphins_excel
         dir_samplesheet  = RUN_CENTAR.out.dir_samplesheet
 }
-/*
-========================================================================================
-    RUN ONT Data
-========================================================================================
-*/
-workflow PHOENIX_LR {
-    if (params.input) { ch_input = file(params.input) }
-       
-    else {
-        exit 1, 'For -entry PHOENIX_HI: You need to input a samplesheet!'
-        }
-   
-    ch_versions = Channel.empty() // Used to collect the software versions
-    main:
 
-        PHOENIX_LR_WF ( ch_input ) // should emit scaffolds or samplesheet of scaffolds
-        //Right now scaffolds entry is coded to take in an input samplesheet so we can either
-        // 1. change that code to  accept the scaffolds. so PHOENIX_LR_WF.out.scaffolds
-        // 2. have PHOENIX_LR_WF emit a sample sheet for the scaffolds that passes directly to the scaffolds entry. 
-
-        //SCAFFOLDS_EXTERNAL ( ch_input, ch_input_indir ) // how it is currently coded to input just for reference. 
-
-    emit:
-        scaffolds        = PHOENIX_LR_WF.out.scaffolds
-        //mlst             = SCAFFOLDS_EXTERNAL.out.mlst
-        //amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
-        //gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
-        //phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
-
-}
  
 /*
 ========================================================================================

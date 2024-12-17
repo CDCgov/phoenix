@@ -47,10 +47,11 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
             valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
         } else if (samplesheet != null) {
             // if a samplesheet was passed then use that to create the channel
-            scaffolds_ch = SAMPLESHEET_CHECK( samplesheet, false, true, false ) 
+            scaffolds_ch = SAMPLESHEET_CHECK( samplesheet, false, true, false, false )
                 .csv
                 .splitCsv( header:true, sep:',' )
                 .map { create_assembly_channel(it) }
+
             //get valid samplesheet for griphin step in cdc_scaffolds
             valid_samplesheet = SAMPLESHEET_CHECK.out.csv
         } else {

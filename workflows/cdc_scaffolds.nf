@@ -64,7 +64,7 @@ include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local
 include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'
 include { DO_MLST                                  } from '../subworkflows/local/do_mlst'
-include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_steps'
+include { CENTAR_SUBWORKFLOW                       } from '../subworkflows/local/centar_steps'
 
 /*
 ========================================================================================
@@ -145,18 +145,27 @@ workflow SCAFFOLDS_EXQC {
     take:
         ch_input
         ch_input_indir
+        ch_versions
+        input_scaffolds_ch
 
     main:
-        ch_versions = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
         // Allow relative paths for krakendb argument
         kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
-        CREATE_SCAFFOLDS_INPUT_CHANNEL (
-            ch_input_indir, ch_input, ch_versions
-        )
-        ch_versions = ch_versions.mix(CREATE_SCAFFOLDS_INPUT_CHANNEL.out.versions)
+        if (input_scaffolds_ch==null) {
+            CREATE_SCAFFOLDS_INPUT_CHANNEL (
+                ch_input_indir, ch_input, ch_versions
+            )
+            ch_versions = ch_versions.mix(CREATE_SCAFFOLDS_INPUT_CHANNEL.out.versions)
+
+            scaffolds_ch = CREATE_SCAFFOLDS_INPUT_CHANNEL.out.scaffolds_ch
+            valid_samplesheet = CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet
+        } else {
+            valid_samplesheet = ch_input
+            scaffolds_ch = input_scaffolds_ch
+        }
 
         //unzip any zipped databases
         ASSET_CHECK (
@@ -166,7 +175,7 @@ workflow SCAFFOLDS_EXQC {
 
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            CREATE_SCAFFOLDS_INPUT_CHANNEL.out.scaffolds_ch
+            scaffolds_ch
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -432,7 +441,7 @@ workflow SCAFFOLDS_EXQC {
         }
 
         GRIPHIN (
-            griphin_input_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false, centar_var
+            griphin_input_ch, valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false, centar_var
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

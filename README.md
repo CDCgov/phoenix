@@ -1,4 +1,4 @@
-# :fire::bird::fire: PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens
+# :fire::bird::fire: PHoeNIx: a platform agnostic pipeline for healthcare-associated and antimicrobial resistant pathogens
 
 <!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->
 

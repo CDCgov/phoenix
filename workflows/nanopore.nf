@@ -30,21 +30,21 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
-include { SAMPLESHEET_CHECK     } from '../modules/local/long_read/check_lr' // make this folder and add module files fill xxx with the name of the file
 include { NANOQ                 } from '../modules/local/long_read/nanoq'
 include { RASUSA                } from '../modules/local/long_read/rasusa'
 include { FLYE                  } from '../modules/local/long_read/flye'
 include { MEDAKA                } from '../modules/local/long_read/medaka'
 include { CIRCLATOR             } from '../modules/local/long_read/circlator'
 include { BANDAGE               } from '../modules/local/long_read/bandage'
+include { CREATE_SAMPLESHEET    } from '../modules/local/create_samplesheet'
 //include { PLASMID                 } from '../modules/local/long_read/plasmid'
 //include { PLASMID_AR            } from '../modules/local/long_read/plasmid_ar'
 //include { PLASMID_VF            } from '../modules/local/long_read/plasmid_vf'
 
 
-//include { FLYE            } from '../modules/local/long_read/xxx'
+include { FASTQC            } from '../modules/local/fastqc'
 //include { CIRCLATOR       } from '../modules/local/long_read/xxx'
-// fill out the rest ... 
+
 
 /*
 ========================================================================================
@@ -52,7 +52,7 @@ include { BANDAGE               } from '../modules/local/long_read/bandage'
 ========================================================================================
 */
 
-include { LR_CHECK           } from '../subworkflows/local/lr_check'
+include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
 
 /*
 ========================================================================================
@@ -84,40 +84,45 @@ workflow PHOENIX_LR_WF {
 
     take:
         ch_input
-        
 
     main:
         ch_versions = Channel.empty() // Used to collect the software versions
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
-        // Allow relative paths for krakendb argument
-        kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
 
         //
         // SUBWORKFLOW: Read in samplesheet, validate and stage input files
         //
-        LR_CHECK (
-            file(ch_input)
+        INPUT_CHECK (
+            ch_input, "Nanopore"
         )
-        ch_versions = ch_versions.mix(LR_CHECK.out.versions)
+        ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
     
-    /*
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        Read Preprocessing
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    */  
-    NANOQ (LR_CHECK.out.reads)
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Read Preprocessing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+    // comment what it is doing
+    NANOQ (
+        INPUT_CHECK.out.reads
+    )
     ch_versions = ch_versions.mix(NANOQ.out.versions.first())
 
-    //FASTQC (LR_CHECK.out.reads)
-    //ch_versions = ch_versions.mix(FASTQC.out.versions)
+    /*FASTQC (
+        INPUT_CHECK.out.reads
+    )
+    ch_versions = ch_versions.mix(FASTQC.out.versions)*/
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Read Subsampling
+    Read Subsampling -- 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-    RASUSA (NANOQ.out.fastq)
+    RASUSA (
+        NANOQ.out.fastq
+    )
     ch_versions = ch_versions.mix(RASUSA.out.versions)
 
 /*
@@ -125,21 +130,38 @@ workflow PHOENIX_LR_WF {
     De novo Assembly
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-    FLYE (RASUSA.out.fastq)
+    FLYE (
+        RASUSA.out.fastq
+    )
     ch_versions = ch_versions.mix(FLYE.out.versions)
    
-    CIRCLATOR (FLYE.out.fasta)
+    CIRCLATOR (
+        FLYE.out.fasta
+    )
     ch_versions = ch_versions.mix(CIRCLATOR.out.versions)
 
-    BANDAGE (FLYE.out.gfa)
+    BANDAGE (
+        FLYE.out.gfa
+    )
     ch_versions = ch_versions.mix(BANDAGE.out.versions)
 
-    polish_ch = CIRCLATOR.out.fasta.map       {meta,fasta                 -> [meta,fasta]}\
-        .join(NANOQ.out.fastq.map{   meta, fastq  -> [meta, fastq]},    by: [0])\
+    // what is this doing and why?
+    polish_ch = CIRCLATOR.out.fasta.map{  meta, fasta  -> [meta, fasta]}\
+                .join(NANOQ.out.fastq.map{meta, fastq  -> [meta, fastq]}, by: [0])
 
-
-    MEDAKA (polish_ch)
+    //
+    MEDAKA (
+        polish_ch
+    )
     ch_versions = ch_versions.mix(MEDAKA.out.versions)
+
+    /*/ get all assemblies together
+    assemblies_ch = MEDAKA.out.fasta_fin.collect()
+
+    CREATE_SAMPLESHEET (
+        [], assemblies_ch
+    )
+    ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
     
 
     /*plasmid_ch = PLASMIDmarker .out.tsv.map  {meta,tsv                -> [meta,tsv]}\
@@ -155,9 +177,9 @@ workflow PHOENIX_LR_WF {
 */
     emit:
         // emits should either be a scaffolds or samplesheet, see comments in main nf.
-        scaffolds = MEDAKA.out.fasta_fin // or whatever the best scaffold file is... 
-
-
+        scaffolds         = MEDAKA.out.fasta_fin.collect()
+        valid_samplesheet = INPUT_CHECK.out.valid_samplesheet
+        versions          = ch_versions
 }
 
 /*

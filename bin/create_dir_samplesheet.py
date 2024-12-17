@@ -29,16 +29,13 @@ def create_samplesheet(directory):
         skip_list_a2 = glob.glob(directory + "/*_GRiPHin_Summary.tsv") # for if griphin is run on a folder that already has a report in it
         skip_list_a = [ item.split('/')[-1] for item in skip_list_a ]  # just get the excel name not the full path
         skip_list_a2 = [ item.split('/')[-1] for item in skip_list_a2 ]  # just get the excel name not the full path
-        skip_list_b = [ "Phoenix_Summary.tsv", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
+        skip_list_b = [ "Phoenix_Summary.tsv", "pipeline_info", "GRiPHin_Summary.xlsx","BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
         skip_list = skip_list_a + skip_list_a2 + skip_list_b
         for sample in dirs:
             if sample not in skip_list:
-                #with open("GRiPHin_samplesheet_created.csv", "a") as samplesheet:
-                    if directory[-1] != "/": # if directory doesn't have trailing / add one
-                        directory = directory + "/"
-                    #print(sample + "," + directory + sample + '\n')
-                    samplesheet.write(sample + "," + directory + sample + '\n')
-                    #print(directory)
+                if directory[-1] != "/": # if directory doesn't have trailing / add one
+                    directory = directory + "/"
+                samplesheet.write(sample + "," + directory + sample + '\n')
     samplesheet = "GRiPHin_samplesheet_created.csv"
     return samplesheet
 

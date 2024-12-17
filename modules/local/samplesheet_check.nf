@@ -10,6 +10,7 @@ process SAMPLESHEET_CHECK {
     val(reads_entry)
     val(scaffolds_entry)
     val(directory_entry)
+    val(long_read_entry)
 
     output:
     path('samplesheet.valid.csv'),  emit: csv
@@ -25,6 +26,7 @@ process SAMPLESHEET_CHECK {
     def reads_check = reads_entry ? "true" : "false"
     def scaffolds_check = scaffolds_entry ? "true" : "false"
     def directory_check = directory_entry ? "true" : "false"
+    def lr_check = long_read_entry ? "true" : "false"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     if [ ${reads_check} = "true" ]; then
@@ -39,6 +41,10 @@ process SAMPLESHEET_CHECK {
         echo "Running check of directory samplesheet"
         ${ica}check_directory_samplesheet_v2.py ${samplesheet} samplesheet.valid.csv
         script_version=\$(echo check_directory_samplesheet_v2.py: \$(${ica}check_directory_samplesheet.py --version ))
+    elif [ ${lr_check} = "true" ]; then
+        echo "Running check of long read samplesheet"
+        ${ica}check_samplesheet_lr.py ${samplesheet} samplesheet.valid.csv
+        script_version=\$(echo check_samplesheet_lr.py: \$(${ica}check_samplesheet_lr.py --version ))
     else
         echo "No valid check type provided, exiting."
         exit 1

@@ -108,7 +108,7 @@ workflow PHOENIX_EXTERNAL {
 
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
         INPUT_CHECK (
-            ch_input
+            ch_input, "Illumina"
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
