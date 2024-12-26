@@ -1,6 +1,6 @@
 process CUSTOM_DUMPSOFTWAREVERSIONS {
     label 'process_low'
-    tag "${project_id}"
+    tag "${project_id_dir}"
 
     // Requires `pyyaml` which does not have a dedicated container but is in the MultiQC container
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -10,7 +10,6 @@ process CUSTOM_DUMPSOFTWAREVERSIONS {
     input:
     path(versions)
     path(project_id_dir)
-    val(project_id)
 
     output:
     path "software_versions.yml"    , emit: yml

@@ -28,22 +28,27 @@ workflow CREATE_INPUT_CHANNELS {
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
 
+            //excludedDirs = ["centar_pipeline_info", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", ".nextflow", "QH_PHX_comparison"]  // List of directories to exclude
+
             def pattern = params.indir.toString()
 
             // Create a channel that emits the names of all directories inside the parent directory - we will use this if no samples have a fairy file
             dir_names_ch = indir.map{ parent -> parent.listFiles()  // Load the directory as a Path channel
-                    .findAll { it.isDirectory() && it.listFiles().any{ file -> file.name.endsWith('_summaryline.tsv') } }}.flatten().map{dir -> dir.toString().replaceFirst(pattern, '').replaceFirst("/", '')}.collect() // Filter only directories and Filter out excluded directories
+                    .findAll { it.isDirectory() && it.listFiles().any{ file -> file.name.endsWith('_summaryline.tsv') } }}.flatten().map{dir -> dir.toString().replaceFirst(pattern, '').replaceFirst("/", '')}.collect().toList() // Filter only directories and Filter out excluded directories            
             //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
             def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_*_summary.txt')
 
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
-            passed_id_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }
+            passed_id_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList() 
+
             // Check if the channel is empty and print warning for user as this is required for the pipeline
             Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
                     .subscribe { result -> if (result.isEmpty()) {  println("${orange}Warning: There is no files were in */file_integrity/*_*_summary.txt. This file is required so we will make it.${reset}")}}
 
             // Fallback to dir_names_ch if passed_id_channel is empty
-            passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().unique().collect()
+            passed_id_channel = passed_id_ch ? passed_id_ch : dir_names_ch
+            //passed_id_channel.view()
+            //indir.map{ it -> get_ids(it) }.flatten().combine(indir).combine(passed_id_channel).view()
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             // Collect all ids and combine with indir
@@ -57,6 +62,8 @@ workflow CREATE_INPUT_CHANNELS {
                 //def file_integrity_exists = (passed_id_channel ?: []).contains(meta.id) // Check if the sample is in id_channel
                 def file_integrity_exists = passed_ids.contains(meta.id)
                 return [ meta, cleaned_path, file_integrity_exists ]}
+
+            //file_integrity_exists_ch.view()
 
             // Now that we have list of samples that need fairy files created make them
             CREATE_FAIRY_FILE (
@@ -73,10 +80,19 @@ workflow CREATE_INPUT_CHANNELS {
                     .combine(passed_id_channel).filter{ meta, file_integrity, passed_id_channel -> passed_id_channel.contains(meta.id)}
                     .map{ meta, file_integrity, passed_id_channel -> [meta, file_integrity]} //remove id_channel from output
 
+            //glob_file_integrity_ch.view()
+            glob_file_integrity_ch.ifEmpty([]).view()
+
             //get all integrity files - ones that where already made and ones we just made.
+            //CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).view()
+            //CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(glob_file_integrity_ch.collect().ifEmpty([])).flatten().view()
             file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(glob_file_integrity_ch.ifEmpty([])).flatten().buffer(size:2)
+            
+            //CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(glob_file_integrity_ch).view()
+
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
             all_passed_id_channel = file_integrity_ch.map{meta, dir -> dir}.collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
+
             /////////////////////////// COLLECT ISOLATE LEVEL FILES ///////////////////////////////
 
             //make relative path full and get 
@@ -249,13 +265,7 @@ workflow CREATE_INPUT_CHANNELS {
                 valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
             }
 
-            all_griphin_excel_ch.view()
-            all_phoenix_tsv_ch.view()
-            all_pipeline_info_ch.view()
-            exit()
-
-
-            // combining all summary files into one channel
+            // combing all summary files into one channel
             summary_files_ch = all_griphin_excel_ch.join(all_griphin_tsv_ch.map{meta, griphin_tsv   -> [[id:meta.id, project_id:meta.project_id], griphin_tsv]},   by: [[0][0],[0][1]])
                                     .join(all_phoenix_tsv_ch.map{               meta, phoenix_tsv   -> [[id:meta.id, project_id:meta.project_id], phoenix_tsv]},   by: [[0][0],[0][1]])
                                     .join(all_pipeline_info_ch.map{             meta, pipeline_info -> [[id:meta.id, project_id:meta.project_id], pipeline_info]}, by: [[0][0],[0][1]])

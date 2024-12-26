@@ -77,20 +77,27 @@ def check_samplesheet(file_in, file_out):
 
         ## Check sample entries
         sample_name_list = [] # used to check if sample name has been used before
+        sample_dir_list = [] # used to check if sample name has been used before
         Read_list = []
         for line in fin:
             lspl = [x.strip().strip('"') for x in line.strip().split(",")]
 
             # Check for duplicate sample names
             sample_name = line.split(",")[0]
-            if sample_name in sample_name_list:
+            project_id = line.split(",")[1].split("/")[-2]
+            uni_id = sample_name + "_" + project_id
+            if uni_id.split("_")[0] in sample_name_list:
+                print("WARNING: The sample id {} is used multiple times, but the directories are different so the pipeline is proceeding! If you didn't intend that remake the samplesheet.".format(uni_id.split("_")[0]))
+            else:
+                sample_name_list.append(uni_id.split("_")[0])
+            if uni_id in sample_dir_list:
                 print_error(
-                    "The sample id {} is used multiple times! IDs need to be unique.".format(sample_name),
+                    "The sample id {} in the project dir {} is used multiple times! This combination needs to be unique.".format(uni_id.split("_")[0], uni_id.split("_")[1]),
                     "Line",
                     line,
                 )
             else:
-                sample_name_list.append(sample_name)
+                sample_dir_list.append(uni_id)
 
             files = []
             # Define the file path

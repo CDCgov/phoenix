@@ -30,16 +30,18 @@ process GRIPHIN {
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
     def centar = run_centar ? "--centar" : ""
+    def samplesheet_command = run_centar ? "--samplesheet ${original_samplesheet}" : ""
     def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     full_path=\$(readlink -f ${outdir})
 
-    # Save the value of full_path to a file (this file will be captured in the output block)
+    # Save the full_path to a file (this file will be captured in the output block)
     echo \$full_path > full_path_file.txt
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${centar} ${scaffolds}
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} \
+        --coverage ${coverage} ${phoenix} ${centar} ${scaffolds} ${samplesheet_command}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

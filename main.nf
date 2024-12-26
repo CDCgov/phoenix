@@ -442,7 +442,6 @@ workflow COMBINE_GRIPHINS {
             } else {
                 // Allow outdir to be relative
                 outdir = Channel.fromPath(params.outdir, relative: true)
-                outdir.view()
             }
         }
     } else {
@@ -519,19 +518,23 @@ workflow CENTAR {
     main:
         RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
 
+        // make null input because we already have griphin files.
+        combine_input = null // should be null for all centar runs
+
         if (params.combine_griphins == true) {
 
-            // make null input because we already have griphin files.
-            combine_input = null
-
-            COMBINE_GRIPHINS_WF ( 
-                RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [griphin]},
-                //RUN_CENTAR.out.griphins_tsv,
-                combine_input,
-                RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [meta_file.splitText().first().toString().trim()]},
-                RUN_CENTAR.out.ch_versions
-            )
-        }
+            if (params.outdir != "${launchDir}/phx_output") {
+                // this would be if --combined_griphins and --outdir were passed --> save CENTAR files in their respective project_id folds and summary files in --outdir
+                COMBINE_GRIPHINS_WF ( 
+                    RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [griphin]},
+                    //RUN_CENTAR.out.griphins_tsv,
+                    combine_input,
+                    outdir, //outdir_path
+                    RUN_CENTAR.out.valid_samplesheet,
+                    RUN_CENTAR.out.ch_versions // versions file
+                )
+            }
+        } 
 
     emit:
         //output for phylophoenix

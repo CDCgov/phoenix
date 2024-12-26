@@ -22,7 +22,7 @@ process CDIFF_PLASMIDS {
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     def container_version = "base_v2.1.0"
-    def container = task.container.toString() - "jvhagey/phoenix@"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # Call the real internal scripts to infer the ribotpes
 

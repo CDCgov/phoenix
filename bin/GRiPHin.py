@@ -48,6 +48,7 @@ def parseArgs(args=None):
 
 #set colors for warnings so they are seen
 CRED = '\033[91m'+'\nWarning: '
+CYELLOW = '\033[93m'
 CEND = '\033[0m'
 
 def Get_Parent_Folder(directory):
@@ -1328,38 +1329,9 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, centar, centar_df
     # now we will check for the "big 5" genes for highlighting later.
     columns_to_highlight = big5_check(final_ar_df)
     # combining all dataframes
-    if centar:
-        ###!print("\nEEE1.4\n")
-        ###!print(df['WGS_ID'])
-        ###!print("\nEEE1.5\n")
-        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-        ###!#   print(centar_df)
-        ###!print("\nEEE1.6\n",df['WGS_ID'])
-        ###!print("\nEEE1.61\n",df.columns)
-        ###!print("\nEEE1.7\n",centar_df['WGS_ID'])
-        ###!print("\nEEE1.71\n",centar_df.columns)
-        ###!print("EEE72:", final_df.columns.tolist())
-        ###!print("EEE72:\n") #, centar_df.columns.tolist())
-        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-        ###!    print(df)
-        ###!print("EEE73:\n") #, centar_df.columns.tolist())
-        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-        ###!    print(centar_df)
-        centar_df = sort_qc_through_spec2_dataframe(centar_df, False)
-        final_df = pd.merge(final_df, centar_df, how="left", on=["UNI","UNI"])
-        ###!print("\nEEE2:\n")
-        ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-        ###!    print(final_df)
-    ###!print("EEE74:", final_ar_df.columns.tolist())
-    final_df = pd.merge(final_df, final_ar_df, how="left", on=["UNI","UNI"])
-    ###!print("EEE75:", final_ar_df.columns.tolist())
-    final_df = pd.merge(final_df, hv_df, how="left", on=["UNI","UNI"])
-    ###!print("EEE76:", final_ar_df.columns.tolist())
-    final_df = pd.merge(final_df, pf_df, how="left", on=["UNI","UNI"])
-    ###!print("EEE3:")
-    ###!print(final_df.columns)
-    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-    ###!    print(final_df)
+    final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
+    final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
+    final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
     #get database names and remove if file is not found in the database list
     ar_db = final_df['AR_Database'].unique().tolist()
     if 'GAMMA file not found' in ar_db:
@@ -1377,14 +1349,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, centar, centar_df
     ###!print("EEE8:", columns_to_highlight)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
-def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens, ordered_centar_df, ar_start):
-    ###!#print("111A:",ar_df)
-    ###!print("111B:", qc_max_col, len(df.columns.tolist()), df.columns.tolist())
-    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-    ###!    print(df)
-    ###!print("111C:",ar_df)
-    ###!print("111D:",centar, centar_df_lens)
-    ###!print("111E:",ordered_centar_df)
+def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
         writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
@@ -1421,11 +1386,9 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
         worksheet.conditional_format('Y3:Z' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
         #worksheet.set_column('W:X', None, number_dec_2_format) # FastANI ID and Coverage
     # getting values to set column widths automatically
-    ###!print("EEEEE:", list(df.columns))
     for idx, col in enumerate(df):  # loop through all columns
-        ###!print("MMM", idx, col)
         series = df[col]
-        ###!print("MMM0:", series)  # uncomment this to see what the issue is with the "mad" error
+        #print(series)  # uncomment this to see what the issue is with the "mad" error
         if col == "Parent_Folder": #name is real long due to path so just making the width of the column header
             max_len = len("Parent_Folder")
         else:
@@ -1487,32 +1450,23 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
             else:
                 worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
     if centar == True:
-        phx_minus_centar = qc_max_col #- sum(centar_df_lens)
-        ###!print("AA-2",type(centar_df_lens), type(centar_df_lens[0]), type(centar_df_lens[1]), type(centar_df_lens[2]), type(centar_df_lens[3]), type(ar_gene_count), type(hv_gene_count), type(pf_gene_count))
-        ###!print("AA-1", centar_df_lens, centar_df_lens[0], centar_df_lens[1], centar_df_lens[2], centar_df_lens[3], ar_gene_count, hv_gene_count, pf_gene_count)
-        ###!print("AA:",qc_max_col, sum(centar_df_lens), phx_minus_centar,centar_df_lens[0],centar_df_lens[1],centar_df_lens[2])
-        ###!print("AA1: QC -> QC+size_df0-1",phx_minus_centar, (phx_minus_centar + centar_df_lens[0] - 1))
-        ###!print("AA2: QC+size_df0 -> QC+size_df0+size_of_df1-1",(phx_minus_centar + centar_df_lens[0]), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1))
-        ###!print("AA3: QC+size_df0+size_df1 -> QC+size_df0+size_df1+size_df2-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1]), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1))
-        ###!print("AA4: QC+size_df0+size_df1+size_df2 -> QC_max_col-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), (qc_max_col - 1))
-        ###!print("AA4.F: QC+size_df0+size_df1+size_df2 -> QC+size_df0+size_df1+size_df2+size_df3-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] - 1) )
-        ###!print("AA5: QC_max_col -> QC_max_col + size_AR",qc_max_col,(qc_max_col + ar_gene_count - 1))
-        ###!print("AA5.F: QC+size_df0+size_df1+size_df2+size_df3 -> QC+size_df0+size_df1+size_df2+size_df3+size_AR-1", (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3]) ,(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count - 1))
-        ###!print("AA6 : QC_max_col + size_AR -> QC_max_col + size_AR + size_HV",(qc_max_col + ar_gene_count),(qc_max_col + ar_gene_count + hv_gene_count - 1))
-        ###!print("AA6.F: QC+size_df0+size_df1+size_df2+size_df3+size_AR -> QC+size_df0+size_df1+size_df2+size_df3+size_AR+size_HV-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count),(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count - 1))
-        ###!print("AA7: QC_max_col + size_AR + size_HV -> QC_max_col + size_AR + size_HV + size _PF",(qc_max_col + ar_gene_count + hv_gene_count), (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1))
-        ###!print("AA7.F: QC+size_df0+size_df1+size_df2+size_df3+size_AR+size_HV -> QC+size_df0+size_df1+size_df2+size_df3+size_AR+size_HV+size_PF-1",(phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count), (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count + pf_gene_count - 1))
-        worksheet.merge_range(0, phx_minus_centar, 0, (phx_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
-        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0]), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3)
-        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
-        #worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_max_col - 1), "ML Predicted Ribotype", cell_format_p1)
-        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] - 1), "ML Predicted Ribotype", cell_format_p1)
-        #worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
-        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3]) , 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
-        #worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
-        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
-        #worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
-        worksheet.merge_range(0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count), 0, (phx_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] + centar_df_lens[3] + ar_gene_count + hv_gene_count + pf_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
+        qc_mins_centar = qc_max_col - sum(centar_df_lens)
+        worksheet.merge_range(0, (qc_mins_centar), 0, (qc_mins_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
+        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0]), 0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
+        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
+        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_mins_centar + sum(centar_df_lens) - 1), "ML Predicted Ribotype", cell_format_p1)
+        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey) 
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        # needed this for anoter set of samples... not sure what the differences are  -- cdc_phx with --centar
+        #worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + centar_df_lens[0] - 2), "Toxin A/B Variants", cell_format_p4)
+        #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 2), "Other Toxins", cell_format_p3)
+        #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 2), "C. difficile Specific AR Mutations", cell_format_p2)
+        #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), 0, (qc_max_col + sum(centar_df_lens) - 2), "ML Predicted Ribotype", cell_format_p1)
+        #worksheet.merge_range(0, (qc_max_col + sum(centar_df_lens) - 1 ), 0, (qc_max_col + sum(centar_df_lens) + ar_gene_count - 2), "Antibiotic Resistance Genes", cell_format_lightgrey) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
+        #worksheet.merge_range(0, (qc_max_col + sum(centar_df_lens) - 1 + ar_gene_count), 0 ,(qc_max_col + sum(centar_df_lens) + ar_gene_count + hv_gene_count - 2), "Hypervirulence Genes^^", cell_format_grey)
+        #worksheet.merge_range(0, (qc_max_col + sum(centar_df_lens) - 1 + ar_gene_count + hv_gene_count), 0, (qc_max_col + sum(centar_df_lens) + ar_gene_count + pf_gene_count + hv_gene_count - 2), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
     else:
         print("AAA:",qc_max_col, (qc_max_col + ar_gene_count - 1))
         worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
@@ -1582,25 +1536,21 @@ def blind_samples(final_df, control_file):
     # create new csv file
     return final_df
 
-def create_samplesheet(directory):
+def create_samplesheet(input_directory):
     """Function will create a samplesheet from samples in a directory if -d argument passed."""
-    directory = os.path.abspath(directory) # make sure we have an absolute path to start with
+    directory = os.path.abspath(input_directory) # make sure we have an absolute path to start with
     with open("Directory_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
-    dirs = sorted(os.listdir(directory))
-    # If there are any new files added to the top directory they will need to be added here or you will get an error
-    skip_list_a1 = glob.glob(directory + "/*_GRiPHin_Summary.*") # for if griphin is run on a folder that already has a report in it
-    skip_list_a2 = glob.glob(directory + "/*_comparison") # for comparinator script
-    skip_list_a = skip_list_a1 + skip_list_a2
-    skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
-    skip_list_b = ["BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "Phoenix_Summary.tsv", "centar_pipeline_info", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "Directory_samplesheet.csv", "sra_samplesheet.csv"]
-    skip_list = skip_list_a + skip_list_b
-    #remove unwanted files
-    dirs_cleaned = [item for item in dirs if item not in skip_list]
+    dirs = sorted(os.listdir(input_directory))
+    # Filter directories based on the presence of *_1.trim.fastq.gz files
+    valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "raw_stats", "*_raw_read_counts.txt")) ]
+    # Identify and warn about excluded directories
+    excluded_dirs = [excluded_dir for excluded_dir in dirs if excluded_dir not in valid_directories]
+    print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no ./raw_stats/*_raw_read_counts.txt files weren't found in these locations.\033[0m\n")
     try: #if there are numbers in the name then use that to sort
-        dirs_sorted=sorted(dirs_cleaned, key=lambda x: int("".join([i for i in x if i.isdigit()])))
+        dirs_sorted=sorted(valid_directories, key=lambda x: int("".join([i for i in x if i.isdigit()])))
     except: #if no numbers then use only alphabetically
-        dirs_sorted=sorted(dirs_cleaned)
+        dirs_sorted=sorted(valid_directories)
     for sample in dirs_sorted:
         with open("Directory_samplesheet.csv", "a") as samplesheet:
             if directory[-1] != "/": # if directory doesn't have trailing / add one
@@ -1636,30 +1586,6 @@ def convert_excel_to_tsv(output):
     #Write dataframe into csv
     data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
 
-def sort_qc_through_spec2_dataframe( in_dataframe, keep_extras ):
-    ###!print("9999A:", keep_extras, in_dataframe.columns.tolist())
-    reference_header = ['UNI', 'WGS_ID', 'Parent_Folder', 'Data_Location', 'Minimum_QC_Check', 'Minimum_QC_Issues', 'Warnings', 'Alerts', 'Raw_Q30_R1_[%]', 'Raw_Q30_R2_[%]', 'Total_Raw_[reads]', 'Paired_Trimmed_[reads]', 'Total_Trimmed_[reads]', 'Estimated_Trimmed_Coverage', 'GC[%]', 'Scaffolds', 'Assembly_Length', 'Assembly_Ratio', 'Assembly_StDev', 'Final_Taxa_ID', 'Taxa_Source', 'BUSCO_Lineage', 'BUSCO_%Match', 'Kraken_ID_Raw_Reads_%', 'Kraken_ID_WtAssembly_%', 'FastANI_Organism', 'FastANI_%ID', 'FastANI_%Coverage', 'Species_Support_ANI', 'Primary_MLST_Scheme', 'Primary_MLST_Source', 'Primary_MLST', 'Primary_MLST_Alleles', 'Secondary_MLST_Scheme', 'Secondary_MLST_Source', 'Secondary_MLST', 'Secondary_MLST_Alleles', 'MLST Clade','Toxinotype', 'Toxin-A_sub-type', 'tcdA', 'Toxin-B_sub-type', 'tcdB', 'tcdC_Variant', 'tcdC other mutations', 'tcdC', 'tcdR', 'tcdE', 'cdtA', 'cdtB', 'cdtR_Variant', 'cdtR other mutations', 'cdtR', 'cdtAB1', 'cdtAB2', 'PaLoc_NonTox_Variant', 'PaLoc_NonTox other mutations', 'PaLoc_NonTox', 'gyrA known mutations', 'gyrA other mutations', 'gyrA', 'gyrB known mutations', 'gyrB other mutations', 'gyrB', 'dacS known mutations', 'dacS other mutations', 'dacS', 'feoB known mutations', 'feoB other mutations', 'feoB', 'fur known mutations', 'fur other mutations', 'fur', 'gdpP known mutations', 'gdpP other mutations', 'gdpP', 'glyC known mutations', 'glyC other mutations', 'glyC', 'hemN known mutations', 'hemN other mutations', 'hemN', 'hsmA known mutations', 'hsmA other mutations', 'hsmA', 'lscR known mutations', 'lscR other mutations', 'lscR', 'marR known mutations', 'marR other mutations', 'marR', 'murG known mutations', 'murG other mutations', 'murG', 'nifJ known mutations', 'nifJ other mutations', 'nifJ', 'PNimB known mutations', 'PNimB other mutations', 'PNimB', 'PNimB |','rpoB known mutations', 'rpoB other mutations', 'rpoB', 'rpoC known mutations', 'rpoC other mutations', 'rpoC', 'sdaB known mutations', 'sdaB other mutations', 'sdaB', 'thiH known mutations', 'thiH other mutations', 'thiH', 'vanR known mutations', 'vanR other mutations', 'vanR', 'vanS known mutations', 'vanS other mutations', 'vanS', 'CEMB RT Crosswalk', 'Inferred RT', 'Probability', 'ML Note', 'Plasmid Info']
-    found_headers = []
-    other_headers = []
-    for ref_header in reference_header:
-        if ref_header in in_dataframe.columns.tolist():
-            found_headers.append(ref_header)
-    for in_header in in_dataframe.columns.tolist():
-        if in_header not in ref_header:
-            other_headers.append(in_header)
-    if len(found_headers) > 0:
-        ###!print("9999C:", found_headers)
-        if keep_extras is True:
-            ###!print("9999D:", other_headers)
-            found_headers.extend(other_headers)
-        ###!print("9999E:", found_headers)
-        out_dataframe = in_dataframe[found_headers]
-        ###!print("9999B:", keep_extras, out_dataframe.columns.tolist())
-        return out_dataframe
-    else:
-        print("The provided dataframe does not have any columns matching the reference, returning it as is")
-        return in_dataframe
-
 def main():
     args = parseArgs()
     has_any_centar=False
@@ -1683,49 +1609,34 @@ def main():
     else:
         sort_samplesheet(args.samplesheet)
         samplesheet = args.samplesheet
+    if args.centar == True:
+        # for griphin nextflow module --outdir is passed, however, when using species specific pipelines and --input we need to make sure only samples in samplesheet are run
+        input_samplesheet = pd.read_csv(args.samplesheet)
+        samples_to_run = input_samplesheet["sample"].tolist()
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
     with open(samplesheet) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
-        for row in csv_reader:
+        csv_rows = list(csv_reader)  # Convert the iterator to a list to reuse it
+        if args.centar == True:
+            filtered_out_samples = [row[0] for row in csv_rows if any(sample not in row[0] for sample in samples_to_run)]
+            csv_rows = [row for row in csv_rows if row[0] in samples_to_run]
+            print("\n\033[93m Warning: The following sample(s) are not in samplesheet and were filtered out of reporting in griphin: {}\033[0m\n".format(list(set(filtered_out_samples) - set(samples_to_run))))
+        for row in csv_rows:
             sample_name = row[0]
             directory = row[1]
             # check if species specific information is present
             if args.shigapass == True:
                 shiga_df = create_shiga_df(directory, sample_name, shiga_df)
             if args.centar == True:
-                    centar_df, really_is_centar = create_centar_combined_df(directory, sample_name)
-                    if really_is_centar:
-                        ###!print("4440: Changing centar to true", has_any_centar, centar_df)
-                        has_any_centar = True
-                        # Correct Ribotyping Calls to match expected leading Zeroes. Doing 'manually' since some may be bigger
-                        ###!print(centar_df.columns.tolist())
-                        xcol = centar_df.columns.get_loc("CEMB RT Crosswalk")
-                        inf_col = centar_df.columns.get_loc("Inferred RT")
-                        rows = centar_df.shape[0]
-                        ###!print("Rows:", rows)
-                        for y in range(0,rows):
-                            ###!print(y,centar_df.iloc[ y, xcol], type(centar_df.iloc[ y, xcol]), centar_df.iloc[ y, inf_col], type(centar_df.iloc[ y, inf_col]))
-                            if isinstance(centar_df.iloc[ y, xcol], np.int64) and int(centar_df.iloc[y, xcol]) < 100:
-                                ###!print(y,centar_df.iloc[ y, xcol], "YES")
-                                centar_df.iloc[y,xcol] = str("{:03d}".format(centar_df.iloc[y,xcol]))
-                            ###!else:
-                                ###!print(y,centar_df.iloc[ y, xcol], "NO")
-                            if isinstance(centar_df.iloc[ y, inf_col], np.int64) and int(centar_df.iloc[y, inf_col]) < 100:
-                                centar_df.iloc[y,inf_col] = str("{:03d}".format(centar_df.iloc[y,inf_col]))
-                                ###!print(y,centar_df.iloc[ y, inf_col], "YES")
-                            ###!else:
-                                ###!print(y,centar_df.iloc[ y, inf_col], "NO")
-            ###!        else:
-            ###!            print("4440: No centar for", directory)
-                    centar_dfs.append(centar_df)
+                centar_df = create_centar_combined_df(directory, sample_name)
+                centar_dfs.append(centar_df)
             data_location, parent_folder = Get_Parent_Folder(directory)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
             QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, unique_id = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, str(parent_folder), data_location)
             #Collect this mess of variables into appeneded lists
-            ###!print("444A:", ar_df)
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, unique_L = Append_Lists(data_location, parent_folder, sample_name, \
             Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, \
@@ -1739,73 +1650,26 @@ def main():
         df = species_specific_griphin.double_check_taxa_id(shiga_df, df)
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
-    
-    #if args.centar == True:
-    if has_any_centar:
-        ###!print("BBB",centar_dfs)
+    if args.centar == True:
         full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
         ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
         centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
-        ###!print("BBB-1:", ordered_centar_df.columns.tolist(), ordered_centar_df['MLST Clade'])
+        # combing centar with phx qc information
+        df = pd.concat([df, ordered_centar_df], axis=1)
     else:
         ordered_centar_df = pd.DataFrame()
         A_B_Tox_len = other_Tox_len = mutant_len = RB_type_len = 0
         centar_df_lens = [0,0,0,0] # we sum later so needs to be a list of numbers
     (qc_max_row, qc_max_col) = df.shape
-    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-    ###!    print(df)
-    ###!print("BBB0:", qc_max_col,qc_max_row)
-    ###!print("BBBBBB0: df")
-    ###!for x in range(0,qc_max_col):
-    ###!    print(x, df.columns.tolist()[x], df.iloc[0,x])
-    ###!print("BBBBBB0: centar_df")
-    ###!for x in range(0,centar_df.shape[1]):
-    ###!    print(x, centar_df.columns.tolist()[x], centar_df.iloc[0,x])
-    ###!print("BBBBBB0: ar_df")
-    ###!for x in range(0,ar_df.shape[1]):
-    ###!    print(x, ar_df.columns.tolist()[x], ar_df.iloc[0,x])
-    ###!print("BBBBBB0: hv_df")
-    ###!for x in range(0,hv_df.shape[1]):
-    ###!    print(x, hv_df.columns.tolist()[x], hv_df.iloc[0,x])
-    ###!print("BBBBBB0: pf_df")     
-    ###!for x in range(0,pf_df.shape[1]):
-    ###!    print(x, pf_df.columns.tolist()[x], pf_df.iloc[0,x])
-    qc_max_col = df.shape[1] # remove one for the UNI column
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    ###!print("BBB1:", len(df.columns.tolist()), df.columns.tolist())
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix, has_any_centar, ordered_centar_df)
-    ###!print("BBB1:", qc_max_col,qc_max_row, ar_max_col, columns_to_highlight)
-    ###!print("BBBBBB1: final_df")
-    ###!for x in range(0,final_df.shape[1]):
-    ###!    print(x, final_df.columns.tolist()[x], final_df.iloc[0,x])
-    ###!print("BBBBBB1: final_ar")
-    ###!for x in range(0,final_ar_df.shape[1]):
-    ###!    print(x, final_ar_df.columns.tolist()[x], final_ar_df.iloc[0,x])
-    ###!print("BBBBBB1: ar_df")
-    ###!for x in range(0,ar_df.shape[1]):
-    ###!    print(x, ar_df.columns.tolist()[x], ar_df.iloc[0,x])
-    ###!print("BBBBBB1: hv_df")
-    ###!for x in range(0,hv_df.shape[1]):
-    ###!    print(x, hv_df.columns.tolist()[x], hv_df.iloc[0,x])
-    ###!print("BBBBBB1: pf_df")
-    ###!for x in range(0,pf_df.shape[1]):
-    ###!    print(x, pf_df.columns.tolist()[x], pf_df.iloc[0,x])
-    ###!print("BBB2:", len(final_df.columns.tolist()), final_df.columns.tolist())
-    ###!print("BBB3:", final_ar_df.columns.tolist())
-    ###!print("BBB4:", len(ordered_centar_df.columns.tolist()), ordered_centar_df.columns.tolist())
-    ###!with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-    ###!    print(final_df)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
     else:
         final_df = final_df
-    final_df=final_df.drop('UNI', axis=1)
-    ar_start_index = qc_max_col + sum(centar_df_lens)
-    ###!for x in range(0,qc_max_col):
-    ###!    print(x, final_df.columns.tolist()[x], final_df.iloc[0,x])
-    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix, args.shigapass, has_any_centar, centar_df_lens, ordered_centar_df, ar_start_index)
+    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix, args.shigapass, args.centar, centar_df_lens)
     convert_excel_to_tsv(args.output)
 
 if __name__ == '__main__':

@@ -140,18 +140,25 @@ workflow RUN_CENTAR {
         )
         ch_versions = ch_versions.mix(CENTAR_GRIPHIN.out.versions)
 
-        // to be able to create software_versions.yml 
-        software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
-        .combine(CENTAR_GRIPHIN.out.griphin_report).map{version, meta_file, griphin -> [meta_file.splitText().first().toString().trim(), version]}
-
         if (params.combine_griphins == false) { // don't run if combined workflow is going to run
-            /// need to figure out how to do this on a per directory 
+            /*if (params.outdir != "${launchDir}/phx_output"){ // when no outdir is passed
+                // to be able to create software_versions.yml 
+                software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml') // combine with CENTAR_GRIPHIN.out to ensure this runs after
+                .combine(params.outdir).map{version, outdir -> [outdir.toString(), version]}
+            } else {*/
+                // to be able to create software_versions.yml 
+                software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml') // combine with CENTAR_GRIPHIN.out to ensure this runs after
+                .combine(CENTAR_GRIPHIN.out.griphin_report).map{version, meta_file, griphin -> [meta_file.splitText().first().toString().trim(), version]}
+            //}
+
+            /////////////////////////////// need to figure out how to do this on a per directory 
             // Collecting the software versions
             CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
                 software_versions_ch.map{meta_file, version -> version},
-                software_versions_ch.map{meta_file, version -> meta_file},
-                software_versions_ch.map{meta_file, version -> meta_file.toString()}
+                software_versions_ch.map{projectDir, version -> projectDir}
             )
+        } else {
+            software_versions_ch = ch_versions
         }
 
     emit:
@@ -159,6 +166,7 @@ workflow RUN_CENTAR {
         griphins_tsv    = CENTAR_GRIPHIN.out.griphin_tsv_report
         griphins_excel  = CENTAR_GRIPHIN.out.griphin_report
         dir_samplesheet = CENTAR_GRIPHIN.out.converted_samplesheet
+        valid_samplesheet = CREATE_INPUT_CHANNELS.out.valid_samplesheet
         ch_versions     = software_versions_ch
 }
 
@@ -201,9 +209,10 @@ if (params.combine_griphins == false) { // don't run if combined workflow is goi
             ['find','/ces','-type','f','-name','\"*.ica\"','2>','/dev/null', '|', 'grep','"report"' ,'|','xargs','-i','cp','-r','{}',"${workflow.launchDir}/out"].execute()
         }
     } else {
-            error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
+        error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods."
     }
 }
+
 /*
 ========================================================================================
     THE END

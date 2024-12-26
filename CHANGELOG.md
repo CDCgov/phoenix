@@ -272,7 +272,9 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Fixed Bugs:**
 - Changes were made to allow `-resume` to work correctly.  
-- Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.
+- More robust checks in phx to pull in only sample_names correctly.  
+- Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.  
+- [Shigapass](Shigella ) was added to distinguish correctly between E.coli/Shigella. If FastANI determines the species to be either E.coli or Shigella Shigapass will now run to confirm the call. In GRiPHin there is a new `Final_Taxa_ID` column that has the final determined call. The column `Taxa_source` will still say `ANI_REFSEQ` if the FastANI call was kept and now will have `Shigapass` if the FastANI call was determined to be wrong by Shigapass and was thus overwritten. 
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  

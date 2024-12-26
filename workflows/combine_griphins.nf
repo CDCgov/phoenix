@@ -71,31 +71,30 @@ workflow COMBINE_GRIPHINS_WF {
         //input_griphins_tsv_ch
         ch_input
         outdir_path
+        valid_samplesheet
         ch_versions
 
     main:
         if (input_griphins_excel_ch != null) { // for running at the end of another entry 
-
             // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
             //update_griphin_ch = input_griphins_excel_ch.collect().combine(input_griphins_tsv_ch.collect()).combine(outdir_path)
+            update_griphin_ch = input_griphins_excel_ch.collect().combine(outdir_path).combine(outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")})
 
             // combine griphin files, the new one just created and the old one that was found in the project dir. 
             UPDATE_GRIPHIN (
                 input_griphins_excel_ch.collect(),
                 //input_griphins_tsv_ch.collect(),
                 outdir_path,
-                outdir_path.toString().split('/')[-1], 
-                //outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
+                outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
+                valid_samplesheet,
                 params.coverage
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
             /// need to figure out how to do this on a per directory 
             // Collecting the software versions
-            CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-                ch_versions.map{meta_file, version -> version},
-                ch_versions.map{meta_file, version -> meta_file},
-                ch_versions.map{meta_file, version -> meta_file.toString()}
+            COMBINE_CUSTOM_DUMPSOFTWAREVERSIONS (
+                ch_versions.unique().collectFile(name: 'collated_versions.yml')
             )
 
         } else { // for running as its own entry point
@@ -116,6 +115,7 @@ workflow COMBINE_GRIPHINS_WF {
                 excel_griphins, 
                 outdir_path, 
                 outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
+                valid_samplesheet, //fix me
                 params.coverage
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)

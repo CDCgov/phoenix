@@ -40,7 +40,7 @@ process ASSET_CHECK {
         :
     fi
 
-    if [[ ${kraken_db_path} != "false" ]]
+    if [[ ${kraken_db_path} != false ]]
     then
         if [[ ${kraken_db_path} = *.tar.gz ]]
         then
