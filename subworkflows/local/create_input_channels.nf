@@ -43,7 +43,7 @@ workflow CREATE_INPUT_CHANNELS {
                     .subscribe { result -> if (result.isEmpty()) {  println("${orange}Warning: There is no files were in */file_integrity/*_*_summary.txt. This file is required so we will make it.${reset}")}}
 
             // Fallback to dir_names_ch if passed_id_channel is empty
-            passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().unique().collect()
+            passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().unique().collect().toList()
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             // Collect all ids and combine with indir
@@ -248,12 +248,6 @@ workflow CREATE_INPUT_CHANNELS {
 
                 valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
             }
-
-            all_griphin_excel_ch.view()
-            all_phoenix_tsv_ch.view()
-            all_pipeline_info_ch.view()
-            exit()
-
 
             // combining all summary files into one channel
             summary_files_ch = all_griphin_excel_ch.join(all_griphin_tsv_ch.map{meta, griphin_tsv   -> [[id:meta.id, project_id:meta.project_id], griphin_tsv]},   by: [[0][0],[0][1]])

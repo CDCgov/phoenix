@@ -11,7 +11,7 @@ import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 from openpyxl import load_workbook
 from itertools import chain
-from GRiPHin import order_ar_gene_columns, Combine_dfs, big5_check, write_to_excel, convert_excel_to_tsv, sort_qc_through_spec2_dataframe
+from GRiPHin import order_ar_gene_columns, Combine_dfs, big5_check, write_to_excel, convert_excel_to_tsv
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -g1 ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds

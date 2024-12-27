@@ -60,7 +60,7 @@ def clean_and_format_centar_dfs(centar_df):
     # Remove each mutation name if it exists in mutations_col
     mutations_col = [mutation for mutation in mutations_col if mutation not in mutations_to_remove]
     mutant_len = len(mutations_col)
-    existing_columns_in_order = ["UNI","MLST Clade"] + A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col
+    existing_columns_in_order = ["MLST Clade"] + A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col
     if clean_centar_df.empty: #for cases where centar wasn't run for that sample - not c. diff or a qc failure sample
         clean_centar_df = pd.DataFrame(columns = existing_columns_in_order) # Assign the headers to the DataFrame
     ordered_centar_df = clean_centar_df[existing_columns_in_order]
@@ -73,7 +73,6 @@ def create_centar_combined_df(directory, sample_name):
     # create file names
     #centar_summary = directory + "/CENTAR/" + sample_name + "_centar_output.tsv"
     centar_summary = sample_name + "_centar_output.tsv"
-    single_UNI=directory
     par='/'.join(directory.split('/')[0:-1])
     dat_loc=directory.split('/')[-1]
     reiterate=True

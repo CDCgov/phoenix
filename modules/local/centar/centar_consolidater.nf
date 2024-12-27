@@ -29,6 +29,7 @@ process CENTAR_CONSOLIDATER {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def ribotype_file = rt_file ? "-r ${rt_file}" : ""
     """
     ${ica}Centar_Consolidater.sh \\
         -t ${tox_file} \\
@@ -36,7 +37,7 @@ process CENTAR_CONSOLIDATER {
         -y ${toxinotype_file} \\
         -a ${other_AR_AA_file} \\
         -n ${other_AR_NT_file} \\
-        -r ${rt_file} \\
+        ${ribotype_file} \\
         -p ${plasmids_file} \\
         -o ${prefix}_centar_output.tsv \\
         -s ${prefix} \\
