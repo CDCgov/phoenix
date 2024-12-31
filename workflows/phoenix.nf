@@ -90,6 +90,32 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 
 /*
 ========================================================================================
+    GROOVY FUNCTIONS
+========================================================================================
+*/
+
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        return "$genus $species"
+}
+
+def add_project_id(old_meta, input_ch, outdir_path){
+    def meta = [:] // create meta array
+    meta.id = old_meta.id
+    meta.project_id = outdir_path
+    return [meta, input_ch]
+}
+
+/*
+========================================================================================
     RUN MAIN WORKFLOW
 ========================================================================================
 */
@@ -418,6 +444,18 @@ workflow PHOENIX_EXTERNAL {
         .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
         .ifEmpty( [] )
 
+        //pull in species specific files
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+            centar_var = true
+            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch)
+        } else {
+            centar_var = false
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
+        }
+
         // pulling it all together
         all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
 
@@ -429,7 +467,7 @@ workflow PHOENIX_EXTERNAL {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false, false, params.shigapass
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false, false, params.shigapass, centar_var
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

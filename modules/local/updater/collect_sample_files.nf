@@ -8,7 +8,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path(dir)
 
     output:
-    tuple val(meta), path("${meta.id}/file_integrity/${meta.id}*summary.txt"),                     emit: fairy_summary
+    tuple val(meta), path("${meta.id}/file_integrity/${meta.id}*_summary.txt"), optional: true,    emit: fairy_summary
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_1.trim.fastq.gz"),                    emit: read1
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_2.trim.fastq.gz"),                    emit: read2
     tuple val(meta), path("${meta.id}/assembly/${meta.id}.filtered.scaffolds.fa.gz"),              emit: scaffolds
@@ -20,6 +20,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/quast/${meta.id}_summary.tsv"),                              emit: quast_report
     tuple val(meta), path("${meta.id}/ANI/${meta.id}_REFSEQ_*.fastANI.txt"),                       emit: ani_best_hit
     tuple val(meta), path("${meta.id}/qc_stats/*_trimmed_read_counts.txt"),                        emit: trimmed_stats
+    tuple val(meta), path("${meta.id}/mlst/*_combined.tsv"),                                       emit: combined_mlst
     tuple val(meta), path("${meta.id}/${meta.id}_Assembly_ratio_*.txt"),                           emit: assembly_ratio
     tuple val(meta), path("${meta.id}/${meta.id}.synopsis"),                                       emit: synopsis
     tuple val(meta), path("${meta.id}/${meta.id}.tax"),                                            emit: tax
@@ -29,15 +30,8 @@ process COLLECT_SAMPLE_FILES {
     script: 
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
-    // Remove trailing slash if present
-    def clean_dir = dir.endsWith('/') ? "${dir}"[0..-2] : "${dir}"
-
-    // Define project_path and ab_path
-    def project_path = clean_dir
-    def ab_path = "${clean_dir}/${meta.id}"
     """
-    #just moving files so the output is accessible 
-    mv ${ab_path} .
+    # Nothing happens just getting all of thse files into channels 
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

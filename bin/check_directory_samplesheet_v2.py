@@ -59,6 +59,7 @@ def check_samplesheet(file_in, file_out):
     SAMPLE_PE,SAMPLE_PE_RUN2_1.fastq.gz,SAMPLE_PE_RUN2_2.fastq.gz
     SAMPLE_SE,SAMPLE_SE_RUN1_1.fastq.gz,
 
+
     For an example see:
     https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/samplesheet/samplesheet_test_illumina_amplicon.csv
     """
@@ -76,20 +77,27 @@ def check_samplesheet(file_in, file_out):
 
         ## Check sample entries
         sample_name_list = [] # used to check if sample name has been used before
+        sample_dir_list = [] # used to check if sample name has been used before
         Read_list = []
         for line in fin:
             lspl = [x.strip().strip('"') for x in line.strip().split(",")]
 
             # Check for duplicate sample names
             sample_name = line.split(",")[0]
-            if sample_name in sample_name_list:
+            project_id = line.split(",")[1].split("/")[-2]
+            uni_id = sample_name + "_" + project_id
+            if uni_id.split("_")[0] in sample_name_list:
+                print("WARNING: The sample id {} is used multiple times, but the directories are different so the pipeline is proceeding! If you didn't intend that remake the samplesheet.".format(uni_id.split("_")[0]))
+            else:
+                sample_name_list.append(uni_id.split("_")[0])
+            if uni_id in sample_dir_list:
                 print_error(
-                    "The sample id {} is used multiple times! IDs need to be unique.".format(sample_name),
+                    "The sample id {} in the project dir {} is used multiple times! This combination needs to be unique.".format(uni_id.split("_")[0], uni_id.split("_")[1]),
                     "Line",
                     line,
                 )
             else:
-                sample_name_list.append(sample_name)
+                sample_dir_list.append(uni_id)
 
             files = []
             # Define the file path
@@ -97,40 +105,45 @@ def check_samplesheet(file_in, file_out):
             sample_folder = line.split(",")[0]
             if str(dir).strip().endswith('/'):
                 path = str(dir).strip()[:-1]
+                sample_path = path
+                project_path = "/".join(sample_path.split("/")[:-1])
             else:
                 path = str(dir).strip()
+                sample_path = path
+                project_path = "/".join(sample_path.split("/")[:-1])
             #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
-            files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
-            files.append(path + "/" + sample_folder + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
-            files.append(path + "/" + sample_folder + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
-            files.append(path + "/" + sample_folder + "/annotation/" + sample_name + ".faa")
-            files.append(path + "/" + sample_folder + "/annotation/" + sample_name + ".gff")
-            files.append(path + "/" + sample_folder + "/" + sample_name + ".tax")
-            files.append(path + "/" + sample_folder + "/" + sample_name + "_summaryline.tsv")
-            files.append(path + "/" + sample_folder + "/" + sample_name + ".synopsis")
-            files.append(path + "/" + "Phoenix_Summary.tsv")
+            files.append(sample_path + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
+            files.append(sample_path + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
+            files.append(sample_path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
+            files.append(sample_path + "/annotation/" + sample_name + ".faa")
+            files.append(sample_path + "/annotation/" + sample_name + ".gff")
+            files.append(sample_path + "/" + sample_name + ".tax")
+            files.append(sample_path + "/" + sample_name + "_summaryline.tsv")
+            files.append(sample_path + "/" + sample_name + ".synopsis")
+            files.append(project_path + "/" + "Phoenix_Summary.tsv")
             # Handle glob searches with potential errors
             #try:
                 # Find the position of the last occurrence of "/"
                 #last_slash_index = path.rfind('/')
                 # Slice the string up to and including the last slash
                 #project_path = path[:last_slash_index + 1]
-            #except IndexError:
-            #    raise ValueError(f"No *_GRiPHin_Summary.xlsx file found in {path}")
             try:
-                fairy_file = glob.glob(path + "/" + sample_folder + "/file_integrity/" + sample_name + "*summary.txt")[0]
+                full_path = path + "/file_integrity/"
+                fairy_file = glob.glob(path + "/"+ sample_name + "/file_integrity/" + sample_name + "*summary.txt")[0]
+                print(f"fairy_file found at " + fairy_file)
+                # check that the sample did not fail the file_integrity check
+                with open(fairy_file, 'r') as file:
+                    for line in file:
+                        if 'FAILED' in line:
+                            print("The file {} states the file failed integrity checks and should not be included in the analysis. Please remove this sample from the analysis.".format(fairy_file))
+                            sys.exit(1)
             except IndexError:
-                raise ValueError(f"No *_summary.tsv file found in {path}.")
-            # check that the sample did not fail the file_integrity check
-            with open(fairy_file, 'r') as file:
-                for line in file:
-                    if 'FAILED' in line:
-                        print("The file {} states the file failed integrity checks and should not be included in the analysis. Please remove this sample from the analysis.".format(fairy_file))
-                        sys.exit(1)
+                #raise ValueError(f"No *_summary.tsv file found in {full_path}.")
+                print(f"No *_summary.tsv file found in {full_path}.")
             try:
-                glob.glob(path + "/*_GRiPHin_Summary.tsv")[0]
+                glob.glob(project_path + "/*_GRiPHin_Summary.tsv")[0]
             except IndexError:
-                raise ValueError(f"No *_GRiPHin_Summary.tsv file found in {path}.")
+                raise ValueError(f"No *_GRiPHin_Summary.tsv file found in {project_path}.")
             for file_path in files:
                 # Check if the file exists
                 if Path(file_path).exists():
@@ -194,7 +207,6 @@ def main(args=None):
     args = parse_args(args)
     check_for_duplicates(args.FILE_IN)
     check_samplesheet(args.FILE_IN, args.FILE_OUT)
-
 
 if __name__ == "__main__":
     sys.exit(main())

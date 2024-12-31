@@ -1,15 +1,20 @@
 process UPDATE_GRIPHIN {
-    tag "${meta.project_id}"
+    tag "${project_id}"
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
+    stageInMode 'copy' // you need this or openpyxl complains that excel files aren't excel files. 
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
-    tuple val(meta), path(old_griphin), path(new_griphin), path(outdir) // output directory used as prefix for the summary file
+    path(griphins_excel)
+    //path(griphins_tsv)
+    path(outdir) // output directory used as prefix for the summary file
+    val(project_id)
+    path(valid_samplesheet)
     val(coverage)
 
     output:
-    path("*_GRiPHin_Summary.xlsx"),    emit: griphin_report
-    path("*_GRiPHin_Summary.tsv"),     emit: griphin_tsv_report
+    path("${project_id}_GRiPHin_Summary.xlsx"),    emit: griphin_report
+    path("${project_id}_GRiPHin_Summary.tsv"),     emit: griphin_tsv_report
     path("versions.yml"),              emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
@@ -19,8 +24,18 @@ process UPDATE_GRIPHIN {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    if (griphins_excel.size() == 2) {
+        // Case where only two files are passed
+        griphin_input = "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}"
+    } else {
+        // Case where griphins_excel contains many
+        griphin_input = "--griphin_list"
+    }
     """
-    ${ica}combine_GRiPHins.py -g1 ${old_griphin} -g2 ${new_griphin} --output ${outdir}_GRiPHin_Summary --coverage ${coverage}
+    ${ica}combine_GRiPHins.py ${griphin_input} \
+        --output ${project_id}_GRiPHin_Summary \
+        --coverage ${coverage} \
+        --samplesheet ${valid_samplesheet}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
