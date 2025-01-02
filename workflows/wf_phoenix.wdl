@@ -93,10 +93,10 @@ workflow phoenix_workflow {
     File? adapter_removal_log     = phoenix.adapter_removal_log      # bbduk.log
     #phoenix assembly - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File? assembly_graph          = phoenix.assembly_graph           # gfa.gz
-    File? filtered_scaffolds_log   = phoenix.filtered_scaffolds_log   # bbmap_filtered.log
+    File? filtered_scaffolds_log  = phoenix.filtered_scaffolds_log   # bbmap_filtered.log
     File? contigs                 = phoenix.contigs                  # contigs.fa.gz
-    File? filtered_scaffolds       = phoenix.filtered_scaffolds       # filtered.scaffolds.fa.gz
-    File? assembly_with_seq_names  = phoenix.assembly_with_seq_names  # renamed.scaffolds.fa.gz
+    File? filtered_scaffolds      = phoenix.filtered_scaffolds       # filtered.scaffolds.fa.gz
+    File? assembly_with_seq_names = phoenix.assembly_with_seq_names  # renamed.scaffolds.fa.gz
     File? assembly                = phoenix.assembly                 # scaffolds.fa.gz
     File? spades_log              = phoenix.spades_log               # spades.log
     #phoenix wtasmbld kraken/krona

@@ -64,7 +64,7 @@ if [[ "${options_found}" -eq 0 ]]; then
 fi
 
 if [[ "${show_version}" = "True" ]]; then
-	echo "sort_and_prep.sh: ${version}"
+	echo "sort_and_prep_dist.sh: ${version}"
 	exit
 fi
 

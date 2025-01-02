@@ -231,17 +231,17 @@ while IFS='' read -r line; do
 done < "${NCBI_ratio}"
 #echo "looked in ${NCBI_ratio}"
 
-#echo "${expected_length}-${assembly_length}"
+echo "${expected_length}-${assembly_length}"
 
 if [[ ${expected_length} = "NA" ]] || [[ -z ${expected_length} ]]; then
 	echo "No expected length was found to compare to"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: NA\nIsolate_St.Devs: NA\nActual_length: ${assembly_length}\nExpected_length: NA\nRatio: -1" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" > "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 elif [[ ${assembly_length} = "NA" ]] || [[ -z ${assembly_length} ]]; then
 	echo "No assembly length was found to compare with"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: NA\nActual_length: NA\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}\nSample_GC_Percent: NA" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}\nSample_GC_Percent: NA" > "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 fi
 

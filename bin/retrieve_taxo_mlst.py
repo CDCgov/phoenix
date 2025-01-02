@@ -80,7 +80,8 @@ def retrieve_mlst_nonovel(fullpath):
                     indices = file_content.index[file_content["Database"].str.contains("Oxford") |
                                                 file_content["Database"].str.contains("Pasteur") | file_content["Database"].str.contains("Achtman")]
                     tmp_dict = tools.rearrange_oxford_pasteur(file_content, indices)
-                    isolate_mlst[file_content["Sample"][0].strip()] = tmp_dict[file_content["Sample"][0].strip()]
+                    print(file_content["Sample"][0])
+                    isolate_mlst[str(file_content["Sample"][0]).strip()] = tmp_dict[str(file_content["Sample"][0]).strip()]
         except FileNotFoundError:
             isolate_mlst[isolate_name] = ""
     return isolate_mlst

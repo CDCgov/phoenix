@@ -100,7 +100,7 @@ process GET_MLST_SRST2 {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        local_MLST_converter.py: \$(${ica}local_MLST_converter.py --version )
+        local_MLST_converter.py: \$(${ica}local_MLST_converter.py --version)
         python: \$(python --version | sed 's/Python //g')
         python_container: ${container_version}
     END_VERSIONS

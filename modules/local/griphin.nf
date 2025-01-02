@@ -1,6 +1,8 @@
 process GRIPHIN {
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.0.2'
+    //container 'quay.io/jvhagey/phoenix:base_v2.0.2'
+    // base_v2.1.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
 
     input:
     path(summary_line_files)
@@ -10,12 +12,15 @@ process GRIPHIN {
     val(coverage)
     val(entry)
     val(scaffolds_entry)
+    val(update)
+    val(shigapass_detected)
+    val(run_centar)
 
     output:
-    path("*_Summary.xlsx"),            emit: griphin_report
-    path("*_Summary.tsv"),             emit: griphin_tsv_report
-    path("Directory_samplesheet.csv"), emit: converted_samplesheet
-    path("versions.yml"),              emit: versions
+    tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), emit: griphin_report
+    path("*_GRiPHin*.tsv"),                                    emit: griphin_tsv_report
+    path("Directory_samplesheet.csv"),                         emit: converted_samplesheet
+    path("versions.yml"),                                      emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -25,11 +30,20 @@ process GRIPHIN {
     // define variables
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
+    def shigapass = shigapass_detected ? "--shigapass" : ""
+    def centar = run_centar ? "--centar" : ""
+    def samplesheet_command = run_centar ? "--samplesheet ${original_samplesheet}" : ""
+    def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
+    def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     full_path=\$(readlink -f ${outdir})
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${outdir} --coverage ${coverage} ${phoenix} ${scaffolds}
+    # Save the full_path to a file (this file will be captured in the output block)
+    echo \$full_path > full_path_file.txt
+
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} \
+        --coverage ${coverage} ${phoenix} ${shigapass} ${centar} ${scaffolds} ${samplesheet_command}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

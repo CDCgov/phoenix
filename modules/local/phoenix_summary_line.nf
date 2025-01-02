@@ -19,8 +19,8 @@ process CREATE_SUMMARY_LINE {
     path(fastani)
 
     output:
-    path('*_summaryline.tsv'), emit: line_summary
-    path("versions.yml")     , emit: versions
+    tuple val(meta), path('*_summaryline.tsv'), emit: line_summary
+    path("versions.yml"),                       emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.

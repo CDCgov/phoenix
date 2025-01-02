@@ -17,10 +17,10 @@ def rearrange_oxford_pasteur(df, indices):
     isolate_mlst = {}
     if len(indices) == 0:
         tmp = "MLST" + str(df["ST"][0]).strip() + "_" + df["Database"][0].strip() + ", "
-        isolate_mlst[df["Sample"][0].strip()] = ",".join(tmp.rsplit(",", 1)[:-1])
+        isolate_mlst[str(df["Sample"][0]).strip()] = ",".join(tmp.rsplit(",", 1)[:-1])
     if len(indices) == 1:
         tmp = "MLST" + str(df["ST"][indices[0]]).strip() + "_" + df["Database"][indices[0]].strip().split("(")[1].strip(")")
-        isolate_mlst[df["Sample"][0].strip()] = ", ".join(tmp.split(", ", 1)[::-1])
+        isolate_mlst[str(df["Sample"][0]).strip()] = ", ".join(tmp.split(", ", 1)[::-1])
     if len(indices) == 2:
         tmp = ""
         count = 1

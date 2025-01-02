@@ -189,6 +189,7 @@ if [[ -n ${species} ]]; then
 		species="${species/sp./sp. }"
 	fi
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
+	species_taxID=0
 	#echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
 	IFS=$'\n'
 	for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
@@ -204,7 +205,7 @@ if [[ -n ${species} ]]; then
 	if [[ "${genus_taxID}" != "Not_needed,species_found" ]]; then
 		echo "No species match found converting - to space and trying again."
 		species="${species//-/ }"
-		echo $species
+		#echo $species
 		for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
 			taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
 			name=$(echo "${name_line}" | cut -d$'\t' -f3)
@@ -220,7 +221,7 @@ fi
 
 
 # See if we can at least start at genus level to fill in upper taxonomy
-if [[ -z "${species_taxID}" ]]; then
+if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
 	# Check if genus was assigned
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
 	#echo "${Genus} - zgrep '	|	${Genus}	|	${names}'"
@@ -250,16 +251,20 @@ taxa_indices=( "kingdom" "phylum" "class" "order" "family" "genus" "species")
 declare -A taxID_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 declare -A tax_name_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 
-echo "${species_taxID}-${genus_taxID}"
+#echo "${species_taxID}-${genus_taxID}"
 
-if [[ -z "${species_taxID}" ]]; then
+if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
 	if [[ -z "${genus_taxID}" ]]; then
 		echo -e "${source}	${confidence_index}	${source_file}\nK:	Unknown\nP:	Unknown\nC:	Unknown\nO:	Unknown\nF:	Unknown\nG:	Unknown\ns:	Unknown\n" > "${sample_name}.tax"
 		exit
 	else
 		max_counter=6
 		taxID_list[species]=0
-		tax_name_list[species]="Unknown"
+		if [[ -z "${species}" ]]; then
+			tax_name_list[species]="Unknown"
+		else
+			tax_name_list[species]="${species}"
+		fi
 		taxID="${genus_taxID}"
 	fi
 else
