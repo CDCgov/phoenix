@@ -720,23 +720,6 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_srst2_df
 
-# Define the custom function to update the Taxa_ID based on conditions
-def fill_taxa_id(row):
-    if row['Taxa_Source'] == 'ANI_REFSEQ':
-        return row['FastANI_Organism']
-    elif row['Taxa_Source'] == 'kraken2_wtasmbld':
-        genus = row['Kraken_ID_WtAssembly_%'].split(" ")[0]
-        species = row['Kraken_ID_WtAssembly_%'].split(" ")[0]
-        return genus + " " + species
-    elif row['Taxa_Source'] == 'kraken2_trimmed':
-        genus = row['Kraken_ID_Raw_Reads_%'].split(" ")[0]
-        species = row['Kraken_ID_Raw_Reads_%'].split(" ")[0]
-        return genus + " " + species
-    elif row['Taxa_Source'] == 'ShigaPass':
-        return row['ShigaPass_Organism']
-    else:
-        return ''  # Default case if no condition matches
-
 def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
@@ -1560,12 +1543,12 @@ def main():
     df = Create_df(args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     if args.shigapass == True:
-        df = double_check_taxa_id(shiga_df, df)
+        df = species_specific_griphin.double_check_taxa_id(shiga_df, df)
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
         full_centar_df = pd.concat(centar_dfs, ignore_index=True)
-        ordered_centar_df = clean_and_format_centar_dfs(full_centar_df)
+        ordered_centar_df = species_specific_griphin.clean_and_format_centar_dfs(full_centar_df)
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column

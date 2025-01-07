@@ -105,6 +105,23 @@ def double_check_taxa_id(shiga_df, phx_df):
     merged_df['Final_Taxa_ID'] = merged_df.apply(fill_taxa_id, axis=1)
     return merged_df
 
+# Define the custom function to update the Taxa_ID based on conditions
+def fill_taxa_id(row):
+    if row['Taxa_Source'] == 'ANI_REFSEQ':
+        return row['FastANI_Organism']
+    elif row['Taxa_Source'] == 'kraken2_wtasmbld':
+        genus = row['Kraken_ID_WtAssembly_%'].split(" ")[0]
+        species = row['Kraken_ID_WtAssembly_%'].split(" ")[0]
+        return genus + " " + species
+    elif row['Taxa_Source'] == 'kraken2_trimmed':
+        genus = row['Kraken_ID_Raw_Reads_%'].split(" ")[0]
+        species = row['Kraken_ID_Raw_Reads_%'].split(" ")[0]
+        return genus + " " + species
+    elif row['Taxa_Source'] == 'ShigaPass':
+        return row['ShigaPass_Organism']
+    else:
+        return ''  # Default case if no condition matches
+
 #def main():
 #    directory = "/scicomp/groups/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/cdc_centar_newer"
 #    sample_names = [ "2022GL-00907", "2022GL-00947", "2022GL-01162" ]
