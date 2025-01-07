@@ -39,6 +39,9 @@ process SAMPLESHEET_CHECK {
         echo "Running check of directory samplesheet"
         ${ica}check_directory_samplesheet_v2.py ${samplesheet} samplesheet.valid.csv
         script_version=\$(echo check_directory_samplesheet_v2.py: \$(${ica}check_directory_samplesheet.py --version ))
+    else
+        echo "No valid check type provided, exiting."
+        exit 1
     fi
 
     cat <<-END_VERSIONS > versions.yml
@@ -46,7 +49,7 @@ process SAMPLESHEET_CHECK {
         python: \$(python --version | sed 's/Python //g')
         \${script_version}
         phoenix_base_container_tag: ${container_version}
-        phoenix_base_container: ${container} 
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

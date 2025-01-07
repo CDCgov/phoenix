@@ -16,7 +16,8 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
 from Bio import SeqIO
 from itertools import chain
-import species_specific_griphin
+from pathlib import Path
+from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value
 
 # Set display options to show all rows and columns
 #pd.set_option('display.max_rows', None)  # Show all rows
@@ -47,6 +48,7 @@ def parseArgs(args=None):
 
 #set colors for warnings so they are seen
 CRED = '\033[91m'+'\nWarning: '
+CYELLOW = '\033[93m'
 CEND = '\033[0m'
 
 def Get_Parent_Folder(directory):
@@ -56,12 +58,15 @@ def Get_Parent_Folder(directory):
     #first make sure we have an absolute path
     directory = os.path.abspath(directory)
     #handing if trailing backslash isn't in there.
-    if directory[-1] != "/": 
-        directory = directory + "/"
+    if directory[-1] == "\\":
+        directory = directory[::-1]
+    path=Path(directory)
+    project = os.path.basename(os.path.dirname(directory))
     # get project from directory path
-    project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
+    #project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
+    parent_folder = path.parent.parent.absolute()
     # get everything after CEMB
-    parent_folder = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
+    #parent_folder = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
     return project, parent_folder
 
 def make_ar_dictionary(ar_db):
@@ -1104,7 +1109,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
                         # Check if there is a value in the corresponding column in the second DataFrame
                         srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
-                        #print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
+                        print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
     # Check if DataFrame is not empty
@@ -1289,7 +1294,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
     pf_db = ",".join(pf_db)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
-def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass):
+def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
         writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
@@ -1345,6 +1350,11 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     cell_format_lightgrey = workbook.add_format({'bg_color': '#D5D8DC', 'font_color': '#000000', 'bold': True})
     cell_format_grey = workbook.add_format({'bg_color': '#AEB6BF', 'font_color': '#000000', 'bold': True})
     cell_format_darkgrey = workbook.add_format({'bg_color': '#808B96', 'font_color': '#000000', 'bold': True})
+    ## colors for centar
+    cell_format_p1 = workbook.add_format({'bg_color': '#DB7093', 'font_color': '#000000', 'bold': True})
+    cell_format_p2 = workbook.add_format({'bg_color': '#FF69B4', 'font_color': '#000000', 'bold': True})
+    cell_format_p3 = workbook.add_format({'bg_color': '#FFB6C1', 'font_color': '#000000', 'bold': True})
+    cell_format_p4 = workbook.add_format({'bg_color': '#FFC0CB', 'font_color': '#000000', 'bold': True})
     # Headers
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
@@ -1363,17 +1373,48 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     #MLST columns 
     if phoenix == True: #for non-CDC entry points
         if shigapass == True:
-            worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)#
+            if centar == True:
+                worksheet.merge_range('AB1:AJ1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)#
         else:
-            worksheet.merge_range('AA1:AH1', "MLST Schemes", cell_format_green_blue)
+            if centar == True:
+                worksheet.merge_range('AA1:AI1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AA1:AH1', "MLST Schemes", cell_format_green_blue)
     else:
         if shigapass == True:
-            worksheet.merge_range('AD1:AK1', "MLST Schemes", cell_format_green_blue)
+            if centar == True:
+                worksheet.merge_range('AD1:AL1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AD1:AK1', "MLST Schemes", cell_format_green_blue)
         else:
-            worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
-    worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
-    worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
-    worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+            if centar == True:
+                worksheet.merge_range('AC1:AK1', "MLST Schemes", cell_format_green_blue)
+            else:
+                worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
+    if centar == True:
+        # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
+        qc_mins_centar = qc_max_col - sum(centar_df_lens)
+        worksheet.merge_range(0, (qc_mins_centar), 0, (qc_mins_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
+        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0]), 0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
+        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
+        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_mins_centar + sum(centar_df_lens) - 1), "ML Predicted Ribotype", cell_format_p1)
+        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey) 
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        # needed this for anoter set of samples... not sure what the differences are  -- cdc_phx with --centar
+        #worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + centar_df_lens[0] - 2), "Toxin A/B Variants", cell_format_p4)
+        #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 2), "Other Toxins", cell_format_p3)
+        #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 2), "C. difficile Specific AR Mutations", cell_format_p2)
+        #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), 0, (qc_max_col + sum(centar_df_lens) - 2), "ML Predicted Ribotype", cell_format_p1)
+        #worksheet.merge_range(0, (qc_max_col + sum(centar_df_lens) - 1 ), 0, (qc_max_col + sum(centar_df_lens) + ar_gene_count - 2), "Antibiotic Resistance Genes", cell_format_lightgrey) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
+        #worksheet.merge_range(0, (qc_max_col + sum(centar_df_lens) - 1 + ar_gene_count), 0 ,(qc_max_col + sum(centar_df_lens) + ar_gene_count + hv_gene_count - 2), "Hypervirulence Genes^^", cell_format_grey)
+        #worksheet.merge_range(0, (qc_max_col + sum(centar_df_lens) - 1 + ar_gene_count + hv_gene_count), 0, (qc_max_col + sum(centar_df_lens) + ar_gene_count + pf_gene_count + hv_gene_count - 2), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+    else:
+        worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
     # making WGS IDs bold
     bold = workbook.add_format({'bold': True})
     worksheet.set_column('A3:A' + str(max_row + 2), None, bold)
@@ -1438,25 +1479,21 @@ def blind_samples(final_df, control_file):
     # create new csv file
     return final_df
 
-def create_samplesheet(directory):
+def create_samplesheet(input_directory):
     """Function will create a samplesheet from samples in a directory if -d argument passed."""
-    directory = os.path.abspath(directory) # make sure we have an absolute path to start with
+    directory = os.path.abspath(input_directory) # make sure we have an absolute path to start with
     with open("Directory_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
-    dirs = sorted(os.listdir(directory))
-    # If there are any new files added to the top directory they will need to be added here or you will get an error
-    skip_list_a1 = glob.glob(directory + "/*_GRiPHin_Summary.*") # for if griphin is run on a folder that already has a report in it
-    skip_list_a2 = glob.glob(directory + "/*_comparison") # for comparinator script
-    skip_list_a = skip_list_a1 + skip_list_a2
-    skip_list_a = [ gene.split('/')[-1] for gene in skip_list_a ]  # just get the excel name not the full path
-    skip_list_b = ["BiosampleAttributes_Microbe.1.0.xlsx", "Sra_Microbe.1.0.xlsx", "Phoenix_Summary.tsv", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "Directory_samplesheet.csv", "sra_samplesheet.csv"]
-    skip_list = skip_list_a + skip_list_b
-    #remove unwanted files
-    dirs_cleaned = [item for item in dirs if item not in skip_list]
+    dirs = sorted(os.listdir(input_directory))
+    # Filter directories based on the presence of *_1.trim.fastq.gz files
+    valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "raw_stats", "*_raw_read_counts.txt")) ]
+    # Identify and warn about excluded directories
+    excluded_dirs = [excluded_dir for excluded_dir in dirs if excluded_dir not in valid_directories]
+    print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no ./raw_stats/*_raw_read_counts.txt files weren't found in these locations.\033[0m\n")
     try: #if there are numbers in the name then use that to sort
-        dirs_sorted=sorted(dirs_cleaned, key=lambda x: int("".join([i for i in x if i.isdigit()])))
+        dirs_sorted=sorted(valid_directories, key=lambda x: int("".join([i for i in x if i.isdigit()])))
     except: #if no numbers then use only alphabetically
-        dirs_sorted=sorted(dirs_cleaned)
+        dirs_sorted=sorted(valid_directories)
     for sample in dirs_sorted:
         with open("Directory_samplesheet.csv", "a") as samplesheet:
             if directory[-1] != "/": # if directory doesn't have trailing / add one
@@ -1514,19 +1551,28 @@ def main():
     else:
         sort_samplesheet(args.samplesheet)
         samplesheet = args.samplesheet
+    if args.centar == True:
+        # for griphin nextflow module --outdir is passed, however, when using species specific pipelines and --input we need to make sure only samples in samplesheet are run
+        input_samplesheet = pd.read_csv(args.samplesheet)
+        samples_to_run = input_samplesheet["sample"].tolist()
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
     with open(samplesheet) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
-        for row in csv_reader:
+        csv_rows = list(csv_reader)  # Convert the iterator to a list to reuse it
+        if args.centar == True:
+            filtered_out_samples = [row[0] for row in csv_rows if any(sample not in row[0] for sample in samples_to_run)]
+            csv_rows = [row for row in csv_rows if row[0] in samples_to_run]
+            print("\n\033[93m Warning: The following sample(s) are not in samplesheet and were filtered out of reporting in griphin: {}\033[0m\n".format(list(set(filtered_out_samples) - set(samples_to_run))))
+        for row in csv_rows:
             sample_name = row[0]
             directory = row[1]
             # check if species specific information is present
             if args.shigapass == True:
-                shiga_df = species_specific_griphin.create_shiga_df(directory, sample_name, shiga_df)
+                shiga_df = create_shiga_df(directory, sample_name, shiga_df)
             if args.centar == True:
-                    centar_df = create_centar_combined_df(directory, sample_name)
-                    centar_dfs.append(centar_df)
+                centar_df = create_centar_combined_df(directory, sample_name)
+                centar_dfs.append(centar_df)
             data_location, parent_folder = Get_Parent_Folder(directory)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
@@ -1547,8 +1593,15 @@ def main():
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
-        full_centar_df = pd.concat(centar_dfs, ignore_index=True)
-        ordered_centar_df = species_specific_griphin.clean_and_format_centar_dfs(full_centar_df)
+        full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
+        ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
+        centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
+        # combing centar with phx qc information
+        df = pd.concat([df, ordered_centar_df], axis=1)
+    else:
+        ordered_centar_df = pd.DataFrame()
+        A_B_Tox_len = other_Tox_len = mutant_len = RB_type_len = 0
+        centar_df_lens = [0,0,0,0] # we sum later so needs to be a list of numbers
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
@@ -1558,7 +1611,7 @@ def main():
         final_df = blind_samples(final_df, args.control_list)
     else:
         final_df = final_df
-    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix, args.shigapass)
+    write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db, args.phoenix, args.shigapass, args.centar, centar_df_lens)
     convert_excel_to_tsv(args.output)
 
 if __name__ == '__main__':

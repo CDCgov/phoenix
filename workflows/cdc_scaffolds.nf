@@ -64,6 +64,7 @@ include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local
 include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'
 include { DO_MLST                                  } from '../subworkflows/local/do_mlst'
+include { CENTAR_SUBWORKFLOW                       } from '../subworkflows/local/centar_steps'
 
 /*
 ========================================================================================
@@ -114,6 +115,26 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     return output_array
 }
 
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        return "$genus $species"
+}
+
+def add_project_id(old_meta, input_ch, outdir_path){
+    def meta = [:] // create meta array
+    meta.id = old_meta.id
+    meta.project_id = outdir_path
+    return [meta, input_ch]
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -145,7 +166,7 @@ workflow SCAFFOLDS_EXQC {
 
         // Rename scaffold headers
         RENAME_FASTA_HEADERS (
-            CREATE_INPUT_CHANNEL.out.scaffolds_ch
+            CREATE_SCAFFOLDS_INPUT_CHANNEL.out.scaffolds_ch
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
@@ -280,6 +301,20 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
+                // Run centar if necessary
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+
+            // centar subworkflow requires project_ID as part of the meta
+            CENTAR_SUBWORKFLOW (
+                DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
+                SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
+                BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
+                ASSET_CHECK.out.mlst_db,
+                DETERMINE_TAXA_ID.out.taxonomy.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
+            )
+            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        }
+
         // get gff and protein files for amrfinder+
         PROKKA (
             filtered_scaffolds_ch, [], []
@@ -384,8 +419,20 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
+        //pull in species specific files
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+            centar_var = true
+            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
+            // pulling it all together
+            griphin_input_ch = all_summaries_ch.combine(centar_files_ch)
+        } else {
+            centar_var = false
+            // pulling it all together
+            griphin_input_ch = all_summaries_ch
+        }
+
         GRIPHIN (
-            summaries_ch, CREATE_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false, params.shigapass
+            griphin_input_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false, params.shigapass, centar_var
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
