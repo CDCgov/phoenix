@@ -8,8 +8,9 @@ process FORMAT_ANI {
     tuple val(meta), path(ani_file)
 
     output:
-    tuple val(meta), path('*.fastANI.txt'), emit: ani_best_hit
-    path("versions.yml"),                   emit: versions
+    tuple val(meta), path('*.fastANI.txt'),          optional:true, emit: ani_best_hit
+    tuple val(meta), path('*.to_check_fastANI.txt'), optional:true, emit: ani_best_hit_to_check
+    path("versions.yml"),                            emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths
@@ -36,6 +37,13 @@ process FORMAT_ANI {
         fi
         # script also checks that match is 80 or > otherwise an error is thrown
         ${ica}ANI_best_hit_formatter.sh -a ${ani_file} -n ${prefix} -d \${db_version} ${terra}
+
+        # since we need to check any files that have Escherichia or Shigella in them we will rename files
+        if grep -qE "Escherichia|Shigella" "${prefix}_\${db_version}_initial.fastANI.txt"; then
+            mv ${prefix}_\${db_version}_initial.fastANI.txt ${prefix}_\${db_version}.to_check_fastANI.txt
+        else
+            mv ${prefix}_\${db_version}_initial.fastANI.txt ${prefix}_\${db_version}.fastANI.txt
+        fi
     fi
 
     script_version=\$(${ica}ANI_best_hit_formatter.sh -V)

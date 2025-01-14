@@ -25,6 +25,7 @@ process MASH_DIST {
     if [[ "\${db_version}" = "" ]]; then
         db_version="REFSEQ_unknown"
     fi
+
     mash \\
         dist \\
         -p $task.cpus \\

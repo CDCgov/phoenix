@@ -31,7 +31,7 @@ process GRIPHIN {
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
     def shigapass = shigapass_detected ? "--shigapass" : ""
-    def centar = run_centar ? "--centar" : ""
+    def centar = (run_centar && params.centar) ? "--centar" : ""
     def samplesheet_command = run_centar ? "--samplesheet ${original_samplesheet}" : ""
     def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
     def container_version = "base_v2.1.0"

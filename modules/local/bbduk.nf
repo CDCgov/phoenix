@@ -1,7 +1,7 @@
 process BBDUK {
     tag "$meta.id"
     label 'process_medium'
-    //v39.01
+    //v39.13
     container 'staphb/bbtools@sha256:161b0e1e198110b7edff8084ae9854d84eb32789d0fd62c7ced302078911c9d7'
 
     input:

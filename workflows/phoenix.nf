@@ -51,6 +51,8 @@ include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/determine_top_
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { GET_TRIMD_STATS                } from '../modules/local/get_trimd_stats'
 include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
+include { SHIGAPASS                      } from '../modules/local/shigapass'
+include { CHECK_SHIGAPASS_TAXA           } from '../modules/local/check_shigapass_taxa'
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
@@ -74,6 +76,7 @@ include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2kr
 include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
 include { DO_MLST                        } from '../subworkflows/local/do_mlst'
+include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_steps'
 
 /*
 ========================================================================================
@@ -318,15 +321,46 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(FORMAT_ANI.out.versions)
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
-        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}\
-        .join(FORMAT_ANI.out.ani_best_hit.map{               meta, ani_best_hit  -> [[id:meta.id], ani_best_hit ]},  by: [0])\
-        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{           meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary ]}, by: [0])
+        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary         -> [[id:meta.id], k2_bh_summary]}\
+        .join(FORMAT_ANI.out.ani_best_hit_to_check.map{      meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0])\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{           meta, k2_bh_summary         -> [[id:meta.id], k2_bh_summary ]},         by: [0])
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
             best_hit_ch, params.nodes, params.names
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
+
+        // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it.contains("Escherichia") || it.contains("Shigella") }) {
+
+            //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+            scaffolds_and_taxa_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
+            .join(DETERMINE_TAXA_ID.out.taxonomy.map{                             meta, taxonomy           -> [[id:meta.id], taxonomy ]}, by: [0])\
+            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+
+            // Get ID from ShigaPass
+            SHIGAPASS (
+                scaffolds_and_taxa_ch, params.shigapass_database
+            )
+            ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
+
+            //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+            checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]} \
+            .join(FASTANI.out.ani.map{                                  meta, ani                   -> [[id:meta.id], ani ]},     by: [0])\
+            .join(SHIGAPASS.out.summary.map{                            meta, summary               -> [[id:meta.id], summary ]}, by: [0])
+
+            // check shigapass and correct fastani taxa if its wrong
+            CHECK_SHIGAPASS_TAXA (
+                checking_taxa_ch
+            )
+            ch_versions = ch_versions.mix(CHECK_SHIGAPASS_TAXA.out.versions)
+
+            // create channel for summary_line
+            shigapass_ch = SHIGAPASS.out.summary
+        } else {
+            shigapass_ch = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> create_empty_ch(it) }
+        }
 
         // Perform MLST steps on isolates (with srst2 on internal samples)
         DO_MLST (
@@ -339,6 +373,20 @@ workflow PHOENIX_EXTERNAL {
             "original" // this is opposed to the "update" option.
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
+
+        // Run centar if necessary
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+
+            // centar subworkflow requires project_ID as part of the meta
+            CENTAR_SUBWORKFLOW (
+                DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
+                SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
+                BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
+                ASSET_CHECK.out.mlst_db,
+                DETERMINE_TAXA_ID.out.taxonomy.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
+            )
+            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        }
 
         // get gff and protein files for amrfinder+
         PROKKA (
@@ -444,17 +492,26 @@ workflow PHOENIX_EXTERNAL {
         .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
         .ifEmpty( [] )
 
-        //pull in species specific files
-        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
-            centar_var = true
+        // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
+        // This is used to double check params.centar to ensure that griphin parameters are set correctly
+        centar_var = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_taxa(it) }.collect().count{ it -> it == "Clostridioides difficile"}.map{ it -> it > 0 }
+
+        /*/pull in species specific files
+        if (centar_var && params.centar == true) {
+            println("centar_var is true, at least one isolate is confirmed to be Clostridioides difficile")
             centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
             // pulling it all together
             griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch)
         } else {
-            centar_var = false
-            // pulling it all together
+            println("centar_var is set to false, no isolates are Clostridioides difficile")
             griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
-        }
+            griphin_input_ch.view()
+        }*/
+
+        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
+        // pulling it all together
+        griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch)
+        griphin_input_ch.view()
 
         // pulling it all together
         all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
@@ -465,9 +522,32 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
+        //pull in species specific files
+        shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.collect().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.map{ it -> it > 0 }
+        shigapass_var.view()
+        /*if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it.contains("Escherichia") || it.contains("Shigella") }) {
+            shigapass_var = true
+            shigapass_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty( [] )
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_ch)
+        } else {
+            shigapass_var = false
+            println("No isolates are Escherichia or Shigella")
+            // pulling it all together
+            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
+        }*/
+
+        // if centar was run, pull in species specific files
+        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        // if shigapass was run, pull in species specific files
+        shigapass_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
+        // pulling it all together
+        griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_ch)
+        griphin_input_ch.view()
+
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false, false, params.shigapass, centar_var
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false, false, shigapass_var, centar_var
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

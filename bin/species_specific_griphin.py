@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import re
 
-
 ##################################  Centar functions   #########################################
 def transform_value(value):
     # Split the value into components
@@ -60,9 +59,12 @@ def clean_and_format_centar_dfs(centar_df):
     # Remove each mutation name if it exists in mutations_col
     mutations_col = [mutation for mutation in mutations_col if mutation not in mutations_to_remove]
     mutant_len = len(mutations_col)
+    #if "MLST Clade" in clean_centar_df.columns:
     existing_columns_in_order = ["MLST Clade"] + A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col
-    if clean_centar_df.empty: #for cases where centar wasn't run for that sample - not c. diff or a qc failure sample
-        clean_centar_df = pd.DataFrame(columns = existing_columns_in_order) # Assign the headers to the DataFrame
+    #else:
+    #   existing_columns_in_order = A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col 
+    #if clean_centar_df.empty or clean_centar_df.columns.tolist() == ["WGS_ID"]: #for cases where centar wasn't run for that sample - not c. diff or a qc failure sample
+    #    clean_centar_df = pd.DataFrame(columns = existing_columns_in_order) # Assign the headers to the DataFrame
     ordered_centar_df = clean_centar_df[existing_columns_in_order]
     return ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len
 
@@ -71,8 +73,8 @@ def create_centar_combined_df(directory, sample_name):
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
     # create file names
-    #centar_summary = directory + "/CENTAR/" + sample_name + "_centar_output.tsv"
-    centar_summary = sample_name + "_centar_output.tsv"
+    centar_summary = directory + "/CENTAR/" + sample_name + "_centar_output.tsv"
+    #centar_summary = sample_name + "_centar_output.tsv"
     par='/'.join(directory.split('/')[0:-1])
     dat_loc=directory.split('/')[-1]
     reiterate=True
@@ -89,6 +91,7 @@ def create_centar_combined_df(directory, sample_name):
 ######################################## ShigaPass functions ##############################################
 def create_shiga_df(directory, sample_name, shiga_df):
     '''If Shigapass was run get info to add to the dataframe.'''
+    print(sample_name)
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
     # create file names
@@ -99,7 +102,7 @@ def create_shiga_df(directory, sample_name, shiga_df):
     with open(shiga_summary) as shiga_file:
         for line in shiga_file.readlines()[1:]:  # Skip the first line
             if line.split(";")[9] == 'Not Shigella/EIEC\n':
-                row_data["ShigaPass_Organism"] = ""
+                row_data["ShigaPass_Organism"] = "Not Shigella/EIEC"
             else:
                 row_data["ShigaPass_Organism"] = line.split(";")[7]
             # Convert the row data into a DataFrame and concatenate with the main DataFrame

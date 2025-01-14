@@ -397,17 +397,18 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
         // Run centar if necessary
-        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
-
-            // centar subworkflow requires project_ID as part of the meta
-            CENTAR_SUBWORKFLOW (
-                DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
-                SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
-                BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
-                ASSET_CHECK.out.mlst_db,
-                DETERMINE_TAXA_ID.out.taxonomy.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
-            )
-            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} ) {
+            if (params.centar == true) {
+                // centar subworkflow requires project_ID as part of the meta
+                CENTAR_SUBWORKFLOW (
+                    DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
+                    SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
+                    BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
+                    ASSET_CHECK.out.mlst_db,
+                    DETERMINE_TAXA_ID.out.taxonomy.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
+                )
+                ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+            }
         }
 
         // get gff and protein files for amrfinder+
@@ -516,11 +517,17 @@ workflow PHOENIX_EXQC {
         .ifEmpty( [] )
 
         //pull in species specific files
-        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
-            centar_var = true
-            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
-            // pulling it all together
-            griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch)
+        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"}) {
+            if (params.centar == true) {
+                centar_var = true
+                centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
+                // pulling it all together
+                griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch)
+            } else{
+                centar_var = false
+                // pulling it all together
+                griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
+            }
         } else {
             centar_var = false
             // pulling it all together

@@ -1,8 +1,8 @@
 process FASTP {
     tag "$meta.id"
     label 'process_medium'
-    // v0.23.4
-    container 'staphb/fastp@sha256:98bb2bb94bbce4104f7fbbdba72c33c827f5add7cf08cc59fd365c6d82ee4014'
+    // v0.24.0
+    container 'staphb/fastp@sha256:22ef1eedf8a5529e9ebab2b4aa77308d7f4235a0f11a4f7190e28d683b156702'
 
     input:
     tuple val(meta), path(reads)

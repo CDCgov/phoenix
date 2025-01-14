@@ -1,7 +1,9 @@
 process QUAST {
     tag "$meta.id"
-    label 'process_low'
-    container 'staphb/quast:5.0.2'
+    label 'process_medium'
+    //5.3.0
+    //container 'staphb/quast:5.0.2'
+    container 'staphb/quast@sha256:850dd9821c0c92c8bb1b258658a64b39682e8f3d61dd1fa6f40e3ef906f1edb8'
 
     input:
     tuple val(meta), path(consensus), val(fairy_outcome)

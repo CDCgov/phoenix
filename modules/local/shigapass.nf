@@ -52,7 +52,7 @@ process SHIGAPASS {
             species="s:622\tdysenteriae"
         fi
         echo "ShigaPass\t\t${meta.id}_ShigaPass_summary.csv" > ${meta.id}.tax
-        echo "K:2\tBacteria\\nP:1224\tPseudomonadota\\nC:1236\tGammaproteobacteria\\nO:91347\tEnterobacterales\\nF:543\tEnterobacteriaceae\\nG:620\tShigella\\n\${species}" >> ${meta.id}.tax
+        echo -e "K:2\tBacteria\\nP:1224\tPseudomonadota\\nC:1236\tGammaproteobacteria\\nO:91347\tEnterobacterales\\nF:543\tEnterobacteriaceae\\nG:620\tShigella\\n\${species}" >> ${meta.id}.tax
         if [ -s ShigaPass_Results/ShigaPass_Flex_summary.csv ]; then
             mv ShigaPass_Results/ShigaPass_Flex_summary.csv ./${meta.id}_ShigaPass_Flex_summary.csv #only makes for S. flexneri genomes
         fi

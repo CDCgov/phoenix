@@ -7,7 +7,7 @@ include { CREATE_SAMPLESHEET as CENTAR_CREATE_SAMPLESHEET } from '../../modules/
 // for cdc_phoenix, phoenix entry
 include { SAMPLESHEET_CHECK as SAMPLESHEET_CHECK          } from '../../modules/local/samplesheet_check'
 include { CREATE_SAMPLESHEET as CREATE_SAMPLESHEET        } from '../../modules/local/create_samplesheet'
-
+// for update entry
 include { COLLECT_SAMPLE_FILES  }                           from '../../modules/local/updater/collect_sample_files'
 include { COLLECT_PROJECT_FILES }                           from '../../modules/local/updater/collect_project_files'
 include { CREATE_FAIRY_FILE     }                           from '../../modules/local/updater/create_fairy_file'
@@ -39,15 +39,15 @@ workflow CREATE_INPUT_CHANNELS {
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
             passed_id_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter{ it != null }.ifEmpty([])
 
-            // Check if the channel is empty and print warning for user as this is required for the pipeline
+            /*/ Check if the channel is empty and print warning for user as this is required for the pipeline
             Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
-                    .subscribe { result -> if (result.isEmpty()) { println("${orange}Warning: There are no files were in */file_integrity/*_summary.txt. This file is required so we will make it.${reset}")}}
+                    .subscribe { result -> if (result.isEmpty()) { println("${orange}Warning: There are no files were in /file_integrity/*_summary.txt. This file is required so we will make it.${reset}")}}*/
 
             // find the samples that do not have a fairy file and create them
             no_fairy_file_id_ch = passed_id_ch.toList().combine(dir_names_ch.toList()).filter{ passed_ids, dir_names -> !dir_names.contains(passed_ids)}
             // print out the samples that did not have a fairy file yet
-            no_fairy_file_id_ch.subscribe { result -> if (!result.isEmpty()) def flat_results = result.flatten().unique().collect()  // Check if the channel is empty and print warning for user as this is required for the pipeline
-                { println("${orange}Warning: There are no files were in */file_integrity/*_summary.txt for ${flat_results}. This/These file(s) is required so we will make it.${reset}")}}
+            no_fairy_file_id_ch.subscribe { result -> if (!result.isEmpty()) { def flat_results = result.flatten().unique().collect() // Check if the channel is empty and print warning for user as this is required for the pipeline
+                println("${orange}Warning: There are no files in */file_integrity/*_summary.txt for ${flat_results}. This/These file(s) is required so we will make it.${reset}")}}
 
             // Fallback to dir_names_ch if passed_id_channel is empty -- need to get all sample ids
             passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().unique().collect().toList()

@@ -1,9 +1,8 @@
 process MASH_SKETCH {
     tag "$meta.id"
     label 'process_medium'
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mash:2.3--he348c14_1' :
-        'quay.io/biocontainers/mash:2.3--he348c14_1' }"
+    // v2.3
+    container "staphb/mash@sha256:d55d03b75eb3a88bf0e93253487580f828f6a25b324a7c28fb8e4eaca0d5eebf"
 
     input:
     tuple val(meta), path(reads)

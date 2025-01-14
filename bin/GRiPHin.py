@@ -17,7 +17,7 @@ import csv
 from Bio import SeqIO
 from itertools import chain
 from pathlib import Path
-from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value
+from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value, create_shiga_df, double_check_taxa_id
 
 # Set display options to show all rows and columns
 #pd.set_option('display.max_rows', None)  # Show all rows
@@ -1589,7 +1589,7 @@ def main():
     df = Create_df(args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     if args.shigapass == True:
-        df = species_specific_griphin.double_check_taxa_id(shiga_df, df)
+        df = double_check_taxa_id(shiga_df, df)
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
