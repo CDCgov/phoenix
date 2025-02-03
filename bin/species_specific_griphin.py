@@ -70,9 +70,10 @@ def clean_and_format_centar_dfs(centar_df):
 
 def create_centar_combined_df(directory, sample_name):
     '''If Centar was run get info to add to the dataframe.'''
+    # Filtering rows where Final_Taxa_ID contains 'shigella' or 'e.coli'
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
-    # create file names
+     # create file names
     centar_summary = directory + "/CENTAR/" + sample_name + "_centar_output.tsv"
     #centar_summary = sample_name + "_centar_output.tsv"
     par='/'.join(directory.split('/')[0:-1])
@@ -89,35 +90,38 @@ def create_centar_combined_df(directory, sample_name):
     return centar_df
 
 ######################################## ShigaPass functions ##############################################
-def create_shiga_df(directory, sample_name, shiga_df):
+def create_shiga_df(directory, sample_name, shiga_df, taxa):
     '''If Shigapass was run get info to add to the dataframe.'''
-    print(sample_name)
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
-    # create file names
-    shiga_summary = directory + "/ANI/" + sample_name + "_ShigaPass_summary.csv"
-    # Create a dictionary to store row information
-    row_data = { "WGS_ID": sample_name, "ShigaPass_Organism": ""}
-    row_data["WGS_ID"] = sample_name
-    with open(shiga_summary) as shiga_file:
-        for line in shiga_file.readlines()[1:]:  # Skip the first line
-            if line.split(";")[9] == 'Not Shigella/EIEC\n':
-                row_data["ShigaPass_Organism"] = "Not Shigella/EIEC"
-            else:
-                row_data["ShigaPass_Organism"] = line.split(";")[7]
-            # Convert the row data into a DataFrame and concatenate with the main DataFrame
-            shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
-    # Define the mapping of short strings to longer strings
-    mapping_dict = {'SB': 'Shigella boydii',
-                    'SD': 'Shigella dysenteriae',
-                    'SS': 'Shigella sonnei',
-                    'SF1-5': 'Shigella flexneri'}
-    # Apply the mapping using map()
-    shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict)
+    if "Escherichia" in taxa or "Shigella" in taxa:
+        # create file names
+        shiga_summary = directory + "/ANI/" + sample_name + "_ShigaPass_summary.csv"
+        # Create a dictionary to store row information
+        row_data = { "WGS_ID": sample_name, "ShigaPass_Organism": ""}
+        row_data["WGS_ID"] = sample_name
+        with open(shiga_summary) as shiga_file:
+            for line in shiga_file.readlines()[1:]:  # Skip the first line
+                if line.split(";")[9] == 'Not Shigella/EIEC\n':
+                    row_data["ShigaPass_Organism"] = "Not Shigella/EIEC"
+                else:
+                    row_data["ShigaPass_Organism"] = line.split(";")[7]
+                # Convert the row data into a DataFrame and concatenate with the main DataFrame
+                shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
+        # Define the mapping of short strings to longer strings
+        mapping_dict = {'SB': 'Shigella boydii',
+                        'SD': 'Shigella dysenteriae',
+                        'SS': 'Shigella sonnei',
+                        'SF1-5': 'Shigella flexneri'}
+        # Apply the mapping using map()
+        shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict)
+    else:
+        pass
     return shiga_df
 
 def double_check_taxa_id(shiga_df, phx_df):
     # Merge the DataFrames on 'WGS_ID'
+    print(shiga_df)
     merged_df = pd.merge(phx_df, shiga_df, on='WGS_ID', how='left')
     # Identify the position of the insertion point
     insert_position = merged_df.columns.get_loc("FastANI_Organism")
@@ -142,16 +146,16 @@ def fill_taxa_id(row):
         return row['FastANI_Organism']
     elif row['Taxa_Source'] == 'kraken2_wtasmbld':
         genus = row['Kraken_ID_WtAssembly_%'].split(" ")[0]
-        species = row['Kraken_ID_WtAssembly_%'].split(" ")[0]
+        species = row['Kraken_ID_WtAssembly_%'].split(" ")[2]
         return genus + " " + species
     elif row['Taxa_Source'] == 'kraken2_trimmed':
         genus = row['Kraken_ID_Raw_Reads_%'].split(" ")[0]
-        species = row['Kraken_ID_Raw_Reads_%'].split(" ")[0]
+        species = row['Kraken_ID_Raw_Reads_%'].split(" ")[2]
         return genus + " " + species
     elif row['Taxa_Source'] == 'ShigaPass':
         return row['ShigaPass_Organism']
     else:
-        return ''  # Default case if no condition matches
+        return 'Unknown'  # Default case if no condition matches
 
 #def main():
 #    directory = "/scicomp/groups/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/cdc_centar_newer"

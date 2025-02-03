@@ -265,7 +265,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
       - Version [2024-01-31.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.12/)  
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) and [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/) haven't changed since last version release.
 
-## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (XX/XX/2024)
+## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (XX/XX/2025)
 
 **Implemented Enhancements:** 
  - Creation of `-entry UPDATE_CDC_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when.  
@@ -274,14 +274,14 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Fixed Bugs:**
 - Changes were made to allow `-resume` to work correctly.  
-- More robust checks in phx to pull in only sample_names correctly.  
+- More robust checks in PHoeNIx to pull in only sample_names correctly.  
 - Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.  
-- [Shigapass](https://github.com/imanyass/ShigaPass) was added to distinguish correctly between *E. coli*/*Shigella*. If FastANI determines the species to be either *E. coli* or *Shigella* Shigapass will now run to confirm the call. In GRiPHin there is a new `Final_Taxa_ID` column that has the final determined call. The column `Taxa_source` will still say `ANI_REFSEQ` if the FastANI call was kept and now will have `Shigapass` if the FastANI call was determined to be wrong by Shigapass and was thus overwritten.  
+- [Shigapass](https://github.com/imanyass/ShigaPass) was added to distinguish correctly between *E. coli*/*Shigella*. If FastANI determines the species to be either *E. coli* or *Shigella* Shigapass will now run to confirm the call. In GRiPHin there is a new `Final_Taxa_ID` column that has the final determined call. The column `Taxa_source` will still say `ANI_REFSEQ` if the FastANI call was kept and now will have `Shigapass` if the FastANI call was determined to be wrong by Shigapass and was thus overwritten. This was added to all entry points.   
 - Fix for `--coverage` being converted to a string when run on Seqera Cloud. Thanks to @DOH-JDJ0303 for the [PR](https://github.com/CDCgov/phoenix/pull/173).
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
-  - busco: v5.4.7--pyhdfd78af_0 to [v5.8.2--pyhdfd78af_0](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG)  
+  - busco: v5.4.7--pyhdfd78af_0 to [v5.8.0--pyhdfd78af_0](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG)  
   - fastp: v0.23.4 to [v0.24.0](https://github.com/OpenGene/fastp/releases/tag/v0.24.0) --> changes for memory optimization  
   - bbtools: v39.01 to v39.13
   - spades: v3.15.5 to [v4.0.0](https://github.com/ablab/spades/releases/tag/v4.0.0)

@@ -44,6 +44,8 @@ include { FASTANI                        } from '../modules/local/fastani'
 include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/determine_top_mash_hits'
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
+include { SHIGAPASS                      } from '../modules/local/shigapass'
+include { CHECK_SHIGAPASS_TAXA           } from '../modules/local/check_shigapass_taxa'
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
@@ -125,7 +127,20 @@ def get_taxa(input_ch){
                 species = line.split(":")[1].trim().split('\t')[1]
             }
         }
-        return "$genus $species"
+        return ["$genus $species", input_ch[0], input_ch[1]]
+}
+
+def get_only_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        return [ "$genus $species" ]
 }
 
 def add_project_id(old_meta, input_ch, outdir_path){
@@ -288,6 +303,30 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
+        ////////////////////////////////////// SHIGAPASS //////////////////////////////////////
+        // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
+        scaffolds_and_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
+            .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{                                  meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}, by: [0])
+            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{            meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+
+        // Get ID from ShigaPass
+        SHIGAPASS (
+            scaffolds_and_taxa_ch, params.shigapass_database
+        )
+        ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
+
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]} \
+            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: [0])\
+            .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: [0])
+
+        // check shigapass and correct fastani taxa if its wrong
+        CHECK_SHIGAPASS_TAXA (
+            checking_taxa_ch
+        )
+        ch_versions = ch_versions.mix(CHECK_SHIGAPASS_TAXA.out.versions)
+
+        ////////////////////////////////////// PHOENIX //////////////////////////////////////
         // Perform MLST steps on isolates (with srst2 on internal samples)
         // 3rd input would normally be FASTP_TRIMD.out.reads, but since we have no reads we just pass something to get the meta_id and create an empty channel
         // This is necessary as we need the meta.id information for the mid_srst2_ch in the subworkflow.
@@ -301,20 +340,23 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
-                // Run centar if necessary
-        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
+        ////////////////////////////////////// CENTAR //////////////////////////////////////
+        // Run centar if necessary
 
-            // centar subworkflow requires project_ID as part of the meta
-            CENTAR_SUBWORKFLOW (
-                DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
-                SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
-                BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
-                ASSET_CHECK.out.mlst_db,
-                DETERMINE_TAXA_ID.out.taxonomy.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
-            )
-            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
-        }
+        //First, check if any isolates are Clostridioides difficile and filter those to go through the channel
+        determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides difficile"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
 
+        // centar subworkflow requires project_ID as part of the meta
+        CENTAR_SUBWORKFLOW (
+            DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
+            SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
+            BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
+            ASSET_CHECK.out.mlst_db,
+            determine_taxa_ch.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
+        )
+        ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+
+        ////////////////////////////////////// PHOENIX //////////////////////////////////////
         // get gff and protein files for amrfinder+
         PROKKA (
             filtered_scaffolds_ch, [], []

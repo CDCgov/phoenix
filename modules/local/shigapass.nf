@@ -4,7 +4,7 @@ process SHIGAPASS {
     container "staphb/shigapass@sha256:83da89164161c54995ec422a55afea39267bc44c194b9a33ccc593ff1d8109e4"
 
     input:
-    tuple val(meta), path(scaffolds), path(taxa_file), val(fairy_outcome)
+    tuple val(meta), path(taxa_file), path(scaffolds), val(fairy_outcome)
     path(shigapass_database)
 
     output:

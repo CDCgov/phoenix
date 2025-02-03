@@ -16,6 +16,7 @@ workflow phoenix_workflow {
     Int?    coverage
     String? scaffold_ext
     Boolean? create_ncbi_sheet
+    Boolean? centar
   }
   call phoenix_nf.phoenix {
     input:
@@ -27,7 +28,8 @@ workflow phoenix_workflow {
       entry             = entry,
       coverage          = coverage,
       scaffold_ext      = scaffold_ext,
-      create_ncbi_sheet = create_ncbi_sheet
+      create_ncbi_sheet = create_ncbi_sheet,
+      centar            = centar
   }
   output {
     #phoenix summary output values
@@ -51,8 +53,10 @@ workflow phoenix_workflow {
     String  kraken2_weighted                  = phoenix.kraken2_weighted
     String  mlst_scheme_1                     = phoenix.mlst_scheme_1
     String  mlst_1                            = phoenix.mlst_1
+    String  mlst1_ncbi                        = phoenix.mlst1_ncbi
     String  mlst_scheme_2                     = phoenix.mlst_scheme_2
     String  mlst_2                            = phoenix.mlst_2
+    String  mlst2_ncbi                        = phoenix.mlst2_ncbi
     String  beta_lactam_resistance_genes      = phoenix.beta_lactam_resistance_genes
     String  other_ar_genes                    = phoenix.other_ar_genes
     String  amrfinder_point_mutations         = phoenix.amrfinder_point_mutations
