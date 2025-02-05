@@ -31,12 +31,15 @@ process GRIPHIN {
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
     def shigapass = shigapass_detected ? "--shigapass" : ""
-    def centar = (run_centar && params.centar) ? "--centar" : ""
+    // Why have a check here for the param centar, CENTAR can be run from the entry point and wouldnt get the param
+    def centar = run_centar ? "--centar" : ""
     def samplesheet_command = run_centar ? "--samplesheet ${original_samplesheet}" : ""
     def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
+    echo "$params.centar, $run_centar, $centar"
+    echo "HELLO WORLD"
     full_path=\$(readlink -f ${outdir})
 
     # Save the full_path to a file (this file will be captured in the output block)

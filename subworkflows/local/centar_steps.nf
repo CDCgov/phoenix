@@ -65,6 +65,29 @@ def get_taxa(input_ch){
     return [input_ch[0], "$genus $species" ]
 }
 
+def get_only_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        return [ "$genus $species" ]
+}
+
+def check_params_var(species_bol, species_param) {
+    if (species_bol == true && species_param == true){
+        return true
+    } else if (species_bol == true && species_param == false) {
+        return false
+    } else {
+        return false
+    }
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -98,6 +121,10 @@ workflow CENTAR_SUBWORKFLOW {
         filtered_scaffolds_ch = filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}\
         .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\
         .join(cdiff_check, by: [[0][0],[0][1]]).filter{meta, filtered_scaffolds, fairy_outcome, taxa_id -> taxa_id == "Clostridioides difficile" }.map{ meta, filtered_scaffolds, fairy_outcome, taxa_id -> [meta, filtered_scaffolds, fairy_outcome]}
+        //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
+        centar_boolean = cdiff_check.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides difficile"}.collect().sum().map{ it -> it[0] > 0 }
+        // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
+        run_centar_in_griphin = centar_boolean.map{ it -> check_params_var(it, true)}
 
         CDIFF_PLASMIDS (
             filtered_scaffolds_ch, params.cdiff_plasmid_db
@@ -174,6 +201,7 @@ workflow CENTAR_SUBWORKFLOW {
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
 
     emit:
+        run_centar_in_griphin
         consolidated_centar = CENTAR_CONSOLIDATER.out.centar_summary_line
         versions            = ch_versions // channel: [ versions.yml ]
 
