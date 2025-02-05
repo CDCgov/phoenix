@@ -45,6 +45,14 @@ def parseArgs(args=None):
 	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
 	return parser.parse_args()
 
+def can_combine(mal1, mal2):
+	print("MAL1:", mal1)
+	print("MAL2:", mal2)
+	if mal1 == mal2:
+		return True
+	else:
+		return False
+
 
 # main function that looks if all MLST types are defined for an outptu mlst file
 def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
@@ -335,7 +343,7 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 					#	   ? : partial match (>min_cov & > min_ID). Default min_cov = 10, Default min_ID=95%
 					#	   - : Allele is missing
 					#
-					#	   reads
+					#	   SRST2
 					#	   * : Full length match with 1+ SNP. Novel
 					#	   ? : edge depth is below N or average depth is below X. Default edge_depth = 2, Default average_depth = 5
 					#	   - : No allele assigned, usually because no alleles achieved >90% coverage
@@ -462,14 +470,15 @@ def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
 							if '*' in allele or '?' in allele or '~' in allele: # or '-' in allele:
 								# Mark allele as found, but a mismatch
 								raw_2_allele=allele.replace('*','').replace('?','').replace('~','')
-								secondary_alleles.append('Mismatch,'+str(raw_2_allele))
+								secondary_alleles.append('Mismatch-'+str(raw_2_allele))
 							elif '-' in allele:
 								# Mark allele as not found
 								secondary_alleles.append('Not Found')
 							else:
 								# Mark allele as found and complete
 								secondary_alleles.append('Complete')
-						if primary_alleles == secondary_alleles:
+						#if primary_alleles == secondary_alleles:
+						if can_combine(primary_alleles,secondary_alleles):
 							#print("alleles match", primary_alleles, secondary_alleles)
 							new_source="unset"
 							if primary_source == "assembly":

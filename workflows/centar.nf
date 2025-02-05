@@ -92,6 +92,8 @@ workflow RUN_CENTAR {
 
     main:
 
+        params.centar = true
+
         CREATE_INPUT_CHANNELS (
             ch_input_indir, ch_input, true
         )

@@ -41,22 +41,27 @@ def get_taxa(input_ch){
                 }
             } catch (IndexOutOfBoundsException e) {
                 // Handle specific "Index 1 out of bounds for length 1" error
-                if (e.message.contains("Index 1 out of bounds for length 1")) {
-                    if (line.startsWith("G:")) {
-                        // Use the fallback logic if accessing index 1 fails
-                        genus = line.split(":")[1].trim()
-                    } else if (line.startsWith("s:")) {
-                        species = line.split(":")[1].trim()
+                println("E:" + e)
+                if (e.getMessage() != null) {
+                    if (e.message.contains("Index 1 out of bounds for length 1")) {
+                        if (line.startsWith("G:")) {
+                            // Use the fallback logic if accessing index 1 fails
+                            genus = line.split(":")[1].trim()
+                        } else if (line.startsWith("s:")) {
+                            species = line.split(":")[1].trim()
+                        }
+                    } else {
+                        // Re-throw or handle other IndexOutOfBoundsExceptions if necessary
+                        println "Unexpected IndexOutOfBoundsException: ${e.message}"
                     }
                 } else {
-                    // Re-throw or handle other IndexOutOfBoundsExceptions if necessary
-                    println "Unexpected IndexOutOfBoundsException: ${e.message}"
+                    println("Error message is empty?!")
                 }
-        } catch (Exception e) {
-            // Catch any other exceptions that might occur
-            println "An unexpected error occurred: ${e.message}"
+            } catch (Exception e) {
+                // Catch any other exceptions that might occur
+                println "An unexpected error occurred: ${e.message}"
+            }
         }
-    }
     return [input_ch[0], "$genus $species" ]
 }
 
@@ -89,6 +94,7 @@ workflow CENTAR_SUBWORKFLOW {
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         // we will filter out an samples that aren't Clostridioides difficile
+
         filtered_scaffolds_ch = filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}\
         .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\
         .join(cdiff_check, by: [[0][0],[0][1]]).filter{meta, filtered_scaffolds, fairy_outcome, taxa_id -> taxa_id == "Clostridioides difficile" }.map{ meta, filtered_scaffolds, fairy_outcome, taxa_id -> [meta, filtered_scaffolds, fairy_outcome]}
