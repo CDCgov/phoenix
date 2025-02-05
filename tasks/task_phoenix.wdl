@@ -10,6 +10,7 @@ task phoenix {
     String   entry = "PHOENIX"
     String   scaffold_ext = ".scaffolds.fa.gz"
     Boolean? create_ncbi_sheet = false
+    Boolean? centar = false
     Int?     coverage = 30
     Int      memory = 64
     Int      cpu = 8
@@ -17,7 +18,7 @@ task phoenix {
   }
   command <<<
     date | tee DATE
-    version="2.2.0-dev" 
+    version="v2.2.0-dev" 
     echo $version | tee VERSION
 
     # Debug
@@ -66,7 +67,7 @@ task phoenix {
     echo $scaffold_ext
     echo $create_ncbi_sheet
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet}; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' $centar ~{true='--centar' false=''} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet}; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -81,6 +82,17 @@ task phoenix {
       find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
       exit 1
     fi
+
+    # Get N50 from Quast file
+    grep '^N50' ~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv | awk -F '\t' '{print $2}' | tee N50
+
+    # Get AMRFinder+ output
+    grep '' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_CLASSES
+    grep 'core' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_CORE_GENES
+    grep 'plus' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_PLUS_GENES
+    grep '' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_SUBCLASSES
+    grep 'STRESS' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | awk -F '\t' '{ print $7 }' | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_STRESS_GENES
+    grep 'VIRULENCE' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | awk -F '\t' '{ print $7 }' | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
 
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f2 | tee QC_OUTCOME
@@ -99,8 +111,10 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f14 | tee KRAKEN2_WEIGHTED
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f15 | tee MLST_SCHEME_1
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $15); print $16 "_" $15}' | tee MLST1_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_2
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $17); print $18 "_" $17}' | tee MLST2_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
@@ -120,8 +134,10 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f16 | tee KRAKEN2_WEIGHTED
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f17 | tee MLST_SCHEME_1
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f18 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $17); print $18 "_" $17}' | tee MLST1_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee MLST_SCHEME_2
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $19); print $20 "_" $19}' | tee MLST2_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
@@ -142,6 +158,7 @@ task phoenix {
     String  warning_count                     = read_string("WARNING_COUNT")
     String  estimated_coverage                = read_string("ESTIMATED_COVERAGE") #make string for cases where it's "unknown"
     String  genome_length                     = read_string("GENOME_LENGTH") #make string for cases where it's "unknown"
+    String  N50                               = read_string("N50")
     String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
     String  scaffold_count                    = read_string("NUM_SCAFFOLDS") #make string for cases where it's "unknown"
     String  gc_percent                        = read_string("GC_PERCENT") #make string for cases where it's "unknown"
@@ -155,8 +172,10 @@ task phoenix {
     String  kraken2_weighted                  = read_string("KRAKEN2_WEIGHTED")
     String  mlst_scheme_1                     = read_string("MLST_SCHEME_1")
     String  mlst_1                            = read_string("MLST_1")
+    String  mlst1_ncbi                        = read_string("MLST1_NCBI")
     String  mlst_scheme_2                     = read_string("MLST_SCHEME_2")
     String  mlst_2                            = read_string("MLST_2")
+    String  mlst2_ncbi                        = read_string("MLST2_NCBI")
     String  beta_lactam_resistance_genes      = read_string("BETA_LACTAM_RESISTANCE_GENES")
     String  other_ar_genes                    = read_string("OTHER_AR_GENES")
     String  amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")

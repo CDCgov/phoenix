@@ -39,7 +39,7 @@ def main():
             if second_line and "Not Shigella/EIEC" not in second_line[0]:
                 print("Taxa Identification was correct. Exiting.")
                 try:
-                    os.rename(args.shigapass_file, args.output)
+                    os.rename(args.format_ani_file, args.output)
                     sys.exit(0)
                 except OSError as e:
                     print(f"Error renaming file: {e}")
@@ -73,6 +73,9 @@ def main():
         df["Organism"] = "Escherichia coli"
         df["% ID"] = round(percent_ani_match, 2)
         df["% Coverage"] = round(best_coverage, 2)
+
+        print(df)
+        print(args.output)
 
         # Save updated DataFrame to a new file
         df.to_csv(args.output, sep="\t", index=False)
