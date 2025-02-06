@@ -61,7 +61,8 @@ workflow PHOENIX {
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        PHOENIX_EXTERNAL ( ch_input, ch_versions, true )
+        PHOENIX_EXTERNAL ( ch_input, ch_versions, true, params.centar )
+
     emit:
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
@@ -96,7 +97,7 @@ workflow CDC_PHOENIX {
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        PHOENIX_EXQC ( ch_input, ch_versions, true )
+        PHOENIX_EXQC ( ch_input, ch_versions, true, params.centar )
 
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
@@ -157,7 +158,7 @@ workflow SRA {
         // pull data and create samplesheet for it.
         SRA_PREP ( ch_input )
         // pass samplesheet to PHOENIX
-        PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false )
+        PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false, params.centar )
 
     emit:
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
@@ -209,7 +210,7 @@ workflow CDC_SRA {
         // pull data and create samplesheet for it.
         SRA_PREP ( ch_input )
         // pass samplesheet to PHOENIX
-        PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false )
+        PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false, params.centar )
 
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
@@ -263,7 +264,7 @@ workflow SCAFFOLDS {
     }
 
     main:
-        SCAFFOLDS_EXTERNAL ( ch_input, ch_input_indir )
+        SCAFFOLDS_EXTERNAL ( ch_input, ch_input_indir, params.centar )
 
     emit:
         scaffolds        = SCAFFOLDS_EXTERNAL.out.scaffolds
@@ -308,7 +309,7 @@ workflow CDC_SCAFFOLDS {
     }
 
     main:
-        SCAFFOLDS_EXQC ( ch_input, ch_input_indir )
+        SCAFFOLDS_EXQC ( ch_input, ch_input_indir, params.centar )
 
     emit:
         scaffolds        = SCAFFOLDS_EXQC.out.scaffolds

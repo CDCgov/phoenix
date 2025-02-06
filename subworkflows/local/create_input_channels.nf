@@ -401,6 +401,12 @@ def check_file_integrity(LinkedHashMap row) {
     // List files matching the regex pattern
     def files = dir.listFiles { file -> file.name ==~ /${regexPattern}/ }
     if (files && files.length > 0) {
+        files.each { file ->
+            def lines = file.readLines()
+            if (lines.size() != 5) {
+                exit 1, "ERROR: File '${file.name}' in '${file.parent}' has ${lines.size()} lines instead of 5, this will cause errors downstream, please fix and rerun."
+            }
+        }
         return [ meta, clean_path, true ]
     } else {
         return [ meta, clean_path, false ]

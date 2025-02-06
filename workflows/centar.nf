@@ -134,7 +134,7 @@ workflow RUN_CENTAR {
         // get project dir - indir
         griphin_dir_path = griphin_input.map{meta, summary_line, centar_files, dir -> [dir]}
 
-        //create GRiPHin report
+        //create GRiPHin report                                                                                          , entry, scaffolds_entry, update, shigapass, centar
         CENTAR_GRIPHIN (
             griphin_input_ch, CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, griphin_dir_path, params.coverage, false, false, false, false, true
         )

@@ -137,6 +137,18 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     return output_array
 }
 
+def check_params_var(species_bol, species_param) {
+    // species_bol -> was the species in question in the dataset?
+    // species_param - >did the user pass the argument to run the species specific modules?
+    if (species_bol == true && species_param == true){
+        return true
+    } else if (species_bol == true && species_param == false) {
+        return false
+    } else {
+        return false
+    }
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -148,6 +160,7 @@ workflow PHOENIX_EXTERNAL {
         ch_input
         ch_versions
         ncbi_excel_creation
+        centar_param
 
     main:
         // Allow outdir to be relative
@@ -392,15 +405,17 @@ workflow PHOENIX_EXTERNAL {
         //First, check if any isolates are Clostridioides difficile and filter those to go through the channel
         determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides difficile"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
 
-        // centar subworkflow requires project_ID as part of the meta
-        CENTAR_SUBWORKFLOW (
-            DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
-            SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
-            BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
-            ASSET_CHECK.out.mlst_db,
-            determine_taxa_ch.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
-        )
-        ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+            // centar subworkflow requires project_ID as part of the meta
+            CENTAR_SUBWORKFLOW (
+                DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
+                SCAFFOLD_COUNT_CHECK.out.outcome.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
+                BBMAP_REFORMAT.out.filtered_scaffolds.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
+                ASSET_CHECK.out.mlst_db,
+                determine_taxa_ch.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
+            )
+            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        }
 
         ////////////////////////////////////// PHOENIX //////////////////////////////////////
         // get gff and protein files for amrfinder+
@@ -443,8 +458,6 @@ workflow PHOENIX_EXTERNAL {
 
         // gather all outputs from shigapass and format_ani to get the best hit for each sample - we will flatten it to go into the pipeline stats
         ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
-
-        ani_best_hit_ch.view()
 
         GENERATE_PIPELINE_STATS_WF (
             GET_RAW_STATS.out.combined_raw_stats, \
@@ -512,14 +525,13 @@ workflow PHOENIX_EXTERNAL {
         .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
         .ifEmpty( [] )
 
-        // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
-        // This is used to double check params.centar to ensure that griphin parameters are set correctly
-        //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
-        centar_var = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides difficile"}.collect().sum().map{ it -> it[0] > 0 }
-        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
+        // if centar was run, pull in species specific files
+        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        // if shigapass was run, pull in species specific files
+        shigapass_files_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
 
         // pulling it all together
-        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch)
+        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
@@ -527,16 +539,13 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
+        // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
+        // This is used to double check params.centar to ensure that griphin parameters are set correctly
+        //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
+        centar_var = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides difficile"}.collect().sum().map{ it -> it[0] > 0 }
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
-
-        // if centar was run, pull in species specific files
-        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
-        // if shigapass was run, pull in species specific files
-        shigapass_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
-        // pulling it all together
-        griphin_input_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_ch)
 
         //create GRiPHin report
         GRIPHIN (

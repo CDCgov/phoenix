@@ -12,9 +12,9 @@ process GRIPHIN {
     val(coverage)
     val(entry)
     val(scaffolds_entry)
-    val(update)
+    val(update) 
     val(shigapass_detected)
-    val(run_centar)
+    val(centar_detected)
 
     output:
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), emit: griphin_report
@@ -31,8 +31,8 @@ process GRIPHIN {
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
     def shigapass = shigapass_detected ? "--shigapass" : ""
-    def centar = (run_centar && params.centar) ? "--centar" : ""
-    def samplesheet_command = run_centar ? "--samplesheet ${original_samplesheet}" : ""
+    def centar = centar_detected ? "--centar" : ""
+    def samplesheet_command = centar_detected ? "--samplesheet ${original_samplesheet}" : ""
     def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
