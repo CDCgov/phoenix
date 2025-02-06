@@ -41,23 +41,51 @@ def get_taxa(input_ch){
                 }
             } catch (IndexOutOfBoundsException e) {
                 // Handle specific "Index 1 out of bounds for length 1" error
-                if (e.message.contains("Index 1 out of bounds for length 1")) {
-                    if (line.startsWith("G:")) {
-                        // Use the fallback logic if accessing index 1 fails
-                        genus = line.split(":")[1].trim()
-                    } else if (line.startsWith("s:")) {
-                        species = line.split(":")[1].trim()
+                println("E:" + e)
+                if (e.getMessage() != null) {
+                    if (e.message.contains("Index 1 out of bounds for length 1")) {
+                        if (line.startsWith("G:")) {
+                            // Use the fallback logic if accessing index 1 fails
+                            genus = line.split(":")[1].trim()
+                        } else if (line.startsWith("s:")) {
+                            species = line.split(":")[1].trim()
+                        }
+                    } else {
+                        // Re-throw or handle other IndexOutOfBoundsExceptions if necessary
+                        println "Unexpected IndexOutOfBoundsException: ${e.message}"
                     }
                 } else {
-                    // Re-throw or handle other IndexOutOfBoundsExceptions if necessary
-                    println "Unexpected IndexOutOfBoundsException: ${e.message}"
+                    println("Error message is empty?!")
                 }
-        } catch (Exception e) {
-            // Catch any other exceptions that might occur
-            println "An unexpected error occurred: ${e.message}"
+            } catch (Exception e) {
+                // Catch any other exceptions that might occur
+                println "An unexpected error occurred: ${e.message}"
+            }
         }
-    }
     return [input_ch[0], "$genus $species" ]
+}
+
+def get_only_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        return [ "$genus $species" ]
+}
+
+def check_params_var(species_bol, species_param) {
+    if (species_bol == true && species_param == true){
+        return true
+    } else if (species_bol == true && species_param == false) {
+        return false
+    } else {
+        return false
+    }
 }
 
 /*
@@ -168,6 +196,7 @@ workflow CENTAR_SUBWORKFLOW {
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
 
     emit:
+        run_centar_in_griphin
         consolidated_centar = CENTAR_CONSOLIDATER.out.centar_summary_line
         versions            = ch_versions // channel: [ versions.yml ]
 

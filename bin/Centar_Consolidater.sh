@@ -1609,7 +1609,7 @@ if [[ -f "${nt_mut_file}" ]]; then
                     #marR)
                     #    marR_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
                     PNimB)
-                        PNimB_set="${muts_string}\t${other_muts_string}\t[${line_IDNT}NT|${line_length}COV[]";;
+                        PNimB_set="${muts_string}\t${other_muts_string}\t[${line_IDNT}NT|${line_length}COV]";;
                     #sdaB)
                     #    sdaB_set="${muts_string}\t${other_muts_string}\t${line_IDNT}NT|${line_IDNA}AA|${line_length}COV";;
                     *)

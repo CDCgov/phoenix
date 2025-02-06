@@ -37,6 +37,8 @@ process GRIPHIN {
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
+    echo "$params.centar, $run_centar, $centar"
+    echo "HELLO WORLD"
     full_path=\$(readlink -f ${outdir})
 
     # Save the full_path to a file (this file will be captured in the output block)

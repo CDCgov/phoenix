@@ -17,7 +17,7 @@ import csv
 from Bio import SeqIO
 from itertools import chain
 from pathlib import Path
-from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value, create_shiga_df, double_check_taxa_id
+from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value, create_shiga_df, double_check_taxa_id, fill_taxa_id
 
 # Set display options to show all rows and columns
 #pd.set_option('display.max_rows', None)  # Show all rows
@@ -683,15 +683,33 @@ def parse_ani(fast_ani_file):
     return FastANI_output_list, scheme_guess, fastani_warning
 
 def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
+#def parse_srst2_ar(srst2_file, final_srst2_df, sample_name):
     """Parsing the srst2 file run on the ar gene database."""
+    print(srst2_file)
     srst2_df = pd.read_csv(srst2_file, sep='\t', header=0)
     percent_lengths = np.floor(srst2_df["coverage"]).tolist()
     genes = srst2_df["allele"].tolist()
+    print(genes)
     percent_BP_IDs = np.floor(100 - srst2_df["divergence"]).tolist()
+    #ar_dic={}
+    #with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    #    print(srst2_df)
+    #for i in range(0, len(srst2_df.index)):
+    #    print(i, srst2_df['annotation'].values[i])
+    #    temp_allele=srst2_df['annotation'].values[i].split(':')[0].split(']')[1]
+    #    temp_accession=srst2_df['annotation'].values[i].split(':')[2]
+    #    temp_drug=srst2_df['annotation'].values[i].split(';')[-2]
+    #    temp_id=temp_allele+'_'+temp_accession
+    #    ar_dic[temp_id]=temp_drug
+        
     # Since srst2 currently doesn't handle () in the gene names we will make a quick detour to fix this... now fixing annotations
-    #srst2_df.annotation = srst2_df.annotation.fillna(srst2_df.allele.map(ar_dic)) # this only fills in nas
+    srst2_df.annotation = srst2_df.annotation.fillna(srst2_df.allele.map(ar_dic)) # this only fills in nas
+
+
+    #### Add error to catch removed genes or possible database mismatching
     srst2_df['conferred_resistances'] = srst2_df['allele'].map(ar_dic)
     conferred_resistances = srst2_df['conferred_resistances'].tolist()
+    print(conferred_resistances)
     # loop through list of genes to combine with conferred resistance and make back into a pandas series
     column_name = ["{}_({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
@@ -723,6 +741,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
         df["WGS_ID"] = sample_name
         df.index = [sample_name]
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
+
     return final_srst2_df
 
 def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
@@ -817,6 +836,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
             srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
         else:
             srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
+            #srst2_ar_df = parse_srst2_ar(srst2_file, srst2_ar_df, sample_name)
             srst2_warning = None
     except (FileNotFoundError, pd.errors.EmptyDataError) : # second one for an empty dataframe - srst2 module creates a blank file
         if phoenix_entry == False: #supress warning when srst2 is not run
@@ -1081,6 +1101,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     return df
 
 def srst2_dedup(srst2_ar_df, gamma_ar_df):
+
     ##### First, we will drop columns with "partial" in the name
     # Filter out columns that contain the substring
     columns_to_drop = [col for col in srst2_ar_df.columns if "partial" in col]
@@ -1101,6 +1122,9 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
         unique_gene_list = list(set(gene_list))
         # Check if the gene name (column name) exists in the GAMMA AR DataFrame -> if there is a match these would be GAMMA +, but a different allele and we want to remove these.
         for gene in unique_gene_list:
+            if '(' in gene and ')' not in gene:
+                ###!print("Fixing", gene, "to", gene+')')
+                gene = gene + ')'
             if gamma_ar_df.columns.str.match(gene).any():
                 # Check for partial string match in the column names of the gamma DataFrame
                 matching_columns = gamma_ar_df.columns[gamma_ar_df.columns.str.contains(gene)].tolist()
@@ -1162,10 +1186,13 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
         srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
     return srst2_ar_df
 
-def order_ar_gene_columns(ar_combined_df):
+def order_ar_gene_columns(ar_combined_df, is_combine):
     ar_combined_ordered_df = pd.DataFrame() #create new dataframe to fill
     #fixing column orders
-    ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID','No_AR_Genes_Found']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
+    if (is_combine):
+        ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'UNI','No_AR_Genes_Found']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
+    else:
+        ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'WGS_ID','No_AR_Genes_Found']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     ar_drugs_list = ar_combined_df.columns.str.extract('.*\\((.*)\\).*').values.tolist() # get all ar drug names form column names
     sorted_list = sorted(list(set([str(drug) for sublist in ar_drugs_list for drug in sublist]))) #get unique drug names (with set) and sort list
     sorted_drug_names = [x for x in sorted_list if x != 'nan'] #get unique drug names (with set) and drop nan that comes from WGS_ID column and sort
@@ -1181,7 +1208,10 @@ def order_ar_gene_columns(ar_combined_df):
     all_column_names = list(chain(*all_column_names))
     #add back AR_DB and WGS_ID to front of list
     all_column_names.insert(0, "No_AR_Genes_Found")
-    all_column_names.insert(0, "WGS_ID")
+    if (is_combine):
+        all_column_names.insert(0, "UNI")
+    else:
+        all_column_names.insert(0, "WGS_ID")
     all_column_names.insert(0, "AR_Database")
     # reorder columns - should be alphabetical by drug name and within drug name genes are alphabetically listed
     ar_combined_ordered_df = ar_combined_ordered_df.reindex(all_column_names, axis=1)
@@ -1209,13 +1239,16 @@ def add_srst2(ar_df, srst2_ar_df):
     # Add cols that are unique to gamma ar_df
     ar_combined_df = ar_combined_df.join(ar_df)
     #fixing column orders
-    ar_combined_ordered_df = order_ar_gene_columns(ar_combined_df)
+    ar_combined_ordered_df = order_ar_gene_columns(ar_combined_df, False)
     return ar_combined_ordered_df
 
-def big5_check(final_ar_df):
+def big5_check(final_ar_df, is_combine):
     """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
     columns_to_highlight = []
-    final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
+    if (is_combine):
+        final_ar_df = final_ar_df.drop(['AR_Database','UNI'], axis=1)
+    else:
+        final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
     all_genes = final_ar_df.columns.tolist()
     big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
     blaOXA_48_like = [ "48", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", "731", \
@@ -1251,7 +1284,7 @@ def big5_check(final_ar_df):
         [columns_to_highlight.remove(gene) for gene in columns_to_highlight if bad_gene in gene]
     return columns_to_highlight
 
-def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
+def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine):
     hv_cols = list(hv_df)
     pf_cols = list(pf_df)
     ar_cols = list(ar_df)
@@ -1274,11 +1307,16 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix):
         final_ar_df = add_srst2(ar_df, srst2_ar_df)
     ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
     # now we will check for the "big 5" genes for highlighting later.
-    columns_to_highlight = big5_check(final_ar_df)
+    columns_to_highlight = big5_check(final_ar_df, is_combine)
     # combining all dataframes
-    final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
-    final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
-    final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
+    if (is_combine):
+        final_df = pd.merge(df, final_ar_df, how="left", on=["UNI","UNI"])
+        final_df = pd.merge(final_df, hv_df, how="left", on=["UNI","UNI"])
+        final_df = pd.merge(final_df, pf_df, how="left", on=["UNI","UNI"])
+    else:
+        final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
+        final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
+        final_df = pd.merge(final_df, pf_df, how="left", on=["WGS_ID","WGS_ID"])
     #get database names and remove if file is not found in the database list
     ar_db = final_df['AR_Database'].unique().tolist()
     if 'GAMMA file not found' in ar_db:
@@ -1395,14 +1433,14 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
                 worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
-        qc_mins_centar = qc_max_col - sum(centar_df_lens)
-        worksheet.merge_range(0, (qc_mins_centar), 0, (qc_mins_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
-        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0]), 0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
-        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
-        worksheet.merge_range(0, (qc_mins_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_mins_centar + sum(centar_df_lens) - 1), "ML Predicted Ribotype", cell_format_p1)
-        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey) 
-        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
-        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        qc_minus_centar = qc_max_col - sum(centar_df_lens)
+        worksheet.merge_range(0, (qc_minus_centar), 0, (qc_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
+        worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
+        worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
+        worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_minus_centar + sum(centar_df_lens)-1), "ML Predicted Ribotype", cell_format_p1)
+        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count), "Antibiotic Resistance Genes", cell_format_lightgrey) 
+        worksheet.merge_range(0, 1+(qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count), "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, 1+(qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
         # needed this for anoter set of samples... not sure what the differences are  -- cdc_phx with --centar
         #worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + centar_df_lens[0] - 2), "Toxin A/B Variants", cell_format_p4)
         #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 2), "Other Toxins", cell_format_p3)
@@ -1567,6 +1605,7 @@ def main():
         for row in csv_rows:
             sample_name = row[0]
             directory = row[1]
+            # check if species specific information is present
             data_location, parent_folder = Get_Parent_Folder(directory)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
@@ -1579,9 +1618,8 @@ def main():
             gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
-            # check if species specific information is present
             if args.shigapass == True:
-                shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3])
+                shiga_df = create_shiga_df(directory, sample_name, shiga_df)
             if args.centar == True:
                 centar_df = create_centar_combined_df(directory, sample_name)
                 centar_dfs.append(centar_df)
@@ -1605,7 +1643,7 @@ def main():
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix, False)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
@@ -1616,3 +1654,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

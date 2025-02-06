@@ -139,7 +139,7 @@ def check_samplesheet(file_in, file_out):
                             sys.exit(1)
             except IndexError:
                 #raise ValueError(f"No *_summary.tsv file found in {full_path}.")
-                print(f"No *_summary.tsv file found in {full_path}.")
+                print(f"No *_summary.txt file found in {full_path}.")
             try:
                 glob.glob(project_path + "/*_GRiPHin_Summary.tsv")[0]
             except IndexError:
@@ -148,6 +148,8 @@ def check_samplesheet(file_in, file_out):
                 # Check if the file exists
                 if Path(file_path).exists():
                     pass
+                elif ".trim.fastq." in file_path:
+                    print("Sample does not have a read file:"+file_path+". Is it assembly only?")
                 else:
                     raise ValueError("The file {} does not exist and is required for the pipeline. Please remove this sample from the analysis.".format(file_path))
 
