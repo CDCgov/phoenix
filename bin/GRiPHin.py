@@ -1434,13 +1434,22 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         qc_minus_centar = qc_max_col - sum(centar_df_lens)
+        ###!print("AAA:", qc_minus_centar, qc_max_col, sum(centar_df_lens), centar_df_lens[0], centar_df_lens[1], centar_df_lens[2], centar_df_lens[3], "\n",
+        ###!      "[  QC 0,",qc_minus_centar-1,"]\n", 
+        ###!      "[CDTX", qc_minus_centar, ",", (qc_minus_centar + centar_df_lens[0] - 1), ']\n',
+        ###!      "[CDOT", qc_minus_centar + centar_df_lens[0], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), ']\n',
+        ###!      "[CDAR", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), ']\n',
+        ###!      "[CDML", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2], qc_minus_centar + sum(centar_df_lens) - 1,"]\n",
+        ###!      "[  AR", qc_max_col, ",", (qc_max_col + ar_gene_count)-1, ']\n',
+        ###!      "[  HV", (qc_max_col + ar_gene_count), ",", (qc_max_col + ar_gene_count + hv_gene_count)-1, ']\n',
+        ###!      "[  PV", (qc_max_col + ar_gene_count + hv_gene_count), ",", (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, ']\n')
         worksheet.merge_range(0, (qc_minus_centar), 0, (qc_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_minus_centar + sum(centar_df_lens)-1), "ML Predicted Ribotype", cell_format_p1)
-        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count), "Antibiotic Resistance Genes", cell_format_lightgrey) 
-        worksheet.merge_range(0, 1+(qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count), "Hypervirulence Genes^^", cell_format_grey)
-        worksheet.merge_range(0, 1+(qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count)-1, "Antibiotic Resistance Genes", cell_format_lightgrey) 
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count)-1, "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
         # needed this for anoter set of samples... not sure what the differences are  -- cdc_phx with --centar
         #worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + centar_df_lens[0] - 2), "Toxin A/B Variants", cell_format_p4)
         #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 2), "Other Toxins", cell_format_p3)

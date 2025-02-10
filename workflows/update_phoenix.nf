@@ -114,7 +114,8 @@ workflow UPDATE_PHOENIX_WF {
         outdir_path = Channel.fromPath(params.outdir, relative: true)
 
         CREATE_INPUT_CHANNELS (
-            ch_input_indir, ch_input, update
+            // False is to say if centar is to be included when creating input channels
+            ch_input_indir, ch_input, false
         )
         ch_versions = ch_versions.mix(CREATE_INPUT_CHANNELS.out.versions)
 
@@ -247,7 +248,7 @@ workflow UPDATE_PHOENIX_WF {
         GRIPHIN_NO_OUTPUT_CDC (
             busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true
+            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true, false, false
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT_CDC.out.versions)
 
@@ -255,7 +256,7 @@ workflow UPDATE_PHOENIX_WF {
         GRIPHIN_NO_OUTPUT (
             busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, true, false, true
+            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, true, false, true, false, false
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT.out.versions)
 
