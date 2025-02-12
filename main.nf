@@ -384,12 +384,14 @@ workflow PHOENIX_LR {
              ch_input 
         ) 
 
+        PHOENIX_LR_WF.out.scaffolds.view()
+
         // pass assembly to the scaffolds entry
         SCAFFOLDS_EXTERNAL ( 
             PHOENIX_LR_WF.out.valid_samplesheet, 
             null, 
             PHOENIX_LR_WF.out.versions,
-            PHOENIX_LR_WF.out.scaffolds
+            PHOENIX_LR_WF.out.scaffolds.flatten().collate(2)
         )
 
     emit:

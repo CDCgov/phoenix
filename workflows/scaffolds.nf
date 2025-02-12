@@ -114,6 +114,13 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     return output_array
 }
 
+/*[['id':'hq03'], /scicomp/scratch/qpk9/68/8458df54b2eea74d56c58b93dc502f/hq03_medaka_consensus.fasta.gz, ['id':'hq91'], /scicomp/scratch/qpk9/45/4b697c5cc7715791d7a2fa78c9ec8e/hq91_medaka_consensus.fasta.gz, ['id':'3001517740'], /scicomp/scratch/qpk9/21/400a01be9e853eeb565c87e0dcc9f8/3001517740_medaka_consensus.fasta.gz]
+[['id':'hq03'], /scicomp/scratch/qpk9/68/8458df54b2eea74d56c58b93dc502f/hq03_medaka_consensus.fasta.gz, ['id':'hq91'], /scicomp/scratch/qpk9/45/4b697c5cc7715791d7a2fa78c9ec8e/hq91_medaka_consensus.fasta.gz, ['id':'3001517740'], /scicomp/scratch/qpk9/21/400a01be9e853eeb565c87e0dcc9f8/3001517740_medaka_consensus.fasta.gz]
+[[id:3001517740], /scicomp/scratch/qpk9/00/c2f7d37c1ba287c47c7cf9f36e69fd/3001517740.filtered.scaffolds.fa.gz]
+[[id:hq91], /scicomp/scratch/qpk9/4f/ea971cfc07ed73a1fe18e5408970a3/hq91.filtered.scaffolds.fa.gz]
+[[id:3001517740], /scicomp/scratch/qpk9/7a/dbbdf5c082d6d70bc2adce7212ab06/3001517740_scaffolds_summary.txt]
+[[id:hq91], /scicomp/scratch/qpk9/b1/e6df2b6571b389fd4c4d21c671eefb/hq91_scaffolds_summary.txt]*/
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -122,10 +129,10 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
 
 workflow SCAFFOLDS_EXTERNAL {
     take:
-        ch_input
-        ch_input_indir
+        ch_input               // PHOENIX_LR_WF.out.valid_samplesheet
+        ch_input_indir          // null
         ch_versions
-        input_scaffolds_ch
+        input_scaffolds_ch    // PHOENIX_LR_WF.out.scaffolds.flatten().collate(2)
 
     main:
         // Allow outdir to be relative
@@ -244,7 +251,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
         best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}\
-        .join(FORMAT_ANI.out.ani_best_hit.map{               meta, ani_best_hit  -> [[id:meta.id], ani_best_hit ]}, by: [0]).map{ it -> add_empty_ch(it) }
+            .join(FORMAT_ANI.out.ani_best_hit.map{           meta, ani_best_hit  -> [[id:meta.id], ani_best_hit ]}, by: [0]).map{ it -> add_empty_ch(it) }
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
@@ -365,17 +372,7 @@ workflow SCAFFOLDS_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-        //pull in species specific files
-        if (DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it -> it == "Clostridioides difficile"} && params.centar == true) {
-            centar_var = true
-            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty( [] )
-            // pulling it all together
-            griphin_input_ch = all_summaries_ch.combine(centar_files_ch)
-        } else {
-            centar_var = false
-            // pulling it all together
-            griphin_input_ch = all_summaries_ch
-        }
+        centar_var = false
 
         //create GRiPHin report
         GRIPHIN (

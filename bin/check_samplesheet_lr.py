@@ -47,7 +47,7 @@ class RowChecker:
         sample_col="sample",
         first_col="fastq",
         #second_col="fastq_2",
-        #single_col="single_end",
+        single_col="single_end",
         **kwargs,
     ):
         """
@@ -69,7 +69,7 @@ class RowChecker:
         self._sample_col = sample_col
         self._first_col = first_col
         #self._second_col = second_col
-        #self._single_col = single_col
+        self._single_col = single_col
         self._seen = set()
         self.modified = []
 
@@ -86,6 +86,7 @@ class RowChecker:
         self._validate_first(row)
         #self._validate_second(row)
         #self._validate_pair(row)
+        self._set_single_end_true(row)
         self._seen.add((row[self._sample_col], row[self._first_col]))
         self.modified.append(row)
 
@@ -101,6 +102,9 @@ class RowChecker:
         if len(row[self._first_col]) <= 0:
             raise AssertionError("At least the first FASTQ file is required.")
         self._validate_fastq_format(row[self._first_col])
+
+    def _set_single_end_true(self, row):
+        row[self._single_col] = True
 
     #def _validate_second(self, row):
     #    """Assert that the second FASTQ entry has the right format if it exists."""

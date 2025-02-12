@@ -53,11 +53,12 @@ def create_fastq_channels(LinkedHashMap row) {
     return array
 }
 
-// Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
+// Function to get list of [ meta, [ scaffolds ] ]
 def create_LR_fastq_channel(LinkedHashMap row) {
     // create meta map
     def meta = [:]
     meta.id = row.sample
+    meta.single_end = row.single_end
 
     // add path(s) of the fastq file(s) to the meta map
     if (!file(row.fastq).exists()) {

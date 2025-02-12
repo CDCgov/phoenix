@@ -155,15 +155,6 @@ workflow PHOENIX_LR_WF {
     )
     ch_versions = ch_versions.mix(MEDAKA.out.versions)
 
-    /*/ get all assemblies together
-    assemblies_ch = MEDAKA.out.fasta_fin.collect()
-
-    CREATE_SAMPLESHEET (
-        [], assemblies_ch
-    )
-    ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
-    
-
     /*plasmid_ch = PLASMIDmarker .out.tsv.map  {meta,tsv                -> [meta,tsv]}\
         .join(MEDAKA.out.fasta.map{   meta, fasta  -> [meta, fasta]},    by: [0])\
 
