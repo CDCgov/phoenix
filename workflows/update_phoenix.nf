@@ -38,8 +38,8 @@ include { CREATE_SUMMARY_LINE                  } from '../modules/local/phoenix_
 include { CREATE_AND_UPDATE_README             } from '../modules/local/updater/create_and_update_readme'
 include { FETCH_FAILED_SUMMARIES               } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES                 } from '../modules/local/phoenix_summary'
-include { GRIPHIN as GRIPHIN_NO_OUTPUT         } from '../modules/local/griphin'
-include { GRIPHIN as GRIPHIN_NO_OUTPUT_CDC     } from '../modules/local/griphin'
+include { GRIPHIN as GRIPHIN_NO_PUBLISH         } from '../modules/local/griphin'
+include { GRIPHIN as GRIPHIN_NO_PUBLISH_CDC     } from '../modules/local/griphin'
 include { UPDATE_GRIPHIN                       } from '../modules/local/updater/update_griphin'
 include { UPDATE_GRIPHIN as UPDATE_CDC_GRIPHIN } from '../modules/local/updater/update_griphin'
 include { SRST2_AR                             } from '../modules/local/srst2_ar'
@@ -225,7 +225,8 @@ workflow UPDATE_PHOENIX_WF {
             .map{meta, summaryline, gene_results -> [meta.project_id, summaryline]}.groupTuple(by: 0)
             .map { group -> 
                 def (id, files) = group
-                def dirPath = project_ids.value[id]  // Retrieve the matching directory path
+                id2 = id.split('/')[-1] // Remove full path and cut just the project id for use
+                def dirPath = project_ids.value[id2]  // Retrieve the matching directory path
                 return [id, dirPath, files]}
 
         // Combining sample summaries into final report
@@ -245,32 +246,39 @@ workflow UPDATE_PHOENIX_WF {
                     buscoFalse: it[2] == false}
 
         // for samples that were created with entry CDC_PHX
-        GRIPHIN_NO_OUTPUT_CDC (
+        GRIPHIN_NO_PUBLISH_CDC (
             busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
             busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true, false, false
         )
-        ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT_CDC.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH_CDC.out.versions)
 
         // for samples that were created with entry PHX
-        GRIPHIN_NO_OUTPUT (
+        GRIPHIN_NO_PUBLISH (
             busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
             busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, true, false, true, false, false
         )
-        ch_versions = ch_versions.mix(GRIPHIN_NO_OUTPUT.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
         // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
-        griphin_reports_ch = GRIPHIN_NO_OUTPUT.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_OUTPUT_CDC.out.griphin_report.collect().ifEmpty([])).flatten()
+        griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten()
+        griphin_reports_ch.view()
 
         // join old and new griphins for combining
         griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
         .join(griphin_reports_ch.map{it -> add_meta(it)}.map{        meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
         .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+        //.join(CREATE_INPUT_CHANNELS.out.valid_samplesheet.map {      meta, valid_samplesheet      -> [[project_id:meta.project_id], valid_samplesheet]}, by: [[0][0],[0][1]])
 
         // combine griphin files, the new one just created and the old one that was found in the project dir. 
         UPDATE_GRIPHIN (
-            griphins_ch, params.coverage
+            griphins_ch.map{ meta, excel, report, directory, samplesheet -> excel }, 
+            griphins_ch.map{ meta, excel, report, directory, samplesheet  -> directory },
+            griphins_ch.map{ meta, excel, report, directory, samplesheet -> meta.project_id },
+            //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
+            [],
+            params.coverage
         )
         ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 

@@ -685,11 +685,11 @@ def parse_ani(fast_ani_file):
 def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
 #def parse_srst2_ar(srst2_file, final_srst2_df, sample_name):
     """Parsing the srst2 file run on the ar gene database."""
-    print(srst2_file)
+    ###!print(srst2_file)
     srst2_df = pd.read_csv(srst2_file, sep='\t', header=0)
     percent_lengths = np.floor(srst2_df["coverage"]).tolist()
     genes = srst2_df["allele"].tolist()
-    print(genes)
+    ###!print(genes)
     percent_BP_IDs = np.floor(100 - srst2_df["divergence"]).tolist()
     #ar_dic={}
     #with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
@@ -709,7 +709,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     #### Add error to catch removed genes or possible database mismatching
     srst2_df['conferred_resistances'] = srst2_df['allele'].map(ar_dic)
     conferred_resistances = srst2_df['conferred_resistances'].tolist()
-    print(conferred_resistances)
+    ###!print(conferred_resistances)
     # loop through list of genes to combine with conferred resistance and make back into a pandas series
     column_name = ["{}_({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
@@ -1140,7 +1140,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
     if not srst2_ar_df.empty:
         gamma_neg_srst2 = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
         # check the number of alleles per gene so that we only have those that are singles and will be reported
-        gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: [column.split('_')[0] for column in row.index if row[column]], axis=1))
+        gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: ['_'.join(column.split('_')[0:3]) for column in row.index if row[column]], axis=1))
         gamma_neg_genes.columns = ["neg_genes"] # a column name to make it easier
         # Iterate over each row
         for index, row in gamma_neg_genes.iterrows():
@@ -1148,12 +1148,22 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
             multiple_occurrences = []
             count = 0
             for val in row["neg_genes"]:
-                gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
+                # Gonna need to fix this soon. There are genes that have dashes in the gene name that dont relate to allele
+                if "(" in val:
+                    if '-' in val:
+                        if val.find('(') < val.find('-'):
+                            gene_list.append(val.split(")")[0]+')') # In the cases where the gene name includes dashes inside of parentheses
+                        else:
+                            gene_list.append(val.split("-")[0]) # If the dash occurs before the parentheses...Not sure if this occurs, but attempting to catch it
+                    else:
+                        continue # This would break downstream anyway, but in the case that a gene does not have ANY dash in it
+                else:
+                    gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
             for val in gene_list:
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
                     #get a dataframe of the gene in question
-                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(val)])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
                     df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
                     # Convert extracted values to integer type and keep NA values
