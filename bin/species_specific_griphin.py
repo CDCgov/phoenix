@@ -94,6 +94,7 @@ def create_shiga_df(directory, sample_name, shiga_df, taxa):
     '''If Shigapass was run get info to add to the dataframe.'''
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
+    print(taxa)
     if "Escherichia" in taxa or "Shigella" in taxa:
         # create file names
         shiga_summary = directory + "/ANI/" + sample_name + "_ShigaPass_summary.csv"
@@ -121,7 +122,6 @@ def create_shiga_df(directory, sample_name, shiga_df, taxa):
 
 def double_check_taxa_id(shiga_df, phx_df):
     # Merge the DataFrames on 'WGS_ID'
-    print(shiga_df)
     merged_df = pd.merge(phx_df, shiga_df, on='WGS_ID', how='left')
     # Identify the position of the insertion point
     insert_position = merged_df.columns.get_loc("FastANI_Organism")

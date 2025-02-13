@@ -196,7 +196,6 @@ workflow CENTAR_SUBWORKFLOW {
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
 
     emit:
-        run_centar_in_griphin
         consolidated_centar = CENTAR_CONSOLIDATER.out.centar_summary_line
         versions            = ch_versions // channel: [ versions.yml ]
 

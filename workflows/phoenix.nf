@@ -526,7 +526,11 @@ workflow PHOENIX_EXTERNAL {
         .ifEmpty( [] )
 
         // if centar was run, pull in species specific files
-        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        if (centar_param == true) {
+            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        } else {
+            centar_files_ch =  DETERMINE_TAXA_ID.out.taxonomy.map{ it -> create_empty_ch(it) }
+        }
         // if shigapass was run, pull in species specific files
         shigapass_files_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
 
