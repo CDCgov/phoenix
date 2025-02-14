@@ -307,8 +307,8 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(FORMAT_ANI.out.versions)
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
-        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}\
-            .join(FORMAT_ANI.out.ani_best_hit.map{           meta, ani_best_hit  -> [[id:meta.id], ani_best_hit ]}, by: [0]).map{ it -> add_empty_ch(it) }
+        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary]}\
+            .join(FORMAT_ANI.out.ani_best_hit_to_check.map{  meta, ani_best_hit_to_check  -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0]).map{ it -> add_empty_ch(it) }
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
@@ -318,9 +318,10 @@ workflow SCAFFOLDS_EXQC {
 
         ////////////////////////////////////// SHIGAPASS //////////////////////////////////////
         // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
+        // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
         scaffolds_and_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
             .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{                                  meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}, by: [0])
-            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{            meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{            meta, fairy_outcome      -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
 
         // Get ID from ShigaPass
         SHIGAPASS (
