@@ -130,9 +130,14 @@ while IFS= read -r var; do
 	#			echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz"
 	#			wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz
 				#curl --remote-name --remote-time "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz"
-				echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
-	#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
-				matches=$(( matches + 1))
+				# Check if file exists and is not empty, if so it will move on to the next best hit. Dont really know a better way to deal with a crappy download situation
+				if [[ -s "${outdir}/${source}.gz" ]]; then
+					echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
+		#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
+					matches=$(( matches + 1))
+				else
+					echo "${source} did not download correctly"
+				fi
 			else
 				echo "GCF check did not pass, look into the differences of ${source}"
 			fi

@@ -302,6 +302,7 @@ workflow CREATE_INPUT_CHANNELS {
             ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
 
             directory_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> create_dir_channels(it) }
+
             //adding meta.id to end of dir - otherwise too many files are copied and it takes forever. 
             sample_directory_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> create_sample_dir_channels(it) }
 

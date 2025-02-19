@@ -708,7 +708,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     #### Add error to catch removed genes or possible database mismatching
     srst2_df['conferred_resistances'] = srst2_df['allele'].map(ar_dic)
     conferred_resistances = srst2_df['conferred_resistances'].tolist()
-    print(conferred_resistances)
+    ###!print(conferred_resistances)
     # loop through list of genes to combine with conferred resistance and make back into a pandas series
     column_name = ["{}_({})".format(gene, conferred_resistance) for gene, conferred_resistance in zip(genes, conferred_resistances)]
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
@@ -1139,7 +1139,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
     if not srst2_ar_df.empty:
         gamma_neg_srst2 = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
         # check the number of alleles per gene so that we only have those that are singles and will be reported
-        gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: [column.split('_')[0] for column in row.index if row[column]], axis=1))
+        gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: ['_'.join(column.split('_')[0:3]) for column in row.index if row[column]], axis=1))
         gamma_neg_genes.columns = ["neg_genes"] # a column name to make it easier
         # Iterate over each row
         for index, row in gamma_neg_genes.iterrows():
@@ -1147,12 +1147,22 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
             multiple_occurrences = []
             count = 0
             for val in row["neg_genes"]:
-                gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
+                # Gonna need to fix this soon. There are genes that have dashes in the gene name that dont relate to allele
+                if "(" in val:
+                    if '-' in val:
+                        if val.find('(') < val.find('-'):
+                            gene_list.append(val.split(")")[0]+')') # In the cases where the gene name includes dashes inside of parentheses
+                        else:
+                            gene_list.append(val.split("-")[0]) # If the dash occurs before the parentheses...Not sure if this occurs, but attempting to catch it
+                    else:
+                        continue # This would break downstream anyway, but in the case that a gene does not have ANY dash in it
+                else:
+                    gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
             for val in gene_list:
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
                     #get a dataframe of the gene in question
-                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(val)])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
                     df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
                     # Convert extracted values to integer type and keep NA values
@@ -1433,13 +1443,22 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         qc_minus_centar = qc_max_col - sum(centar_df_lens)
+        ###!print("AAA:", qc_minus_centar, qc_max_col, sum(centar_df_lens), centar_df_lens[0], centar_df_lens[1], centar_df_lens[2], centar_df_lens[3], "\n",
+        ###!      "[  QC 0,",qc_minus_centar-1,"]\n", 
+        ###!      "[CDTX", qc_minus_centar, ",", (qc_minus_centar + centar_df_lens[0] - 1), ']\n',
+        ###!      "[CDOT", qc_minus_centar + centar_df_lens[0], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), ']\n',
+        ###!      "[CDAR", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), ']\n',
+        ###!      "[CDML", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2], qc_minus_centar + sum(centar_df_lens) - 1,"]\n",
+        ###!      "[  AR", qc_max_col, ",", (qc_max_col + ar_gene_count)-1, ']\n',
+        ###!      "[  HV", (qc_max_col + ar_gene_count), ",", (qc_max_col + ar_gene_count + hv_gene_count)-1, ']\n',
+        ###!      "[  PV", (qc_max_col + ar_gene_count + hv_gene_count), ",", (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, ']\n')
         worksheet.merge_range(0, (qc_minus_centar), 0, (qc_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_minus_centar + sum(centar_df_lens)-1), "ML Predicted Ribotype", cell_format_p1)
-        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count), "Antibiotic Resistance Genes", cell_format_lightgrey) 
-        worksheet.merge_range(0, 1+(qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count), "Hypervirulence Genes^^", cell_format_grey)
-        worksheet.merge_range(0, 1+(qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count)-1, "Antibiotic Resistance Genes", cell_format_lightgrey) 
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count)-1, "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
         # needed this for anoter set of samples... not sure what the differences are  -- cdc_phx with --centar
         #worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + centar_df_lens[0] - 2), "Toxin A/B Variants", cell_format_p4)
         #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 2), "Other Toxins", cell_format_p3)
@@ -1488,7 +1507,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Creating footers
     worksheet.write('A' + str(max_row + 4), 'Cells in YELLOW denote isolates outside of ' + str(set_coverage) + '-100X coverage', yellow_format)
     worksheet.write('A' + str(max_row + 5), 'Cells in ORANGE denote “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, 48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
-    worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, assembly ratio stdev > 2.58, assembly length < 1Mbps)', red_format)
+    worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, assembly ratio stdev > 2.58, assembly length < 1Mbps, >500 scaffolds)', red_format)
     # More footers - Disclaimer etc.
     # unbold
     no_bold = workbook.add_format({'bold': False})
@@ -1623,7 +1642,6 @@ def main():
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
             if args.shigapass == True:
-                print("I am here")
                 shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3])
             if args.centar == True:
                 centar_df = create_centar_combined_df(directory, sample_name)

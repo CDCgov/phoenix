@@ -78,7 +78,7 @@ def read_excels(file_path1, file_path2, samplesheet):
     phoenix, shiga, centar_1, centar_2, all_centar = check_column_presence(df_1, file_path1, df_2, file_path2)
         
     if centar_1 == True:
-        ordered_centar_df_1, centar_df_lens_1,centar_df_column_names_1 = split_centar_df(centar_1, file_path1)
+        #ordered_centar_df_1, centar_df_lens_1,centar_df_column_names_1 = split_centar_df(centar_1, file_path1)
         df1_qc, df1_gene_hits_with_centar = split_dataframe(df_1,"Toxinotype")
         df1_centar, df1_gene_hits = split_dataframe(df1_gene_hits_with_centar,"AR_Database")
         df1_ar, df1_pf_hv = split_dataframe(df1_gene_hits,"HV_Database")
@@ -89,7 +89,7 @@ def read_excels(file_path1, file_path2, samplesheet):
         df1_hv, df1_pf_tar = split_dataframe(df1_pf_hv,"Plasmid_Replicon_Database")
         df1_pf, df1_blanktar = split_dataframe(df1_pf_tar,"Toxinotype")
     if centar_2 == True:
-        ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2 = split_centar_df(centar_2, file_path2)
+        #ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2 = split_centar_df(centar_2, file_path2)
         df2_qc, df2_gene_hits_with_centar = split_dataframe(df_2,"Toxinotype")
         df2_centar, df2_gene_hits = split_dataframe(df2_gene_hits_with_centar,"AR_Database")
         df2_ar, df2_pf_hv = split_dataframe(df2_gene_hits,"HV_Database")
@@ -98,7 +98,7 @@ def read_excels(file_path1, file_path2, samplesheet):
         if centar_1:
             found_headlines = []
             found_headlines2 = [[],[],[],[]]
-            centar_df_lens=[-1,0,0,0]
+            centar_df_lens=[0,0,0,0]
             for section in range(0,len(centar_headlines)):
                 for liner in centar_headlines[section]:
                     if liner in df1_centar.columns.tolist() or liner in df2_centar.columns.tolist():
@@ -114,7 +114,7 @@ def read_excels(file_path1, file_path2, samplesheet):
         else:
             found_headlines = []
             found_headlines2 = [[],[],[],[]]
-            centar_df_lens=[-1,0,0,0]
+            centar_df_lens=[0,0,0,0]
             for section in range(0,len(centar_headlines)):
                 for liner in centar_headlines[section]:
                     if liner in df2_centar.columns.tolist():
@@ -450,7 +450,7 @@ def main():
         base_file = griphin_files.pop(0)
         #combine first two files
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(base_file, griphin_files[0], args.samplesheet)
-        print("BBBB:", centar_df_lens_final)
+        ###!print("BBB:", centar_df_lens_final)
         combined_dataframes_final = [ combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, ordered_centar_df_final ]
         # Iterate over remaining files, progressively combining them with the base
         for count, next_file in enumerate(griphin_files[1:], start=1):
@@ -469,6 +469,7 @@ def main():
             combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, ordered_centar_df_final = combined_dataframes_final
     else:
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(args.griphin_new, args.griphin_old, args.samplesheet)
+        ###1print("CCC:", centar_df_lens_final)
     # add centar_df to the almost_final_ar_df
     if centar_final == True:
         # Reset the indices of both DataFrames during concat so they are aligned and we don't get NaNs in the final row of the dataframe

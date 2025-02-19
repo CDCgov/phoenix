@@ -135,7 +135,7 @@ workflow RUN_CENTAR {
 
         //create GRiPHin report                                                                                          , entry, scaffolds_entry, update, shigapass, centar
         CENTAR_GRIPHIN (
-            griphin_input_ch, CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, griphin_dir_path, params.coverage, false, false, false, false, CENTAR_SUBWORKFLOW.out.run_centar_in_griphin
+            griphin_input_ch, CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, griphin_dir_path, params.coverage, false, false, false, false, true
         )
         ch_versions = ch_versions.mix(CENTAR_GRIPHIN.out.versions)
 
