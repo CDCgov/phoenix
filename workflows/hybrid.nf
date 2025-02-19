@@ -133,7 +133,7 @@ workflow PHOENIX_HYBRID_WF {
         FASTP_LR (
             BBDUK.out.reads, true, false
         )
-        ch_versions = ch_versions.mix(FASTP.out.versions)
+        ch_versions = ch_versions.mix(FASTP_LR.out.versions)
 
         // comment what it is doing
         NANOQ (
@@ -162,7 +162,7 @@ workflow PHOENIX_HYBRID_WF {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
      //polish genome
-    uni_ch = FASTP.out.reads.map{  meta, reads -> [ meta, reads ]}\
+    uni_ch = FASTP_LR.out.reads.map{  meta, reads -> [ meta, reads ]}\
         .join(RASUSA.out.fastq.map{meta, fastq -> [ meta, fastq ]}, by: [0])
 
     UNICYCLER (
@@ -172,7 +172,7 @@ workflow PHOENIX_HYBRID_WF {
 
     //polish genome
     bwa_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
-        .join(FASTP.out.reads.map{   meta, reads -> [ meta, reads ]}, by: [0])
+        .join(FASTP_LR.out.reads.map{   meta, reads -> [ meta, reads ]}, by: [0])
 
     BWA (
         bwa_ch
