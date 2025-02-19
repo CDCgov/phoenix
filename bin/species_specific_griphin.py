@@ -94,7 +94,6 @@ def create_shiga_df(directory, sample_name, shiga_df, taxa):
     '''If Shigapass was run get info to add to the dataframe.'''
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
-    print(taxa)
     if "Escherichia" in taxa or "Shigella" in taxa:
         # create file names
         shiga_summary = directory + "/ANI/" + sample_name + "_ShigaPass_summary.csv"
