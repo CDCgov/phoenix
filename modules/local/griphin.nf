@@ -12,8 +12,9 @@ process GRIPHIN {
     val(coverage)
     val(entry)
     val(scaffolds_entry)
-    val(update)
+    val(updater_entry)
     val(run_centar)
+    val(long_read_entry)
 
     output:
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), emit: griphin_report
@@ -30,7 +31,8 @@ process GRIPHIN {
     def phoenix = entry ? "--phoenix" : ""
     def scaffolds = scaffolds_entry ? "--scaffolds" : ""
     def centar = run_centar ? "--centar" : ""
-    def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
+    def long_read = long_read_entry ? "--long_read" : ""
+    def output_prefix = updater_entry ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
@@ -39,7 +41,7 @@ process GRIPHIN {
     # Save the value of full_path to a file (this file will be captured in the output block)
     echo \$full_path > full_path_file.txt
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${centar} ${scaffolds}
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --coverage ${coverage} ${phoenix} ${centar} ${scaffolds} ${long_read}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

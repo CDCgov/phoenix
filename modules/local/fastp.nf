@@ -1,5 +1,5 @@
 process FASTP {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_medium'
     // v0.23.4
     container 'staphb/fastp@sha256:98bb2bb94bbce4104f7fbbdba72c33c827f5add7cf08cc59fd365c6d82ee4014'
@@ -29,6 +29,7 @@ process FASTP {
     if (meta.single_end) {
         def fail_fastq = save_trimmed_fail ? "--failed_out ${prefix}.fail.fastq.gz" : ''
         """
+        echo ${meta.single_end}
         [ ! -f  ${prefix}.fastq.gz ] && ln -s $reads ${prefix}.fastq.gz
         fastp \\
             --in1 ${prefix}.fastq.gz \\

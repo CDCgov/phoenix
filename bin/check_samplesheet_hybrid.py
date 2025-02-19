@@ -45,8 +45,9 @@ class RowChecker:
     def __init__(
         self,
         sample_col="sample",
-        first_col="fastq",
-        #second_col="fastq_2",
+        first_col="fastq_1",
+        second_col="fastq_2",
+        third_col="long_read",
         single_col="single_end",
         **kwargs,
     ):
@@ -68,7 +69,8 @@ class RowChecker:
         super().__init__(**kwargs)
         self._sample_col = sample_col
         self._first_col = first_col
-        #self._second_col = second_col
+        self._second_col = second_col
+        self._third_col = third_col
         self._single_col = single_col
         self._seen = set()
         self.modified = []
@@ -84,7 +86,8 @@ class RowChecker:
         """
         self._validate_sample(row)
         self._validate_first(row)
-        #self._validate_second(row)
+        self._validate_second(row)
+        self._validate_third(row)
         #self._validate_pair(row)
         self._set_single_end_true(row)
         self._seen.add((row[self._sample_col], row[self._first_col]))
@@ -104,12 +107,17 @@ class RowChecker:
         self._validate_fastq_format(row[self._first_col])
 
     def _set_single_end_true(self, row):
-        row[self._single_col] = "true"
+        row[self._single_col] = "false"
 
-    #def _validate_second(self, row):
-    #    """Assert that the second FASTQ entry has the right format if it exists."""
-    #    if len(row[self._second_col]) > 0:
-    #        self._validate_fastq_format(row[self._second_col])
+    def _validate_second(self, row):
+        """Assert that the second FASTQ entry has the right format if it exists."""
+        if len(row[self._second_col]) > 0:
+            self._validate_fastq_format(row[self._second_col])
+
+    def _validate_third(self, row):
+        """Assert that the third FASTQ entry has the right format if it exists."""
+        if len(row[self._third_col]) > 0:
+            self._validate_fastq_format(row[self._third_col])
 
     #def _validate_pair(self, row):
     #    """Assert that read pairs have the same file extension. Report pair status."""
@@ -196,7 +204,7 @@ def check_samplesheet(file_in, file_out):
         This function checks that the samplesheet follows the following structure,
         see also the `viral recon samplesheet`_::
 
-            sample,fastq_1,fastq_2
+            sample,fastq_1,fastq_2,long_read
             SAMPLE_PE,SAMPLE_PE_RUN1_1.fastq.gz,SAMPLE_PE_RUN1_2.fastq.gz
             SAMPLE_PE,SAMPLE_PE_RUN2_1.fastq.gz,SAMPLE_PE_RUN2_2.fastq.gz
             SAMPLE_SE,SAMPLE_SE_RUN1_1.fastq.gz,
@@ -205,12 +213,13 @@ def check_samplesheet(file_in, file_out):
         https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/samplesheet/samplesheet_test_illumina_amplicon.csv
 
     """
-    required_columns = {"sample", "fastq"}
+    required_columns = {"sample", "fastq_1", "fastq_2", "long_read"}
     # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
     with file_in.open(newline="") as in_handle:
-        reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle))
+        reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle), delimiter=',')
+        print(reader.fieldnames)
         # Validate the existence of the expected header columns.
-        if not required_columns.issubset(reader.fieldnames):
+        if not required_columns.issubset(set(reader.fieldnames)):
             req_cols = ", ".join(required_columns)
             logger.critical(f"The sample sheet **must** contain these column headers: {req_cols}.")
             sys.exit(1)

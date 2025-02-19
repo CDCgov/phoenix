@@ -114,13 +114,6 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     return output_array
 }
 
-/*[['id':'hq03'], /scicomp/scratch/qpk9/68/8458df54b2eea74d56c58b93dc502f/hq03_medaka_consensus.fasta.gz, ['id':'hq91'], /scicomp/scratch/qpk9/45/4b697c5cc7715791d7a2fa78c9ec8e/hq91_medaka_consensus.fasta.gz, ['id':'3001517740'], /scicomp/scratch/qpk9/21/400a01be9e853eeb565c87e0dcc9f8/3001517740_medaka_consensus.fasta.gz]
-[['id':'hq03'], /scicomp/scratch/qpk9/68/8458df54b2eea74d56c58b93dc502f/hq03_medaka_consensus.fasta.gz, ['id':'hq91'], /scicomp/scratch/qpk9/45/4b697c5cc7715791d7a2fa78c9ec8e/hq91_medaka_consensus.fasta.gz, ['id':'3001517740'], /scicomp/scratch/qpk9/21/400a01be9e853eeb565c87e0dcc9f8/3001517740_medaka_consensus.fasta.gz]
-[[id:3001517740], /scicomp/scratch/qpk9/00/c2f7d37c1ba287c47c7cf9f36e69fd/3001517740.filtered.scaffolds.fa.gz]
-[[id:hq91], /scicomp/scratch/qpk9/4f/ea971cfc07ed73a1fe18e5408970a3/hq91.filtered.scaffolds.fa.gz]
-[[id:3001517740], /scicomp/scratch/qpk9/7a/dbbdf5c082d6d70bc2adce7212ab06/3001517740_scaffolds_summary.txt]
-[[id:hq91], /scicomp/scratch/qpk9/b1/e6df2b6571b389fd4c4d21c671eefb/hq91_scaffolds_summary.txt]*/
-
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -130,9 +123,11 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
 workflow SCAFFOLDS_EXTERNAL {
     take:
         ch_input               // PHOENIX_LR_WF.out.valid_samplesheet
-        ch_input_indir          // null
+        ch_input_indir         // null
         ch_versions
         input_scaffolds_ch    // PHOENIX_LR_WF.out.scaffolds.flatten().collate(2)
+        nanostat              // PHOENIX_LR_WF.out.nanostat
+        long_read_var
 
     main:
         // Allow outdir to be relative
@@ -210,7 +205,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "scaffolds"
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
@@ -310,6 +305,7 @@ workflow SCAFFOLDS_EXTERNAL {
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         GENERATE_PIPELINE_STATS_WF (
+            nanostat, // only used with long-read entries
             [], \
             [], \
             [], \
@@ -376,7 +372,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         //create GRiPHin report
         GRIPHIN (
-            summaries_ch, valid_samplesheet, params.ardb, outdir_path, params.coverage, true, true, false, centar_var
+            summaries_ch, valid_samplesheet, params.ardb, outdir_path, params.coverage, true, true, false, centar_var, long_read_var
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

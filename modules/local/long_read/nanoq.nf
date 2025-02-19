@@ -9,19 +9,19 @@ process NANOQ {
 
     output:
     tuple val(meta), path("*_trim.fastq.gz"), emit: fastq
-    //tuple val(meta), path("*_stats_mqc.csv"), emit: nano_summary
+    tuple val(meta), path("*_stats_mqc.csv"), emit: nano_stats
     path ("versions.yml"),                    emit: versions
 
     script:
     """
-    nanoq -i $reads -l 1000 -q 15 -r ${meta.id}_stats_mqc.txt -s -H -o ${meta.id}_trim.fastq.gz >> ${meta.id}_nanoq.log
+    nanoq -i $reads --min-len 1000 --min-qual 15 -r ${meta.id}_stats_mqc.txt --stats --header -o ${meta.id}_trim.fastq.gz >> ${meta.id}_nanoq.log
 
-    # comment why this is needed
+    # convert to stats for reporting in griphin later to csv
     sed 's/ /,/g' ${meta.id}_stats_mqc.txt > ${meta.id}_stats_mqc.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        nanoq: \$( nanoq --version | sed -e "s/NANOQ v//g" )
+        nanoq: \$(nanoq --version | sed -e 's/nanoq //g')
     END_VERSIONS
     """
 

@@ -96,7 +96,7 @@ def create_assembly_channel(LinkedHashMap row) {
     // create meta map
     def meta = [:]
     meta.id         = row.sample
-    meta.single_end = 'true'
+    meta.single_end = true.toBoolean()
 
     // add path(s) of the assembly file(s) to the meta map
     def assembly_meta = []

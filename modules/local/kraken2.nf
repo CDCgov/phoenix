@@ -28,7 +28,7 @@ process KRAKEN2_KRAKEN2 {
     script:
     def args                       = task.ext.args ?: ''
     def prefix                     = task.ext.prefix ?: "${meta.id}"
-    def paired                     = meta.single_end ? "" : "--paired"
+    def paired                     = meta.single_end ? "" : "--paired" // true empty string, false --paired
     def classified                 = meta.single_end ? "${prefix}.classified.fasta"   : "${prefix}.classified#.fasta"
     def unclassified               = meta.single_end ? "${prefix}.unclassified.fasta" : "${prefix}.unclassified#.fasta"
     def classified_command         = save_output_fastqs ? "--classified-out ${classified}" : ""
@@ -37,6 +37,7 @@ process KRAKEN2_KRAKEN2 {
     def compress_reads_command     = save_output_fastqs ? "gzip *.fasta" : ""
     def container = task.container.toString() - "staphb/kraken2@"
     """
+    echo ${meta.single_end}
     kraken2 \\
         --db $db \\
         --threads $task.cpus \\

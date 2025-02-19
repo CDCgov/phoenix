@@ -41,6 +41,7 @@ include { UPDATE_PHOENIX_WF           } from './workflows/update_phoenix'
 include { RUN_CENTAR                  } from './workflows/centar'
 include { COMBINE_GRIPHINS_WF         } from './workflows/combine_griphins'
 include { PHOENIX_LR_WF               } from './workflows/nanopore'
+include { PHOENIX_HYBRID_WF           } from './workflows/hybrid'
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
 //
@@ -263,7 +264,14 @@ workflow SCAFFOLDS {
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        SCAFFOLDS_EXTERNAL ( ch_input, ch_input_indir, ch_versions, null )
+        SCAFFOLDS_EXTERNAL ( 
+            ch_input, 
+            ch_input_indir, 
+            ch_versions,
+            null,  // scaffolds channel -- only use when passing scaffolds in a channel directly
+            [],    // empty when no long_read nanostats file
+            false  // for --long_read in griphin
+        )
 
     emit:
         scaffolds        = SCAFFOLDS_EXTERNAL.out.scaffolds
@@ -310,7 +318,14 @@ workflow CDC_SCAFFOLDS {
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        SCAFFOLDS_EXQC ( ch_input, ch_input_indir, ch_versions, null )
+        SCAFFOLDS_EXQC ( 
+            ch_input, 
+            ch_input_indir, 
+            ch_versions, 
+            null,  // scaffolds channel -- only use when passing scaffolds in a channel directly
+            [],    // empty when no long_read nanostats file
+            false  // for --long_read in griphin
+    )
 
     emit:
         scaffolds        = SCAFFOLDS_EXQC.out.scaffolds
@@ -367,6 +382,50 @@ workflow CLIA {
         summary_report   = CLIA_INTERNAL.out.summary_report*/
 }
 
+/*
+========================================================================================
+    RUN PHX LONG_READ WORKFLOWS
+========================================================================================
+*/
+
+//
+// WORKFLOW: Entry point for long read analysis
+//
+workflow PHOENIX_HYBRID {
+
+    //input on command line
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX_HYBRID: Input samplesheet not specified!' }
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+
+    main:
+
+        //Run QC and assembly
+        PHOENIX_HYBRID_WF (
+             ch_input
+        ) 
+
+        PHOENIX_HYBRID_WF.out.scaffolds.flatten().collate(2).view()
+
+        // pass assembly to the scaffolds entry
+        SCAFFOLDS_EXTERNAL ( 
+            PHOENIX_HYBRID_WF.out.valid_samplesheet,
+            null, 
+            PHOENIX_HYBRID_WF.out.versions,
+            PHOENIX_HYBRID_WF.out.scaffolds.flatten().collate(2),
+            PHOENIX_HYBRID_WF.out.nanostat,
+            true // for --long_read in griphin
+        )
+
+    emit:
+        scaffolds        = PHOENIX_HYBRID_WF.out.scaffolds
+        mlst             = SCAFFOLDS_EXTERNAL.out.mlst
+        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
+        gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
+        //phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
+
+}
+
 //
 // WORKFLOW: Entry point for long read analysis
 //
@@ -384,14 +443,14 @@ workflow PHOENIX_LR {
              ch_input 
         ) 
 
-        PHOENIX_LR_WF.out.scaffolds.view()
-
         // pass assembly to the scaffolds entry
         SCAFFOLDS_EXTERNAL ( 
-            PHOENIX_LR_WF.out.valid_samplesheet, 
+            PHOENIX_LR_WF.out.valid_samplesheet,
             null, 
             PHOENIX_LR_WF.out.versions,
-            PHOENIX_LR_WF.out.scaffolds.flatten().collate(2)
+            PHOENIX_LR_WF.out.scaffolds.flatten().collate(2),
+            PHOENIX_LR_WF.out.nanostat,
+            true // for --long_read in griphin
         )
 
     emit:

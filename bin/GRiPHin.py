@@ -40,6 +40,7 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
+    parser.add_argument('--long_read', dest="long_read", default=False, action='store_true', help='Turn on with --long_read for when long_read entry points were run. Default is off.')
     parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX, which is the default.')
     parser.add_argument('--shigapass', dest="shigapass", default=False, action='store_true', required=False, help='Use for when there are E. coli or Shigella isolates in samplesheet.')
     parser.add_argument('--centar', dest="centar", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')

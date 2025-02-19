@@ -14,6 +14,7 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
 
 workflow GENERATE_PIPELINE_STATS_WF {
     take:
+        nanostat               // For long-read entries
         fastp_raw_qc           // channel: tuple (meta) path(fastp_raw_qc): GATHERING_READ_QC_STATS.out.fastp_raw_qc
         fastp_total_qc         // channel: tuple (meta) path(fastp_total_qc): GATHERING_READ_QC_STATS.out.fastp_total_qc
         fullgene_results       // channel: tuple (meta) path(fullgene_results): SRST2_TRIMD_AR.out.fullgene_results
@@ -52,6 +53,8 @@ workflow GENERATE_PIPELINE_STATS_WF {
             trimd_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
             trimd_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
             trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
+        } else { // when not running SCAFFOLDS or CDC_SCAFFOLDS entry this file needs to be blank channel 
+            nanostat = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
         if (gamma_ar == []) { // for -entry CLIA
@@ -61,9 +64,10 @@ workflow GENERATE_PIPELINE_STATS_WF {
             gamma_pf = wtasmbld_report.map{ it -> create_empty_ch(it) }
             mlst = wtasmbld_report.map{ it -> create_empty_ch(it) }
             fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            nanostat = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
-        if (extended_qc == true) {
+        if (extended_qc == true) { // CDC entries
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
             pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]}\
             .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id],fastp_total_qc]},         by: [0])\
@@ -89,7 +93,8 @@ workflow GENERATE_PIPELINE_STATS_WF {
             .join(format_ani.map{                 meta, format_ani             -> [[id:meta.id],format_ani]},             by: [0])\
             .join(assembly_ratio.map{             meta, assembly_ratio         -> [[id:meta.id],assembly_ratio]},         by: [0])\
             .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [[id:meta.id],amr_point_mutations]},    by: [0])\
-            .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])
+            .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])\
+            .join(nanostat.map{                   meta, nanostat               -> [[id:meta.id],nanostat]},               by: [0])
 
             GENERATE_PIPELINE_STATS_EXQC (
                 pipeline_stats_ch, params.coverage
@@ -120,8 +125,11 @@ workflow GENERATE_PIPELINE_STATS_WF {
             .join(format_ani.map{                 meta, format_ani             -> [[id:meta.id],format_ani]},             by: [0])\
             .join(assembly_ratio.map{             meta, assembly_ratio         -> [[id:meta.id],assembly_ratio]},         by: [0])\
             .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [[id:meta.id],amr_point_mutations]},    by: [0])\
-            .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])
+            .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])\
+            .join(nanostat.map{                   meta, nanostat               -> [[id:meta.id],nanostat]},               by: [0])
 
+
+            pipeline_stats_ch.view()
             GENERATE_PIPELINE_STATS (
                 pipeline_stats_ch, params.coverage
             )

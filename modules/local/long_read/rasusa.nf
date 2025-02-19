@@ -13,7 +13,7 @@ process RASUSA {
 
     script:
     """
-    rasusa --input ${trimmed_fastq} -f 0.25 -o ${meta.id}_sub.fastq.gz --seed 1
+    rasusa --input ${trimmed_fastq} --frac 0.25 -o ${meta.id}_sub.fastq.gz --seed 1
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

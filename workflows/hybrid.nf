@@ -30,21 +30,19 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
+include { GET_RAW_STATS         } from '../modules/local/get_raw_stats'
+include { CORRUPTION_CHECK      } from '../modules/local/fairy_corruption_check'
+include { BBDUK                 } from '../modules/local/bbduk'
+include { FASTP as FASTP_LR     } from '../modules/local/fastp'
 include { NANOQ                 } from '../modules/local/long_read/nanoq'
 include { RASUSA                } from '../modules/local/long_read/rasusa'
-include { FLYE                  } from '../modules/local/long_read/flye'
-include { MEDAKA                } from '../modules/local/long_read/medaka'
+include { UNICYCLER             } from '../modules/local/long_read/unicycler'
 include { CIRCLATOR             } from '../modules/local/long_read/circlator'
+include { BWA                   } from '../modules/local/long_read/bwa'
+include { POLYPOLISH            } from '../modules/local/long_read/polypolish'
 include { BANDAGE               } from '../modules/local/long_read/bandage'
 include { CREATE_SAMPLESHEET    } from '../modules/local/create_samplesheet'
-//include { PLASMID                 } from '../modules/local/long_read/plasmid'
-//include { PLASMID_AR            } from '../modules/local/long_read/plasmid_ar'
-//include { PLASMID_VF            } from '../modules/local/long_read/plasmid_vf'
-
-
-include { FASTQC            } from '../modules/local/fastqc'
-//include { CIRCLATOR       } from '../modules/local/long_read/xxx'
-
+include { FASTQC                } from '../modules/local/fastqc'
 
 /*
 ========================================================================================
@@ -80,7 +78,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom
 ========================================================================================
 */
 
-workflow PHOENIX_LR_WF {
+workflow PHOENIX_HYBRID_WF {
 
     take:
         ch_input
@@ -94,66 +92,110 @@ workflow PHOENIX_LR_WF {
         // SUBWORKFLOW: Read in samplesheet, validate and stage input files
         //
         INPUT_CHECK (
-            ch_input, "Nanopore"
+            ch_input, "hybrid"
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
-    
+
+        //fairy compressed file corruption check & generate read stats
+        CORRUPTION_CHECK (
+            INPUT_CHECK.out.reads, false // true says busco is being run in this workflow
+        )
+        ch_versions = ch_versions.mix(CORRUPTION_CHECK.out.versions)
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Read Preprocessing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-    // comment what it is doing
-    NANOQ (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(NANOQ.out.versions.first())
+        //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
+        //The mapping here is just to get things in the right bracket so we can call var[0]
+        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0]) 
+            .join(CORRUPTION_CHECK.out.outcome_to_edit.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+        //.filter{ it[3].findAll {!it.contains('FAILED')}}
 
-    /*FASTQC (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(FASTQC.out.versions)*/
+        //Get stats on raw reads if the reads aren't corrupted
+        GET_RAW_STATS (
+            read_stats_ch, false // false says no busco is being run
+        )
+        ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
+
+        // Combining reads with output of corruption check
+        bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome_to_edit.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
+
+        // Remove PhiX reads
+        BBDUK (
+            bbduk_ch, params.bbdukdb
+        )
+        ch_versions = ch_versions.mix(BBDUK.out.versions)
+
+        // Trim and remove low quality reads
+        FASTP_LR (
+            BBDUK.out.reads, true, false
+        )
+        ch_versions = ch_versions.mix(FASTP.out.versions)
+
+        // comment what it is doing
+        NANOQ (
+            INPUT_CHECK.out.long_read
+        )
+        ch_versions = ch_versions.mix(NANOQ.out.versions.first())
+
+        /*FASTQC (
+            INPUT_CHECK.out.reads
+        )
+        ch_versions = ch_versions.mix(FASTQC.out.versions)*/
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Read Subsampling -- 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-    RASUSA (
-        NANOQ.out.fastq
-    )
-    ch_versions = ch_versions.mix(RASUSA.out.versions)
+        RASUSA (
+            NANOQ.out.fastq
+        )
+        ch_versions = ch_versions.mix(RASUSA.out.versions)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     De novo Assembly
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-    FLYE (
-        RASUSA.out.fastq
+     //polish genome
+    uni_ch = FASTP.out.reads.map{  meta, reads -> [ meta, reads ]}\
+        .join(RASUSA.out.fastq.map{meta, fastq -> [ meta, fastq ]}, by: [0])
+
+    UNICYCLER (
+        uni_ch
     )
-    ch_versions = ch_versions.mix(FLYE.out.versions)
+    ch_versions = ch_versions.mix(UNICYCLER.out.versions)
+
+    //polish genome
+    bwa_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
+        .join(FASTP.out.reads.map{   meta, reads -> [ meta, reads ]}, by: [0])
+
+    BWA (
+        bwa_ch
+    )
+    ch_versions = ch_versions.mix(BWA.out.versions)
+
+    polish_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
+        .join(BWA.out.sam.map{          meta, sam   -> [ meta, sam ]}, by: [0])
+
+    POLYPOLISH (
+        polish_ch
+    )
+    ch_versions = ch_versions.mix(POLYPOLISH.out.versions)
    
     CIRCLATOR (
-        FLYE.out.fasta
+        UNICYCLER.out.fasta
     )
     ch_versions = ch_versions.mix(CIRCLATOR.out.versions)
 
     BANDAGE (
-        FLYE.out.gfa
+        UNICYCLER.out.gfa
     )
     ch_versions = ch_versions.mix(BANDAGE.out.versions)
-
-    // what is this doing and why?
-    polish_ch = CIRCLATOR.out.fasta.map{  meta, fasta  -> [meta, fasta]}\
-                .join(NANOQ.out.fastq.map{meta, fastq  -> [meta, fastq]}, by: [0])
-
-    //
-    MEDAKA (
-        polish_ch
-    )
-    ch_versions = ch_versions.mix(MEDAKA.out.versions)
 
     /*plasmid_ch = PLASMIDmarker .out.tsv.map  {meta,tsv                -> [meta,tsv]}\
         .join(MEDAKA.out.fasta.map{   meta, fasta  -> [meta, fasta]},    by: [0])\
@@ -168,7 +210,7 @@ workflow PHOENIX_LR_WF {
 */
     emit:
         // emits should either be a scaffolds or samplesheet, see comments in main nf.
-        scaffolds         = MEDAKA.out.fasta_fin.collect()
+        scaffolds         = POLYPOLISH.out.assembly.collect()
         valid_samplesheet = INPUT_CHECK.out.valid_samplesheet
         nanostat          = NANOQ.out.nano_stats
         versions          = ch_versions

@@ -242,13 +242,13 @@ workflow SCAFFOLDS_EXQC {
 
         // Checking for Contamination in assembly creating krona plots and best hit files
         KRAKEN2_ASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome,"asmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "scaffolds"
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome,"asmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome,"wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "scaffolds"
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome,"wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 

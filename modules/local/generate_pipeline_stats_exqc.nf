@@ -29,7 +29,8 @@ process GENERATE_PIPELINE_STATS_EXQC {
     path(fastANI_formatted_file), \
     path(assembly_ratio_file), \
     path(amr_file), \
-    path(gc_content)
+    path(gc_content), \
+    path(nanostat)
     val(coverage)
 
     output:

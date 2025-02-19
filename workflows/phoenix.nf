@@ -127,7 +127,7 @@ workflow PHOENIX_EXTERNAL {
         //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
         //The mapping here is just to get things in the right bracket so we can call var[0]
         read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0]) 
-        .join(CORRUPTION_CHECK.out.outcome_to_edit.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+            .join(CORRUPTION_CHECK.out.outcome_to_edit.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
         //.filter{ it[3].findAll {!it.contains('FAILED')}}
 
         //Get stats on raw reads if the reads aren't corrupted
@@ -179,7 +179,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome_to_edit, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db, "reads"
+            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome_to_edit, "trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -252,7 +252,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "reads"
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
