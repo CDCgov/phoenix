@@ -14,6 +14,7 @@ import operator
 import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
+import string
 from Bio import SeqIO
 from itertools import chain
 from pathlib import Path
@@ -1341,6 +1342,14 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine):
     pf_db = ",".join(pf_db)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
+def column_letter(index):
+    """Convert zero-based column index to Excel column letter."""
+    letters = list(string.ascii_uppercase)
+    if index < 26:
+        return letters[index]
+    else:
+        return letters[index // 26 - 1] + letters[index % 26]  # Handle AA, AB, etc.
+
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
@@ -1407,39 +1416,20 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
     worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
     #taxa columns 
-    if phoenix == True: #for non-CDC entry points
-        if shigapass == True:
-            worksheet.merge_range('S1:AA1', "Taxonomic Information", cell_format_green)#
-        else:
-            worksheet.merge_range('S1:Z1', "Taxonomic Information", cell_format_green)
-    else: # for CDC entry points
-        if shigapass == True:
-            worksheet.merge_range('S1:AC1', "Taxonomic Information", cell_format_green)
-        else:
-            worksheet.merge_range('S1:AB1', "Taxonomic Information", cell_format_green)
+    # Find start and end column letters
+    taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
+    taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
+    # Dynamically merge based on start and end column
+    worksheet.merge_range(f"{taxa_start_col}1:{taxa_end_col}1", "Taxonomic Information", cell_format_green)
     #MLST columns 
-    if phoenix == True: #for non-CDC entry points
-        if shigapass == True:
-            if centar == True:
-                worksheet.merge_range('AB1:AJ1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)#
-        else:
-            if centar == True:
-                worksheet.merge_range('AA1:AI1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AA1:AH1', "MLST Schemes", cell_format_green_blue)
+    # Define start and end column based on centar condition
+    mlst_start_col = column_letter(list(df.columns).index("Primary_MLST_Scheme"))  # Get index of start column
+    if centar:
+        mlst_end_col = column_letter(list(df.columns).index("MLST Clade"))  # Use "MLST Clade" if centar is True
     else:
-        if shigapass == True:
-            if centar == True:
-                worksheet.merge_range('AD1:AL1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AD1:AK1', "MLST Schemes", cell_format_green_blue)
-        else:
-            if centar == True:
-                worksheet.merge_range('AC1:AK1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
+        mlst_end_col = column_letter(list(df.columns).index("Secondary_MLST_Alleles"))  # Otherwise, use "Secondary_MLST_Alleles"
+    # Dynamically merge based on start and end column
+    worksheet.merge_range(f"{mlst_start_col}1:{mlst_end_col}1", "MLST Information", cell_format_green)
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         qc_minus_centar = qc_max_col - sum(centar_df_lens)
