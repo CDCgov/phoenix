@@ -405,8 +405,6 @@ workflow PHOENIX_HYBRID {
              ch_input
         ) 
 
-        PHOENIX_HYBRID_WF.out.scaffolds.flatten().collate(2).view()
-
         // pass assembly to the scaffolds entry
         SCAFFOLDS_EXTERNAL ( 
             PHOENIX_HYBRID_WF.out.valid_samplesheet,

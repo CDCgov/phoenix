@@ -32,7 +32,7 @@ workflow INPUT_CHECK {
                 .set { all_reads }
 
             // Split `all_reads` into two separate channels
-            reads = all_reads.map { meta, reads -> [ meta, reads[0..1] ] } // Take only fastq_1 and fastq_2
+            reads = all_reads.map { meta, reads -> [ [id:meta.id, single_end: false], reads[0..1] ] } // Take only fastq_1 and fastq_2, need single_end to be false for fastp
             long_read = all_reads.map { meta, reads -> [ meta, reads[2] ] } // Take only long_read
 
         } else{

@@ -162,8 +162,8 @@ workflow PHOENIX_HYBRID_WF {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
      //polish genome
-    uni_ch = FASTP_LR.out.reads.map{  meta, reads -> [ meta, reads ]}\
-        .join(RASUSA.out.fastq.map{meta, fastq -> [ meta, fastq ]}, by: [0])
+    uni_ch = FASTP_LR.out.reads.map{meta, reads -> [ [id:meta.id, single_end:true], reads ]}\
+        .join(RASUSA.out.fastq.map{ meta, fastq -> [ meta, fastq ]}, by: [[0][0],[0][1]])
 
     UNICYCLER (
         uni_ch
@@ -172,7 +172,7 @@ workflow PHOENIX_HYBRID_WF {
 
     //polish genome
     bwa_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
-        .join(FASTP_LR.out.reads.map{   meta, reads -> [ meta, reads ]}, by: [0])
+        .join(FASTP_LR.out.reads.map{meta, reads -> [ [id:meta.id, single_end:true], reads ]}, by: [[0][0],[0][1]])
 
     BWA (
         bwa_ch
@@ -180,7 +180,7 @@ workflow PHOENIX_HYBRID_WF {
     ch_versions = ch_versions.mix(BWA.out.versions)
 
     polish_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
-        .join(BWA.out.sam.map{          meta, sam   -> [ meta, sam ]}, by: [0])
+        .join(BWA.out.sam.map{          meta, sam   -> [ meta, sam ]}, by: [[0][0],[0][1]])
 
     POLYPOLISH (
         polish_ch

@@ -107,7 +107,7 @@ class RowChecker:
         self._validate_fastq_format(row[self._first_col])
 
     def _set_single_end_true(self, row):
-        row[self._single_col] = "false"
+        row[self._single_col] = "true"
 
     def _validate_second(self, row):
         """Assert that the second FASTQ entry has the right format if it exists."""
