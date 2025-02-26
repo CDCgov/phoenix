@@ -244,7 +244,7 @@ workflow PHOENIX_EXQC {
 
         // Checking for Contamination in trimmed reads, creating krona plots and best hit files
         KRAKEN2_TRIMD (
-            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome_to_edit ,"trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db
+            FASTP_TRIMD.out.reads, GET_TRIMD_STATS.out.outcome_to_edit ,"trimd", GET_TRIMD_STATS.out.fastp_total_qc, [], ASSET_CHECK.out.kraken_db, "reads"
         )
         ch_versions = ch_versions.mix(KRAKEN2_TRIMD.out.versions)
 
@@ -335,13 +335,13 @@ workflow PHOENIX_EXQC {
 
         // Checking for Contamination in assembly creating krona plots and best hit files
         KRAKEN2_ASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "asmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "asmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "reads"
         )
         ch_versions = ch_versions.mix(KRAKEN2_ASMBLD.out.versions)
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
+            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db, "reads"
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
@@ -554,12 +554,18 @@ workflow PHOENIX_EXQC {
         .ifEmpty( [] )
 
         // if centar was run, pull in species specific files
-        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        }
         // if shigapass was run, pull in species specific files
         shigapass_files_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
 
         // pulling it all together
-        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+        } else {
+            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_files_ch)
+        }
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
@@ -571,10 +577,8 @@ workflow PHOENIX_EXQC {
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
         //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
         centar_boolean = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides difficile"}.collect().sum().map{ it -> it[0] > 0 }
-
         // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
         centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
-
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
