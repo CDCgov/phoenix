@@ -19,7 +19,7 @@ process NANOQ {
     nanoq -i ${reads} --min-len 1000 --min-qual 15 --report ${meta.id}_trim_stats.txt --stats --header -o ${meta.id}_trim.fastq.gz > ${meta.id}_nanoq.log
 
     # Combine *_raw_stats.txt and *_trim_stats.txt
-    echo -e "raw_reads trim_reads bases n50 longest shortest mean_length median_length mean_quality median_quality\n\$(awk 'NR==2 {print \$1}' raw.txt) \$(awk 'NR==2 {print}' trim.txt)" > ${meta.id}_nanoq_stats.txt
+    echo -e "raw_reads,trim_reads,bases,n50,longest,shortest,mean_length,median_length,mean_quality,median_quality]\\n"\$(awk 'NR==2 {print \$1}' ${meta.id}_raw_stats.txt) \$(awk 'NR==2 {print}' ${meta.id}_trim_stats.txt) > ${meta.id}_nanoq_stats.txt
 
     # convert to stats for reporting in griphin later to csv
     sed 's/ /,/g' ${meta.id}_nanoq_stats.txt > ${meta.id}_nanoq_stats.csv

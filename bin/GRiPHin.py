@@ -748,8 +748,8 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
 def get_long_read_stats(nanoq_stats):
     with open(nanoq_stats) as f:
         lines = f.readlines()
-        (reads, bases, n50, longest, shortest, mean_length, median_length, mean_quality, median_quality) = lines[1].strip().split(',')
-    return [ reads, bases, n50, longest, shortest, mean_length, median_length, mean_quality, median_quality ]
+        (raw_reads, trimmed_reads, bases, n50, longest, shortest, mean_length, median_length, mean_quality, median_quality) =lines[1].strip().split(',')
+    return [ int(raw_reads), int(trimmed_reads), int(bases), int(n50), int(longest), int(shortest), int(mean_length), int(median_length), float(mean_quality), float(median_quality) ]
 
 def Get_Metrics(phoenix_entry, long_read_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, nanoq_stats, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
     '''For each step to gather metrics try to find the file and if not then make all variables unknow.'''

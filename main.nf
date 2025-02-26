@@ -539,7 +539,6 @@ workflow COMBINE_GRIPHINS {
             } else {
                 // Allow outdir to be relative
                 outdir = Channel.fromPath(params.outdir, relative: true)
-                outdir.view()
             }
         }
     } else {

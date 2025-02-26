@@ -92,7 +92,7 @@ def remove_last_element(input_ch) {
 
 def add_meta(input_ch) {
     def meta = [:] // create meta array
-    meta.project_id = input_ch.getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
+    meta.project_id = input_ch[1].getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
     def array = [ meta, input_ch ]
     return array
 }

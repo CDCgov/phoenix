@@ -128,8 +128,6 @@ workflow GENERATE_PIPELINE_STATS_WF {
             .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])\
             .join(nanostat.map{                   meta, nanostat               -> [[id:meta.id],nanostat]},               by: [0])
 
-
-            pipeline_stats_ch.view()
             GENERATE_PIPELINE_STATS (
                 pipeline_stats_ch, params.coverage
             )
