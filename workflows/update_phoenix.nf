@@ -38,8 +38,8 @@ include { CREATE_SUMMARY_LINE                  } from '../modules/local/phoenix_
 include { CREATE_AND_UPDATE_README             } from '../modules/local/updater/create_and_update_readme'
 include { FETCH_FAILED_SUMMARIES               } from '../modules/local/fetch_failed_summaries'
 include { GATHER_SUMMARY_LINES                 } from '../modules/local/phoenix_summary'
-include { GRIPHIN as GRIPHIN_NO_PUBLISH         } from '../modules/local/griphin'
-include { GRIPHIN as GRIPHIN_NO_PUBLISH_CDC     } from '../modules/local/griphin'
+include { GRIPHIN as GRIPHIN_NO_PUBLISH        } from '../modules/local/griphin'
+include { GRIPHIN as GRIPHIN_NO_PUBLISH_CDC    } from '../modules/local/griphin'
 include { UPDATE_GRIPHIN                       } from '../modules/local/updater/update_griphin'
 include { UPDATE_GRIPHIN as UPDATE_CDC_GRIPHIN } from '../modules/local/updater/update_griphin'
 include { SRST2_AR                             } from '../modules/local/srst2_ar'
@@ -91,9 +91,27 @@ def remove_last_element(input_ch) {
 }
 
 def add_meta(input_ch) {
+    println("ami:" + input_ch)
     def meta = [:] // create meta array
-    meta.project_id = input_ch.getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
+    //print("ams1:" + input_ch[-1].toString())
+    //print("ams2:" + input_ch[0].toString().split("\\")[-1])
+    //print("ams3:" + input_ch[1].toString())
+    //print("ams4:" + input_ch[1].toString().split("\\")[-1])
+    meta.project_id = input_ch[-1].getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
+    //print("amp:" + meta.project_id)
     def array = [ meta, input_ch ]
+    //println("amo:" + array)
+    return array
+}
+
+def crush_meta(input_ch) {
+    //println("cmi:" + input_ch)
+    def meta = [:]
+    //print(input_ch[1].getClass())
+    meta.project_id = input_ch[1].getName().replaceAll("_old_GRiPHin.xlsx", "") // get file name without extention
+    //meta.project_id = input_ch[1].getParentFile()?.getName()
+    def array = [ meta, input_ch ]
+    println("cmo" + array)
     return array
 }
 
@@ -229,6 +247,9 @@ workflow UPDATE_PHOENIX_WF {
                 def dirPath = project_ids.value[id2]  // Retrieve the matching directory path
                 return [id, dirPath, files]}
 
+        //println("OMG")
+        //summaries_ch.view()
+
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
             summaries_ch.map{ project_id, dir, summary_lines -> summary_lines}, summaries_ch.map{ project_id, dir, summary_lines -> dir}, true
@@ -263,13 +284,19 @@ workflow UPDATE_PHOENIX_WF {
 
         // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
         griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten()
-        griphin_reports_ch.view()
+        //CREATE_INPUT_CHANNELS.out.griphin_excel_ch.view()
+        //griphin_reports_ch.view()
+        //CREATE_INPUT_CHANNELS.out.directory_ch.view()
+
+        //map{it -> crush_meta(it)}
 
         // join old and new griphins for combining
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-        .join(griphin_reports_ch.map{it -> add_meta(it)}.map{        meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{it -> crush_meta(it)}.map{   meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(griphin_reports_ch.map{it -> add_meta(it)}.map{                                     meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                                         meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
         //.join(CREATE_INPUT_CHANNELS.out.valid_samplesheet.map {      meta, valid_samplesheet      -> [[project_id:meta.project_id], valid_samplesheet]}, by: [[0][0],[0][1]])
+
+        //griphins_ch.view()
 
         // combine griphin files, the new one just created and the old one that was found in the project dir. 
         UPDATE_GRIPHIN (
