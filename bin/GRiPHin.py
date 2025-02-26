@@ -14,6 +14,7 @@ import operator
 import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
+import string
 from Bio import SeqIO
 from itertools import chain
 from pathlib import Path
@@ -672,6 +673,7 @@ def parse_ani(fast_ani_file):
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
         organism = ani_df["Organism"][0].replace("-chromosome", "")
+        print(organism)
         #if sp. is followed by anything other than a space add it.
         if "sp." in organism and re.search(r'sp\.\S', organism):
             organism = organism.replace("sp.","sp. ")
@@ -685,11 +687,9 @@ def parse_ani(fast_ani_file):
 def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
 #def parse_srst2_ar(srst2_file, final_srst2_df, sample_name):
     """Parsing the srst2 file run on the ar gene database."""
-    ###!print(srst2_file)
     srst2_df = pd.read_csv(srst2_file, sep='\t', header=0)
     percent_lengths = np.floor(srst2_df["coverage"]).tolist()
     genes = srst2_df["allele"].tolist()
-    ###!print(genes)
     percent_BP_IDs = np.floor(100 - srst2_df["divergence"]).tolist()
     #ar_dic={}
     #with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
@@ -1342,6 +1342,14 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine):
     pf_db = ",".join(pf_db)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
+def column_letter(index):
+    """Convert zero-based column index to Excel column letter."""
+    letters = list(string.ascii_uppercase)
+    if index < 26:
+        return letters[index]
+    else:
+        return letters[index // 26 - 1] + letters[index % 26]  # Handle AA, AB, etc.
+
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_count, hv_gene_count, columns_to_highlight, ar_df, pf_db, ar_db, hv_db, phoenix, shigapass, centar, centar_df_lens):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
@@ -1408,39 +1416,20 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
     worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
     #taxa columns 
-    if phoenix == True: #for non-CDC entry points
-        if shigapass == True:
-            worksheet.merge_range('S1:AA1', "Taxonomic Information", cell_format_green)#
-        else:
-            worksheet.merge_range('S1:Z1', "Taxonomic Information", cell_format_green)
-    else: # for CDC entry points
-        if shigapass == True:
-            worksheet.merge_range('S1:AC1', "Taxonomic Information", cell_format_green)
-        else:
-            worksheet.merge_range('S1:AB1', "Taxonomic Information", cell_format_green)
+    # Find start and end column letters
+    taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
+    taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
+    # Dynamically merge based on start and end column
+    worksheet.merge_range(f"{taxa_start_col}1:{taxa_end_col}1", "Taxonomic Information", cell_format_green)
     #MLST columns 
-    if phoenix == True: #for non-CDC entry points
-        if shigapass == True:
-            if centar == True:
-                worksheet.merge_range('AB1:AJ1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AB1:AI1', "MLST Schemes", cell_format_green_blue)#
-        else:
-            if centar == True:
-                worksheet.merge_range('AA1:AI1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AA1:AH1', "MLST Schemes", cell_format_green_blue)
+    # Define start and end column based on centar condition
+    mlst_start_col = column_letter(list(df.columns).index("Primary_MLST_Scheme"))  # Get index of start column
+    if centar:
+        mlst_end_col = column_letter(list(df.columns).index("MLST Clade"))  # Use "MLST Clade" if centar is True
     else:
-        if shigapass == True:
-            if centar == True:
-                worksheet.merge_range('AD1:AL1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AD1:AK1', "MLST Schemes", cell_format_green_blue)
-        else:
-            if centar == True:
-                worksheet.merge_range('AC1:AK1', "MLST Schemes", cell_format_green_blue)
-            else:
-                worksheet.merge_range('AC1:AJ1', "MLST Schemes", cell_format_green_blue)
+        mlst_end_col = column_letter(list(df.columns).index("Secondary_MLST_Alleles"))  # Otherwise, use "Secondary_MLST_Alleles"
+    # Dynamically merge based on start and end column
+    worksheet.merge_range(f"{mlst_start_col}1:{mlst_end_col}1", "MLST Information", cell_format_green)
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         qc_minus_centar = qc_max_col - sum(centar_df_lens)
@@ -1508,7 +1497,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Creating footers
     worksheet.write('A' + str(max_row + 4), 'Cells in YELLOW denote isolates outside of ' + str(set_coverage) + '-100X coverage', yellow_format)
     worksheet.write('A' + str(max_row + 5), 'Cells in ORANGE denote “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, 48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
-    worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, assembly ratio stdev > 2.58, assembly length < 1Mbps)', red_format)
+    worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, assembly ratio stdev > 2.58, assembly length < 1Mbps, >500 scaffolds)', red_format)
     # More footers - Disclaimer etc.
     # unbold
     no_bold = workbook.add_format({'bold': False})
@@ -1536,17 +1525,22 @@ def blind_samples(final_df, control_file):
     # create new csv file
     return final_df
 
-def create_samplesheet(input_directory):
+def create_samplesheet(input_directory, scaffolds_entry):
     """Function will create a samplesheet from samples in a directory if -d argument passed."""
     directory = os.path.abspath(input_directory) # make sure we have an absolute path to start with
     with open("Directory_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
     dirs = sorted(os.listdir(input_directory))
     # Filter directories based on the presence of *_1.trim.fastq.gz files
-    valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "raw_stats", "*_raw_read_counts.txt")) ]
+    if scaffolds_entry == False:
+        valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "raw_stats", "*_raw_read_counts.txt")) ]
+        files_glob = "./raw_stats/*_raw_read_counts.txt"
+    else:
+        valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "assembly", "*.filtered.scaffolds.fa.gz")) ]
+        files_glob = "./raw_stats/*_raw_read_counts.txt"
     # Identify and warn about excluded directories
     excluded_dirs = [excluded_dir for excluded_dir in dirs if excluded_dir not in valid_directories]
-    print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no ./raw_stats/*_raw_read_counts.txt files weren't found in these locations.\033[0m\n")
+    print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no '{files_glob}' files weren't found in these locations.\033[0m\n")
     try: #if there are numbers in the name then use that to sort
         dirs_sorted=sorted(valid_directories, key=lambda x: int("".join([i for i in x if i.isdigit()])))
     except: #if no numbers then use only alphabetically
@@ -1604,7 +1598,7 @@ def main():
         sys.exit(CRED + "You MUST pass EITHER a samplesheet or a top directory of PHoeNIx output to create one.\n" + CEND)
     # If a directory is given then create a samplesheet from it if not use the samplesheet passed
     if args.directory !=None:
-        samplesheet = create_samplesheet(args.directory)
+        samplesheet = create_samplesheet(args.directory, args.scaffolds)
     else:
         sort_samplesheet(args.samplesheet)
         samplesheet = args.samplesheet
@@ -1638,7 +1632,7 @@ def main():
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
             if args.shigapass == True:
-                shiga_df = create_shiga_df(directory, sample_name, shiga_df)
+                shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3])
             if args.centar == True:
                 centar_df = create_centar_combined_df(directory, sample_name)
                 centar_dfs.append(centar_df)
