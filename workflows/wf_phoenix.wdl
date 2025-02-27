@@ -60,6 +60,12 @@ workflow phoenix_workflow {
     String  beta_lactam_resistance_genes      = phoenix.beta_lactam_resistance_genes
     String  other_ar_genes                    = phoenix.other_ar_genes
     String  amrfinder_point_mutations         = phoenix.amrfinder_point_mutations
+    String  amrfinder_amr_classes             = phoenix.amrfinder_amr_classes
+    String  amrfinder_amr_subclasses          = phoenix.amrfinder_amr_subclasses
+    String  amrfinder_core_genes              = phoenix.amrfinder_core_genes
+    String  amrfinder_plus_genes              = phoenix.amrfinder_plus_genes
+    String  amrfinder_stress_genes            = phoenix.amrfinder_stress_genes
+    String  amrfinder_virulence_genes         = phoenix.amrfinder_virulence_genes
     String  hypervirulence_genes              = phoenix.hypervirulence_genes
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
     String  qc_issues                         = phoenix.qc_issues

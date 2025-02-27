@@ -88,12 +88,12 @@ task phoenix {
     grep '^N50' ~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv | awk -F '\t' '{print $2}' | tee N50
 
     # Get AMRFinder+ output
-    grep '' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_CLASSES
-    awk -F '\t' '{ if($8 == "core") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_CORE_GENES
-    awk -F '\t' '{ if($8 == "plus") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_PLUS_GENES
-    grep '' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tee AMRFINDERPLUS_AMR_SUBCLASSES
-    grep 'STRESS' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | awk -F '\t' '{ print $7 }' | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_STRESS_GENES
-    grep 'VIRULENCE' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | awk -F '\t' '{ print $7 }' | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
+    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$12}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CLASSES
+    awk -F '\t' '{ if($8 == "core") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CORE_GENES
+    awk -F '\t' '{ if($8 == "plus") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_PLUS_GENES
+    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$13}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_SUBCLASSES
+    awk -F '\t' '{ if($9 == "STRESS") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_STRESS_GENES
+    awk -F '\t' '{ if($9 == "VIRULENCE") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
 
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
@@ -183,6 +183,12 @@ task phoenix {
     String  beta_lactam_resistance_genes      = read_string("BETA_LACTAM_RESISTANCE_GENES")
     String  other_ar_genes                    = read_string("OTHER_AR_GENES")
     String  amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")
+    String  amrfinder_amr_classes             = read_string("AMRFINDERPLUS_AMR_CLASSES")
+    String  amrfinder_amr_subclasses          = read_string("AMRFINDERPLUS_AMR_SUBCLASSES")
+    String  amrfinder_core_genes              = read_string("AMRFINDERPLUS_AMR_CORE_GENES")
+    String  amrfinder_plus_genes              = read_string("AMRFINDERPLUS_AMR_PLUS_GENES")
+    String  amrfinder_stress_genes            = read_string("AMRFINDER_STRESS_GENES")
+    String  amrfinder_virulence_genes         = read_string("AMRFINDERPLUS_VIRULENCE_GENES")
     String  hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
     String  qc_issues                         = read_string("QC_ISSUES")
@@ -245,12 +251,12 @@ task phoenix {
     Array[File]? busco_specific   = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
     File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
     #phoenix gamma
-    File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.gamma"
-    File? blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20230517_srst2.psl"
-    File? gamma_hv_calls           = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
-    File? blat_hv_calls            = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
-    File? gamma_pf_calls           = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.gamma"
-    File? blat_pf_calls            = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20230504.psl"
+    File? gamma_ar_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_[0-9]{8}_srst2.gamma")
+    File? blat_ar_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_[0-9]{8}_srst2.psl")
+    File? gamma_hv_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_[0-9]{8}.gamma")
+    File? blat_hv_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_[0-9]{8}.psl")
+    File? gamma_pf_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_[0-9]{8}.gamma")
+    File? blat_pf_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_[0-9]{8}.psl")
     #phoenix output
     File? assembly_ratio_file      = "~{samplename}/phx_output/~{samplename}/~{samplename}_Assembly_ratio_20230504.txt"
     File? gc_content_file          = "~{samplename}/phx_output/~{samplename}/~{samplename}_GC_content_20230504.txt"
