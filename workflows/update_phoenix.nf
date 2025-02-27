@@ -231,9 +231,6 @@ workflow UPDATE_PHOENIX_WF {
                 def dirPath = project_ids.value[id2]  // Retrieve the matching directory path
                 return [id, dirPath, files]}
 
-        //println("OMG")
-        //summaries_ch.view()
-
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
             summaries_ch.map{ project_id, dir, summary_lines -> summary_lines}, summaries_ch.map{ project_id, dir, summary_lines -> dir}, true
@@ -267,19 +264,6 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
         // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
-<<<<<<< HEAD
-        griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten()
-        //CREATE_INPUT_CHANNELS.out.griphin_excel_ch.view()
-        //griphin_reports_ch.view()
-        //CREATE_INPUT_CHANNELS.out.directory_ch.view()
-
-        //map{it -> crush_meta(it)}
-
-        // join old and new griphins for combining
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{it -> crush_meta(it)}.map{   meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-        .join(griphin_reports_ch.map{it -> add_meta(it)}.map{                                     meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                                         meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
-=======
         griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten().collate(2)\
                                 .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
 
@@ -287,10 +271,7 @@ workflow UPDATE_PHOENIX_WF {
         griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
         .join(griphin_reports_ch.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
         .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
->>>>>>> f579344 (updater fix)
         //.join(CREATE_INPUT_CHANNELS.out.valid_samplesheet.map {      meta, valid_samplesheet      -> [[project_id:meta.project_id], valid_samplesheet]}, by: [[0][0],[0][1]])
-
-        //griphins_ch.view()
 
         // combine griphin files, the new one just created and the old one that was found in the project dir. 
         UPDATE_GRIPHIN (
