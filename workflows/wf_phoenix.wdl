@@ -46,7 +46,7 @@ workflow phoenix_workflow {
     String  gc_percent                        = phoenix.gc_percent #make string for cases where it's "unknown"
     String  busco                             = phoenix.busco
     String  busco_db                          = phoenix.busco_db
-    String  species                           = phoenix.species
+    String  final_taxa_id                     = phoenix.final_taxa_id
     String  taxa_confidence                   = phoenix.taxa_confidence
     String  taxa_source                       = phoenix.taxa_source
     String  kraken2_trimmed                   = phoenix.kraken2_trimmed
@@ -62,7 +62,7 @@ workflow phoenix_workflow {
     String  amrfinder_point_mutations         = phoenix.amrfinder_point_mutations
     String  hypervirulence_genes              = phoenix.hypervirulence_genes
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
-    String  qc_reason                         = phoenix.qc_reason
+    String  qc_issues                         = phoenix.qc_issues
     #summary files
     File  full_results            = phoenix.full_results
     File  griphin_excel_summary   = phoenix.griphin_excel_summary
@@ -138,11 +138,19 @@ workflow phoenix_workflow {
     File? amrfinder_mutations      = phoenix.amrfinder_mutations      # all_mutations.tsv
     File? amrfinder_taxa_match     = phoenix.amrfinder_taxa_match     # AMRFinder_Organism.csv
     File? amrfinder_hits           = phoenix.amrfinder_hits           # all_genes.tsv
+    #species specific
+    File? shigapass_summary       = phoenix.shigapass_summary         # *_ShigaPass_summary.csv
+    File? centar_summary          = phoenix.centar_summary            # *_centar_output.tsv
+    File? centar_ar_AA_gamma      = phoenix.centar_ar_AA_gamma        # *_centar_ar_db_wt_AA_20240910.gamma
+    File? centar_ar_NT_gamma      = phoenix.centar_ar_NT_gamma        # *_centar_ar_db_wt_NT_20240910.gamma
+    File? centar_tox_gamma        = phoenix.centar_tox_gamma          # *_Cdiff_toxins_srst2_20240909.gamma
+    File? centar_clade            = phoenix.centar_clade              # *_cdifficile_clade.tsv
+    File? centar_plasmid          = phoenix.centar_plasmid            # *_plasmids.tsv
     # NCBI files - optional
     File? ncbi_biosample          = phoenix.ncbi_biosample            # BiosampleAttributes_Microbe.1.0.xlsx"
     File? ncbi_sra_metadata       = phoenix.ncbi_sra_metadata         # Sra_Microbe.1.0.xlsx"
     #run files - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File versions_file            = phoenix.versions_file            # software_versions.yml"
-    File? multiqc_output          = phoenix.multiqc_output           # multiqc_report.html"
+    File versions_file            = phoenix.versions_file             # software_versions.yml"
+    File? multiqc_output          = phoenix.multiqc_output            # multiqc_report.html"
   }
 }
