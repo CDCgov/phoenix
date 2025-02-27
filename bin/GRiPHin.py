@@ -1045,7 +1045,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Assembly_StDev'             : assembly_stdev_L,
         'Final_Taxa_ID'              : "", # we will fill this later
         'Taxa_Source'                : tax_method_L,
-        'Kraken_ID_Raw_Reads_%'      : Trim_kraken_L,
+        'Kraken_ID_Trimmed_Reads_%'  : Trim_kraken_L,
         'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
         'FastANI_Organism'           : fastani_organism_L, 
         'FastANI_%ID'                : fastani_ID_L, 
@@ -1083,7 +1083,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Taxa_Source'                : tax_method_L,
         'BUSCO_Lineage'              : busco_lineage_L,
         'BUSCO_%Match'               : percent_busco_L,
-        'Kraken_ID_Raw_Reads_%'      : Trim_kraken_L,
+        'Kraken_ID_Trimmed_Reads_%'  : Trim_kraken_L,
         'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
         'FastANI_Organism'           : fastani_organism_L, 
         'FastANI_%ID'                : fastani_ID_L, 

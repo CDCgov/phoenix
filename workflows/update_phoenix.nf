@@ -90,28 +90,12 @@ def remove_last_element(input_ch) {
     return input_ch.remove(-1)
 }
 
-def add_meta(input_ch) {
-    println("ami:" + input_ch)
+def add_meta(full_path_txt, griphin_ch) {
     def meta = [:] // create meta array
-    //print("ams1:" + input_ch[-1].toString())
-    //print("ams2:" + input_ch[0].toString().split("\\")[-1])
-    //print("ams3:" + input_ch[1].toString())
-    //print("ams4:" + input_ch[1].toString().split("\\")[-1])
-    meta.project_id = input_ch[-1].getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
-    //print("amp:" + meta.project_id)
-    def array = [ meta, input_ch ]
-    //println("amo:" + array)
-    return array
-}
-
-def crush_meta(input_ch) {
-    //println("cmi:" + input_ch)
-    def meta = [:]
-    //print(input_ch[1].getClass())
-    meta.project_id = input_ch[1].getName().replaceAll("_old_GRiPHin.xlsx", "") // get file name without extention
-    //meta.project_id = input_ch[1].getParentFile()?.getName()
-    def array = [ meta, input_ch ]
-    println("cmo" + array)
+    def folder_path = full_path_txt.readLines().first()
+    //meta.project_id = input_ch.getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
+    meta.project_id = folder_path
+    def array = [ meta, griphin_ch ]
     return array
 }
 
@@ -283,6 +267,7 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
         // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
+<<<<<<< HEAD
         griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten()
         //CREATE_INPUT_CHANNELS.out.griphin_excel_ch.view()
         //griphin_reports_ch.view()
@@ -294,15 +279,24 @@ workflow UPDATE_PHOENIX_WF {
         griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{it -> crush_meta(it)}.map{   meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
         .join(griphin_reports_ch.map{it -> add_meta(it)}.map{                                     meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
         .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                                         meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+=======
+        griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten().collate(2)\
+                                .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
+
+        // join old and new griphins for combining
+        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+        .join(griphin_reports_ch.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
+>>>>>>> f579344 (updater fix)
         //.join(CREATE_INPUT_CHANNELS.out.valid_samplesheet.map {      meta, valid_samplesheet      -> [[project_id:meta.project_id], valid_samplesheet]}, by: [[0][0],[0][1]])
 
         //griphins_ch.view()
 
         // combine griphin files, the new one just created and the old one that was found in the project dir. 
         UPDATE_GRIPHIN (
-            griphins_ch.map{ meta, excel, report, directory, samplesheet -> excel }, 
-            griphins_ch.map{ meta, excel, report, directory, samplesheet  -> directory },
-            griphins_ch.map{ meta, excel, report, directory, samplesheet -> meta.project_id },
+            griphins_ch.map{ meta, old_excel, new_excel, directory -> [ old_excel, new_excel ] }, 
+            griphins_ch.map{ meta, old_excel, new_excel, directory -> directory },
+            griphins_ch.map{ meta, old_excel, new_excel, directory -> meta.project_id.toString().split('/')[-1] },
             //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
             [],
             params.coverage

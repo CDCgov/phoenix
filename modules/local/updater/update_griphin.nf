@@ -9,7 +9,7 @@ process UPDATE_GRIPHIN {
     //path(griphins_tsv)
     path(outdir) // output directory used as prefix for the summary file
     val(project_id)
-    path(valid_samplesheet)
+    path(valid_samplesheet_file)
     val(coverage)
 
     output:
@@ -31,11 +31,12 @@ process UPDATE_GRIPHIN {
         // Case where griphins_excel contains many
         griphin_input = "--griphin_list"
     }
+    def valid_samplesheet = valid_samplesheet_file ? "--samplesheet ${valid_samplesheet_file}" : ""
     """
     ${ica}combine_GRiPHins.py ${griphin_input} \
         --output ${project_id}_GRiPHin_Summary \
         --coverage ${coverage} \
-        --samplesheet ${valid_samplesheet}
+        ${valid_samplesheet}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
