@@ -23,7 +23,20 @@ process BBMAP_REFORMAT {
     def minlength = params.minlength
     def maxmem = task.memory.toGiga()-(task.attempt*9) // keep heap mem low so and rest of mem is for java expansion.
     def container = task.container.toString() - "staphb/bbtools@"
+    //set up for terra
+    if (params.terra==false) {
+        terra = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra = "PATH=/opt/conda/envs/bbmap/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/bbmap/bin:||')" """
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    #adding path for running bbmap on terra
+    $terra
+
     maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
     reformat.sh \\
         -Xmx\$maxmem \\
@@ -39,5 +52,8 @@ process BBMAP_REFORMAT {
         bbmap: \$(bbversion.sh)
         bbmap_container: ${container}
     END_VERSIONS
+
+    #revert path back to main envs for running on terra
+    $terra_exit
     """
 }
