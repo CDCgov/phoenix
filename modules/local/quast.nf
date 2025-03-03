@@ -20,7 +20,20 @@ process QUAST {
     script:
     def args     = task.ext.args   ?: ''
     def prefix   = task.ext.prefix ?: "${meta.id}"
+    //set up for terra
+    if (params.terra==false) {
+        terra = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra = "PATH=/opt/conda/envs/quast/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/quast/bin:||')" """
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    #adding path for running quast on terra
+    $terra
+
     quast.py \\
         --output-dir quast \\
         --threads $task.cpus \\
@@ -43,5 +56,8 @@ process QUAST {
     "${task.process}":
         quast: \$(quast.py --version 2>&1 | grep "QUAST" | sed 's/^.*QUAST v//; s/ .*\$//')
     END_VERSIONS
+
+    #revert path back to main envs for running on terra
+    $terra_exit
     """
 }
