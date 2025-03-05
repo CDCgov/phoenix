@@ -22,24 +22,26 @@ process ASSET_CHECK {
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
-   // def kraken_db_path = (!kraken_db || kraken_db.size() == 0) ? "false" : "${kraken_db}" //checking if its null or an empty list
+    // Allow for multitude of zipped sources and remove the last extension, nevermind not needed for xz
+    // def kraken_db_path = (!kraken_db || kraken_db.size() == 0) ? "false" : "${kraken_db}" //checking if its null or an empty list
     """
     if [[ ${zipped_sketch} = *.gz ]]
     then
         pigz -vdf ${zipped_sketch}
         #for bz2 files
         #pigz -dc -L ${zipped_sketch} > ${unzipped_sketch}
+    elif [[ ${zipped_sketch} = *.xz ]]
+    then 
+        xz -kfd ${zipped_sketch}
     else
         :
     fi
-
     if [[ ${mlst_db_path} = *.tar.gz ]]
     then
         tar --use-compress-program="pigz -vdf" -xf ${mlst_db_path}
     else
         :
     fi
-
     if [[ ${kraken_db_path} != false ]]
     then
         if [[ ${kraken_db_path} = *.tar.gz ]]
@@ -60,7 +62,6 @@ process ASSET_CHECK {
         #just make an empty folder to keep things moving
         mkdir empty_folder
     fi
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container_tag: ${container_version}
