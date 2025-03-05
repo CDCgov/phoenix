@@ -179,8 +179,13 @@ else
 	total_tax="${genus} ${species}	(selected manually)"
 fi
 
-
+# set first to true so we skip that line
+first=true
 while IFS='' read -r line; do
+    if $first; then
+        first=false
+        continue
+    fi
 	IFS=$'\t' read -a arr_line <<< "$line"
 	#echo "${arr_line}"
 	#echo  "${genus} ${species} vs ${arr_line[0]}"
