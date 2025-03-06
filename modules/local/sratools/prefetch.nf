@@ -1,8 +1,8 @@
 process SRATOOLS_PREFETCH {
     tag "${sra_accession[0]}"
     label 'process_single'
-    // 3.1.1--h4304569_0
-    container "quay.io/biocontainers/sra-tools@sha256:05de2c580cccc4c609ec7c645902563e5d5ffbd366662e1983cb152545ec7bc0"
+    // 3.2.0--h4304569_0
+    container "quay.io/biocontainers/sra-tools@sha256:db636fa5785c482fe69d836b2c4e24c9a912b9557ed069cad3835d4234b9354e"
 
     input:
     val(sra_accession)

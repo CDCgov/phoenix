@@ -20,7 +20,7 @@ process SHIGAPASS {
     script:
     def container = task.container.toString() - "staphb/shigapass@"
     def version = "1.5.0"
-    def database_path = shigapass_database ? "-p ${shigapass_database}" : "/ShigaPass-${version}/SCRIPT/ShigaPass_DataBases/"
+    def database_path = shigapass_database ? "${shigapass_database}" : "/ShigaPass-${version}/SCRIPT/ShigaPass_DataBases/"
     """
     #first we create a list of the reads to pass
     gunzip --force ${scaffolds}
