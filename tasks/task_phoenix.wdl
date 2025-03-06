@@ -62,7 +62,7 @@ task phoenix {
     fi
 
     # set shigapass db path
-    shigapass_db="./share/shigapass-1.5.0/db"
+    shigapass_db="/opt/conda/envs/phoenix/share/shigapass-1.5.0/db"
 
     #checking variables
     echo $version
