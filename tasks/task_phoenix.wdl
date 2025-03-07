@@ -99,29 +99,29 @@ task phoenix {
     awk -F '\t' '{ if($9 == "VIRULENCE") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
 
     # Gather Phoenix Output
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee ESTIMATED_COVERAGE
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee GENOME_LENGTH
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee ASSEMBLY_RATIO
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee NUM_SCAFFOLDS
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee GC_PERCENT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee ESTIMATED_COVERAGE
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee ASSEMBLY_RATIO
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee GC_PERCENT
     if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIAPASS_ORGANISM
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}' | tee MLST1_NCBI
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}' | tee MLST2_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIAPASS_ORGANISM
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}' | tee MLST1_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}' | tee MLST2_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
@@ -130,21 +130,21 @@ task phoenix {
       echo "Only run with CDC entry" | tee BUSCO_DB
       echo "Only run with CDC entry" | tee BUSCO
     elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}' | tee MLST1_NCBI
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | tee MLST2_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}' | tee MLST1_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | tee MLST2_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
