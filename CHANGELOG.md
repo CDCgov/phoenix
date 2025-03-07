@@ -287,6 +287,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - bbtools: v39.01 to v39.13
   - spades: v3.15.5 to [v4.0.0](https://github.com/ablab/spades/releases/tag/v4.0.0)
   - quast: v5.0.2 to [v5.3.0](https://github.com/ablab/quast/releases/tag/quast_5.3.0)
+  - sra-tools: v3.1.1 to [v3.2.0--h4304569_0](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md)
 
 **Database Updates:**  
 - Curated AR gene database was updated on 2025-02-14 (yyyy-mm-dd) to include the new AMRFinder database:
