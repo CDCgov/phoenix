@@ -70,6 +70,26 @@
                 }
             }
         },
+        "Species_Specific_Subworkflows_Options": {
+            "title": "Species Specific Optional options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "properties": {
+                "centar": { 
+                    "type": "boolean",
+                    "description": "Pass --centar if you want additional information (Toxin A/B Variants, Other Toxins and C. difficile Specific AR Mutations) on C. diff isolates.",
+                    "default": "False",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "combine_griphins": { 
+                    "type": "boolean",
+                    "description": "Pass --combine_griphins .",
+                    "default": "False",
+                    "fa_icon": "fas fa-hashtag"
+                }
+            }
+        },
         "Optional_options": {
             "title": "Optional options",
             "type": "object",

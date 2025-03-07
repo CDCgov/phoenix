@@ -90,7 +90,7 @@ workflow phoenix_workflow {
     File? classified_2            = phoenix.classified_2             # classified_2.fastq.gz
     File? unclassified_2          = phoenix.unclassified_2           # unclassified_2.fastq.gz
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File  file_integrity          = phoenix.file_integrity           # _summary.txt
+    Array[File] file_integrity          = phoenix.file_integrity           # _summary.txt
     File? paired_fastp_html       = phoenix.paired_fastp_html        # fastp.html
     File? paired_fastp_json       = phoenix.paired_fastp_json        # fastp.json
     File? single_fastp_html       = phoenix.single_fastp_html        # singles.fastp.html

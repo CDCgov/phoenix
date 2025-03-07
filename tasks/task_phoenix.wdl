@@ -216,7 +216,7 @@ task phoenix {
     File? classified_2            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
     File? unclassified_2          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File  file_integrity          = "~{samplename}/phx_output/~{samplename}/file_integrity/~{samplename}_summary.txt"
+    Array[File] file_integrity   = glob("~{samplename}/phx_output/~{samplename}/file_integrity/~{samplename}_*_summary.txt")
     File? paired_fastp_html       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
     File? paired_fastp_json       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
     File? single_fastp_html       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.html"
