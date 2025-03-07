@@ -254,12 +254,12 @@ task phoenix {
     Array[File]? busco_specific   = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
     File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
     #phoenix gamma
-    File? gamma_ar_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_[0-9]{8}_srst2.gamma")
-    File? blat_ar_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_[0-9]{8}_srst2.psl")
-    File? gamma_hv_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_[0-9]{8}.gamma")
-    File? blat_hv_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_[0-9]{8}.psl")
-    File? gamma_pf_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_[0-9]{8}.gamma")
-    File? blat_pf_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_[0-9]{8}.psl")
+    File? gamma_ar_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_*_srst2.gamma")
+    File? blat_ar_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_*_srst2.psl")
+    File? gamma_hv_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_*.gamma")
+    File? blat_hv_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_*.psl")
+    File? gamma_pf_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_*.gamma")
+    File? blat_pf_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_*.psl")
     #phoenix output
     File? assembly_ratio_file      = "~{samplename}/phx_output/~{samplename}/~{samplename}_Assembly_ratio_20230504.txt"
     File? gc_content_file          = "~{samplename}/phx_output/~{samplename}/~{samplename}_GC_content_20230504.txt"
