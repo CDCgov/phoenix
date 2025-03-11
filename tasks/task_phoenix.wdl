@@ -113,7 +113,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee TAXA_CONFIDENCE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee TAXA_COVERAGE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIAPASS_ORGANISM
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIGAPASS_TAXA
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee KRAKEN2_TRIMD
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee KRAKEN2_WEIGHTED
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
@@ -134,11 +134,12 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee KRAKEN2_TRIMD
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee SHIGAPASS_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee FASTANI_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_COVERAGE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}' | tee MLST1_NCBI
@@ -169,14 +170,16 @@ task phoenix {
     String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
     String  scaffold_count                    = read_string("NUM_SCAFFOLDS") #make string for cases where it's "unknown"
     String  gc_percent                        = read_string("GC_PERCENT") #make string for cases where it's "unknown"
+    String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
+    String  taxa_source                       = read_string("TAXA_SOURCE")
     String  busco                             = read_string("BUSCO") #seems like I can't make these busco things optional so just leaving blank
     String  busco_db                          = read_string("BUSCO_DB")
-    String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
-    String  taxa_confidence                   = read_string("TAXA_CONFIDENCE")
-    String  taxa_coverage                     = read_string("TAXA_COVERAGE") #make string for cases where it's "unknown"
-    String  taxa_source                       = read_string("TAXA_SOURCE")
     String  kraken2_trimmed                   = read_string("KRAKEN2_TRIMD")
     String  kraken2_weighted                  = read_string("KRAKEN2_WEIGHTED")
+    String  shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
+    String  fastani_taxa                      = read_string("FASTANI_TAXA")
+    String  fastani_confidence                = read_string("FASTANI_CONFIDENCE")
+    String  fastani_coverage                  = read_string("FASTANI_COVERAGE") #make string for cases where it's "unknown"
     String  mlst_scheme_1                     = read_string("MLST_SCHEME_1")
     String  mlst_1                            = read_string("MLST_1")
     String  mlst1_ncbi                        = read_string("MLST1_NCBI")

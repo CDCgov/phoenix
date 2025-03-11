@@ -527,17 +527,26 @@ workflow PHOENIX_EXTERNAL {
         .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
         .ifEmpty( [] )
 
+
         // if centar was run, pull in species specific files
-        if (centar_param == true) {
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
             centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
-        } else {
-            centar_files_ch =  DETERMINE_TAXA_ID.out.taxonomy.map{ it -> create_empty_ch(it) }
         }
         // if shigapass was run, pull in species specific files
         shigapass_files_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
 
         // pulling it all together
-        all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+        } else {
+            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_files_ch)
+        }
+
+        all_summaries_ch.view()
+        /*[/scicomp/scratch/qpk9/c1/37b7417faec95ffdf00c170936fd7a/empty_summaryline.tsv, 
+        /scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/phoenix/assets/placeholder.txt, 
+        /scicomp/scratch/qpk9/48/169324d90c464cafb569a82c83a89f/2025CB-00145_summaryline.tsv, 
+        [id:2025CB-00145], [], /scicomp/scratch/qpk9/e7/cd0f1e18c2fabde84a2e24f057aabe/2025CB-00145_ShigaPass_summary.csv]*/
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (

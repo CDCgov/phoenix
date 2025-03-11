@@ -472,11 +472,17 @@ workflow SCAFFOLDS_EXQC {
         // collect the failed fairy summary lines
         fairy_summary_ch = SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] )
         // if centar was run, pull in species specific files
-        centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+            centar_files_ch = CENTAR_SUBWORKFLOW.out.consolidated_centar.map{ meta, consolidated_file -> consolidated_file}.collect().ifEmpty([])
+        }
         // if shigapass was run, pull in species specific files
         shigapass_files_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
         // pulling it all together
-        all_summaries_ch = summaries_ch.combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+        } else {
+            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_files_ch)
+        }
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
