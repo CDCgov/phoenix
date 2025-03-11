@@ -190,7 +190,7 @@ task phoenix {
     String  amrfinder_amr_subclasses          = read_string("AMRFINDERPLUS_AMR_SUBCLASSES")
     String  amrfinder_core_genes              = read_string("AMRFINDERPLUS_AMR_CORE_GENES")
     String  amrfinder_plus_genes              = read_string("AMRFINDERPLUS_AMR_PLUS_GENES")
-    String  amrfinder_stress_genes            = read_string("AMRFINDER_STRESS_GENES")
+    String  amrfinder_stress_genes            = read_string("AMRFINDERPLUS_STRESS_GENES")
     String  amrfinder_virulence_genes         = read_string("AMRFINDERPLUS_VIRULENCE_GENES")
     String  hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
