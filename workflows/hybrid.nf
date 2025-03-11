@@ -43,6 +43,8 @@ include { POLYPOLISH            } from '../modules/local/long_read/polypolish'
 include { BANDAGE               } from '../modules/local/long_read/bandage'
 include { CREATE_SAMPLESHEET    } from '../modules/local/create_samplesheet'
 include { FASTQC                } from '../modules/local/fastqc'
+include { RAWSTATS              } from '../modules/local/long_read/seqkit'
+include { LRGE                  } from '../modules/local/long_read/estimation'
 
 /*
 ========================================================================================
@@ -104,7 +106,7 @@ workflow PHOENIX_HYBRID_WF {
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Read Preprocessing
+    Short and Long Read trimming with Long Read subsampling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -135,42 +137,42 @@ workflow PHOENIX_HYBRID_WF {
         )
         ch_versions = ch_versions.mix(FASTP_LR.out.versions)
 
-        // comment what it is doing
-        NANOQ (
-            INPUT_CHECK.out.long_read
-        )
-        ch_versions = ch_versions.mix(NANOQ.out.versions.first())
+        // Long read subsampling and QC
+        RAWSTATS(INPUT_CHECK.out.long_read)
+        //ch_versions = ch_versions.mix(RAWSTATS.out.versions.first())
+    
+        LRGE(INPUT_CHECK.out.long_read)
+        //ch_versions = ch_versions.mix(LRGE.out.versions)
 
+        RASUSA (INPUT_CHECK.out.long_read,LRGE.out.estimation,params.depth)
+        //ch_versions = ch_versions.mix(RASUSA.out.versions)
+
+        NANOQ (RAWSTATS.out.rawstats,RASUSA.out.subfastq)
+        //ch_versions = ch_versions.mix(NANOQ.out.versions)
+
+    
         /*FASTQC (
             INPUT_CHECK.out.reads
         )
         ch_versions = ch_versions.mix(FASTQC.out.versions)*/
 
 /*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Read Subsampling -- 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-        RASUSA (
-            NANOQ.out.fastq
-        )
-        ch_versions = ch_versions.mix(RASUSA.out.versions)
 
-/*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     De novo Assembly
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-     //polish genome
-    uni_ch = FASTP_LR.out.reads.map{meta, reads -> [ [id:meta.id, single_end:true], reads ]}\
-        .join(RASUSA.out.fastq.map{ meta, fastq -> [ meta, fastq ]}, by: [[0][0],[0][1]])
-
+     
     UNICYCLER (
-        uni_ch
+        NANOQ.out.fastq
     )
     ch_versions = ch_versions.mix(UNICYCLER.out.versions)
+/*
 
-    //polish genome
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Genome polishing using short reads
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
     bwa_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
         .join(FASTP_LR.out.reads.map{meta, reads -> [ [id:meta.id, single_end:true], reads ]}, by: [[0][0],[0][1]])
 
@@ -197,17 +199,6 @@ workflow PHOENIX_HYBRID_WF {
     )
     ch_versions = ch_versions.mix(BANDAGE.out.versions)
 
-    /*plasmid_ch = PLASMIDmarker .out.tsv.map  {meta,tsv                -> [meta,tsv]}\
-        .join(MEDAKA.out.fasta.map{   meta, fasta  -> [meta, fasta]},    by: [0])\
-
-
-    //This is preliminary and in development
-    markerANI (plasmid_ch,params.viz)*/
-/*
-    PLASMID (MEDAKA.out.fasta,params.plsdb,params.conf) 
-    PLASMID_AR (PLASMID.out.contigs,params.ardb)
-    PLASMID_VF (PLASMID.out.contigs,params.hvdb)
-*/
     emit:
         // emits should either be a scaffolds or samplesheet, see comments in main nf.
         scaffolds         = POLYPOLISH.out.assembly.collect()

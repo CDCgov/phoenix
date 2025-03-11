@@ -30,6 +30,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
+include { RAWSTATS              } from '../modules/local/long_read/seqkit'
 include { NANOQ                 } from '../modules/local/long_read/nanoq'
 include { RASUSA                } from '../modules/local/long_read/rasusa'
 include { FLYE                  } from '../modules/local/long_read/flye'
@@ -37,13 +38,11 @@ include { MEDAKA                } from '../modules/local/long_read/medaka'
 include { CIRCLATOR             } from '../modules/local/long_read/circlator'
 include { BANDAGE               } from '../modules/local/long_read/bandage'
 include { CREATE_SAMPLESHEET    } from '../modules/local/create_samplesheet'
-//include { PLASMID                 } from '../modules/local/long_read/plasmid'
-//include { PLASMID_AR            } from '../modules/local/long_read/plasmid_ar'
-//include { PLASMID_VF            } from '../modules/local/long_read/plasmid_vf'
+include { LRGE                  } from '../modules/local/long_read/estimation'
+
 
 
 include { FASTQC            } from '../modules/local/fastqc'
-//include { CIRCLATOR       } from '../modules/local/long_read/xxx'
 
 
 /*
@@ -100,38 +99,29 @@ workflow PHOENIX_LR_WF {
     
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Read Preprocessing
+    Read Subsampling, Preprocessing and QC
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-    // comment what it is doing
-    NANOQ (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(NANOQ.out.versions.first())
+    RAWSTATS(INPUT_CHECK.out.reads)
+    //ch_versions = ch_versions.mix(RAWSTATS.out.versions.first())
+    
+    LRGE(INPUT_CHECK.out.reads)
+    //ch_versions = ch_versions.mix(LRGE.out.versions)
 
-    /*FASTQC (
-        INPUT_CHECK.out.reads
-    )
-    ch_versions = ch_versions.mix(FASTQC.out.versions)*/
+    RASUSA (INPUT_CHECK.out.reads,LRGE.out.estimation,params.depth)
+    //ch_versions = ch_versions.mix(RASUSA.out.versions)
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Read Subsampling -- 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-    RASUSA (
-        NANOQ.out.fastq
-    )
-    ch_versions = ch_versions.mix(RASUSA.out.versions)
+    NANOQ (RAWSTATS.out.rawstats,RASUSA.out.subfastq)
+    //ch_versions = ch_versions.mix(NANOQ.out.versions)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    De novo Assembly
+    De novo Assembly and Polishing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
     FLYE (
-        RASUSA.out.fastq
+        NANOQ.out.fastq
     )
     ch_versions = ch_versions.mix(FLYE.out.versions)
    
@@ -155,17 +145,7 @@ workflow PHOENIX_LR_WF {
     )
     ch_versions = ch_versions.mix(MEDAKA.out.versions)
 
-    /*plasmid_ch = PLASMIDmarker .out.tsv.map  {meta,tsv                -> [meta,tsv]}\
-        .join(MEDAKA.out.fasta.map{   meta, fasta  -> [meta, fasta]},    by: [0])\
 
-
-    //This is preliminary and in development
-    markerANI (plasmid_ch,params.viz)*/
-/*
-    PLASMID (MEDAKA.out.fasta,params.plsdb,params.conf) 
-    PLASMID_AR (PLASMID.out.contigs,params.ardb)
-    PLASMID_VF (PLASMID.out.contigs,params.hvdb)
-*/
     emit:
         // emits should either be a scaffolds or samplesheet, see comments in main nf.
         scaffolds         = MEDAKA.out.fasta_fin.collect()

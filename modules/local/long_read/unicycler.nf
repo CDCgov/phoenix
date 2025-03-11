@@ -5,7 +5,7 @@ process UNICYCLER {
     //sha256:f1e556959e2b6df92d66726ed9743bb17fccd1a6a2bf4961dcc399512b03512d
 
     input:
-    tuple val(meta), path(reads), path(fastq)
+    tuple val(meta), path(fastq)
 
     output:
     tuple val(meta), path("${meta.id}/assembly.fasta"), emit: fasta
@@ -15,7 +15,7 @@ process UNICYCLER {
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    unicycler -1 ${prefix}_1.trim.fastq.gz -2 ${prefix}_2.trim.fastq.gz -l $fastq -o ${meta.id} -t 16
+    unicycler -l $fastq -o ${meta.id} -t $task.cpus --mode conservative
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
