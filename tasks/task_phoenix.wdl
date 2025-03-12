@@ -62,7 +62,7 @@ task phoenix {
     fi
 
     # set shigapass db path
-    shigapass_db="./share/shigapass-1.5.0/db"
+    shigapass_db="/opt/conda/envs/phoenix/share/shigapass-1.5.0/db"
 
     #checking variables
     echo $version
@@ -71,7 +71,7 @@ task phoenix {
     echo $create_ncbi_sheet
     echo $centar
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -99,29 +99,29 @@ task phoenix {
     awk -F '\t' '{ if($9 == "VIRULENCE") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
 
     # Gather Phoenix Output
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee ESTIMATED_COVERAGE
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee GENOME_LENGTH
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee ASSEMBLY_RATIO
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee NUM_SCAFFOLDS
-    sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee GC_PERCENT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee ESTIMATED_COVERAGE
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee ASSEMBLY_RATIO
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee GC_PERCENT
     if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIAPASS_ORGANISM
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}' | tee MLST1_NCBI
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}' | tee MLST2_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIGAPASS_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}' | sed 's/ecoli//g' | sed 's/abaumannii//g' | tee MLST1_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}' | sed 's/ecoli//g' | sed 's/abaumannii//g'| tee MLST2_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
@@ -130,21 +130,22 @@ task phoenix {
       echo "Only run with CDC entry" | tee BUSCO_DB
       echo "Only run with CDC entry" | tee BUSCO
     elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f12 | tee TAXA_CONFIDENCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee TAXA_COVERAGE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}' | tee MLST1_NCBI
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
-      sed -n 2p ~{samplename}/phx_output/~{samplename}_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | tee MLST2_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee SHIGAPASS_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee FASTANI_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}' | tee MLST1_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | tee MLST2_NCBI
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
@@ -169,14 +170,16 @@ task phoenix {
     String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
     String  scaffold_count                    = read_string("NUM_SCAFFOLDS") #make string for cases where it's "unknown"
     String  gc_percent                        = read_string("GC_PERCENT") #make string for cases where it's "unknown"
+    String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
+    String  taxa_source                       = read_string("TAXA_SOURCE")
     String  busco                             = read_string("BUSCO") #seems like I can't make these busco things optional so just leaving blank
     String  busco_db                          = read_string("BUSCO_DB")
-    String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
-    String  taxa_confidence                   = read_string("TAXA_CONFIDENCE")
-    String  taxa_coverage                     = read_string("TAXA_COVERAGE") #make string for cases where it's "unknown"
-    String  taxa_source                       = read_string("TAXA_SOURCE")
     String  kraken2_trimmed                   = read_string("KRAKEN2_TRIMD")
     String  kraken2_weighted                  = read_string("KRAKEN2_WEIGHTED")
+    String  shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
+    String  fastani_taxa                      = read_string("FASTANI_TAXA")
+    String  fastani_confidence                = read_string("FASTANI_CONFIDENCE")
+    String  fastani_coverage                  = read_string("FASTANI_COVERAGE") #make string for cases where it's "unknown"
     String  mlst_scheme_1                     = read_string("MLST_SCHEME_1")
     String  mlst_1                            = read_string("MLST_1")
     String  mlst1_ncbi                        = read_string("MLST1_NCBI")
@@ -190,7 +193,7 @@ task phoenix {
     String  amrfinder_amr_subclasses          = read_string("AMRFINDERPLUS_AMR_SUBCLASSES")
     String  amrfinder_core_genes              = read_string("AMRFINDERPLUS_AMR_CORE_GENES")
     String  amrfinder_plus_genes              = read_string("AMRFINDERPLUS_AMR_PLUS_GENES")
-    String  amrfinder_stress_genes            = read_string("AMRFINDER_STRESS_GENES")
+    String  amrfinder_stress_genes            = read_string("AMRFINDERPLUS_STRESS_GENES")
     String  amrfinder_virulence_genes         = read_string("AMRFINDERPLUS_VIRULENCE_GENES")
     String  hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
@@ -216,7 +219,7 @@ task phoenix {
     File? classified_2            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
     File? unclassified_2          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File  file_integrity          = "~{samplename}/phx_output/~{samplename}/file_integrity/~{samplename}_summary.txt"
+    Array[File] file_integrity   = glob("~{samplename}/phx_output/~{samplename}/file_integrity/~{samplename}_*_summary.txt")
     File? paired_fastp_html       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
     File? paired_fastp_json       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.fastp.json"
     File? single_fastp_html       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}_singles.fastp.html"
@@ -242,27 +245,27 @@ task phoenix {
     File? wtasmbld_html            = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
     File? wtasmbld_krona           = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     #phoenix ani
-    File? fast_ani                 = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.ani.txt"
-    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20230504.fastANI.txt"
-    File? top_20_taxa_matches      = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504_best_MASH_hits.txt"
-    File? mash_distance            = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20230504.txt"
+    File? fast_ani                 = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20250214.ani.txt"
+    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20250214.fastANI.txt"
+    File? top_20_taxa_matches      = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20250214_best_MASH_hits.txt"
+    File? mash_distance            = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20250214.txt"
     #phoenix quast and mlst
     File? quast_summary            = "~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv"
     File? mlst_tsv                 = "~{samplename}/phx_output/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
     Array[File]? busco_generic    = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.generic.*.filtered.scaffolds.fa.txt")
     Array[File]? busco_specific   = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
-    File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20230517_srst2__results.txt"
+    File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20250214_srst2__results.txt"
     #phoenix gamma
-    File? gamma_ar_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_[0-9]{8}_srst2.gamma")
-    File? blat_ar_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_[0-9]{8}_srst2.psl")
-    File? gamma_hv_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_[0-9]{8}.gamma")
-    File? blat_hv_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_[0-9]{8}.psl")
-    File? gamma_pf_calls           = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_[0-9]{8}.gamma")
-    File? blat_pf_calls            = glob("~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_[0-9]{8}.psl")
+    File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250214_srst2.gamma"
+    File? blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250214_srst2.psl"
+    File? gamma_hv_calls           = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
+    File? blat_hv_calls            = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
+    File? gamma_pf_calls           = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20250214.gamma"
+    File? blat_pf_calls            = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20250214.psl"
     #phoenix output
-    File? assembly_ratio_file      = "~{samplename}/phx_output/~{samplename}/~{samplename}_Assembly_ratio_20230504.txt"
-    File? gc_content_file          = "~{samplename}/phx_output/~{samplename}/~{samplename}_GC_content_20230504.txt"
+    File? assembly_ratio_file      = "~{samplename}/phx_output/~{samplename}/~{samplename}_Assembly_ratio_20250214.txt"
+    File? gc_content_file          = "~{samplename}/phx_output/~{samplename}/~{samplename}_GC_content_20250214.txt"
     File  summary_line             = "~{samplename}/phx_output/~{samplename}/~{samplename}_summaryline.tsv"
     File  synopsis                 = "~{samplename}/phx_output/~{samplename}/~{samplename}.synopsis"
     File? best_taxa_id             = "~{samplename}/phx_output/~{samplename}/~{samplename}.tax"

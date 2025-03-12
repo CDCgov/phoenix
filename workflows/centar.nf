@@ -47,7 +47,7 @@ include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_st
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { CUSTOM_DUMPSOFTWAREVERSIONS as CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_centar'
+include { CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_centar'
 
 /*
 ========================================================================================

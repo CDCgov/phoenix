@@ -41,16 +41,20 @@ workflow phoenix_workflow {
     String  warning_count                     = phoenix.warning_count
     String  estimated_coverage                = phoenix.estimated_coverage #make string for cases where it's "unknown"
     String  genome_length                     = phoenix.genome_length #make string for cases where it's "unknown"
+    String  n50                               = phoenix.N50
     String  assembly_ratio                    = phoenix.assembly_ratio
     String  scaffold_count                    = phoenix.scaffold_count #make string for cases where it's "unknown"
     String  gc_percent                        = phoenix.gc_percent #make string for cases where it's "unknown"
+    String  final_taxa_id                     = phoenix.final_taxa_id
+    String  taxa_source                       = phoenix.taxa_source
     String  busco                             = phoenix.busco
     String  busco_db                          = phoenix.busco_db
-    String  final_taxa_id                     = phoenix.final_taxa_id
-    String  taxa_confidence                   = phoenix.taxa_confidence
-    String  taxa_source                       = phoenix.taxa_source
     String  kraken2_trimmed                   = phoenix.kraken2_trimmed
     String  kraken2_weighted                  = phoenix.kraken2_weighted
+    String  shigapass_taxa                    = phoenix.shigapass_taxa
+    String  fastani_taxa                      = phoenix.fastani_taxa
+    String  fastani_confidence                = phoenix.fastani_confidence
+    String  fastani_coverage                  = phoenix.fastani_coverage
     String  mlst_scheme_1                     = phoenix.mlst_scheme_1
     String  mlst_1                            = phoenix.mlst_1
     String  mlst1_ncbi                        = phoenix.mlst1_ncbi
@@ -90,7 +94,7 @@ workflow phoenix_workflow {
     File? classified_2            = phoenix.classified_2             # classified_2.fastq.gz
     File? unclassified_2          = phoenix.unclassified_2           # unclassified_2.fastq.gz
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File  file_integrity          = phoenix.file_integrity           # _summary.txt
+    Array[File] file_integrity    = phoenix.file_integrity           # _summary.txt
     File? paired_fastp_html       = phoenix.paired_fastp_html        # fastp.html
     File? paired_fastp_json       = phoenix.paired_fastp_json        # fastp.json
     File? single_fastp_html       = phoenix.single_fastp_html        # singles.fastp.html
