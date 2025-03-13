@@ -12,9 +12,9 @@ process CREATE_NCBI_UPLOAD_SHEET {
     path(griphin_tsv_report)
 
     output:
-    path("Sra_Microbe.1.0.xlsx"),                 optional: true, emit: ncbi_sra
-    path("BiosampleAttributes_Microbe.1.0.xlsx"), optional: true, emit: ncbi_biosample
-    path("versions.yml"),                                         emit: versions
+    path("*_Sra_Microbe.1.0.xlsx"),                 optional: true, emit: ncbi_sra
+    path("*_BiosampleAttributes_Microbe.1.0.xlsx"), optional: true, emit: ncbi_biosample
+    path("versions.yml"),                                           emit: versions
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
