@@ -282,8 +282,8 @@ task phoenix {
     File? centar_clade            = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
     File? centar_plasmid          = "~{samplename}/phx_output/~{samplename}/CENTAR/plasmids/~{samplename}_plasmids.tsv"
     # NCBI files - optional
-    File? ncbi_biosample          = "~{samplename}/phx_output/BiosampleAttributes_Microbe.1.0.xlsx"
-    File? ncbi_sra_metadata       = "~{samplename}/phx_output/Sra_Microbe.1.0.xlsx"
+    Array[File]? ncbi_biosample   = glob("~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx")
+    Array[File]? ncbi_sra_metadata = glob("~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx")
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
     File? multiqc_output          = "~{samplename}/phx_output/multiqc/multiqc_report.html"
