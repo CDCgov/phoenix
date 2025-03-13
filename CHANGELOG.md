@@ -246,10 +246,10 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 ## [v2.1.1](https://github.com/CDCgov/phoenix/releases/tag/v2.1.1) (03/25/2024)
 
-**Implemented Enhancements:** 
- - The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-1167","blaOXA-1181","blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213".
+**Implemented Enhancements:**  
+ - The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-1167","blaOXA-1181","blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213".  
 
-**Fixed Bugs:**
+**Fixed Bugs:**  
 - Fix for issue [#130](https://github.com/CDCgov/phoenix/issues/130) Identified when an Isolate is incorrectly assigned to cronobacter scheme when it should have been ecloacae. Extension of larger scoring problem with MLST-2.23.0.
 - Fixed [#142](https://github.com/CDCgov/phoenix/issues/142) where names with multiple instances of "R2" in their name couldn't be parsed properly and don't move past the corruption check step. [commit `7fc0ac3c026b7c12608be4dd1d3682675e31d0fe`](https://github.com/CDCgov/phoenix/commit/7fc0ac3c026b7c12608be4dd1d3682675e31d0fe)
 - Fixed an issue in FASTANI. The file for checking 80%+ identity could not be found because the DB_Version was not set when "No Mash Hits found" occurs.
@@ -271,6 +271,15 @@ Below are the list of changes to phx since is initial release. As fixes can take
  - Creation of `-entry UPDATE_CDC_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when.  
  - Creation of `-entry CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
 - `-centar` parameter can be passed when running `-entry PHOENIX` or `-entry CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#input--entry-centar-in-versions-220) for full documentation.   
+ - `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
+
+**Terra.bio Output Updates:**
+- Columns are now reported based on `*_GRiPHin_Summary.tsv` except for the columns `BETA_LACTAM_RESISTANCE_GENES`, `OTHER_AR_GENES`, `AMRFINDER_POINT_MUTATIONS`, `HYPERVIRULENCE_GENES` and `PLASMID_INCOMPATIBILITY_REPLICONS` still come from the `Phoenix_Summary.tsv` file. 
+   - `MLST1_NCBI` and `MLST2_NCBI` added columns, which are a combination of the MLSTs and MLST_SCHEMEs columns. These new columns are formated for uploading to NCBI following ARLN guidance.  
+   - `SHIGAPASS_TAXA` is the output of Shigapass if it was run. The `TAXA_SOURCE` column will state if Shigapass was used for the final taxa call.  
+   - `FINAL_TAXA_ID` is the final taxa call for the isolate.  
+   - `N50` is the N50 from `Quast`.  
+   - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.
 
 **Fixed Bugs:**
 - Changes were made to allow `-resume` to work correctly.  

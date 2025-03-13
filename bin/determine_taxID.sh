@@ -188,6 +188,19 @@ if [[ -n ${species} ]]; then
 		# If yes, add a space after "sp."
 		species="${species/sp./sp. }"
 	fi
+	echo $species
+	# Check if "strain" is in the string
+	if [[ $species == *"strain"* ]]; then
+		# Extract everything after "strain"
+		#strain=$(echo "$species" | sed -E 's/.*strain[- ]*//')
+		# Extract "strain" and everything after it
+		strain=$(echo "$species" | grep -o 'strain.*')
+		# Extract everything before "strain" and remove trailing "-" or " "
+		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*strain.*$/\1/' | sed -E 's/-.*//' )
+		echo $species
+	else
+		strain=""
+	fi
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
 	species_taxID=0
 	#echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
