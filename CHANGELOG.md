@@ -272,6 +272,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
  - Creation of `-entry CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
 - `-centar` parameter can be passed when running `-entry PHOENIX` or `-entry CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#input--entry-centar-in-versions-220) for full documentation.   
  - `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
+ - The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-163","blaOXA-405","blaOXA-1012","blaOXA-1226","blaOXA-1240","blaOXA-1242","blaOXA-1304","blaOXA-1306","blaOXA-1307","blaOXA-1308","blaOXA-1309".  
+  - The following OXA genes were added to be highlighted as blaOXA-24_40-like in the griphin summary: "blaOXA-1225", "blaOXA-1303" and "blaOXA-1322".  
 
 **Terra.bio Output Updates:**
 - Columns are now reported based on `*_GRiPHin_Summary.tsv` except for the columns `BETA_LACTAM_RESISTANCE_GENES`, `OTHER_AR_GENES`, `AMRFINDER_POINT_MUTATIONS`, `HYPERVIRULENCE_GENES` and `PLASMID_INCOMPATIBILITY_REPLICONS` still come from the `Phoenix_Summary.tsv` file. 
@@ -287,7 +289,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - More robust checks in PHoeNIx to pull in only sample_names correctly.  
 - Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.  
 - [Shigapass](https://github.com/imanyass/ShigaPass) was added to distinguish correctly between *E. coli*/*Shigella*. If FastANI determines the species to be either *E. coli* or *Shigella* Shigapass will now run to confirm the call. In GRiPHin there is a new `Final_Taxa_ID` column that has the final determined call. The column `Taxa_source` will still say `ANI_REFSEQ` if the FastANI call was kept and now will have `Shigapass` if the FastANI call was determined to be wrong by Shigapass and was thus overwritten. This was added to all entry points.   
-- Fix for `--coverage` being converted to a string when run on Seqera Cloud. Thanks to @DOH-JDJ0303 for the [PR](https://github.com/CDCgov/phoenix/pull/173).
+- Fix for `--coverage` being converted to a string when run on Seqera Cloud. Thanks to @DOH-JDJ0303 for the [PR](https://github.com/CDCgov/phoenix/pull/173).  
+- blaOXA-23-like genes were highlighted incorrectly in the griphin summary this has been corrected to the following list: `[ "23", "27", "49", "73", "103", "105", "133", "146", "165", "166", "167", "168", "169", "170", "171", "225", "239", "366", "398", "422", "423", "435", "440", "481", "482", "483", "565", "657", "806", "807", "808", "809", "810", "811", "812", "813", "814", "815", "816", "817", "818", "911", "966", "967", "968", "969", "1095", "1216", "1223", "1241"]`
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
