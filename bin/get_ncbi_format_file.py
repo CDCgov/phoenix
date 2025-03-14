@@ -13,6 +13,7 @@ import retrieve_taxo_mlst
 import tools
 import glob
 from load_files import FileLoader
+import xlsxwriter
 
 # Function to get the script version
 def get_version():
@@ -225,9 +226,9 @@ def add_disclaimer(df, input_excel, input_sheet_name):
             worksheet.set_column(idx, idx, max_len)  # set column width
         # Add text to the cell
         # Change the font color to red
-        red_format = workbook.add_format({'color': 'red', 'bold': True, 'text_wrap': True})
+        red_format = workbook.add_format({'font_color': 'red', 'bold': True, 'text_wrap': True})
         # Change the font color to orange
-        orange_format = workbook.add_format({'color': 'orange', 'bold': True, 'text_wrap': True})
+        orange_format = workbook.add_format({'font_color': 'orange', 'bold': True, 'text_wrap': True})
         biosample_delete_warning = """Do the following before upload:
 1. Delete this row and the rows below!
 2. At minimum fill out the following columns: 

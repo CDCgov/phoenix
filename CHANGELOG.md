@@ -279,6 +279,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - `SHIGAPASS_TAXA` is the output of Shigapass if it was run. The `TAXA_SOURCE` column will state if Shigapass was used for the final taxa call.  
    - `FINAL_TAXA_ID` is the final taxa call for the isolate.  
    - `N50` is the N50 from `Quast`.  
+   - `WARNINGS_COUNT` was changed to `WARNINGS` and it is print out of the warnings, rather than just a count.
    - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.
 
 **Fixed Bugs:**
