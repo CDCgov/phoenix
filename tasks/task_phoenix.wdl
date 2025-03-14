@@ -102,6 +102,7 @@ task phoenix {
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee WARNINGS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee ESTIMATED_COVERAGE
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee GENOME_LENGTH
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee ASSEMBLY_RATIO
@@ -163,7 +164,7 @@ task phoenix {
     String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
-    String  warning_count                     = read_string("WARNING_COUNT")
+    String  warnings                          = read_string("WARNINGS")
     String  estimated_coverage                = read_string("ESTIMATED_COVERAGE") #make string for cases where it's "unknown"
     String  genome_length                     = read_string("GENOME_LENGTH") #make string for cases where it's "unknown"
     String  N50                               = read_string("N50")
@@ -282,8 +283,8 @@ task phoenix {
     File? centar_clade            = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
     File? centar_plasmid          = "~{samplename}/phx_output/~{samplename}/CENTAR/plasmids/~{samplename}_plasmids.tsv"
     # NCBI files - optional
-    Array[File]? ncbi_biosample   = glob("~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx")
-    Array[File]? ncbi_sra_metadata = glob("~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx")
+    File? ncbi_biosample          = "~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx"
+    File? ncbi_sra_metadata       = "~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx"
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
     File? multiqc_output          = "~{samplename}/phx_output/multiqc/multiqc_report.html"
