@@ -38,7 +38,7 @@ workflow phoenix_workflow {
     String  phoenix_docker                    = phoenix.phoenix_docker
     String  analysis_date                     = phoenix.analysis_date
     String  qc_outcome                        = phoenix.qc_outcome
-    String  warning_count                     = phoenix.warning_count
+    String  warnings                          = phoenix.warnings
     String  estimated_coverage                = phoenix.estimated_coverage #make string for cases where it's "unknown"
     String  genome_length                     = phoenix.genome_length #make string for cases where it's "unknown"
     String  n50                               = phoenix.N50
