@@ -1132,7 +1132,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     # check that for the column in question there is also a value found in the GAMMA column
                     if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
                         # Check if there is a value in the corresponding column in the second DataFrame
-                        srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
+                        srst2_ar_df.loc[idx, srst2_ar_df.columns[srst2_ar_df.columns.str.contains(gene)]] = ""
                         print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
@@ -1163,7 +1163,13 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
                     #get a dataframe of the gene in question
-                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(val)])
+                    print(gamma_neg_srst2.columns.str.contains(val, regex=True))
+                    print(val)
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val, regex=True)])
+                    #if "(" not in val or ")" not in val:
+                    #        val = f"({val})"  # Add capture group if missing
+                    #        df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(val)])
+                    #df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(f"({val})")])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
                     df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
                     # Convert extracted values to integer type and keep NA values
@@ -1191,7 +1197,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     # Now that we know what alleles we are keeping based on the top hits (these are the row names), we will get the inverse row names so we know what to drop
                     index_diff = df.index.difference(df_cleaned.index)
                     # For the sample in question remove the data from cell if the particular allele(s) we want to drop
-                    srst2_ar_df.at[index, index_diff.tolist()] = ""
+                    srst2_ar_df.loc[index, index_diff.tolist()] = ""
                 multiple_occurrences.append(val)
         srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
     return srst2_ar_df
@@ -1274,7 +1280,11 @@ def big5_check(final_ar_df, is_combine):
     # combine lists of all genes we want to highlight
     blaOXAs = [f"{num}" for num in blaOXA_48_like + blaOXA_23_like + blaOXA_24_40_like + blaOXA_58_like + blaOXA_143_like + blaOXA_235_like]
     # remove list of genes that look like big 5 but don't have activity
-    big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "163", "405"]
+    big5_drop = ["blaKPC-12", "blaKPC-14", "blaKPC-25", "blaKPC-28", "blaKPC-31", "blaKPC-32", "blaKPC-33", "blaKPC-35", "blaKPC-39", "blaKPC-46", "blaKPC-47", "blaKPC-48", "blaKPC-49", "blaKPC-50", "blaKPC-51", "blaKPC-52", \
+    "blaKPC-53", "blaKPC-57", "blaKPC-58", "blaKPC-61", "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-68", "blaKPC-69", "blaKPC-70", "blaKPC-71", "blaKPC-72", "blaKPC-73", "blaKPC-74", "blaKPC-76", \
+    "blaKPC-79", "blaKPC-82", "blaKPC-86", "blaKPC-88", "blaKPC-90", "blaKPC-92", "blaKPC-93", "blaKPC-94", "blaKPC-95", "blaKPC-110", "blaKPC-111", "blaKPC-112", "blaKPC-115", "blaKPC-123", "blaKPC-132", "blaKPC-134", \
+    "blaKPC-135", "blaKPC-137", "blaKPC-138", "blaKPC-145", "blaKPC-150", "blaKPC-151", "blaKPC-152", "blaKPC-153", "blaKPC-154", "blaKPC-155", "blaKPC-159", "blaKPC-169", "blaKPC-170", "blaKPC-172", "blaKPC-173", "blaKPC-175", \
+    "blaKPC-178", "blaKPC-179", "blaKPC-185", "blaKPC-186", "blaKPC-187", "blaKPC-189", "blaKPC-190", "blaKPC-191", "blaKPC-192", "blaKPC-194", "blaKPC-197", "blaKPC-201", "blaKPC-203", "blaKPC-205", "blaKPC-206", "blaKPC-207", "blaKPC-208", "blaKPC-209", "blaKPC-217", "blaKPC-218", "blaKPC-226", "blaKPC-228", "blaKPC-230"] 
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
     for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
         if gene == 'No_AR_Genes_Found':
@@ -1579,7 +1589,7 @@ def convert_excel_to_tsv(output):
     #drop the footer information
     data_xlsx = data_xlsx.iloc[:-10] 
     #Write dataframe into csv
-    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
+    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
 
 def main():
     args = parseArgs()

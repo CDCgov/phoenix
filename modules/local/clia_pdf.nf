@@ -1,7 +1,7 @@
 process CREATE_CLIA_PDF {
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 23)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:c21f535174503019ba6d5e5cba1292eb060a752315b7056ad1435a670edb15e3'
+    // base_v2.2.0 - MUST manually change below (line 23)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     path(directory)
@@ -22,7 +22,7 @@ process CREATE_CLIA_PDF {
     else if (params.ica==true) { ica = "python ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}report_gen.py -p ${directory} --phx_version v2.2.0 -t ${start_time} --ar_database ${ar_database} --amrfinder_version 3.12.8 --coverage ${coverage}

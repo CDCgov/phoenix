@@ -1,7 +1,7 @@
 process ASSET_CHECK {
     label 'process_low'
-    // base_v2.1.0 - MUST manually change below (line 21)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     path(zipped_sketch)
@@ -19,7 +19,7 @@ process ASSET_CHECK {
 
     script:
     def kraken_db_path = kraken_db ? "${kraken_db}" : "false" //checking if its null or an empty list
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
     // Allow for multitude of zipped sources and remove the last extension, nevermind not needed for xz

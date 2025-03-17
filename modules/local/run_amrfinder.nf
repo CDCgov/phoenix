@@ -1,9 +1,8 @@
 process AMRFINDERPLUS_RUN {
     tag "$meta.id"
     label 'process_medium'
-    // 3.12.8-2024-01-31.1 - new
-    container 'quay.io/staphb/ncbi-amrfinderplus@sha256:d8ede3f08e1735a281ac93c3b3ad21d603691c7871afac8d14e53e3d80edd634'
-    //container 'staphb/ncbi-amrfinderplus@sha256:45863da98b042fffc17b91d8a42bb7094509c154409da7747b6ba509bca7cdc2'
+    // 4.0.19-2024-12-18.1 - new
+    container 'staphb/ncbi-amrfinderplus@sha256:c257c26454748a797bfa0fbc135f42f1e8d78c68e3f20ba4df804eb234ac9377'
 
     input:
     tuple val(meta), path(nuc_fasta), val(organism_param), path(pro_fasta), path(gff)

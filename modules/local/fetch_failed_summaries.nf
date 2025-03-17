@@ -1,7 +1,7 @@
 process FETCH_FAILED_SUMMARIES {
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 16)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 16)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     path(directory)
@@ -13,7 +13,7 @@ process FETCH_FAILED_SUMMARIES {
     path("versions.yml")     , emit: versions
 
     script:
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     #for each summaryline_failure.tsv file check to see if 'SPAdes_Failure' is in the file.

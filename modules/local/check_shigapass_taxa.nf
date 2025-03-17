@@ -1,8 +1,8 @@
 process CHECK_SHIGAPASS_TAXA {
     tag "${meta.id}"
     label 'process_low'
-    // base_v2.1.0 - MUST manually change below (line 27)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 20)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     tuple val(meta), path(fastani_file), path(ani_file), path(shigapass_file)
@@ -17,7 +17,7 @@ process CHECK_SHIGAPASS_TAXA {
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "python ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     #get string to rename file --> Remove "to_check_" from the filename

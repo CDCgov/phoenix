@@ -2,8 +2,8 @@ process SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_low'
     stageInMode 'copy'
-    // base_v2.1.0 - MUST manually change below (line 20)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 24)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     path(samplesheet)
@@ -21,7 +21,7 @@ process SAMPLESHEET_CHECK {
     else if (params.ica==true) { ica = "python ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def reads_check = reads_entry ? "true" : "false"
     def scaffolds_check = scaffolds_entry ? "true" : "false"
     def directory_check = directory_entry ? "true" : "false"

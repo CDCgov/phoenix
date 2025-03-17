@@ -1,8 +1,8 @@
 process DETERMINE_TAXA_ID_FAILURE {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 26)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 26)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     tuple val(meta), path(k2_bh_summary), val(spades_outcome)
@@ -23,7 +23,7 @@ process DETERMINE_TAXA_ID_FAILURE {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}determine_taxID.sh -r $k2_bh_summary -s $meta.id -d $nodes_file -m $names_file

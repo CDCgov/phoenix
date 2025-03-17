@@ -290,17 +290,19 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.  
 - [Shigapass](https://github.com/imanyass/ShigaPass) was added to distinguish correctly between *E. coli*/*Shigella*. If FastANI determines the species to be either *E. coli* or *Shigella* Shigapass will now run to confirm the call. In GRiPHin there is a new `Final_Taxa_ID` column that has the final determined call. The column `Taxa_source` will still say `ANI_REFSEQ` if the FastANI call was kept and now will have `Shigapass` if the FastANI call was determined to be wrong by Shigapass and was thus overwritten. This was added to all entry points.   
 - Fix for `--coverage` being converted to a string when run on Seqera Cloud. Thanks to @DOH-JDJ0303 for the [PR](https://github.com/CDCgov/phoenix/pull/173).  
-- blaOXA-23-like genes were highlighted incorrectly in the griphin summary this has been corrected to the following list: `[ "23", "27", "49", "73", "103", "105", "133", "146", "165", "166", "167", "168", "169", "170", "171", "225", "239", "366", "398", "422", "423", "435", "440", "481", "482", "483", "565", "657", "806", "807", "808", "809", "810", "811", "812", "813", "814", "815", "816", "817", "818", "911", "966", "967", "968", "969", "1095", "1216", "1223", "1241"]`
+- blaOXA-23-like genes were highlighted incorrectly in the griphin summary this has been corrected to the following list: `[ "23", "27", "49", "73", "103", "105", "133", "146", "165", "166", "167", "168", "169", "170", "171", "225", "239", "366", "398", "422", "423", "435", "440", "481", "482", "483", "565", "657", "806", "807", "808", "809", "810", "811", "812", "813", "814", "815", "816", "817", "818", "911", "966", "967", "968", "969", "1095", "1216", "1223", "1241"]`  
+- KPCs in [Beta-Lactamase DataBase (BLDB)](http://bldb.eu/) that have their function labelled as ESBL/IR/IR ESBL were removed from being highlighted as part of the `big 5` genes as are not thought to have carbapenemase acvitity.  
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
   - amrfinderplus: v3.12.8 to [v4.0.19](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.0.19)
   - busco: v5.4.7--pyhdfd78af_0 to [v5.8.0--pyhdfd78af_0](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG)  
   - fastp: v0.23.4 to [v0.24.0](https://github.com/OpenGene/fastp/releases/tag/v0.24.0) --> changes for memory optimization  
-  - bbtools: v39.01 to v39.13
-  - spades: v3.15.5 to [v4.0.0](https://github.com/ablab/spades/releases/tag/v4.0.0)
-  - quast: v5.0.2 to [v5.3.0](https://github.com/ablab/quast/releases/tag/quast_5.3.0)
-  - sra-tools: v3.1.1 to [v3.2.0--h4304569_0](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md)
+  - bbtools: v39.01 to v39.13  
+  - spades: v3.15.5 to [v4.0.0](https://github.com/ablab/spades/releases/tag/v4.0.0)  
+  - quast: v5.0.2 to [v5.3.0](https://github.com/ablab/quast/releases/tag/quast_5.3.0)  
+  - sra-tools: v3.1.1 to [v3.2.0--h4304569_0](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md)  
+  - phx_base: python upgraded from 3.7.12 to 3.9.19, base image updated from jammy to oracular. 
 
 **Database Updates:**  
 - Curated AR gene database was updated on 2025-02-14 (yyyy-mm-dd) to include the new AMRFinder database:

@@ -1,8 +1,8 @@
 process AMRFINDERPLUS_UPDATE {
     tag "update"
     label 'process_low'
-    // 3.11.11-2023-04-17.1
-    container 'staphb/ncbi-amrfinderplus@sha256:194eec0c758f92c3c8a8884b9f1ddbfb7626977459e8938a6ece98aceb8e3bbd'
+    // 4.0.19-2024-12-18.1
+    container 'staphb/ncbi-amrfinderplus@sha256:c257c26454748a797bfa0fbc135f42f1e8d78c68e3f20ba4df804eb234ac9377'
 
     output:
     path "amrfinderdb.tar.gz", emit: db

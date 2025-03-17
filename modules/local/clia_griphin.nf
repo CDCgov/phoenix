@@ -1,6 +1,7 @@
 process CLIA_GRIPHIN {
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    // base_v2.2.0 - MUST manually change below (line 28)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     path(pipeline_stats_files)
@@ -24,7 +25,8 @@ process CLIA_GRIPHIN {
     else if (params.ica==true) { ica = "python ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.2.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     full_path=\$(readlink -f ${outdir})
 
@@ -32,9 +34,10 @@ process CLIA_GRIPHIN {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-       python: \$(python --version | sed 's/Python //g')
-       griphin.py: \$(${ica}GRiPHin.py --version)
-       phoenix_base_container: ${container}
+        python: \$(python --version | sed 's/Python //g')
+        griphin.py: \$(${ica}GRiPHin.py --version)
+        phoenix_base_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

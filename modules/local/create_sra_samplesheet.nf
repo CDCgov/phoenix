@@ -1,7 +1,7 @@
 process CREATE_SRA_SAMPLESHEET {
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 23)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 23)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     path(renamed_reads)
@@ -20,7 +20,7 @@ process CREATE_SRA_SAMPLESHEET {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def use_srr = srr_param ? "--use_srr" : ""
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     full_path=\$(readlink -f ${directory})

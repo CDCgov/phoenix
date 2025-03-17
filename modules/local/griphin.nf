@@ -1,8 +1,7 @@
 process GRIPHIN {
     label 'process_low'
-    //container 'quay.io/jvhagey/phoenix:base_v2.0.2'
-    // base_v2.1.0 - MUST manually change below (line 22)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 36)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
 
     input:
     path(summary_line_files)
@@ -34,7 +33,7 @@ process GRIPHIN {
     def centar = centar_detected ? "--centar" : ""
     def samplesheet_command = centar_detected ? "--samplesheet ${original_samplesheet}" : ""
     def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
     full_path=\$(readlink -f ${outdir})
