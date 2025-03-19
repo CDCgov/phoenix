@@ -26,11 +26,11 @@ workflow DO_MLST {
         if (run_type=="original") {
             mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id], fasta]}\
             .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])\
-            .join(taxonomy.map{            meta, taxonomy      -> [[id:meta.id], taxonomy]}, by: [0]).combine(mlst_db)
+            .join(taxonomy.map{            meta, taxonomy      -> [[id:meta.id], taxonomy]}, by: [0])
         } else if (run_type=="update") {
             mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id, project_id:meta.project_id], fasta]}\
             .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\
-            .join(taxonomy.map{             meta, taxonomy      -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]]).combine(mlst_db)
+            .join(taxonomy.map{             meta, taxonomy      -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])
         }
 
         // Running standard mlst tool (torstens) on assembly file using provided mlst database location for scemes, profiles, and allele definitions

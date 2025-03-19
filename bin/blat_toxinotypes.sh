@@ -49,6 +49,9 @@ while getopts ":h?i:o:d:t:V" option; do
 		t)
 			echo "Option -f triggered, argument = ${OPTARG}"
 			tox_def_file=${OPTARG};;
+		p)
+			echo "Option -p triggered"
+			terra=${OPTARG};;
 		V)
 			show_version="True";;
 		:)
@@ -82,10 +85,17 @@ fi
  if [[ ! -f "${DB}" ]] || [[ -z "${DB}" ]]; then
  	echo "Database empty or non-existent, exiting"
  	exit 1
- fi
+ 
+ 
+# set the correct path for blat - needed for terra
+if [[ $terra = "terra" ]]; then
+	blat_path=/opt/conda/envs/phoenix/bin/
+else
+	blat_path=""
+fi
 
 db_name=$(basename ${DB} .fa)
-blat -q=prot -t=dnax ${input} ${DB} -minIdentity=100 -noHead ${sample_name}_${db_name}.psl
+${blat_path}blat -q=prot -t=dnax ${input} ${DB} -minIdentity=100 -noHead ${sample_name}_${db_name}.psl
 
 
 header="ID\tToxinotype\tToxin\tsub-type\tContig\tStart\tStop"

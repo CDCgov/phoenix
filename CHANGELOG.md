@@ -292,6 +292,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fix for `--coverage` being converted to a string when run on Seqera Cloud. Thanks to @DOH-JDJ0303 for the [PR](https://github.com/CDCgov/phoenix/pull/173).  
 - blaOXA-23-like genes were highlighted incorrectly in the griphin summary this has been corrected to the following list: `[ "23", "27", "49", "73", "103", "105", "133", "146", "165", "166", "167", "168", "169", "170", "171", "225", "239", "366", "398", "422", "423", "435", "440", "481", "482", "483", "565", "657", "806", "807", "808", "809", "810", "811", "812", "813", "814", "815", "816", "817", "818", "911", "966", "967", "968", "969", "1095", "1216", "1223", "1241"]`  
 - KPCs in [Beta-Lactamase DataBase (BLDB)](http://bldb.eu/) that have their function labelled as ESBL/IR/IR ESBL were removed from being highlighted as part of the `big 5` genes as are not thought to have carbapenemase acvitity.  
+- The column `Kraken_ID_Raw_Reads_%` in the GRiPHin summary files (xlsx and tsv) was changed to `Kraken_ID_Trimmed_Reads_%` to accurately reflect what that column has been reporting... whoopsie.  
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  

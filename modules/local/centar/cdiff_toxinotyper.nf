@@ -19,14 +19,15 @@ process CDIFF_TOXINOTYPER {
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    //set up for terra
+    // terra=true sets paths for blat for terra container paths
+    if (params.terra==false) { terra = ""} 
+    else if (params.terra==true) { terra = "-p terra" }
+    else { error "Please set params.terra to either \"true\" or \"false\"" }
     def container_version = "base_v2.1.0"
     def container = task.container.toString() - "staphb/gamma@"
     """
-    ${ica}blat_toxinotypes.sh \\
-        -i ${assembly} \\
-        -d ${tox_database} \\
-        -t ${tox_definitions} \\
-        -o ${prefix}
+    ${ica}blat_toxinotypes.sh -i ${assembly} -d ${tox_database} -t ${tox_definitions} -o ${prefix} $terra
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

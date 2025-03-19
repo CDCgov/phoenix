@@ -146,9 +146,9 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3V" 
     4)
 		echo "Option -1 triggered, argument = ${OPTARG}"
 		amr_file=${OPTARG};;
-		2)
-			echo "Option -2 triggered"
-			terra=${OPTARG};;
+	2)
+		echo "Option -2 triggered"
+		terra=${OPTARG};;
     5)
 		echo "Option -5 triggered, argument = ${OPTARG}"
 		coverage=${OPTARG};;
