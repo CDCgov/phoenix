@@ -29,7 +29,7 @@ version=1.0
 
 # Parse command line options
 options_found=0
-while getopts ":h?i:o:d:t:V" option; do
+while getopts ":h?i:o:d:t:V:p" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -85,7 +85,7 @@ fi
  if [[ ! -f "${DB}" ]] || [[ -z "${DB}" ]]; then
  	echo "Database empty or non-existent, exiting"
  	exit 1
- 
+fi
  
 # set the correct path for blat - needed for terra
 if [[ $terra = "terra" ]]; then
