@@ -52,6 +52,13 @@ CRED = '\033[91m'+'\nWarning: '
 CYELLOW = '\033[93m'
 CEND = '\033[0m'
 
+def print_df(df_toprint, label, all):
+    print(label+"  ------------------------------------------------------")
+    print("Columns:", df_toprint.columns)
+    if all == True:
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000, 'display.colheader_justify', 'center', 'display.precision', 2, 'display.max_colwidth', 100):  # more options can be specified also
+            print(df_toprint)
+
 def Get_Parent_Folder(directory):
     '''getting project and parent_folder info from the paths'''
     #Project - parent folder (first folder that is in the outdir)
@@ -1132,6 +1139,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     # check that for the column in question there is also a value found in the GAMMA column
                     if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
                         # Check if there is a value in the corresponding column in the second DataFrame
+                        #srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
                         srst2_ar_df.loc[idx, srst2_ar_df.columns[srst2_ar_df.columns.str.contains(gene)]] = ""
                         print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
@@ -1163,13 +1171,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
                     #get a dataframe of the gene in question
-                    print(gamma_neg_srst2.columns.str.contains(val, regex=True))
-                    print(val)
-                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val, regex=True)])
-                    #if "(" not in val or ")" not in val:
-                    #        val = f"({val})"  # Add capture group if missing
-                    #        df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(val)])
-                    #df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(f"({val})")])
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(val)])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
                     df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
                     # Convert extracted values to integer type and keep NA values
@@ -1197,7 +1199,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     # Now that we know what alleles we are keeping based on the top hits (these are the row names), we will get the inverse row names so we know what to drop
                     index_diff = df.index.difference(df_cleaned.index)
                     # For the sample in question remove the data from cell if the particular allele(s) we want to drop
-                    srst2_ar_df.loc[index, index_diff.tolist()] = ""
+                    srst2_ar_df.at[index, index_diff.tolist()] = ""
                 multiple_occurrences.append(val)
         srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
     return srst2_ar_df
@@ -1233,12 +1235,14 @@ def order_ar_gene_columns(ar_combined_df, is_combine):
     ar_combined_ordered_df = ar_combined_ordered_df.reindex(all_column_names, axis=1)
     return ar_combined_ordered_df
 
-def add_srst2(ar_df, srst2_ar_df):
+def add_srst2(ar_df, srst2_ar_df, is_combine):
+    if srst2_ar_df.empty:
+        return ar_df
     ar_combined_df = pd.DataFrame() #create new dataframe to fill
     common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
     # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
     for col in common_cols:
-        if col != "WGS_ID":
+        if col != "WGS_ID" and col != 'UNI':
             ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
             ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
             ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
@@ -1255,7 +1259,7 @@ def add_srst2(ar_df, srst2_ar_df):
     # Add cols that are unique to gamma ar_df
     ar_combined_df = ar_combined_df.join(ar_df)
     #fixing column orders
-    ar_combined_ordered_df = order_ar_gene_columns(ar_combined_df, False)
+    ar_combined_ordered_df = order_ar_gene_columns(ar_combined_df, is_combine)
     return ar_combined_ordered_df
 
 def big5_check(final_ar_df, is_combine):
@@ -1267,24 +1271,19 @@ def big5_check(final_ar_df, is_combine):
         final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
     all_genes = final_ar_df.columns.tolist()
     big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
-    blaOXA_48_like = ["48", "54", "162", "163", "181", "199", "204", "232", "244", "245", "247", "252", "370", "405", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", \
-    "566", "567", "731", "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1012", "1038", "1039", "1055", "1119", "1146", "1167", "1181", "1200", "1201", "1205", "1207", "1211", "1212", \
-    "1213", "1226", "1240", "1242", "1304", "1305", "1306", "1307", "1308", "1309"]
+    blaOXA_48_like = [ "48", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", "731", \
+    "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1038", "1039", "1055", "1119", "1146", "1167","1181","1200","1201","1205","1207","1211","1212","1213" ]
     # Acquired OXA families 23, 24/40, 58, 143, 235
-    blaOXA_23_like = [ "23", "27", "49", "73", "103", "105", "133", "146", "165", "166", "167", "168", "169", "170", "171", "225", "239", "366", "398", "422", "423", "435", "440", "481", "482", "483", "565", "657", "806", \
-    "807", "808", "809", "810", "811", "812", "813", "814", "815", "816", "817", "818", "911", "966", "967", "968", "969", "1095", "1216", "1223", "1241"]
-    blaOXA_24_40_like = ["24","25", "26", "40", "72", "139", "160", "207", "437", "653", "897", "1040", "1081", "1225", "1303", "1322"]
+    blaOXA_23_like = [ "23", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", \
+    "731", "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1038", "1039", "1055", "1119", "1146", "1167","1181","1200","1201","1205","1207","1211","1212","1213" ]
+    blaOXA_24_40_like = [ "24","40","25","26","72","139","160","207","437","653", "897","1040","1081" ]
     blaOXA_58_like = [ "58", "96","97","164","397","420","512","1178" ]
     blaOXA_143_like = [ "143","182","231","253","255","499","649","825","945","1139","1182" ]
     blaOXA_235_like = [ "134","235","236","237","276","278","282","283","284","285","335","360","361","362","363","496","537","646","647","648","915","991","1005","1110","1111","1112","1116" ]
     # combine lists of all genes we want to highlight
     blaOXAs = [f"{num}" for num in blaOXA_48_like + blaOXA_23_like + blaOXA_24_40_like + blaOXA_58_like + blaOXA_143_like + blaOXA_235_like]
     # remove list of genes that look like big 5 but don't have activity
-    big5_drop = ["blaKPC-12", "blaKPC-14", "blaKPC-25", "blaKPC-28", "blaKPC-31", "blaKPC-32", "blaKPC-33", "blaKPC-35", "blaKPC-39", "blaKPC-46", "blaKPC-47", "blaKPC-48", "blaKPC-49", "blaKPC-50", "blaKPC-51", "blaKPC-52", \
-    "blaKPC-53", "blaKPC-57", "blaKPC-58", "blaKPC-61", "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-68", "blaKPC-69", "blaKPC-70", "blaKPC-71", "blaKPC-72", "blaKPC-73", "blaKPC-74", "blaKPC-76", \
-    "blaKPC-79", "blaKPC-82", "blaKPC-86", "blaKPC-88", "blaKPC-90", "blaKPC-92", "blaKPC-93", "blaKPC-94", "blaKPC-95", "blaKPC-110", "blaKPC-111", "blaKPC-112", "blaKPC-115", "blaKPC-123", "blaKPC-132", "blaKPC-134", \
-    "blaKPC-135", "blaKPC-137", "blaKPC-138", "blaKPC-145", "blaKPC-150", "blaKPC-151", "blaKPC-152", "blaKPC-153", "blaKPC-154", "blaKPC-155", "blaKPC-159", "blaKPC-169", "blaKPC-170", "blaKPC-172", "blaKPC-173", "blaKPC-175", \
-    "blaKPC-178", "blaKPC-179", "blaKPC-185", "blaKPC-186", "blaKPC-187", "blaKPC-189", "blaKPC-190", "blaKPC-191", "blaKPC-192", "blaKPC-194", "blaKPC-197", "blaKPC-201", "blaKPC-203", "blaKPC-205", "blaKPC-206", "blaKPC-207", "blaKPC-208", "blaKPC-209", "blaKPC-217", "blaKPC-218", "blaKPC-226", "blaKPC-228", "blaKPC-230"] 
+    big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "163", "405"]
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
     for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
         if gene == 'No_AR_Genes_Found':
@@ -1306,6 +1305,14 @@ def big5_check(final_ar_df, is_combine):
     return columns_to_highlight
 
 def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine):
+    #print("PHX?", phoenix)
+    #print("Is_combine", is_combine)
+    #print_df(df,"PARAM - DF", False)
+    #print_df(ar_df,"PARAM - AR DF", False)
+    #print(ar_df['AR_Database'])
+    #print_df(pf_df,"PARAM - PF DF", False)
+    #print_df(hv_df,"PARAM - HV DF", False)
+    #print_df(srst2_ar_df,"PARAM - SRST2 AR DF", True)
     hv_cols = list(hv_df)
     pf_cols = list(pf_df)
     ar_cols = list(ar_df)
@@ -1325,7 +1332,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine):
         final_ar_df = ar_df
     else:
         # combining srst2 and gamma ar dataframes
-        final_ar_df = add_srst2(ar_df, srst2_ar_df)
+        final_ar_df = add_srst2(ar_df, srst2_ar_df, is_combine)
     ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
     # now we will check for the "big 5" genes for highlighting later.
     columns_to_highlight = big5_check(final_ar_df, is_combine)
@@ -1444,15 +1451,15 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         qc_minus_centar = qc_max_col - sum(centar_df_lens)
-        ###!print("AAA:", qc_minus_centar, qc_max_col, sum(centar_df_lens), centar_df_lens[0], centar_df_lens[1], centar_df_lens[2], centar_df_lens[3], "\n",
-        ###!      "[  QC 0,",qc_minus_centar-1,"]\n", 
-        ###!      "[CDTX", qc_minus_centar, ",", (qc_minus_centar + centar_df_lens[0] - 1), ']\n',
-        ###!      "[CDOT", qc_minus_centar + centar_df_lens[0], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), ']\n',
-        ###!      "[CDAR", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), ']\n',
-        ###!      "[CDML", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2], qc_minus_centar + sum(centar_df_lens) - 1,"]\n",
-        ###!      "[  AR", qc_max_col, ",", (qc_max_col + ar_gene_count)-1, ']\n',
-        ###!      "[  HV", (qc_max_col + ar_gene_count), ",", (qc_max_col + ar_gene_count + hv_gene_count)-1, ']\n',
-        ###!      "[  PV", (qc_max_col + ar_gene_count + hv_gene_count), ",", (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, ']\n')
+        print("AAA:", qc_minus_centar, qc_max_col, sum(centar_df_lens), centar_df_lens[0], centar_df_lens[1], centar_df_lens[2], centar_df_lens[3], "\n",
+              "[  QC 0,",qc_minus_centar-1,"]\n", 
+              "[CDTX", qc_minus_centar, ",", (qc_minus_centar + centar_df_lens[0] - 1), ']\n',
+              "[CDOT", qc_minus_centar + centar_df_lens[0], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), ']\n',
+              "[CDAR", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), ']\n',
+              "[CDML", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2], qc_minus_centar + sum(centar_df_lens) - 1,"]\n",
+              "[  AR", qc_max_col, ",", (qc_max_col + ar_gene_count)-1, ']\n',
+              "[  HV", (qc_max_col + ar_gene_count), ",", (qc_max_col + ar_gene_count + hv_gene_count)-1, ']\n',
+              "[  PV", (qc_max_col + ar_gene_count + hv_gene_count), ",", (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, ']\n')
         worksheet.merge_range(0, (qc_minus_centar), 0, (qc_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
@@ -1589,7 +1596,7 @@ def convert_excel_to_tsv(output):
     #drop the footer information
     data_xlsx = data_xlsx.iloc[:-10] 
     #Write dataframe into csv
-    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
+    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
 
 def main():
     args = parseArgs()
