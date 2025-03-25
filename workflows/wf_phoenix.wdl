@@ -61,7 +61,7 @@ workflow phoenix_workflow {
     String  mlst_scheme_2                     = phoenix.mlst_scheme_2
     String  mlst_2                            = phoenix.mlst_2
     String  mlst2_ncbi                        = phoenix.mlst2_ncbi
-    String  beta_lactam_resistance_genes      = phoenix.beta_lactam_resistance_genes
+    String  gamma_beta_lactam_genes           = phoenix.gamma_beta_lactam_genes
     String  other_ar_genes                    = phoenix.other_ar_genes
     String  amrfinder_point_mutations         = phoenix.amrfinder_point_mutations
     String  amrfinder_amr_classes             = phoenix.amrfinder_amr_classes
@@ -70,6 +70,7 @@ workflow phoenix_workflow {
     String  amrfinder_plus_genes              = phoenix.amrfinder_plus_genes
     String  amrfinder_stress_genes            = phoenix.amrfinder_stress_genes
     String  amrfinder_virulence_genes         = phoenix.amrfinder_virulence_genes
+    String  amrfinder_beta_lactam_genes       = phoenix.amrfinder_beta_lactam_genes
     String  hypervirulence_genes              = phoenix.hypervirulence_genes
     String  plasmid_incompatibility_replicons = phoenix.plasmid_incompatibility_replicons
     String  qc_issues                         = phoenix.qc_issues
@@ -84,15 +85,15 @@ workflow phoenix_workflow {
     File? raw_read2_html          = phoenix.raw_read2_html           # fastqc.html
     File? raw_read2_zip           = phoenix.raw_read2_zip            # fastqc.zip
     #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File? kraken_trimd_output     = phoenix.kraken_trimd_output      # kraken2_trimd.classifiedreads.txt 
     File? kraken_trimd_summary    = phoenix.kraken_trimd_summary     # kraken2_trimd.summary.txt
     File? kraken_trimd_top_taxa   = phoenix.kraken_trimd_top_taxa    # trimd_top_taxa.txt
     File? trimd_html              = phoenix.trimd_html               # trimd.html
     File? trimd_krona             = phoenix.trimd_krona              # trimd.krona
-    File? classified_1            = phoenix.classified_1             # classified_1.fastq.gz
-    File? unclassified_1          = phoenix.unclassified_1           # unclassified_1.fastq.gz
-    File? classified_2            = phoenix.classified_2             # classified_2.fastq.gz
-    File? unclassified_2          = phoenix.unclassified_2           # unclassified_2.fastq.gz
+    ## commented otu to save space, not really needed
+    #File? classified_1            = phoenix.classified_1             # classified_1.fastq.gz
+    #File? unclassified_1          = phoenix.unclassified_1           # unclassified_1.fastq.gz
+    #File? classified_2            = phoenix.classified_2             # classified_2.fastq.gz
+    #File? unclassified_2          = phoenix.unclassified_2           # unclassified_2.fastq.gz
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     Array[File] file_integrity    = phoenix.file_integrity           # _summary.txt
     File? paired_fastp_html       = phoenix.paired_fastp_html        # fastp.html
@@ -114,11 +115,15 @@ workflow phoenix_workflow {
     File? assembly                = phoenix.assembly                 # scaffolds.fa.gz
     File? spades_log              = phoenix.spades_log               # spades.log
     #phoenix wtasmbld kraken/krona
-    File? kraken_wtasmbld_output   = phoenix.kraken_wtasmbld_output   # kraken2_wtasmbld.classifiedreads.txt 
     File? kraken_wtasmbld_summary  = phoenix.kraken_wtasmbld_summary  # kraken2_wtasmbld.summary.txt
     File? kraken_wtasmbld_top_taxa = phoenix.kraken_wtasmbld_top_taxa # wtasmbld_top_taxa.txt
     File? wtasmbld_html            = phoenix.wtasmbld_html            # wtasmbld.html
     File? wtasmbld_krona           = phoenix.wtasmbld_krona           # wtasmbld.krona
+    File? kraken_asmbld_output     = phoenix.kraken_asmbld_output     # kraken2_asmbld.classifiedreads.txt 
+    File? kraken_asmbld_summary    = phoenix.kraken_asmbld_summary    # kraken2_asmbld.summary.txt
+    File? kraken_asmbld_top_taxa   = phoenix.kraken_asmbld_top_taxa   # wtasmbld_top_taxa.txt
+    File? asmbld_html              = phoenix.asmbld_html              # wtasmbld.html
+    File? asmbld_krona             = phoenix.asmbld_krona             # wtasmbld.krona
     #phoenix ani
     File? fast_ani                 = phoenix.fast_ani                 # ani.txt
     File? reformated_fast_ani      = phoenix.reformated_fast_ani      # fastANI.txt

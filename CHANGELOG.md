@@ -283,7 +283,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - `FINAL_TAXA_ID` is the final taxa call for the isolate.  
    - `N50` is the N50 from `Quast`.  
    - `WARNINGS_COUNT` was changed to `WARNINGS` and it is print out of the warnings, rather than just a count.
-   - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.
+   - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.  
+   - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` are no longer output from PHX. `*.kraken2_asmbld.classifiedreads.txt` was added as an output as taxids are in that file, which is different from the `*.kraken2_wtasmbld.classifiedreads.txt`. These files aren't really needed expect for edge cases such as questions about conflicting results or investigating suspected contamination.  
 
 **Fixed Bugs:**
 - Changes were made to allow `-resume` to work correctly.  
