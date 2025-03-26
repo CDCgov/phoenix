@@ -42,7 +42,7 @@ def get_isolate_dirs(directory, griphin_summary):
     skip_list_dirs = ["pipeline_info", "multiqc"]
     # check that directories have the files needed.
     df = pd.read_csv(griphin_summary, header=0, sep='\t')
-    df_fails = df[df['Minimum_QC_Check'].str.contains('FAIL')]
+    df_fails = df[df['Minimum_QC_Check'].fillna('').str.contains('FAIL')]
     failed_id_list = df_fails["WGS_ID"].tolist()
     skip_list = skip_list_dirs + failed_id_list
     # remove bad directories from list

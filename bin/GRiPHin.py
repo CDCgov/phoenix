@@ -1521,7 +1521,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # More footers - Disclaimer etc.
     # unbold
     no_bold = workbook.add_format({'bold': False})
-    worksheet.write_url('A' + str(max_row + 7), 'https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview/_edit#mlst-allele-symbols', string="Click for a full explaination of symbols used in MLST allele markers. The source of the MLST determination can be 'assembly' (MLST), 'reads' (SRST2) or both 'assembly/reads'.")
+    worksheet.write_url('A' + str(max_row + 7), 'https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#mlst-allele-symbols', string="Click for a full explaination of symbols used in MLST allele markers. The source of the MLST determination can be 'assembly' (MLST), 'reads' (SRST2) or both 'assembly/reads'.")
     worksheet.write('A' + str(max_row + 8),"^Using Antibiotic Resistance Gene database " + ar_db + " (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
     worksheet.write('A' + str(max_row + 9),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database ( " + hv_db + " ); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
     worksheet.write('A' + str(max_row + 10),"^^^Using the plasmid incompatibility replicons plasmidFinder database ( " + pf_db + " ) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
