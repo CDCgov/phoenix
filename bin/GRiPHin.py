@@ -1199,7 +1199,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     # Now that we know what alleles we are keeping based on the top hits (these are the row names), we will get the inverse row names so we know what to drop
                     index_diff = df.index.difference(df_cleaned.index)
                     # For the sample in question remove the data from cell if the particular allele(s) we want to drop
-                    srst2_ar_df.at[index, index_diff.tolist()] = ""
+                    srst2_ar_df.loc[index, index_diff.tolist()] = ""
                 multiple_occurrences.append(val)
         srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
     return srst2_ar_df
@@ -1271,17 +1271,19 @@ def big5_check(final_ar_df, is_combine):
         final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
     all_genes = final_ar_df.columns.tolist()
     big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
-    blaOXA_48_like = [ "48", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", "731", \
-    "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1038", "1039", "1055", "1119", "1146", "1167","1181","1200","1201","1205","1207","1211","1212","1213" ]
+    blaOXA_48_like = ["48", "54", "162", "163", "181", "199", "204", "232", "244", "245", "247", "252", "370", "405", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", \
+                     "731", "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1012", "1038", "1039", "1055", "1119", "1146", "1167", "1181", "1200", "1201", "1205", "1207", "1211", "1212", "1213", \
+                     "1226", "1240", "1242", "1304", "1305", "1306", "1307", "1308", "1309"]
     # Acquired OXA families 23, 24/40, 58, 143, 235
-    blaOXA_23_like = [ "23", "54", "162", "181", "199", "204", "232", "244", "245", "247", "252", "370", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", \
-    "731", "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1038", "1039", "1055", "1119", "1146", "1167","1181","1200","1201","1205","1207","1211","1212","1213" ]
-    blaOXA_24_40_like = [ "24","40","25","26","72","139","160","207","437","653", "897","1040","1081" ]
+    blaOXA_23_like = ["23", "27", "49", "73", "103", "105", "133", "146", "165", "166", "167", "168", "169", "170", "171", "225", "239", "366", "398", "422", "423", "435", "440", "481", "482", "483", "565", "657", "806", "807", "808", \
+                     "809", "810", "811", "812", "813", "814", "815", "816", "817", "818", "911", "966", "967", "968", "969", "1095", "1216", "1223", "1241"]
+    blaOXA_24_40_like = ["24", "25", "26", "40", "72", "139", "160", "207", "437", "653", "897", "1040", "1081", "1225", "1303", "1322"]
     blaOXA_58_like = [ "58", "96","97","164","397","420","512","1178" ]
     blaOXA_143_like = [ "143","182","231","253","255","499","649","825","945","1139","1182" ]
     blaOXA_235_like = [ "134","235","236","237","276","278","282","283","284","285","335","360","361","362","363","496","537","646","647","648","915","991","1005","1110","1111","1112","1116" ]
+    blaOXA_acquired = [ "198", "233", "372", "427", "641", "1016", "1041", "1056", "1057", "118", "1239" ]
     # combine lists of all genes we want to highlight
-    blaOXAs = [f"{num}" for num in blaOXA_48_like + blaOXA_23_like + blaOXA_24_40_like + blaOXA_58_like + blaOXA_143_like + blaOXA_235_like]
+    blaOXAs = [f"{num}" for num in blaOXA_48_like + blaOXA_23_like + blaOXA_24_40_like + blaOXA_58_like + blaOXA_143_like + blaOXA_235_like + blaOXA_acquired]
     # remove list of genes that look like big 5 but don't have activity
     big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "163", "405"]
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
@@ -1514,18 +1516,19 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     ##    column_count = column_count + 1
     # Creating footers
     worksheet.write('A' + str(max_row + 4), 'Cells in YELLOW denote isolates outside of ' + str(set_coverage) + '-100X coverage', yellow_format)
-    worksheet.write('A' + str(max_row + 5), 'Cells in ORANGE denote “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, 48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
+    worksheet.write('A' + str(max_row + 5), 'Cells in ORANGE denote “Big 5” carbapenemase gene (i.e., blaKPC, blaNDM, blaOXA48-like, blaVIM, and blaIMP) or an acquired blaOXA gene, please confirm what AR Lab Network HAI/AR WGS priority these meet.', orange_format_nb)
     worksheet.write('A' + str(max_row + 6), 'Cells in RED denote isolates that failed one or more auto failure triggers (cov < 30, assembly ratio stdev > 2.58, assembly length < 1Mbps, >500 scaffolds)', red_format)
     # More footers - Disclaimer etc.
     # unbold
     no_bold = workbook.add_format({'bold': False})
-    worksheet.write('A' + str(max_row + 7),"^Using Antibiotic Resistance Gene database " + ar_db + " (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
-    worksheet.write('A' + str(max_row + 8),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database ( " + hv_db + " ); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
-    worksheet.write('A' + str(max_row + 9),"^^^Using the plasmid incompatibility replicons plasmidFinder database ( " + pf_db + " ) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
-    worksheet.write('A' + str(max_row + 10),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.", bold)
+    worksheet.write_url('A' + str(max_row + 7), 'https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview/_edit#mlst-allele-symbols', string="Click for a full explaination of symbols used in MLST allele markers. The source of the MLST determination can be 'assembly' (MLST), 'reads' (SRST2) or both 'assembly/reads'.")
+    worksheet.write('A' + str(max_row + 8),"^Using Antibiotic Resistance Gene database " + ar_db + " (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
+    worksheet.write('A' + str(max_row + 9),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database ( " + hv_db + " ); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
+    worksheet.write('A' + str(max_row + 10),"^^^Using the plasmid incompatibility replicons plasmidFinder database ( " + pf_db + " ) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
+    worksheet.write('A' + str(max_row + 11),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.", bold)
     #adding review and date info
-    worksheet.write('A' + str(max_row + 12), "Reviewed by:", no_bold)
-    worksheet.write('D' + str(max_row + 12), "Date:")
+    worksheet.write('A' + str(max_row + 13), "Reviewed by:", no_bold)
+    worksheet.write('D' + str(max_row + 13), "Date:")
     # add autofilter
     worksheet.autofilter(1, 0, max_row, max_col - 1)
     # Close the Pandas Excel writer and output the Excel file.
@@ -1596,7 +1599,7 @@ def convert_excel_to_tsv(output):
     #drop the footer information
     data_xlsx = data_xlsx.iloc[:-10] 
     #Write dataframe into csv
-    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
+    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
 
 def main():
     args = parseArgs()
