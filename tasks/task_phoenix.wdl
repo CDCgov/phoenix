@@ -162,7 +162,7 @@ task phoenix {
   output {
     File?   work_files                        = "work.tar.gz"
     String  phoenix_version                   = read_string("VERSION")
-    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.0.2"
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.2.0"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warnings                          = read_string("WARNINGS")
@@ -246,7 +246,7 @@ task phoenix {
     File? wtasmbld_html            = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
     File? wtasmbld_krona           = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
     ## phoenix asmbld kraken/krona -- only made when -entry CDC_PHOENIX or CDC_SCAFFOLDS is run
-    File? kraken_asmbld_output   = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.classifiedreads.txt"
+    File? kraken_asmbld_output     = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.classifiedreads.txt"
     File? kraken_asmbld_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.summary.txt"
     File? kraken_asmbld_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.top_kraken_hit.txt"
     File? asmbld_html              = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/krona/~{samplename}_asmbld.html"
@@ -287,7 +287,7 @@ task phoenix {
     File? centar_ar_NT_gamma      = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_NT_20240910.gamma"
     File? centar_tox_gamma        = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_toxins/~{samplename}_Cdiff_toxins_srst2_20240909.gamma"
     File? centar_clade            = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
-    File? centar_plasmid          = "~{samplename}/phx_output/~{samplename}/CENTAR/plasmids/~{samplename}_plasmids.tsv"
+    #File? centar_plasmid          = "~{samplename}/phx_output/~{samplename}/CENTAR/plasmids/~{samplename}_plasmids.tsv"
     # NCBI files - optional
     File? ncbi_biosample          = "~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx"
     File? ncbi_sra_metadata       = "~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx"
