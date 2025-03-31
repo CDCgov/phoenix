@@ -2,7 +2,7 @@ process RENAME_SRA_FASTA {
     tag "${meta.id}"
     label 'process_low'
     // base_v2.2.0 - MUST manually change below (line 16)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(reads)

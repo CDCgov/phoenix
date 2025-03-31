@@ -1,7 +1,7 @@
 process CDIFF_TOXINOTYPER {
     tag "${meta.id}"
     label 'process_single'
-    container 'staphb/gamma@sha256:60d8ac58e016349a856fb7b443dd422ba69bae3f40e0dad83460d25ecf71101e'
+    container 'staphb/gamma@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(assembly), val(fairy_outcome)
@@ -24,7 +24,7 @@ process CDIFF_TOXINOTYPER {
     if (params.terra==false) { terra = ""} 
     else if (params.terra==true) { terra = "-p terra" }
     else { error "Please set params.terra to either \"true\" or \"false\"" }
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "staphb/gamma@"
     """
     ${ica}blat_toxinotypes.sh -i ${assembly} -d ${tox_database} -t ${tox_definitions} -o ${prefix} $terra

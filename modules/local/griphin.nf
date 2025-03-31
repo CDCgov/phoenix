@@ -1,7 +1,7 @@
 process GRIPHIN {
     label 'process_low'
     // base_v2.2.0 - MUST manually change below (line 36)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2eba7542e5988f1bc8817313c3db21ecf8adb7a2f41dfeec3355f5f0852474cb'
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     path(summary_line_files)

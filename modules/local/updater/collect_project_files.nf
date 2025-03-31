@@ -2,7 +2,7 @@ process COLLECT_PROJECT_FILES {
     tag "${meta.id}"
     stageInMode 'copy' // default is symlink. if its not set to copy changes in this script then changes original files.
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(griphin_excel), path(griphin_tsv), path(phoenix_tsv), path(pipeline_info)
@@ -17,7 +17,8 @@ process COLLECT_PROJECT_FILES {
 
     script: 
     // define variables
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.2.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def parentPath = meta.project_id.tokenize('/').last()
     def project_dir = full_project_dir ? "${parentPath}" : "${meta.project_id}"
     """
@@ -31,7 +32,8 @@ process COLLECT_PROJECT_FILES {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-       phoenix_base_container: ${container}
+        phoenix_base_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

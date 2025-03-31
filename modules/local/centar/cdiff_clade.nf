@@ -1,8 +1,8 @@
 process CDIFF_CLADE {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 23)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.1.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(mlst_combined_file), val(taxa_id), path(mlst_database)
@@ -19,7 +19,7 @@ process CDIFF_CLADE {
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     //def outdir_path = meta.project_id
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """

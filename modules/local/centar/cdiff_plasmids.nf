@@ -1,8 +1,8 @@
 process CDIFF_PLASMIDS {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 27)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 24)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(assembly), val(fairy_outcome)
@@ -21,7 +21,7 @@ process CDIFF_PLASMIDS {
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # Call the real internal scripts to infer the ribotpes

@@ -2,7 +2,7 @@ process UPDATE_GRIPHIN {
     tag "${project_id}"
     label 'process_low'
     stageInMode 'copy' // you need this or openpyxl complains that excel files aren't excel files. 
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     path(griphins_excel)
@@ -23,7 +23,8 @@ process UPDATE_GRIPHIN {
     else if (params.ica==true) { ica = "python ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.2.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     if (griphins_excel.size() == 2) {
         // Case where only two files are passed
         griphin_input = "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}"
@@ -42,6 +43,7 @@ process UPDATE_GRIPHIN {
     "${task.process}":
        python: \$(python --version | sed 's/Python //g')
        combine_GRiPHins.py: \$(${ica}combine_GRiPHins.py --version)
+       phoenix_base_container_tag: ${container_version}
        phoenix_base_container: ${container}
     END_VERSIONS
     """

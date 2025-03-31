@@ -2,7 +2,7 @@ process CREATE_AND_UPDATE_README {
     tag "${meta.id}"
     label 'process_single'
     // base_v2.1.0 - MUST manually change below (line 36)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(directory), path(pipeline_info)
@@ -23,7 +23,7 @@ process CREATE_AND_UPDATE_README {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}Update_Readme.py \\
