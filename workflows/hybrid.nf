@@ -46,6 +46,7 @@ include { FASTQC                } from '../modules/local/fastqc'
 include { RAWSTATS              } from '../modules/local/long_read/seqkit'
 include { LRGE                  } from '../modules/local/long_read/estimation'
 
+
 /*
 ========================================================================================
     IMPORT LOCAL SUBWORKFLOWS
@@ -167,13 +168,19 @@ workflow PHOENIX_HYBRID_WF {
         NANOQ.out.fastq
     )
     ch_versions = ch_versions.mix(UNICYCLER.out.versions)
+
 /*
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Genome polishing using short reads
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-    bwa_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
+    CIRCLATOR (
+        UNICYCLER.out.fasta
+    )
+    ch_versions = ch_versions.mix(CIRCLATOR.out.versions)
+    
+    bwa_ch = CIRCLATOR.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
         .join(FASTP_LR.out.reads.map{meta, reads -> [ [id:meta.id, single_end:true], reads ]}, by: [[0][0],[0][1]])
 
     BWA (
@@ -181,7 +188,7 @@ workflow PHOENIX_HYBRID_WF {
     )
     ch_versions = ch_versions.mix(BWA.out.versions)
 
-    polish_ch = UNICYCLER.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
+    polish_ch = CIRCLATOR.out.fasta.map{meta, fasta -> [ meta, fasta ]}\
         .join(BWA.out.sam.map{          meta, sam   -> [ meta, sam ]}, by: [[0][0],[0][1]])
 
     POLYPOLISH (
@@ -189,11 +196,6 @@ workflow PHOENIX_HYBRID_WF {
     )
     ch_versions = ch_versions.mix(POLYPOLISH.out.versions)
    
-    CIRCLATOR (
-        UNICYCLER.out.fasta
-    )
-    ch_versions = ch_versions.mix(CIRCLATOR.out.versions)
-
     BANDAGE (
         UNICYCLER.out.gfa
     )
