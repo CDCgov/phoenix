@@ -160,7 +160,7 @@ workflow phoenix_workflow {
     File? centar_ar_NT_gamma      = phoenix.centar_ar_NT_gamma        # *_centar_ar_db_wt_NT_20240910.gamma
     File? centar_tox_gamma        = phoenix.centar_tox_gamma          # *_Cdiff_toxins_srst2_20240909.gamma
     File? centar_clade            = phoenix.centar_clade              # *_cdifficile_clade.tsv
-    File? centar_plasmid          = phoenix.centar_plasmid            # *_plasmids.tsv
+    #File? centar_plasmid          = phoenix.centar_plasmid            # *_plasmids.tsv
     # NCBI files - optional
     File? ncbi_biosample          = phoenix.ncbi_biosample            # BiosampleAttributes_Microbe.1.0.xlsx"
     File? ncbi_sra_metadata       = phoenix.ncbi_sra_metadata         # Sra_Microbe.1.0.xlsx"

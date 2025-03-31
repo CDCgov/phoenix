@@ -35,6 +35,7 @@ def get_version():
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
     parser.add_argument('-s', '--samplesheet', default=None, required=False, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
+    parser.add_argument('-b', '--bldb', default=None, required=False, dest='bldb', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
     parser.add_argument('-d', '--directory', default=None, required=False, dest='directory', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
@@ -1148,7 +1149,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
     if not srst2_ar_df.empty:
         gamma_neg_srst2 = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
         # check the number of alleles per gene so that we only have those that are singles and will be reported
-        gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: ['_'.join(column.split('_')[0:3]) for column in row.index if row[column]], axis=1))
+        gamma_neg_genes = pd.DataFrame(gamma_neg_srst2.apply(lambda row: ['_'.join(column.split('_')[0:3]) for column in row.index if row[column]] or [""], axis=1))
         gamma_neg_genes.columns = ["neg_genes"] # a column name to make it easier
         # Iterate over each row
         for index, row in gamma_neg_genes.iterrows():
@@ -1262,7 +1263,34 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
     ar_combined_ordered_df = order_ar_gene_columns(ar_combined_df, is_combine)
     return ar_combined_ordered_df
 
-def big5_check(final_ar_df, is_combine):
+def find_big_5(BLDB):
+    df = pd.read_csv(BLDB)
+    # Filter rows where 'Protein_name' contains any of the substrings
+    big5_genes = ["KPC", "IMP", "NDM", "OXA", "VIM"]
+    filtered_df = df[df["Protein name"].str.contains('|'.join(big5_genes), case=False, na=False)]
+    # \xa0 is from hyperlinks as there is not normal spaces # Further filter for 'carbapenemase' or 'IR carbapenemase' in the assumed column (e.g., "Classification")
+    final_df = filtered_df[filtered_df["Functional information"].isin(["carbapenemase", "IR carbapenemase", "carbapenemase\xa0view", "IR carbapenemase\xa0view"])]
+    # Condition to check if "Protein_name" contains "OXA"
+    oxa_condition = final_df["Protein name"].str.contains("OXA", case=False, na=False)
+    # Condition to filter "Subfamily" only for rows where "Protein_name" contains "OXA"
+    subfamily_condition = final_df["Subfamily"].isin(["OXA-48-like", "blaOXA-23-like", "blaOXA-24-like", "blaOXA-58-like", "blaOXA-143-like"])
+    # Keep all rows where "Protein_name" does NOT contain "OXA"
+    non_oxa_rows = final_df[~oxa_condition]
+    # Keep only filtered rows where "Protein_name" contains "OXA" and "Subfamily" is in the list
+    filtered_oxa_rows = final_df[oxa_condition & subfamily_condition]
+    # Combine both DataFrames
+    filtered_final_df = pd.concat([non_oxa_rows, filtered_oxa_rows])
+    # Select the relevant columns and drop complete duplicates
+    unique_proteins = final_df[["Protein name", "Alternative protein names"]].drop_duplicates()
+    # Flatten into a list and remove NaN values
+    protein_list = unique_proteins.values.flatten()
+    protein_list = [protein for protein in protein_list if pd.notna(protein)]  # Remove NaNs
+    # Separate protein_list into two lists
+    oxa_proteins = [protein for protein in protein_list if "OXA" in protein]
+    non_oxa_proteins = [protein for protein in protein_list if "OXA" not in protein]
+    return non_oxa_proteins, oxa_proteins
+
+def big5_check(final_ar_df, is_combine, BLDB):
     """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
     columns_to_highlight = []
     if (is_combine):
@@ -1270,22 +1298,7 @@ def big5_check(final_ar_df, is_combine):
     else:
         final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
     all_genes = final_ar_df.columns.tolist()
-    big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
-    blaOXA_48_like = ["48", "54", "162", "163", "181", "199", "204", "232", "244", "245", "247", "252", "370", "405", "416", "436", "438", "439", "484", "505", "514", "515", "517", "519", "535", "538", "546", "547", "566", "567", \
-                     "731", "788", "793", "833", "894", "918", "920", "922", "923", "924", "929", "933", "934", "1012", "1038", "1039", "1055", "1119", "1146", "1167", "1181", "1200", "1201", "1205", "1207", "1211", "1212", "1213", \
-                     "1226", "1240", "1242", "1304", "1305", "1306", "1307", "1308", "1309"]
-    # Acquired OXA families 23, 24/40, 58, 143, 235
-    blaOXA_23_like = ["23", "27", "49", "73", "103", "105", "133", "146", "165", "166", "167", "168", "169", "170", "171", "225", "239", "366", "398", "422", "423", "435", "440", "481", "482", "483", "565", "657", "806", "807", "808", \
-                     "809", "810", "811", "812", "813", "814", "815", "816", "817", "818", "911", "966", "967", "968", "969", "1095", "1216", "1223", "1241"]
-    blaOXA_24_40_like = ["24", "25", "26", "40", "72", "139", "160", "207", "437", "653", "897", "1040", "1081", "1225", "1303", "1322"]
-    blaOXA_58_like = [ "58", "96","97","164","397","420","512","1178" ]
-    blaOXA_143_like = [ "143","182","231","253","255","499","649","825","945","1139","1182" ]
-    blaOXA_235_like = [ "134","235","236","237","276","278","282","283","284","285","335","360","361","362","363","496","537","646","647","648","915","991","1005","1110","1111","1112","1116" ]
-    blaOXA_acquired = [ "198", "233", "372", "427", "641", "1016", "1041", "1056", "1057", "118", "1239" ]
-    # combine lists of all genes we want to highlight
-    blaOXAs = [f"{num}" for num in blaOXA_48_like + blaOXA_23_like + blaOXA_24_40_like + blaOXA_58_like + blaOXA_143_like + blaOXA_235_like + blaOXA_acquired]
-    # remove list of genes that look like big 5 but don't have activity
-    big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "163", "405"]
+    big5_keep, big5_oxa_keep= find_big_5(BLDB)
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
     for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
         if gene == 'No_AR_Genes_Found':
@@ -1293,28 +1306,16 @@ def big5_check(final_ar_df, is_combine):
         else:
             gene_name = gene.split('_(')[0] # remove drug name for matching genes
             drug = gene.split('_(')[1] # keep drug name to add back later
-            # make sure we have a complete match for 48 and 48-like genes
-            if gene_name.startswith("blaOXA"): #check for complete blaOXA match
-                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_keep_gene in blaOXAs if gene_name == big5_keep_gene ]
+            if "-like" in gene_name:
+                gene_name = gene_name.split('_bla')[0] # remove blaOXA-1-like name for matching genes -- just extra stuff that doesn't allow complete match
+            # make sure we have a complete match for oxa 48/23/24/58/143 genes and oxa 48/23/24/58/143-like genes
+            if "OXA" in gene_name: #check for complete blaOXA match
+                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_oxa in big5_oxa_keep if gene_name == big5_oxa ]
             else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
-                for big5 in big5_keep:
-                    if search(big5, gene_name): #search for big5 gene substring in the gene name
-                        columns_to_highlight.append(gene_name + "_(" + drug)
-    #loop through list of genes to drop and removed if they are in the highlight list
-    for bad_gene in big5_drop:
-        #search for big5 gene substring in the gene name and remove if it is
-        [columns_to_highlight.remove(gene) for gene in columns_to_highlight if bad_gene in gene]
+                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5 in big5_keep if search(big5, gene_name) ]
     return columns_to_highlight
 
-def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine):
-    #print("PHX?", phoenix)
-    #print("Is_combine", is_combine)
-    #print_df(df,"PARAM - DF", False)
-    #print_df(ar_df,"PARAM - AR DF", False)
-    #print(ar_df['AR_Database'])
-    #print_df(pf_df,"PARAM - PF DF", False)
-    #print_df(hv_df,"PARAM - HV DF", False)
-    #print_df(srst2_ar_df,"PARAM - SRST2 AR DF", True)
+def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine, BLDB):
     hv_cols = list(hv_df)
     pf_cols = list(pf_df)
     ar_cols = list(ar_df)
@@ -1337,7 +1338,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine):
         final_ar_df = add_srst2(ar_df, srst2_ar_df, is_combine)
     ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
     # now we will check for the "big 5" genes for highlighting later.
-    columns_to_highlight = big5_check(final_ar_df, is_combine)
+    columns_to_highlight = big5_check(final_ar_df, is_combine, BLDB)
     # combining all dataframes
     if (is_combine):
         final_df = pd.merge(df, final_ar_df, how="left", on=["UNI","UNI"])
@@ -1677,7 +1678,7 @@ def main():
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix, False)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix, False, args.bldb)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)

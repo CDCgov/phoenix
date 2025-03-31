@@ -1,7 +1,7 @@
 process GRIPHIN {
     label 'process_low'
     // base_v2.2.0 - MUST manually change below (line 36)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:caa2a5660c73d0376d7beb14069436a0e2403bda68904ff140cb789bf4f8753d'
+    container 'quay.io/jvhagey/phoenix@sha256:2eba7542e5988f1bc8817313c3db21ecf8adb7a2f41dfeec3355f5f0852474cb'
 
     input:
     path(summary_line_files)
@@ -14,6 +14,7 @@ process GRIPHIN {
     val(update) 
     val(shigapass_detected)
     val(centar_detected)
+    path(bldb)
 
     output:
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), emit: griphin_report
@@ -41,7 +42,7 @@ process GRIPHIN {
     # Save the full_path to a file (this file will be captured in the output block)
     echo \$full_path > full_path_file.txt
 
-    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} \
+    ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --bldb ${bldb}\
         --coverage ${coverage} ${phoenix} ${shigapass} ${centar} ${scaffolds} ${samplesheet_command}
 
     cat <<-END_VERSIONS > versions.yml

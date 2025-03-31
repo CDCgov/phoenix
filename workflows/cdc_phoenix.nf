@@ -585,7 +585,7 @@ workflow PHOENIX_EXQC {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false, shigapass_var, centar_var
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, false, false, shigapass_var, centar_var, params.bldb
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
