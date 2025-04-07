@@ -126,48 +126,55 @@ function clean_mut {
 
 
 if [[ -f "${rt_file}" ]]; then
-    ML_RT="unset"
     rt="unset"
     prob="unset"
     type="unset"
+    source="unset"
     note=""
+    clusterx="unset"
+    clustery="unset"
+
     ## Parse the RT file once ready and figure out how to make it expandable
-    line=$(tail -n1 ${rt_file})
-    rt=$(echo "${line}" | cut -d$'\t' -f2)
-    IFS=',' read -a rts <<< "${rt}"
-    rt_count=${#rts[@]}
-    if [ ${rt_count} -gt 0 ]; then
-        new_rt=""
-        for rib in "${rts[@]}"; do
-            rt_length=${#rib}
-            if [ $rt_length -eq 2 ] && [[ "${rib}" != "NA" ]]; then
-                new_rt="0${rib}"
-            elif [ $rt_length -eq 1 ]; then
-                new_rt="00${rib}"
-            else
-                new_rt="${rib}"
-            fi
-        done
-        if [[ ${new_rt:0:1} == "," ]] ; then
-            new_rt="${new_rt:1}"
-        fi
-    else
-        new_rt="unset"
-    fi
-    raw_prob=$(echo "${line}" | cut -d$'\t' -f3)
+     line=$(tail -n1 ${rt_file})
+     ML_RT=""
+    # rt=$(echo "${line}" | cut -d$'\t' -f2)
+    # IFS=',' read -a rts <<< "${rt}"
+    # rt_count=${#rts[@]}
+    # if [ ${rt_count} -gt 0 ]; then
+    #     new_rt=""
+    #     for rib in "${rts[@]}"; do
+    #         rt_length=${#rib}
+    #         if [ $rt_length -eq 2 ] && [[ "${rib}" != "NA" ]]; then
+    #             new_rt="0${rib}"
+    #         elif [ $rt_length -eq 1 ]; then
+    #             new_rt="00${rib}"
+    #         else
+    #             new_rt="${rib}"
+    #         fi
+    #     done
+    #     if [[ ${new_rt:0:1} == "," ]] ; then
+    #         new_rt="${new_rt:1}"
+    #     fi
+    # else
+    #     new_rt="unset"
+    # fi
+    raw_prob=$(echo "${line}" | cut -d$'\t' -f5)
     temp_prob=$(echo "$raw_prob * 100" | bc)
     prob=$(printf "%2.2f" "${temp_prob}")
     echo "PROB-$raw_prob-$temp_prob-$prob"}
-    type=$(echo "${line}" | cut -d$'\t' -f4)
-    note=$(echo "${line}" | cut -d$'\t' -f5)
+    clusterx=$(echo "${line}" | cut -d$'\t' -f2)
+    clustery=$(echo "${line}" | cut -d$'\t' -f3)
+    source=$(echo "${line}" | cut -d$'\t' -f6)
+    rt=$(echo "${line}" | cut -d$'\t' -f4)
+    note=$(echo "${line}" | cut -d$'\t' -f7)
     if [[ "${note}" = "" ]]; then
-        ML_RT="${new_rt}\t${prob}\t${type}"
+        ML_RT="${rt}\t${prob}\t${source}"
     else
-        ML_RT="${new_rt}\t${prob}\t${type}\t${note}"
+        ML_RT="${rt}\t${prob}\t${source}\t${note}"
     fi
 else
     echo "No Ribotype file"
-    ML_RT="NO_RT_FILE_YET\tNO_RT_FILE"
+    ML_RT="NO_RT_FILE"
 fi
 
 if [[ -f "${plasmid_file}" ]]; then
@@ -1290,7 +1297,7 @@ if [[ -f "${clade_input}" ]]; then
             xrt="No_lookup_file"
         fi
         if [[ "${xrt}" = "unset" ]]; then
-            xrt="${mlst} has no croswalk match"
+            xrt="${mlst} has no crosswalk match"
         fi
     else
         clade="Clade_file_incorrect"

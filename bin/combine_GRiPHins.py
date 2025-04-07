@@ -11,7 +11,7 @@ import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 from openpyxl import load_workbook
 from itertools import chain
-from GRiPHin import order_ar_gene_columns, Combine_dfs, big5_check, write_to_excel, convert_excel_to_tsv
+from GRiPHin import order_ar_gene_columns, Combine_dfs, write_to_excel, convert_excel_to_tsv, print_df
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -g1 ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
@@ -38,7 +38,7 @@ CRED = '\033[91m'+'\nWarning: '
 CEND = '\033[0m'
 
 def sort_columns_to_primary_ungrouped(df_to_sort):
-    default_df = [ "WGS_ID", "Parent_Folder", "Data_Location", "Minimum_QC_Check", "Minimum_QC_Issues", "Warnings", "Alerts", "Raw_Q30_R1_[%]", "Raw_Q30_R2_[%]", "Total_Raw_[reads]", "Paired_Trimmed_[reads]", "Total_Trimmed_[reads]", "Estimated_Trimmed_Coverage", "GC[%]", "Scaffolds", "Assembly_Length", "Assembly_Ratio", "Assembly_StDev", "Final_Taxa_ID", "Taxa_Source", "BUSCO_Lineage", "BUSCO_%Match", "Kraken_ID_Raw_Reads_%", "Kraken_ID_WtAssembly_%", "ShigaPass_Organism", "FastANI_Organism", "FastANI_%ID", "FastANI_%Coverage", "Species_Support_ANI", "Primary_MLST_Scheme", "Primary_MLST_Source", "Primary_MLST", "Primary_MLST_Alleles", "Secondary_MLST_Scheme", "Secondary_MLST_Source", "Secondary_MLST", "Secondary_MLST_Alleles", "MLST Clade", "Toxinotype", "Toxin-A_sub-type", "tcdA", "Toxin-B_sub-type", "tcdB", "tcdC_Variant", "tcdC other mutations", "tcdC", "tcdR", "tcdE", "PaLoc_NonTox_Variant", "PaLoc_NonTox other mutations", "PaLoc_NonTox", "cdtA", "cdtB", "cdtR_Variant", "cdtR other mutations", "cdtR", "cdtAB1", "cdtAB2", "gyrA known mutations", "gyrA other mutations", "gyrA", "gyrB known mutations", "gyrB other mutations", "gyrB", "dacS known mutations", "dacS other mutations", "dacS", "feoB known mutations", "feoB other mutations", "feoB", "fur known mutations", "fur other mutations", "fur", "gdpP known mutations", "gdpP other mutations", "gdpP", "glyC known mutations", "glyC other mutations", "glyC", "hemN known mutations", "hemN other mutations", "hemN", "hsmA known mutations", "hsmA other mutations", "hsmA","lscR known mutations", "lscR other mutations", "lscR", "marR known mutations", "marR other mutations", "marR", "murG known mutations", "murG other mutations", "murG", "nifJ known mutations", "nifJ other mutations", "nifJ", "PNimB known mutations", "PNimB other mutations", "PNimB", "rpoB known mutations", "rpoB other mutations", "rpoB", "rpoC known mutations", "rpoC other mutations", "rpoC", "sdaB known mutations", "sdaB other mutations", "sdaB", "thiH known mutations", "thiH other mutations", "thiH", "vanR known mutations", "vanR other mutations", "vanR", "vanS known mutations", "vanS other mutations", "vanS", "CEMB RT Crosswalk", "Inferred RT", "Probability", "ML Note", "Plasmid Info", "AR_Database", "No_AR_Genes_Found", "HV_Database", "No_HVGs_Found", "Plasmid_Replicon_Database", "No_Plasmid_Markers" ]
+    default_df = [ "UNI", "WGS_ID", "Parent_Folder", "Data_Location", "Minimum_QC_Check", "Minimum_QC_Issues", "Warnings", "Alerts", "Raw_Q30_R1_[%]", "Raw_Q30_R2_[%]", "Total_Raw_[reads]", "Paired_Trimmed_[reads]", "Total_Trimmed_[reads]", "Estimated_Trimmed_Coverage", "GC[%]", "Scaffolds", "Assembly_Length", "Assembly_Ratio", "Assembly_StDev", "Final_Taxa_ID", "Taxa_Source", "BUSCO_Lineage", "BUSCO_%Match", "Kraken_ID_Raw_Reads_%", "Kraken_ID_WtAssembly_%", "ShigaPass_Organism", "FastANI_Organism", "FastANI_%ID", "FastANI_%Coverage", "Species_Support_ANI", "Primary_MLST_Scheme", "Primary_MLST_Source", "Primary_MLST", "Primary_MLST_Alleles", "Secondary_MLST_Scheme", "Secondary_MLST_Source", "Secondary_MLST", "Secondary_MLST_Alleles", "MLST Clade", "Toxinotype", "Toxin-A_sub-type", "tcdA", "Toxin-B_sub-type", "tcdB", "tcdC_Variant", "tcdC other mutations", "tcdC", "tcdR", "tcdE", "PaLoc_NonTox_Variant", "PaLoc_NonTox other mutations", "PaLoc_NonTox", "cdtA", "cdtB", "cdtR_Variant", "cdtR other mutations", "cdtR", "cdtAB1", "cdtAB2", "gyrA known mutations", "gyrA other mutations", "gyrA", "gyrB known mutations", "gyrB other mutations", "gyrB", "dacS known mutations", "dacS other mutations", "dacS", "feoB known mutations", "feoB other mutations", "feoB", "fur known mutations", "fur other mutations", "fur", "gdpP known mutations", "gdpP other mutations", "gdpP", "glyC known mutations", "glyC other mutations", "glyC", "hemN known mutations", "hemN other mutations", "hemN", "hsmA known mutations", "hsmA other mutations", "hsmA","lscR known mutations", "lscR other mutations", "lscR", "marR known mutations", "marR other mutations", "marR", "murG known mutations", "murG other mutations", "murG", "nifJ known mutations", "nifJ other mutations", "nifJ", "PNimB known mutations", "PNimB other mutations", "PNimB", "rpoB known mutations", "rpoB other mutations", "rpoB", "rpoC known mutations", "rpoC other mutations", "rpoC", "sdaB known mutations", "sdaB other mutations", "sdaB", "thiH known mutations", "thiH other mutations", "thiH", "vanR known mutations", "vanR other mutations", "vanR", "vanS known mutations", "vanS other mutations", "vanS", "CEMB RT Crosswalk", "Inferred RT", "Probability", "ML Note", "Plasmid Info", "AR_Database", "No_AR_Genes_Found", "HV_Database", "No_HVGs_Found", "Plasmid_Replicon_Database", "No_Plasmid_Markers" ]
     sorted_list = [col for col in default_df if col in df_to_sort.columns ]
     sorted_df = df_to_sort[ sorted_list ]
     return sorted_df     
@@ -53,7 +53,7 @@ def read_excels(file_path1, file_path2, samplesheet):
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1,engine='openpyxl')
-    #df_1.insert(0, 'WGS_ID', df_1.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
+        df_1.insert(0, 'UNI', df_1.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
     try: #check that this is an excel file
@@ -61,10 +61,12 @@ def read_excels(file_path1, file_path2, samplesheet):
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines2,engine='openpyxl')
-    #    df_2.insert(0, 'WGS_ID', df_2.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
+        df_2.insert(0, 'UNI', df_2.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path2}")
     # because the dir is pulled into the module when making a griphin file some samples that aren't in the samplesheet can end up in the griphin file so we will remove those
+    #print_df(df_1, "DF_1-precheck")
+    #print_df(df_2, "DF_2-precheck")
     if samplesheet != None:
         ###!print("RERE:", samplesheet, file_path1, file_path2)
         samplesheet = pd.read_csv(samplesheet, header=0)
@@ -72,29 +74,53 @@ def read_excels(file_path1, file_path2, samplesheet):
             samples = samplesheet['directory'].to_list()
         elif 'sample' in samplesheet.columns:
             samples =  samplesheet['sample'].tolist()
-        df_1 = df_1[df_1['WGS_ID'].isin(samples)]
-        df_2 = df_2[df_2['WGS_ID'].isin(samples)]
+        df_1 = df_1[df_1['UNI'].isin(samples)]
+        df_2 = df_2[df_2['UNI'].isin(samples)]
     # check that we have the files from the same entry
     phoenix, shiga, centar_1, centar_2, all_centar = check_column_presence(df_1, file_path1, df_2, file_path2)
-        
+    print("Checking presencii: ", phoenix, shiga, centar_1, centar_2, all_centar)
+    #print_df(df_1, "DF_1")
+    #print_df(df_2, "DF_2")
     if centar_1 == True:
         #ordered_centar_df_1, centar_df_lens_1,centar_df_column_names_1 = split_centar_df(centar_1, file_path1)
         df1_qc, df1_gene_hits_with_centar = split_dataframe(df_1,"Toxinotype")
         df1_centar, df1_gene_hits = split_dataframe(df1_gene_hits_with_centar,"AR_Database")
         df1_ar, df1_pf_hv = split_dataframe(df1_gene_hits,"HV_Database")
         df1_hv, df1_pf = split_dataframe(df1_pf_hv,"Plasmid_Replicon_Database")
+        pd.set_option('display.max_colwidth', None) 
+        pd.set_option('display.max_rows', None)
+        print_df(df1_qc, "DF1-QC", False)
+        print_df(df1_centar, "DF1-CENTAR", False)
+        print_df(df1_ar, "DF1-AR", False)
+        print_df(df1_hv, "DF1-HV", False)
+        print_df(df1_pf, "DF1-PF", False)
+        print(df1_qc['UNI'])
+        print(df1_centar['UNI'])
+        print(df1_ar['UNI'])
+        print(df1_hv['UNI'])
+        print(df1_pf['UNI'])
     else:
         df1_qc, df1_gene_hits = split_dataframe(df_1,"AR_Database")
         df1_ar, df1_pf_hv = split_dataframe(df1_gene_hits,"HV_Database")
-        df1_hv, df1_pf_tar = split_dataframe(df1_pf_hv,"Plasmid_Replicon_Database")
-        df1_pf, df1_blanktar = split_dataframe(df1_pf_tar,"Toxinotype")
+        df1_hv, df1_pf = split_dataframe(df1_pf_hv,"Plasmid_Replicon_Database")
+        #df1_pf, df1_blanktar = split_dataframe(df1_pf_tar,"Toxinotype")
     if centar_2 == True:
         #ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2 = split_centar_df(centar_2, file_path2)
         df2_qc, df2_gene_hits_with_centar = split_dataframe(df_2,"Toxinotype")
         df2_centar, df2_gene_hits = split_dataframe(df2_gene_hits_with_centar,"AR_Database")
         df2_ar, df2_pf_hv = split_dataframe(df2_gene_hits,"HV_Database")
         df2_hv, df2_pf = split_dataframe(df2_pf_hv,"Plasmid_Replicon_Database")
-        centar_headlines=[['WGS_ID', 'Toxinotype', 'Toxin-A_sub-type', 'tcdA', 'Toxin-B_sub-type', 'tcdB'], ['tcdC_Variant', 'tcdC other mutations', 'tcdC', 'tcdR', 'tcdE', 'cdtA', 'cdtB', 'cdtR_Variant', 'cdtR other mutations', 'cdtR', 'cdtAB1', 'cdtAB2', 'PaLoc_NonTox_Variant', 'PaLoc_NonTox other mutations', 'PaLoc_NonTox'], ['gyrA known mutations', 'gyrA other mutations', 'gyrA', 'gyrB known mutations', 'gyrB other mutations', 'gyrB', 'dacS known mutations', 'dacS other mutations', 'dacS', 'feoB known mutations', 'feoB other mutations', 'feoB', 'fur known mutations', 'fur other mutations', 'fur', 'gdpP known mutations', 'gdpP other mutations', 'gdpP', 'glyC known mutations', 'glyC other mutations', 'glyC', 'hemN known mutations', 'hemN other mutations', 'hemN', 'hsmA known mutations', 'hsmA other mutations', 'hsmA', 'lscR known mutations', 'lscR other mutations', 'lscR', 'marR known mutations', 'marR other mutations', 'marR', 'murG known mutations', 'murG other mutations', 'murG', 'nifJ known mutations', 'nifJ other mutations', 'nifJ', 'PNimB known mutations', 'PNimB other mutations', 'PNimB', 'PNimB |','rpoB known mutations', 'rpoB other mutations', 'rpoB', 'rpoC known mutations', 'rpoC other mutations', 'rpoC', 'sdaB known mutations', 'sdaB other mutations', 'sdaB', 'thiH known mutations', 'thiH other mutations', 'thiH', 'vanR known mutations', 'vanR other mutations', 'vanR', 'vanS known mutations', 'vanS other mutations', 'vanS'], ['CEMB RT Crosswalk', 'Inferred RT', 'Probability', 'ML Note', 'Plasmid Info']]
+        print_df(df2_qc, "DF2-QC", False)
+        print_df(df2_centar, "DF2-CENTAR", False)
+        print_df(df2_ar, "DF2-AR", False)
+        print_df(df2_hv, "DF2-HV", False)
+        print_df(df2_pf, "DF2-PF", False)
+        print(df2_qc['UNI'])
+        print(df2_centar['UNI'])
+        print(df2_ar['UNI'])
+        print(df2_hv['UNI'])
+        print(df2_pf['UNI'])
+        centar_headlines=[['UNI', 'WGS_ID', 'Toxinotype', 'Toxin-A_sub-type', 'tcdA', 'Toxin-B_sub-type', 'tcdB'], ['tcdC_Variant', 'tcdC other mutations', 'tcdC', 'tcdR', 'tcdE', 'cdtA', 'cdtB', 'cdtR_Variant', 'cdtR other mutations', 'cdtR', 'cdtAB1', 'cdtAB2', 'PaLoc_NonTox_Variant', 'PaLoc_NonTox other mutations', 'PaLoc_NonTox'], ['gyrA known mutations', 'gyrA other mutations', 'gyrA', 'gyrB known mutations', 'gyrB other mutations', 'gyrB', 'dacS known mutations', 'dacS other mutations', 'dacS', 'feoB known mutations', 'feoB other mutations', 'feoB', 'fur known mutations', 'fur other mutations', 'fur', 'gdpP known mutations', 'gdpP other mutations', 'gdpP', 'glyC known mutations', 'glyC other mutations', 'glyC', 'hemN known mutations', 'hemN other mutations', 'hemN', 'hsmA known mutations', 'hsmA other mutations', 'hsmA', 'lscR known mutations', 'lscR other mutations', 'lscR', 'marR known mutations', 'marR other mutations', 'marR', 'murG known mutations', 'murG other mutations', 'murG', 'nifJ known mutations', 'nifJ other mutations', 'nifJ', 'PNimB known mutations', 'PNimB other mutations', 'PNimB', 'PNimB |','rpoB known mutations', 'rpoB other mutations', 'rpoB', 'rpoC known mutations', 'rpoC other mutations', 'rpoC', 'sdaB known mutations', 'sdaB other mutations', 'sdaB', 'thiH known mutations', 'thiH other mutations', 'thiH', 'vanR known mutations', 'vanR other mutations', 'vanR', 'vanS known mutations', 'vanS other mutations', 'vanS'], ['CEMB RT Crosswalk', 'Inferred RT', 'Probability', 'ML Note', 'Plasmid Info']]
         if centar_1:
             found_headlines = []
             found_headlines2 = [[],[],[],[]]
@@ -104,7 +130,7 @@ def read_excels(file_path1, file_path2, samplesheet):
                     if liner in df1_centar.columns.tolist() or liner in df2_centar.columns.tolist():
                         ###!print("JJJ2D:A", liner)
                         found_headlines.append(liner)
-                        if liner != 'WGS_ID':
+                        if liner != 'WGS_ID' and liner != 'UNI':
                             found_headlines2[section].append(liner)
                             centar_df_lens[section]+=1
             combined_centar_df = pd.concat([df1_centar, df2_centar], axis = 0)
@@ -119,15 +145,15 @@ def read_excels(file_path1, file_path2, samplesheet):
                 for liner in centar_headlines[section]:
                     if liner in df2_centar.columns.tolist():
                         found_headlines.append(liner)
-                        if liner != 'WGS_ID':
+                        if liner != 'WGS_ID' and liner != 'UNI':
                             found_headlines2[section].append(liner)
                             centar_df_lens[section]+=1
             combined_ordered_centar_df = df2_centar
     else:
         df2_qc, df2_gene_hits = split_dataframe(df_2,"AR_Database")
         df2_ar, df2_pf_hv = split_dataframe(df2_gene_hits,"HV_Database")
-        df2_hv, df2_pf_tar = split_dataframe(df2_pf_hv,"Plasmid_Replicon_Database")
-        df2_pf, df2_blanktar = split_dataframe(df2_pf_tar,"Toxinotype")
+        df2_hv, df2_pf = split_dataframe(df2_pf_hv,"Plasmid_Replicon_Database")
+        #df2_pf, df2_blanktar = split_dataframe(df2_pf_tar,"Toxinotype")
         if centar_1:
             for section in range(0,len(centar_headlines)):
                 for liner in centar_headlines[section]:
@@ -145,14 +171,22 @@ def read_excels(file_path1, file_path2, samplesheet):
     #combine qc columns
     combined_df_qc = combine_qc_dataframes(df1_qc, df2_qc)
     #combine ar columns
+    #print_df(df1_ar, "A1")
+    #print_df(df1_hv, "A2")
+    #print_df(df1_pf, "A3")
+    #print_df(df2_ar, "B1")
+    #print_df(df2_hv, "B2")
+    #print_df(df2_pf, "B3")
     combined_df_ar, samples_to_add = combine_gene_dataframes(df1_ar, df2_ar)
+    #print_df(combined_df_ar, "C1")
     #make sure the order of the ar genes is correct
     order_combined_ar_df = order_ar_gene_columns(combined_df_ar, True)
-    print("Adding sample(s) to the GRiPHin summary:", samples_to_add.tolist())
+    #print_df(order_combined_ar_df, "C2")
+    ###print("Adding sample(s) to the GRiPHin summary:", samples_to_add.tolist())
     # combine pf and hv dataframes
     combined_df_pf, samples_to_add = combine_gene_dataframes(df1_pf, df2_pf)
     combined_df_hv, samples_to_add = combine_gene_dataframes(df1_hv, df2_hv)
-    
+    print(centar_df_lens)
     return combined_df_qc, order_combined_ar_df, combined_df_pf, combined_df_hv, phoenix, shiga, all_centar, combined_ordered_centar_df, centar_df_lens, centar_df_column_names
  
 def combine_centar(ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1, ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2):
@@ -189,13 +223,13 @@ def split_centar_df(centar, excel):
     df = pd.read_excel(excel,
         header=[0, 1],    # Use the second row as the header
         skipfooter=footer_lines1,engine='openpyxl')
-    #df.insert(0, 'WGS_ID', df.apply(lambda x:'%s/%s/%s' % (x[('PHoeNIx Summary','Parent_Folder')],x[('PHoeNIx Summary', 'Data_Location')],x[('PHoeNIx Summary', 'WGS_ID')]),axis=1))
+    df.insert(0, 'UNI', df.apply(lambda x:'%s/%s/%s' % (x[('PHoeNIx Summary','Parent_Folder')],x[('PHoeNIx Summary', 'Data_Location')],x[('PHoeNIx Summary', 'WGS_ID')]),axis=1))
     if centar == True:
         df_1 = pd.read_excel(excel,
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1,engine='openpyxl')
-        #df_1.insert(0, 'WGS_ID', df_1.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
+        df_1.insert(0, 'UNI', df_1.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
         # Get the column names
         columns = df_1.columns.tolist()
         # Find the indices of the specified columns
@@ -214,30 +248,39 @@ def split_centar_df(centar, excel):
         centar_df_lens = [0,0,0,0]
         centar_df_column_names = [[],[],[],[]]
         ordered_centar_df = pd.DataFrame()
+    #print_df(ordered_centar_df, "SCDF", False)
     return ordered_centar_df, centar_df_lens, centar_df_column_names
 
 def combine_gene_dataframes(old_df, new_df):
-    # Ensure the first column is 'WGS_ID'
-    if new_df.columns[0] != 'WGS_ID' or old_df.columns[0] != 'WGS_ID':
-        raise ValueError("The first column in both dataframes must be 'WGS_ID'")
-    df1_gene = old_df.set_index('WGS_ID')
-    df2_gene = new_df.set_index('WGS_ID')
+    # Ensure the first column is 'WGS_ID', NOPE now its gotta be UNI
+    #if new_df.columns[0] == 'WGS_ID' and old_df.columns[0] == 'WGS_ID':
+    #    df1_gene = old_df.set_index('WGS_ID')
+    #    df2_gene = new_df.set_index('WGS_ID')
+    if new_df.columns[0] == 'UNI' and old_df.columns[0] == 'UNI':
+        df1_gene = old_df.set_index('UNI')
+        df2_gene = new_df.set_index('UNI')
+    else:
+        raise ValueError("The first column in both dataframes must be either 'WGS_ID' or 'UNI'")
+    ###!print_df(old_df, "E1")
+    ###!print_df(new_df, "E2")
     # Identify samples to add and print them
     samples_to_add = df2_gene.index.difference(df1_gene.index)
     # Combine dataframes, prioritizing new_df values and aligning columns
     combined_df = df1_gene.combine_first(df2_gene)
+    ###!print_df(combined_df, "E3")
     # Add missing columns from new_df to old_df
-    columns_to_add = [col for col in df2_gene.columns if col not in df1_gene.columns and col not in ["AR_Database", "HV_Database","Plasmid_Replicon_Database", "WGS_ID", "No_AR_Genes_Found", "No_HVGs_Found", "No_Plasmid_Markers", "WGS_ID"]]
+    columns_to_add = [col for col in df2_gene.columns if col not in df1_gene.columns and col not in ["AR_Database", "HV_Database","Plasmid_Replicon_Database", "No_AR_Genes_Found", "No_HVGs_Found", "No_Plasmid_Markers", "WGS_ID", "UNI"]]
     for col in columns_to_add:
         combined_df[col] = combined_df[col].fillna(df2_gene[col])
     # Revert index to column
     combined_df.reset_index(inplace=True)
+    ###!print_df(combined_df, "E4")
     return combined_df, samples_to_add
 
 def combine_qc_dataframes(df1_qc, df2_qc):
     # Convert the 'WGS_ID' columns to the index to facilitate updating
-    df1 = df1_qc.set_index('WGS_ID')
-    df2 = df2_qc.set_index('WGS_ID')
+    df1 = df1_qc.set_index('UNI')
+    df2 = df2_qc.set_index('UNI')
     # Update df1_qc with matching rows from df2_qc
     df1.update(df2)
     # Append non-matching rows from df2_qc to df1_qc using pd.concat
@@ -304,13 +347,15 @@ def check_column_presence(df1, df1_path, df2, df2_path):
     return phoenix, shiga, centar_1, centar_2, all_centar
 
 def split_dataframe(df, split_column):
-    # Ensure the first column is 'WGS_ID'
-    if df.columns[0] != 'WGS_ID':
-        print(df.columns[0])
-        raise ValueError("The first column must be 'WGS_ID'")
+    # Ensure the first column is 'WGS_ID', changing to UNI
+    if df.columns[0] != 'UNI':
+        #print(df.columns[0])
+        raise ValueError("The first column must be 'WGS_ID' or 'UNI'")
+    if split_column == "last":
+        split_column=df.columns[-1]
     # Find the index of the split_column
     split_index = df.columns.get_loc(split_column)
-    # Create two DataFrames based on the split index, including 'WGS_ID' at the beginning
+    # Create two DataFrames based on the split index, including 'UNI' at the beginning FOR BOTH
     df_before = df.iloc[:, [0] + list(range(1, split_index))]  # All columns before the split column + 'WGS_ID'
     #df_before = df.iloc[:, list(range(1, split_index))]  # All columns before the split column + 'WGS_ID'
     df_after = df.iloc[:, [0] + list(range(split_index, df.shape[1]))]  # The split column and all columns after it + 'WGS_ID'
@@ -321,7 +366,7 @@ def split_dataframe(df, split_column):
 def add_and_concatenate(df1, df2):
     # Step 1: Preserve column order from df1 and append missing columns from df2
     all_columns = list(df1.columns) + [col for col in df2.columns if col not in df1.columns]
-    print(all_columns)
+    #print(all_columns)
     # Step 1: Find the union of columns in both DataFrames
     #all_columns = set(df1.columns).union(set(df2.columns))
     # Step 2: Add missing columns to each DataFrame at once by reindexing
@@ -362,7 +407,7 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines,engine='openpyxl')
-        #df.insert(0, 'WGS_ID', df.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
+        df.insert(0, 'UNI', df.apply(lambda x:'%s/%s/%s' % (x['Parent_Folder'],x['Data_Location'],x['WGS_ID']),axis=1))
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path}")
     # check that we have the files from the same entry
@@ -378,9 +423,9 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
         for col in reference_centar_df.columns:
             if col not in df.columns:
                 df[col] = pd.NA  # Fill with NaNs or blank
-        centar = all_centar = False
+        centar = False
     else:
-        centar = all_centar = True
+        centar = True
     #check for shigapass
     if "ShigaPass_Organism" in df.columns:
         shiga = True
@@ -394,9 +439,9 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
         elif 'sample' in samplesheet.columns:
             samples =  samplesheet['sample'].tolist()
         #filters the DataFrame df_1 to include only the rows where the values in the 'WGS_ID' column are present in the samples list.
-        df = df[df['WGS_ID'].isin(samples)]
+        df = df[df['UNI'].isin(samples)]
     # check that we have the files from the same entry
-    ordered_centar_df, centar_df_lens, centar_df_column_names = split_centar_df(centar, file_path)
+    #ordered_centar_df, centar_df_lens, centar_df_column_names = split_centar_df(centar, file_path)
     #centar_df_lens[0] += 1
     #centar_df_lens = [x + 1 for x in centar_df_lens]
     if centar == True:
@@ -404,17 +449,32 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
         df_centar, df_gene_hits = split_dataframe(df_gene_hits_with_centar,"AR_Database")
         df_ar, df_pf_hv = split_dataframe(df_gene_hits,"HV_Database")
         df_hv, df_pf = split_dataframe(df_pf_hv,"Plasmid_Replicon_Database")
+        centar_headlines=[['UNI', 'WGS_ID', 'Toxinotype', 'Toxin-A_sub-type', 'tcdA', 'Toxin-B_sub-type', 'tcdB'], ['tcdC_Variant', 'tcdC other mutations', 'tcdC', 'tcdR', 'tcdE', 'cdtA', 'cdtB', 'cdtR_Variant', 'cdtR other mutations', 'cdtR', 'cdtAB1', 'cdtAB2', 'PaLoc_NonTox_Variant', 'PaLoc_NonTox other mutations', 'PaLoc_NonTox'], ['gyrA known mutations', 'gyrA other mutations', 'gyrA', 'gyrB known mutations', 'gyrB other mutations', 'gyrB', 'dacS known mutations', 'dacS other mutations', 'dacS', 'feoB known mutations', 'feoB other mutations', 'feoB', 'fur known mutations', 'fur other mutations', 'fur', 'gdpP known mutations', 'gdpP other mutations', 'gdpP', 'glyC known mutations', 'glyC other mutations', 'glyC', 'hemN known mutations', 'hemN other mutations', 'hemN', 'hsmA known mutations', 'hsmA other mutations', 'hsmA', 'lscR known mutations', 'lscR other mutations', 'lscR', 'marR known mutations', 'marR other mutations', 'marR', 'murG known mutations', 'murG other mutations', 'murG', 'nifJ known mutations', 'nifJ other mutations', 'nifJ', 'PNimB known mutations', 'PNimB other mutations', 'PNimB', 'PNimB |','rpoB known mutations', 'rpoB other mutations', 'rpoB', 'rpoC known mutations', 'rpoC other mutations', 'rpoC', 'sdaB known mutations', 'sdaB other mutations', 'sdaB', 'thiH known mutations', 'thiH other mutations', 'thiH', 'vanR known mutations', 'vanR other mutations', 'vanR', 'vanS known mutations', 'vanS other mutations', 'vanS'], ['CEMB RT Crosswalk', 'Inferred RT', 'Probability', 'ML Note', 'Plasmid Info']]
+        found_headlines = []
+        found_headlines2 = [[],[],[],[]]
+        centar_df_lens=[0,0,0,0]
+        for section in range(0,len(centar_headlines)):
+            for header in centar_headlines[section]:
+                if header in df_centar.columns.tolist():
+                    found_headlines.append(header)
+                    if header != 'WGS_ID' and header != 'UNI':
+                        found_headlines2[section].append(header)
+                        centar_df_lens[section]+=1
+            ordered_centar_df = df_centar[found_headlines]
+            centar_df_column_names = found_headlines2
     else:
         df_qc, df_gene_hits = split_dataframe(df,"AR_Database")
         df_ar, df_pf_hv = split_dataframe(df_gene_hits,"HV_Database")
         df_hv, df_pf = split_dataframe(df_pf_hv,"Plasmid_Replicon_Database")
         # Ensure the first column is 'WGS_ID'
-    if df_qc.columns[0] != 'WGS_ID' or reference_qc_df.columns[0] != 'WGS_ID':
-      raise ValueError("The first column in both dataframes must be 'WGS_ID'")
+    #if (df_qc.columns[0] != 'WGS_ID' and df_qc.columns[0] != 'UNI')  or (reference_qc_df.columns[0] != 'WGS_ID' and reference_qc_df.columns[0] != 'UNI'):
+    # Trying to make UNI universal across combine_GRiPHinS
+    if (df_qc.columns[0] != 'UNI' and reference_qc_df.columns[0] != 'UNI'):
+      raise ValueError("The first column in both dataframes must be 'UNI'")
     # Set WGS_ID as index
     # Set WGS_ID as index
-    df1_qc = reference_qc_df.set_index('WGS_ID')
-    ref_qc = df_qc.set_index('WGS_ID')
+    df1_qc = reference_qc_df.set_index('UNI')
+    ref_qc = df_qc.set_index('UNI')
     # Identify samples to add and print them
     samples_to_add = ref_qc.index.difference(df1_qc.index)
     #make sure the order of the ar genes is correct
@@ -467,6 +527,11 @@ def main():
                 centar_df_lens_final = update_centar_columns(centar_df_column_names_final, centar_df_column_names_next)
             # Unpack the tuple into individual DataFrames
             combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, ordered_centar_df_final = combined_dataframes_final
+        ###! print_df(combined_df_qc_final, "CDQF")
+        ###! print_df(combined_df_ar_final, "CDAF")
+        ###! print_df(combined_df_pf_final, "CDPF")
+        ###! print_df(combined_df_hv_final, "CDHF")
+        ###! print_df(ordered_centar_df_final, "OCDF")
     else:
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(args.griphin_new, args.griphin_old, args.samplesheet)
         ###1print("CCC:", centar_df_lens_final)
@@ -475,18 +540,24 @@ def main():
         # Reset the indices of both DataFrames during concat so they are aligned and we don't get NaNs in the final row of the dataframe
         ordered_centar_df_final = sort_columns_to_primary_ungrouped(ordered_centar_df_final)
         #combined_df_qc = pd.concat([combined_df_qc, ordered_centar_df], axis=1)
-        combined_df_qc_final = pd.merge(combined_df_qc_final, ordered_centar_df_final, how="left", on = ['WGS_ID', 'WGS_ID'])
+        combined_df_qc_final = pd.merge(combined_df_qc_final, ordered_centar_df_final, how="left", on = ['UNI', 'UNI'])
     # call function from griphin script to combine all dfs
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), True, True)
+    
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), phoenix_final, True)
     #get other information for excel writing
-    combined_df_qc_final = combined_df_qc_final.drop('WGS_ID', axis = 1)
-    (qc_max_row, qc_max_col) = combined_df_qc_final.shape
-    # Mst account for WGS_ID removal later, so decreasing size by one here before i forget
-    #qc_max_row -= 1
+    #combined_df_qc_final = combined_df_qc_final.drop('WGS_ID', axis = 1)
+    (qc_max_row, qc_max_col) = combined_df_qc_final.shape 
     pf_max_col = combined_df_pf_final.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = combined_df_hv_final.shape[1] - 1 #remove one for the WGS_ID column
     #write excel sheet
-    final_df = final_df.drop('WGS_ID', axis=1)
+    #final_df = final_df.drop('WGS_ID', axis=1)
+    column_to_move = final_df.pop('WGS_ID')
+    final_df.insert(0, 'WGS_ID', column_to_move)
+    final_df = final_df.drop('UNI', axis=1)
+    # Subtracting one since we removed 'UNI'
+    qc_max_col = qc_max_col - 1
+    #print("Final Columns:", final_df.columns.tolist())
+    ###!print_df(final_df, "Final_DF")
     write_to_excel(args.set_coverage, output_file, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db, phoenix_final, shiga_final, centar_final, centar_df_lens_final)
     #write tsv from excel
     convert_excel_to_tsv(output_file)

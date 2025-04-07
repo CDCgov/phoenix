@@ -37,7 +37,7 @@ process CENTAR_CONSOLIDATER {
         -y ${toxinotype_file} \\
         -a ${other_AR_AA_file} \\
         -n ${other_AR_NT_file} \\
-        ${ribotype_file} \\
+        -r ${ribotype_file} \\
         -p ${plasmids_file} \\
         -o ${prefix}_centar_output.tsv \\
         -s ${prefix} \\

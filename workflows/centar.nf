@@ -128,7 +128,7 @@ workflow RUN_CENTAR {
             .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{  meta, consolidated_file -> [[project_id:meta.project_id], consolidated_file]}.groupTuple(by: [0]), by: [0])\
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{      meta, dir               -> [[project_id:meta.project_id], dir]}, by: [0])
 
-       // separate the summary and centar files from dir
+        // separate the summary and centar files from dir
         griphin_input_ch = griphin_input.map{meta, summary_line, centar_files, dir -> [summary_line, centar_files].flatten()}
         // get project dir - indir
         griphin_dir_path = griphin_input.map{meta, summary_line, centar_files, dir -> [dir]}
