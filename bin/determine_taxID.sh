@@ -198,6 +198,12 @@ if [[ -n ${species} ]]; then
 		# Extract everything before "strain" and remove trailing "-" or " "
 		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*strain.*$/\1/' | sed -E 's/-.*//' )
 		echo $species
+	elif [[ $species == *"complex-sp."* ]]; then
+		# Extract "strain" and everything after it
+		strain=$(echo "$species" | grep -o 'complex-sp.*')
+		# Extract everything before "strain" and remove trailing "-" or " "
+		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*complex-sp.*$/\1/' | sed -E 's/-.*//' )
+		echo $species
 	else
 		strain=""
 	fi
