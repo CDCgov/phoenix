@@ -25,13 +25,16 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/${meta.id}.synopsis"),                                       emit: synopsis
     tuple val(meta), path("${meta.id}/${meta.id}.tax"),                                            emit: tax
     tuple val(meta), path("${meta.id}/${meta.id}_summaryline.tsv"),                                emit: summary_line
+    path ("${meta.id}-CSF.csv"),                                                                   emit: collect_file                                                     
     path("versions.yml"),                                                                          emit: versions
 
     script: 
     // define variables
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
-    # Nothing happens just getting all of thse files into channels 
+    # Nothing happens just getting all of thse files into channels
+
+    echo "${meta.id},${meta.id}/mlst/${meta.id}_combined.tsv,${meta.id}/file_integrity/${meta.id}_summary.txt,${meta.id}/assembly/${meta.id}.filtered.scaffolds.fa.gz,${meta.id}/${meta.id}.tax" > "${meta.id}-CSF.csv"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
