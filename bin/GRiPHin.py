@@ -532,10 +532,8 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
         df["No_AR_Genes_Found"] = ""
         df.index = [sample_name]
     # Check for duplicate column names, multiple hits 
-    #print(df["blaFOX-5_NG_049105.1(beta-lactam)"])
     df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
-    #print(final_df["mph(D)_NC_017312(macrolide_lincosamide_streptogramin)"])
     return final_df
 
 def parse_gamma_hv(gamma_hv_file, sample_name, final_df):
@@ -681,7 +679,6 @@ def parse_ani(fast_ani_file):
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
         organism = ani_df["Organism"][0].replace("-chromosome", "")
-        print(organism)
         #if sp. is followed by anything other than a space add it.
         if "sp." in organism and re.search(r'sp\.\S', organism):
             organism = organism.replace("sp.","sp. ")
@@ -1169,10 +1166,12 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                 else:
                     gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
             for val in gene_list:
+                print(val)
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
+                    print(gamma_neg_srst2.columns.str.contains(val))
                     #get a dataframe of the gene in question
-                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.extract(val)])
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
                     df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
                     # Convert extracted values to integer type and keep NA values
@@ -1277,7 +1276,8 @@ def find_big_5(BLDB):
     # Keep all rows where "Protein_name" does NOT contain "OXA"
     non_oxa_rows = final_df[~oxa_condition]
     # Keep only filtered rows where "Protein_name" contains "OXA" and "Subfamily" is in the list
-    filtered_oxa_rows = final_df[oxa_condition & subfamily_condition]
+    filtered_oxa_rows1 = final_df[oxa_condition & subfamily_condition]
+    filtered_oxa_rows = filtered_oxa_rows1[~(filtered_oxa_rows1["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~filtered_oxa_rows1["Subfamily"].str.contains("OXA-48-like", na=False))]
     # Combine both DataFrames
     filtered_final_df = pd.concat([non_oxa_rows, filtered_oxa_rows])
     # Select the relevant columns and drop complete duplicates
@@ -1313,6 +1313,7 @@ def big5_check(final_ar_df, is_combine, BLDB):
                 [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_oxa in big5_oxa_keep if gene_name == big5_oxa ]
             else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
                 [ columns_to_highlight.append(gene_name + "_(" + drug) for big5 in big5_keep if search(big5, gene_name) ]
+    print(CYELLOW + "\nhighlighting colums:", columns_to_highlight, CEND)
     return columns_to_highlight
 
 def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine, BLDB):
@@ -1438,7 +1439,13 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
     #taxa columns 
     # Find start and end column letters
-    taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
+    # to allow backwards compatability with v2.1.1 we need a little try and catch...  
+    if "Final_Taxa_ID" in df.columns:
+        taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
+    elif "Taxa_Source" in df.columns:
+        taxa_start_col  = column_letter(list(df.columns).index("Taxa_Source"))  # Get index of start column
+    else:
+        raise ValueError("Final_Taxa_ID and Taxa_Source in the created dataframe. Something went wrong, please open a github issue to report the problem.")
     taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
     # Dynamically merge based on start and end column
     worksheet.merge_range(f"{taxa_start_col}1:{taxa_end_col}1", "Taxonomic Information", cell_format_green)
@@ -1454,22 +1461,13 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         qc_minus_centar = qc_max_col - sum(centar_df_lens)
-        print("AAA:", qc_minus_centar, qc_max_col, sum(centar_df_lens), centar_df_lens[0], centar_df_lens[1], centar_df_lens[2], centar_df_lens[3], "\n",
-              "[  QC 0,",qc_minus_centar-1,"]\n", 
-              "[CDTX", qc_minus_centar, ",", (qc_minus_centar + centar_df_lens[0] - 1), ']\n',
-              "[CDOT", qc_minus_centar + centar_df_lens[0], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), ']\n',
-              "[CDAR", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1], ",", (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), ']\n',
-              "[CDML", qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2], qc_minus_centar + sum(centar_df_lens) - 1,"]\n",
-              "[  AR", qc_max_col, ",", (qc_max_col + ar_gene_count)-1, ']\n',
-              "[  HV", (qc_max_col + ar_gene_count), ",", (qc_max_col + ar_gene_count + hv_gene_count)-1, ']\n',
-              "[  PV", (qc_max_col + ar_gene_count + hv_gene_count), ",", (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, ']\n')
         worksheet.merge_range(0, (qc_minus_centar), 0, (qc_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
-        worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_minus_centar + sum(centar_df_lens)-1), "ML Predicted Ribotype", cell_format_p1)
+        worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_minus_centar + sum(centar_df_lens) - 1), "ML Predicted Ribotype", cell_format_p1)
         worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count)-1, "Antibiotic Resistance Genes", cell_format_lightgrey) 
-        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count)-1, "Hypervirulence Genes^^", cell_format_grey)
-        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count)-1, "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
+        worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
         # needed this for anoter set of samples... not sure what the differences are  -- cdc_phx with --centar
         #worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + centar_df_lens[0] - 2), "Toxin A/B Variants", cell_format_p4)
         #worksheet.merge_range(0, (qc_max_col + centar_df_lens[0] - 1), 0, (qc_max_col + centar_df_lens[0] + centar_df_lens[1] - 2), "Other Toxins", cell_format_p3)

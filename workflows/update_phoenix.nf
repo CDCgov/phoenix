@@ -280,7 +280,8 @@ workflow UPDATE_PHOENIX_WF {
             griphins_ch.map{ meta, old_excel, new_excel, directory -> meta.project_id.toString().split('/')[-1] },
             //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
             [],
-            params.coverage
+            params.coverage,
+            params.bldb
         )
         ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 

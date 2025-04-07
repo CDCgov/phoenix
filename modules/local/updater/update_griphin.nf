@@ -11,6 +11,7 @@ process UPDATE_GRIPHIN {
     val(project_id)
     path(valid_samplesheet_file)
     val(coverage)
+    path(bldb)
 
     output:
     path("${project_id}_GRiPHin_Summary.xlsx"),    emit: griphin_report
@@ -37,6 +38,7 @@ process UPDATE_GRIPHIN {
     ${ica}combine_GRiPHins.py ${griphin_input} \
         --output ${project_id}_GRiPHin_Summary \
         --coverage ${coverage} \
+        --bldb ${bldb}
         ${valid_samplesheet}
 
     cat <<-END_VERSIONS > versions.yml
