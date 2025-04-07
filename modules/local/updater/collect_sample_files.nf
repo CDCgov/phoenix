@@ -2,7 +2,7 @@ process COLLECT_SAMPLE_FILES {
     tag "${meta.id}"
     stageInMode 'copy'
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(dir)
@@ -30,7 +30,8 @@ process COLLECT_SAMPLE_FILES {
 
     script: 
     // define variables
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.2.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # Nothing happens just getting all of thse files into channels
 
@@ -38,6 +39,7 @@ process COLLECT_SAMPLE_FILES {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+       phoenix_base_container_tag: ${container_version}
        phoenix_base_container: ${container}
     END_VERSIONS
     """

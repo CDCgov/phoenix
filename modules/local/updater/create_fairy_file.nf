@@ -1,7 +1,7 @@
 process CREATE_FAIRY_FILE {
     tag "${meta.id}"
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix:base_v2.1.0'
+    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(indir), val(file_integrity)
@@ -17,7 +17,8 @@ process CREATE_FAIRY_FILE {
     script: 
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container_version = "base_v2.2.0"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def parent_folder_name = parent_folder ? "${indir}/${prefix}" : "${prefix}"
     """
     # To make species specific pipelines and updater entry backwards compatable we will remake the fairy file
@@ -50,6 +51,7 @@ process CREATE_FAIRY_FILE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
+       phoenix_base_container_tag: ${container_version}
        phoenix_base_container: ${container}
     END_VERSIONS
     """

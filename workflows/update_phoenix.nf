@@ -251,7 +251,7 @@ workflow UPDATE_PHOENIX_WF {
         GRIPHIN_NO_PUBLISH_CDC (
             busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true, false, false
+            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true, false, false, params.bldb
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH_CDC.out.versions)
 
@@ -259,7 +259,7 @@ workflow UPDATE_PHOENIX_WF {
         GRIPHIN_NO_PUBLISH (
             busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, true, false, true, false, false
+            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, true, false, true, false, false, params.bldb
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 

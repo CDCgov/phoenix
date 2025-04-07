@@ -274,6 +274,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
  - `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
  - The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-163","blaOXA-405","blaOXA-1012","blaOXA-1226","blaOXA-1240","blaOXA-1242","blaOXA-1304","blaOXA-1306","blaOXA-1307","blaOXA-1308","blaOXA-1309".  
   - The following OXA genes were added to be highlighted as blaOXA-24_40-like in the griphin summary: "blaOXA-1225", "blaOXA-1303" and "blaOXA-1322".  
+  - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` were removed from phx output. If you need or want these files you can get them from the workdir for the process(es) `KRAKEN2_TRIMD` and `KRAKEN2_ASMBLD`. Alternatively, you can create your own [config file](https://www.nextflow.io/docs/latest/config.html) and add back in the publishing of the files like [this](https://github.com/CDCgov/phoenix/blob/717d19c19338373fc0f89eba30757fe5cfb3e18a/conf/modules.config#L457)
 
 **Terra.bio Output Updates:**
 - Columns are now reported based on `*_GRiPHin_Summary.tsv` except for the columns `BETA_LACTAM_RESISTANCE_GENES`, `OTHER_AR_GENES`, `AMRFINDER_POINT_MUTATIONS`, `HYPERVIRULENCE_GENES` and `PLASMID_INCOMPATIBILITY_REPLICONS` still come from the `Phoenix_Summary.tsv` file. 
@@ -282,7 +283,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - `FINAL_TAXA_ID` is the final taxa call for the isolate.  
    - `N50` is the N50 from `Quast`.  
    - `WARNINGS_COUNT` was changed to `WARNINGS` and it is print out of the warnings, rather than just a count.
-   - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.
+   - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.  
+   - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` are no longer output from PHX. `*.kraken2_asmbld.classifiedreads.txt` was added as an output as taxids are in that file, which is different from the `*.kraken2_wtasmbld.classifiedreads.txt`. These files aren't really needed expect for edge cases such as questions about conflicting results or investigating suspected contamination.  
 
 **Fixed Bugs:**
 - Changes were made to allow `-resume` to work correctly.  

@@ -97,6 +97,7 @@ task phoenix {
     awk -F '\t' 'BEGIN{OFS=":"} {print $7,$13}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_SUBCLASSES
     awk -F '\t' '{ if($9 == "STRESS") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_STRESS_GENES
     awk -F '\t' '{ if($9 == "VIRULENCE") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
+    awk -F '\t' '{ if($11 == "BETA-LACTAM") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_BETA_LACTAM_GENES
 
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
@@ -123,7 +124,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}' | sed 's/ecoli//g' | sed 's/abaumannii//g'| tee MLST2_NCBI
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f19 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f20 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee AMRFINDER_POINT_MUTATIONS
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee HYPERVIRULENCE_GENES
@@ -147,7 +148,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | tee MLST2_NCBI
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
@@ -161,7 +162,7 @@ task phoenix {
   output {
     File?   work_files                        = "work.tar.gz"
     String  phoenix_version                   = read_string("VERSION")
-    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.0.2"
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.2.0"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warnings                          = read_string("WARNINGS")
@@ -187,7 +188,7 @@ task phoenix {
     String  mlst_scheme_2                     = read_string("MLST_SCHEME_2")
     String  mlst_2                            = read_string("MLST_2")
     String  mlst2_ncbi                        = read_string("MLST2_NCBI")
-    String  beta_lactam_resistance_genes      = read_string("BETA_LACTAM_RESISTANCE_GENES")
+    String  gamma_beta_lactam_genes           = read_string("GAMMA_BETA_LACTAM_RESISTANCE_GENES")
     String  other_ar_genes                    = read_string("OTHER_AR_GENES")
     String  amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")
     String  amrfinder_amr_classes             = read_string("AMRFINDERPLUS_AMR_CLASSES")
@@ -196,6 +197,7 @@ task phoenix {
     String  amrfinder_plus_genes              = read_string("AMRFINDERPLUS_AMR_PLUS_GENES")
     String  amrfinder_stress_genes            = read_string("AMRFINDERPLUS_STRESS_GENES")
     String  amrfinder_virulence_genes         = read_string("AMRFINDERPLUS_VIRULENCE_GENES")
+    String  amrfinder_beta_lactam_genes       = read_string("AMRFINDERPLUS_BETA_LACTAM_GENES")
     String  hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
     String  qc_issues                         = read_string("QC_ISSUES")
@@ -210,15 +212,14 @@ task phoenix {
     File? raw_read2_html          = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_2_fastqc.html"
     File? raw_read2_zip           = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
     #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File? kraken_trimd_output     = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.classifiedreads.txt"
     File? kraken_trimd_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.top_kraken_hit.txt"
     File? kraken_trimd_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
     File? trimd_html              = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
     File? trimd_krona             = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
-    File? classified_1            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fasta.gz"
-    File? unclassified_1          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fasta.gz"
-    File? classified_2            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
-    File? unclassified_2          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
+    #File? classified_1            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fasta.gz"
+    #File? unclassified_1          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_1.fasta.gz"
+    #File? classified_2            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_2.fasta.gz"
+    #File? unclassified_2          = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.unclassified_2.fasta.gz"
     #phoenix QC - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     Array[File] file_integrity   = glob("~{samplename}/phx_output/~{samplename}/file_integrity/~{samplename}_*_summary.txt")
     File? paired_fastp_html       = "~{samplename}/phx_output/~{samplename}/fastp_trimd/~{samplename}.fastp.html"
@@ -240,11 +241,16 @@ task phoenix {
     File? assembly                 = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
     File? spades_log               = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.spades.log"
     #phoenix wtasmbld kraken/krona
-    File? kraken_wtasmbld_output   = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.classifiedreads.txt"
     File? kraken_wtasmbld_summary  = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.summary.txt"
     File? kraken_wtasmbld_top_taxa = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
     File? wtasmbld_html            = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
     File? wtasmbld_krona           = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
+    ## phoenix asmbld kraken/krona -- only made when -entry CDC_PHOENIX or CDC_SCAFFOLDS is run
+    File? kraken_asmbld_output     = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.classifiedreads.txt"
+    File? kraken_asmbld_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.summary.txt"
+    File? kraken_asmbld_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.top_kraken_hit.txt"
+    File? asmbld_html              = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/krona/~{samplename}_asmbld.html"
+    File? asmbld_krona             = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/krona/~{samplename}_asmbld.krona"
     #phoenix ani
     File? fast_ani                 = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20250214.ani.txt"
     File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20250214.fastANI.txt"
@@ -281,7 +287,7 @@ task phoenix {
     File? centar_ar_NT_gamma      = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_NT_20240910.gamma"
     File? centar_tox_gamma        = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_toxins/~{samplename}_Cdiff_toxins_srst2_20240909.gamma"
     File? centar_clade            = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
-    File? centar_plasmid          = "~{samplename}/phx_output/~{samplename}/CENTAR/plasmids/~{samplename}_plasmids.tsv"
+    #File? centar_plasmid          = "~{samplename}/phx_output/~{samplename}/CENTAR/plasmids/~{samplename}_plasmids.tsv"
     # NCBI files - optional
     File? ncbi_biosample          = "~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx"
     File? ncbi_sra_metadata       = "~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx"

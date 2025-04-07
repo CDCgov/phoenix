@@ -500,7 +500,7 @@ workflow SCAFFOLDS_EXQC {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false, shigapass_var, centar_var
+            all_summaries_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, false, true, false, shigapass_var, centar_var, params.bldb
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
