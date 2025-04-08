@@ -6,7 +6,7 @@
 
 include { CDIFF_CLADE                    } from '../../modules/local/centar/cdiff_clade'
 include { CDIFF_TOXINOTYPER              } from '../../modules/local/centar/cdiff_toxinotyper'
-include { CDIFF_PLASMIDS                 } from '../../modules/local/centar/cdiff_plasmids'
+//include { CDIFF_PLASMIDS                 } from '../../modules/local/centar/cdiff_plasmids'
 include { GAMMA as CDIFF_TOX_GENES       } from '../../modules/local/gamma'
 include { GAMMA as CDIFF_AR_GENES_ALL    } from '../../modules/local/gamma'
 include { GAMMA as CDIFF_AR_GENES_AA     } from '../../modules/local/gamma'
@@ -124,10 +124,11 @@ workflow CENTAR_SUBWORKFLOW {
         )
         ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
 
+        /* Removing this until we get a methosd to test for cdiff plasmids
         CDIFF_PLASMIDS (
             filtered_scaffolds_ch, params.cdiff_plasmid_db
         )
-        ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)
+        ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)*/
 
         // Running gamma to identify toxin genes in scaffolds for general presence
         CDIFF_TOX_GENES (
@@ -190,7 +191,7 @@ workflow CENTAR_SUBWORKFLOW {
         .join(CDIFF_TOXINOTYPER.out.tox_file.map{        meta, tox_file                 -> [[id:meta.id, project_id:meta.project_id], tox_file]},               by: [[0][0],[0][1]])\
         .join(CDIFF_AR_GENES_AA.out.gamma.map{           meta, gamma                    -> [[id:meta.id, project_id:meta.project_id], gamma]},                  by: [[0][0],[0][1]])\
         .join(CDIFF_AR_GENES_NT.out.gamma.map{           meta, gamma                    -> [[id:meta.id, project_id:meta.project_id], gamma]},                  by: [[0][0],[0][1]])\
-        .join(CDIFF_PLASMIDS.out.plasmids_file.map{      meta, plasmids_file            -> [[id:meta.id, project_id:meta.project_id], plasmids_file]},          by: [[0][0],[0][1]])\
+//        .join(CDIFF_PLASMIDS.out.plasmids_file.map{      meta, plasmids_file            -> [[id:meta.id, project_id:meta.project_id], plasmids_file]},          by: [[0][0],[0][1]])\
         .join(detailed_ribotype_file_ch.map{             meta, detailed_ribotype_file   -> [[id:meta.id, project_id:meta.project_id], detailed_ribotype_file]}, by: [[0][0],[0][1]])
 
         CENTAR_CONSOLIDATER (

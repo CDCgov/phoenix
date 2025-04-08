@@ -3,16 +3,16 @@ process CDIFF_RIBOTYPER {
     label 'process_medium'
     // v1.0.1 - MUST manually change below (line 27)!!!
     //container 'quay.io/jvhagey/newtype@sha256:c6e1aa3022330e0cf645e46523ea7de3706a04f03e5a3b24ffdb24f9d7b2d63c'
-    container 'quay.io/enteevlachos/rosetta@sha256:6d4183671c71553010ac7ef4038b77402a05596b58f4c504a5b29da54cc35b59'
+    container 'quay.io/enteevlachos/rosetta@sha256:8909ca7874abd648854d664eb7a5b5e87b82394014996981eed784c0cbec0fda'
 
     input:
     tuple val(meta), path(csv_core)
     tuple val(meta), path(csv_accessory)
 
     output:
-    tuple val(meta), path("*_ribotype.tsv"),               emit: ribotype_file
-    tuple val(meta), path("*_ribotype_DetailedRport.tsv"), emit: detailed_ribotype_file
-    path("versions.yml"),                                  emit: versions
+    tuple val(meta), path("*_ribotype.tsv"),                emit: ribotype_file
+    tuple val(meta), path("*_ribotype_DetailedReport.tsv"), emit: detailed_ribotype_file
+    path("versions.yml"),                                   emit: versions
 
     when:
     task.ext.when == null || task.ext.when

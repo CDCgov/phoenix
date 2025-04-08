@@ -38,7 +38,7 @@ process UPDATE_GRIPHIN {
     ${ica}combine_GRiPHins.py ${griphin_input} \
         --output ${project_id}_GRiPHin_Summary \
         --coverage ${coverage} \
-        --bldb ${bldb}
+        --bldb ${bldb} \
         ${valid_samplesheet}
 
     cat <<-END_VERSIONS > versions.yml

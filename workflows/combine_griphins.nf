@@ -87,7 +87,8 @@ workflow COMBINE_GRIPHINS_WF {
                 outdir_path,
                 outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
                 valid_samplesheet,
-                params.coverage
+                params.coverage,
+                params.bldb
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
@@ -116,7 +117,8 @@ workflow COMBINE_GRIPHINS_WF {
                 outdir_path, 
                 outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
                 valid_samplesheet, //fix me
-                params.coverage
+                params.coverage,
+                params.bldb
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
             

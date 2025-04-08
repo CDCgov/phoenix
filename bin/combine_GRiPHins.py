@@ -30,7 +30,7 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--output', required=False, default=None, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
     parser.add_argument('-b', '--bldb', required=True, default=None, dest='bldb', help='Name of output file default is GRiPHin_Summary.xlsx.')
     parser.add_argument('-s', '--samplesheet', required=False, default=None, dest='samplesheet', help='samplesheet with sample,directory columns. Used to doublecheck sample names.')
-    parser.add_argument('--griphin_list', required=False, default=None, type=str, dest='griphin_list', help='pass instead of -g1/-g2 when you want to combine more than 2 griphins. If you just pass --griphin_list the script assumes you have multiple griphin_summary.xlsx files in the current dir. You can also pass a csv that just has the full paths to the griphin files you want to combine.')
+    parser.add_argument('--griphin_list', required=False, default=None, nargs='?', const=True, type=str, dest='griphin_list', help='pass instead of -g1/-g2 when you want to combine more than 2 griphins. If you just pass --griphin_list the script assumes you have multiple griphin_summary.xlsx files in the current dir. You can also pass a csv that just has the full paths to the griphin files you want to combine.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
@@ -471,12 +471,14 @@ def main():
     if args.griphin_old != None and args.griphin_new != None:
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(args.griphin_new, args.griphin_old, args.samplesheet)
     else:
-        if args.griphin_list == None:
+        # Will find if griphin_list has an argument with it or not. Will build a griphin list if not given one
+        if args.griphin_list == True:
             griphin_files = glob.glob("*_GRiPHin_Summary.xlsx")
             if len(griphin_files) < 2:
                 raise ValueError(f"{CRED}Need at least two GRiPHin files for combination when using --griphin_list.{CEND}")
         else:
             # A file was provided, read it and get the paths from the file
+            print(type(args.griphin_list), "|"+str(args.griphin_list)+"|")
             griphin_files = []
             with open(args.griphin_list, 'r') as file:
                 for line in file:

@@ -1,7 +1,8 @@
 process CDIFF_TOXINOTYPER {
     tag "${meta.id}"
     label 'process_single'
-    container 'staphb/gamma@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    //container 'staphb/gamma@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    container 'staphb/gamma@sha256:60d8ac58e016349a856fb7b443dd422ba69bae3f40e0dad83460d25ecf71101e'
 
     input:
     tuple val(meta), path(assembly), val(fairy_outcome)
