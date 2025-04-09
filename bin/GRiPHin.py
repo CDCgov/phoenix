@@ -314,7 +314,6 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
                 warnings.append("<70% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
             except ValueError:
                 warnings.append("<70% of reads assigned to top genera hit ({})".format(Trim_Genus_percent))
-
     else:
         pass
     if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
@@ -666,13 +665,13 @@ def parse_ani(fast_ani_file):
         #except IndexError:
         #    second_line = ""
     if "No MASH hit found" in first_line:
-        FastANI_output_list = ['NA','NA','NA','NA']
+        FastANI_output_list = ['Unknown','Unknown','Unknown','Unknown']
         scheme_guess = "NA NA"
         fastani_warning = "No MASH hit found."
     elif "No hits above an ANI value >=80%" in first_line:
-        FastANI_output_list = ['NA','NA','NA','NA']
+        FastANI_output_list = ['Unknown','Unknown','Unknown','Unknown']
         scheme_guess = "NA NA"
-        fastani_warning = "No hits with >=80% ANI."
+        fastani_warning = "No hits >=80% ANI see *.ani.txt for details."
     else:
         fastani_warning = ""
         ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
