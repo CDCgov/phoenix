@@ -25,7 +25,9 @@ WorkflowMain.initialise(workflow, params, log)
 //Check coverage is above its threshold
 if (params.coverage.toInteger() < 30) { exit 1, 'The minimum coverage allowed for QA/QC purposes is 30 and is the default. Please choose a value >=30.' }
 //Check path of kraken2db
-if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
+// Check for incorrect --output parameter
+if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
 
 /*
 ========================================================================================
