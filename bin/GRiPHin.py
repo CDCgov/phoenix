@@ -376,6 +376,14 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     if srst2_warning != None:
         warnings.append(srst2_warning)
     warnings = ', '.join(warnings).strip(", ")
+    # For spades failures, lack of reads after trimming or corruption we will simplify the warnings by supressing other warnings
+    if "No assembly file found possible SPAdes failure." in warnings:
+        warnings = "No assembly file found possible SPAdes failure."
+    elif "is corrupt and is unable to be unzipped" in warnings:
+        warnings = [item for item in warnings if "corrupt" in item]
+    elif  "The # of reads in raw R1/R2 files are NOT equal." in warnings:
+        warnings = [item for item in warnings if "NOT equal" in item]
+    print(warnings)
     return warnings
 
 def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name):
@@ -459,7 +467,7 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
     if str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
         if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
             QC_result.append("FAIL")
-            QC_reason.append("assembly file not found")
+            QC_reason.append("Assembly file not found")
         elif float(assembly_stdev) > 2.58:
             QC_result.append("FAIL")
             QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ")")
@@ -468,6 +476,9 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
         QC_reason.append("High scaffold count >500 ({})".format(str(scaffolds)))
     QC_reason = set(QC_reason)
     QC_reason = ', '.join(QC_reason)
+    # Simplify error for when Assembly file not found
+    if "Assembly file not found" in QC_reason:
+        QC_reason = "Assembly file not found"
     #checking if it was a pass
     if any("FAIL" in sub for sub in QC_result):
         QC_result = "FAIL"
@@ -1165,10 +1176,8 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                 else:
                     gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
             for val in gene_list:
-                print(val)
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
-                    print(gamma_neg_srst2.columns.str.contains(val))
                     #get a dataframe of the gene in question
                     df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
