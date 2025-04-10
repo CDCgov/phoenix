@@ -1,7 +1,7 @@
 process RAWSTATS {
     tag "${meta.id}"
     label 'process_medium'
-    //errorStrategy 'ignore'
+    errorStrategy 'ignore'
     container 'staphb/seqkit'
 
     input:

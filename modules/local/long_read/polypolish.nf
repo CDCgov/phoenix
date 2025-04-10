@@ -1,8 +1,9 @@
 process POLYPOLISH {
-    tag "${meta.id}"
+    tag "${meta}"
     label 'process_high'
-    container 'staphb/polypolish:0.5.0'
-    //sha256:07c4e54940f19bf232f45f90d7806389ece01d17a51fc40514dda902eb834a4b
+    container 'quay.io/staphb/polypolish'
+    errorStrategy 'ignore'
+    
 
     input:
     tuple val(meta), path (fasta), file(sam)
@@ -13,9 +14,8 @@ process POLYPOLISH {
 
     script:
     """
-
-    polypolish_insert_filter.py --in1 ${meta.id}_1.sam --in2 ${meta.id}_2.sam --out1 ${meta.id}_filtered_1.sam --out2 ${meta.id}_filtered_2.sam
-    polypolish ${fasta} ${meta.id}_filtered_1.sam ${meta.id}_filtered_2.sam > ${meta.id}_polished_consensus.fasta
+    polypolish filter --in1 ${meta.id}_1.sam --in2 ${meta.id}_2.sam --out1 ${meta.id}_filtered_1.sam --out2 ${meta.id}_filtered_2.sam
+    polypolish polish --careful $fasta ${meta.id}_filtered_1.sam ${meta.id}_filtered_2.sam > ${meta.id}_polished_consensus.fasta
     #header.sh ${meta.id}_polished_consensus.fasta
 
     #gzip file for down stream process

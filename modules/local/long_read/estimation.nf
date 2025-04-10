@@ -3,6 +3,7 @@ process LRGE {
     label 'process_medium'
     //errorStrategy 'ignore'
     container 'quay.io/staphb/lrge'
+    errorStrategy 'ignore'
 
     input:
     tuple val(meta), path(reads)

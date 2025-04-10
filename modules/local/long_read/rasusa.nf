@@ -3,6 +3,7 @@ process RASUSA {
     label 'process_high'
     container 'staphb/rasusa:0.7.0'
     //sha256:39642529ba1de30c1e52df8063c5381ffba793993a043df808dc2bdbaf655f78
+    errorStrategy 'ignore'
 
     input:
     tuple val(meta), path(reads)

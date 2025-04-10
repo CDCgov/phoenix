@@ -3,6 +3,7 @@ process BWA {
   label 'process_medium'
   container 'staphb/bwa:0.7.17'
   //sha256:5352be51d07f011974dac4c0db8800731360d435dfd0a6258d1cd1c877166bd1
+  errorStrategy 'ignore'
 
   input:
   tuple val(meta), file(fasta), file(reads)

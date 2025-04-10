@@ -3,6 +3,7 @@ process MEDAKA {
     label 'process_high'
     container 'staphb/medaka:1.2.0'
     //sha256:3c84e7f69ada219a88ef06a10f187080fd5fab02d025f6eb048da2ad800186c2
+    errorStrategy 'ignore'
 
     input:
     tuple val(meta), path(fasta), path(fastq)
@@ -13,9 +14,9 @@ process MEDAKA {
 
     script:
     """
-    medaka_consensus -i ${fastq} -d ${fasta} -o ./ -t $task.cpus
+    medaka_consensus -i ${fastq} -d ${fasta} -o ${meta.id} -t 16
 
-    cp consensus.fasta ${meta.id}_medaka_consensus.fasta
+    cp ${meta.id}/consensus.fasta ${meta.id}_medaka_consensus.fasta
 
     gzip ${meta.id}_medaka_consensus.fasta
 

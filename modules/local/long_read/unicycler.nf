@@ -3,6 +3,7 @@ process UNICYCLER {
     label 'process_high'
     container 'staphb/unicycler:0.5.0'
     //sha256:f1e556959e2b6df92d66726ed9743bb17fccd1a6a2bf4961dcc399512b03512d
+    errorStrategy 'ignore'
 
     input:
     tuple val(meta), path(fastq)

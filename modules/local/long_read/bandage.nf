@@ -3,6 +3,7 @@ process BANDAGE {
     label 'process_medium'
     container 'quay.io/biocontainers/bandage:0.8.1--hc9558a2_2'
     //sha256:79ae0ef6de06b68476667458da712bcddd2307bfd69d4cd3061944ab4c448ece
+    errorStrategy 'ignore'
 
     input:
     tuple val(meta), path(assembly_graph)

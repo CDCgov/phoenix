@@ -3,6 +3,7 @@ process FLYE {
     label 'process_high'
     container 'staphb/flye:2.9.3'
     //sha256:bcca8c41798c6f4b3ce334a2faa9a010859fb2bbb2e8992a1b0abb84a8fa0c4c
+    errorStrategy 'ignore'
 
     input:
     tuple val(meta), path(fastq)

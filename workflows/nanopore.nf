@@ -112,7 +112,7 @@ workflow PHOENIX_LR_WF {
     RASUSA (INPUT_CHECK.out.reads,LRGE.out.estimation,params.depth)
     //ch_versions = ch_versions.mix(RASUSA.out.versions)
 
-    NANOQ (RAWSTATS.out.rawstats,RASUSA.out.subfastq)
+    NANOQ (RAWSTATS.out.rawstats,RASUSA.out.subfastq,params.length,params.qscore)
     //ch_versions = ch_versions.mix(NANOQ.out.versions)
 
 /*

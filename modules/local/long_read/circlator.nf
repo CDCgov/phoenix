@@ -3,6 +3,7 @@ process CIRCLATOR {
     label 'process_medium'
     container 'staphb/circlator:1.5.6'
     //sha256:04576d9de1dae0244e96e69f4bc8f1f943849e6967733ce281cbcdaa5706f16f
+    errorStrategy 'ignore'
 
     input:
     tuple val(meta), path(fasta)
