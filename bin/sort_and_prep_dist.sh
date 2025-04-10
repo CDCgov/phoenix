@@ -11,7 +11,8 @@
 #
 # Created by Nick Vlachos (nvx4@cdc.gov)
 
-version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0.3 (04/19/2022)
+#version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0.3 (04/19/2022)
+version=2.1 # (04/10/2024) update to handle scientific notation
 
 #  Function to print out help blurb
 show_help () {
@@ -58,7 +59,7 @@ while getopts ":h?x:d:a:o:t:V" option; do
 done
 
 if [[ "${options_found}" -eq 0 ]]; then
-	echo "No argument supplied to best_hit_from_kraken_noconfig.sh, exiting"
+	echo "No argument supplied to sort_and_prep.sh, exiting"
 	show_help
 	exit 1
 fi
@@ -84,7 +85,8 @@ sample_name=$(basename "${dist_file}" .txt)
 
 sorted_dists="${dist_file//.txt/_sorted.txt}"
 
-sort -k3 -n -o "${sorted_dists}" "${dist_file}"
+#swapped -n for -g to handle scientific notation
+sort -k3 -g -o "${sorted_dists}" "${dist_file}"
 
 cutoff=$(head -n20 "${sorted_dists}" | tail -n1 | cut -d'	' -f3)
 
@@ -97,8 +99,6 @@ matches=0
 # Temporarily setting value here, should move to main parameters in the future?
 max_hits=40 #Target is 20, but we'll allow twice as many even though this likely only occurs in crummy isolates
 
-
-
 #echo "${assembly_file}" > "${sample_name}_best_MASH_hits.txt"
 
 ##
@@ -109,8 +109,10 @@ while IFS= read -r var; do
 	dist=$(echo ${var} | cut -d' ' -f3)
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
+	#use python to handle cases of scientific notation
+	result=$(python3 -c "print(1 if float('$dist') <= float('$cutoff') else 0)")
 	# Also setting a minimum kmer threshold to ensure 1000 crappy hits dont make it ner the top with 1/1000 kmer matches
-	if ((( $(echo "$dist <= $cutoff" | $bc_path -l) )) && [ ${kmers} -gt 5 ] && [ ${matches} -le ${max_hits} ]); then
+	if ([ "$result" -eq 1 ] && [ ${kmers} -gt 5 ] && [ ${matches} -le ${max_hits} ]); then
 		if [[ -f "${outdir}/${source}.gz" ]]; then
 			echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
 #		if [[ -f "${GCF_name}.gz" ]]; then
@@ -140,6 +142,26 @@ while IFS= read -r var; do
 				fi
 			else
 				echo "GCF check did not pass, look into the differences of ${source}"
+				# Try alternative parsing of GCF_name
+				GCF_name=$(echo "${source}" | cut -d'_' -f2-)
+				GCF_check=${GCF_name:0:4}
+				if [[ "${GCF_check}" = "GCF_" ]]; then
+					filename=$(echo ${GCF_name} | cut -d'_' -f1)
+					alpha=${filename:4:3}
+					beta=${filename:7:3}
+					charlie=${filename:10:3}
+					echo "Retrying with fallback GCF_name - ${GCF_name}"
+					echo "Trying fallback - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz"
+					$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz
+					if [[ -s "${outdir}/${source}.gz" ]]; then
+						echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
+						matches=$(( matches + 1 ))
+					else
+						echo "Fallback GCF download failed for ${source}"
+					fi
+				else
+					echo "Fallback GCF check did not pass for ${source} either"
+				fi
 			fi
 		fi
 	else
