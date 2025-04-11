@@ -6,16 +6,12 @@ process QUAST {
     container 'staphb/quast@sha256:850dd9821c0c92c8bb1b258658a64b39682e8f3d61dd1fa6f40e3ef906f1edb8'
 
     input:
-    tuple val(meta), path(consensus), val(fairy_outcome)
+    tuple val(meta), path(consensus)
 
     output:
     tuple val(meta), path("quast")        , emit: results
     tuple val(meta), path('*.tsv')        , emit: report_tsv
     path "versions.yml"                   , emit: versions
-
-    when:
-    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args     = task.ext.args   ?: ''

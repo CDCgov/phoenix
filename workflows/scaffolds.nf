@@ -217,6 +217,8 @@ workflow SCAFFOLDS_EXTERNAL {
         filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
         // The merging here is slightly different than with CDC_PHOENIX as the scaffolds outcome is meta.id meta.single_end for the scaffolds entry and only meta.id for CDC_PHOENIX
         .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+        .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+        .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }
 
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
@@ -297,6 +299,8 @@ workflow SCAFFOLDS_EXTERNAL {
         scaffolds_and_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
             .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{                                  meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}, by: [0])
             .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{            meta, fairy_outcome      -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .filter { meta, taxonomy, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .map{ meta, taxonomy, filtered_scaffolds, fairy_outcome -> return [meta, taxonomy, filtered_scaffolds ] }
 
         // Get ID from ShigaPass
         SHIGAPASS (

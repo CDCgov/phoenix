@@ -141,7 +141,9 @@ workflow UPDATE_PHOENIX_WF {
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         filtered_scaffolds_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
-        .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome  -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+            .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }
 
         // Running gamma to identify AR genes in scaffolds
         GAMMA_AR (
@@ -151,7 +153,9 @@ workflow UPDATE_PHOENIX_WF {
 
         // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
         trimd_reads_file_integrity_ch = CREATE_INPUT_CHANNELS.out.reads.join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
-        .join(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch.map{meta, phoenix_tsv_ch -> [[id:meta.id, project_id:meta.project_id], meta.entry]}, by: [[0][0],[0][1]])
+                .filter { meta, reads, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+                .map{ meta, reads, fairy_outcome -> return [meta, reads ] }
+                .join(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch.map{meta, phoenix_tsv_ch -> [[id:meta.id, project_id:meta.project_id], meta.entry]}, by: [[0][0],[0][1]])
 
         // now we will split the channel into its true (busco present) and false (busco wasn't run with this dataset) elements
         busco_boolean_1ch = trimd_reads_file_integrity_ch.branch{ 
@@ -160,7 +164,7 @@ workflow UPDATE_PHOENIX_WF {
 
         // Idenitifying AR genes in trimmed reads - using only datasets that were previously run with CDC_PHOENIX entry
         SRST2_AR (
-            busco_boolean_1ch.buscoTrue.map{meta, reads, fairy_outcome, busco_boolean -> [meta, reads, fairy_outcome]}, "gene", params.ardb
+            busco_boolean_1ch.buscoTrue.map{meta, reads, busco_boolean -> [meta, reads]}, "gene", params.ardb
         )
         ch_versions = ch_versions.mix(SRST2_AR.out.versions)
 

@@ -27,6 +27,7 @@ if (params.coverage.toInteger() < 30) { exit 1, 'The minimum coverage allowed fo
 //Check path of kraken2db
 if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
 // Check for incorrect --output parameter
+params.output = "" /// Initialise param so no warning is printed
 if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
 
 /*

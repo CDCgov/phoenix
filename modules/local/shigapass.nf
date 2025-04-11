@@ -4,7 +4,7 @@ process SHIGAPASS {
     container "staphb/shigapass@sha256:83da89164161c54995ec422a55afea39267bc44c194b9a33ccc593ff1d8109e4"
 
     input:
-    tuple val(meta), path(taxa_file), path(scaffolds), val(fairy_outcome)
+    tuple val(meta), path(taxa_file), path(scaffolds)
     path(shigapass_database)
 
     output:
@@ -12,10 +12,6 @@ process SHIGAPASS {
     tuple val(meta), path("*_ShigaPass_summary.csv"),                     emit: summary
     tuple val(meta), path("${meta.id}.tax"),                              emit: tax_file
     path("versions.yml"),                                                 emit: versions
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def container = task.container.toString() - "staphb/shigapass@"

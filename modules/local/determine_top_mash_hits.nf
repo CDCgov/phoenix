@@ -5,16 +5,13 @@ process DETERMINE_TOP_MASH_HITS {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    tuple val(meta), path(mash_dists), path(assembly_scaffolds), val(fairy_outcome)
+    tuple val(meta), path(mash_dists), path(assembly_scaffolds)
 
     output:
-    tuple val(meta), path('*_best_MASH_hits.txt'), emit: top_taxa_list
-    tuple val(meta), path('reference_dir'),        emit: reference_dir
-    path("versions.yml"),                          emit: versions
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
+    tuple val(meta), path('*_best_MASH_hits.txt'),      emit: top_taxa_list
+    tuple val(meta), path('reference_dir'),             emit: reference_dir
+    tuple val(meta), path('*_genome_download_log.txt'), emit: log
+    path("versions.yml"),                               emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths

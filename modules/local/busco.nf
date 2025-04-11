@@ -5,8 +5,7 @@ process BUSCO {
     container 'quay.io/biocontainers/busco@sha256:5261865d844332061506157064abfd6ff3f96520f0f1272451174dd3ee42e4fe'
 
     input:
-    tuple val(meta), path('tmp_input/*'), path(busco_lineages_path), // path to busco lineages - downloads if not set
-    val(fairy_outcome)
+    tuple val(meta), path('tmp_input/*'), path(busco_lineages_path) // path to busco lineages - downloads if not set
     each(lineage)                          // Required:    lineage to check against, "auto" enables --auto-lineage instead
     path(config_file)                      // Optional:    busco configuration file
 
@@ -17,10 +16,6 @@ process BUSCO {
     tuple val(meta), path("short_summary.*.json")         , optional: true, emit: short_summaries_json
     tuple val(meta), path("*-busco")                      , emit: busco_dir
     path "versions.yml"                                   , emit: versions
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args = task.ext.args ?: ''

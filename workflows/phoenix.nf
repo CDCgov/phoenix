@@ -189,7 +189,9 @@ workflow PHOENIX_EXTERNAL {
         //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
         //The mapping here is just to get things in the right bracket so we can call var[0]
         read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0]) 
-            .join(CORRUPTION_CHECK.out.outcome_to_edit.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+                .join(CORRUPTION_CHECK.out.outcome_to_edit.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
+                .filter { meta, reads, fairy_outcome_to_edit, fairy_outcome -> fairy_outcome.every { it.startsWith("PASSED:") } } //if the files are not corrupt then get the read stats
+                .map{ meta, reads, fairy_outcome_to_edit, fairy_outcome -> return [meta, reads, fairy_outcome_to_edit] }
 
         //Get stats on raw reads if the reads aren't corrupted
         GET_RAW_STATS (
@@ -199,6 +201,8 @@ workflow PHOENIX_EXTERNAL {
 
         // Combining reads with output of corruption check
         bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome_to_edit.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
+                .filter { meta, reads, fairy_outcome -> fairy_outcome.every { it.startsWith("PASSED:") } }
+                .map{ meta, reads, fairy_outcome -> return [meta, reads] }
 
         // Remove PhiX reads
         BBDUK (
@@ -231,6 +235,8 @@ workflow PHOENIX_EXTERNAL {
 
         // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
         trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome_to_edit.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
+                .filter { meta, reads, fairy_outcome -> fairy_outcome[3] == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."} 
+                .map{ meta, reads, fairy_outcome -> return [meta, reads] }
 
         // Running Fastqc on trimmed reads
         FASTQCTRIMD (
@@ -287,6 +293,8 @@ workflow PHOENIX_EXTERNAL {
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{        meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
             .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }
 
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
@@ -368,6 +376,8 @@ workflow PHOENIX_EXTERNAL {
         scaffolds_and_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
             .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{                                  meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}, by: [0])
             .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{            meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .filter { meta, taxonomy, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .map{ meta, taxonomy, filtered_scaffolds, fairy_outcome -> return [meta, taxonomy, filtered_scaffolds ] }
 
         // Get ID from ShigaPass
         SHIGAPASS (
@@ -423,10 +433,6 @@ workflow PHOENIX_EXTERNAL {
             filtered_scaffolds_ch, [], []
         )
         ch_versions = ch_versions.mix(PROKKA.out.versions)
-
-        /*// Fetch AMRFinder Database
-        AMRFINDERPLUS_UPDATE( )
-        ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)*/
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (

@@ -5,7 +5,7 @@ process PROKKA {
     container 'staphb/prokka@sha256:4ef8e13b87f6ba1bc79f599970ec25c60a80913ab0bc15c90171c9743e86994f'
 
     input:
-    tuple val(meta), path(fasta), val(fairy_outcome)
+    tuple val(meta), path(fasta)
     path(proteins)
     path(prodigal_tf)
 
@@ -23,10 +23,6 @@ process PROKKA {
     tuple val(meta), path("*.txt"), emit: txt
     tuple val(meta), path("*.tsv"), emit: tsv
     path "versions.yml" , emit: versions
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     //set up for terra

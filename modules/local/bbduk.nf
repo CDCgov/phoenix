@@ -5,17 +5,13 @@ process BBDUK {
     container 'staphb/bbtools@sha256:161b0e1e198110b7edff8084ae9854d84eb32789d0fd62c7ced302078911c9d7'
 
     input:
-    tuple val(meta), path(reads), val(fairy_outcome)
+    tuple val(meta), path(reads)
     path(contaminants)
 
     output:
     tuple val(meta), path('*.fastq.gz'), emit: reads
     tuple val(meta), path('*.log')     , emit: log
     path "versions.yml"                , emit: versions
-
-    when:
-    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
-    "${fairy_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt." && "${fairy_outcome[2]}" == "PASSED: Read pairs for ${meta.id} are equal."
 
     script:
     def args = task.ext.args ?: ''
