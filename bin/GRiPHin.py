@@ -441,7 +441,7 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
                 if ('FAILED CORRUPTION CHECK!' in line):
                     fastq_file_failure = str(line.split(' ')[10])
                     QC_result.append("FAIL")
-                    QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped")
+                    QC_reason.append(str(fastq_file_failure) + " is corrupt and is unable to be unzipped")
                 if ('FAILED: The number of reads in R1/R2 are NOT the same!' in line):
                     QC_result.append("FAIL")
                     QC_reason.append("The # of reads in raw R1/R2 files are NOT equal")
@@ -699,6 +699,7 @@ def parse_ani(fast_ani_file):
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
         organism = ani_df["Organism"][0].replace("-chromosome", "")
+        organism = re.sub(r"-strain.*", "", organism) # remove everything after strain
         #if sp. is followed by anything other than a space add it.
         if "sp." in organism and re.search(r'sp\.\S', organism):
             organism = organism.replace("sp.","sp. ")

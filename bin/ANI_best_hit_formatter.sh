@@ -100,13 +100,19 @@ else
 	best_coverage=$(echo "scale=2; 100 * $fragment_matches / $total_fragments" | $bc_path -l)
 
 	# Pulling taxonomy from filename which was looked up. Can possibly be out of date. REFSEQ file will ALWAYS be current though
+	echo "${best_file}"
 	best_genus=$(echo "${best_file}" | cut -d'_' -f1)
 	# handling for if uncultured is in the organism genome file name
 	if [[ "${best_genus}" == "Uncultured" ]]; then
 		best_genus=$(echo "${best_file}" | cut -d'_' -f2)
 		best_species=$(echo "${best_file}" | cut -d'_' -f3)
 	else
-		best_species=$(echo "${best_file}" | cut -d'_' -f2)
+		if [[ "$(echo "${best_file}" | cut -d'_' -f2)" != *complex* ]]; then
+			best_species=$(echo "${best_file}" | cut -d'_' -f2)
+		else
+			best_species=$(echo "${best_file%%_GCF*}" | sed 's/-/ /g' | cut -d'_' -f2) # remove everything after _GCF, remove excess - then split to get species
+			echo $best_species
+		fi
 	fi
 	best_organism_guess="${best_genus} ${best_species}"
 
