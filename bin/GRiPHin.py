@@ -477,8 +477,18 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
     QC_reason = set(QC_reason)
     QC_reason = ', '.join(QC_reason)
     # Simplify error for when Assembly file not found
-    if "Assembly file not found" in QC_reason:
+    check_QC_reason = QC_reason
+    if "Assembly file not found" in check_QC_reason:
         QC_reason = "Assembly file not found"
+        if "is corrupt and is unable to be unzipped" in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "corrupt" in item ]
+            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+        elif "The # of reads in raw R1/R2 files are NOT equal" in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "NOT equal" in item]
+            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+        elif "No reads" in check_QC_reason or "No scaffolds" in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "No reads" in item or "No scaffolds" in item]
+            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
     #checking if it was a pass
     if any("FAIL" in sub for sub in QC_result):
         QC_result = "FAIL"
@@ -1560,12 +1570,12 @@ def create_samplesheet(input_directory, scaffolds_entry):
         samplesheet.write('sample,directory\n')
     dirs = sorted(os.listdir(input_directory))
     # Filter directories based on the presence of *_1.trim.fastq.gz files
-    if scaffolds_entry == False:
-        valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "raw_stats", "*_raw_read_counts.txt")) ]
-        files_glob = "./raw_stats/*_raw_read_counts.txt"
-    else:
-        valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "assembly", "*.filtered.scaffolds.fa.gz")) ]
-        files_glob = "./raw_stats/*_raw_read_counts.txt"
+    #if scaffolds_entry == False:
+    valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "*_summaryline.tsv")) ]
+    files_glob = "*_summaryline.tsv"
+    #else
+    #    valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "assembly", "*.filtered.scaffolds.fa.gz")) ]
+    #    files_glob = "./assembly/*.filtered.scaffolds.fa.gz"
     # Identify and warn about excluded directories
     excluded_dirs = [excluded_dir for excluded_dir in dirs if excluded_dir not in valid_directories]
     print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no '{files_glob}' files weren't found in these locations.\033[0m\n")
