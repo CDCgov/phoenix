@@ -101,7 +101,8 @@ max_hits=40 #Target is 20, but we'll allow twice as many even though this likely
 
 #echo "${assembly_file}" > "${sample_name}_best_MASH_hits.txt"
 
-##
+## create empty log file to add to 
+touch ${sample_name}_genome_download_log.txt
 
 while IFS= read -r var; do
 	echo "${var}"
@@ -115,53 +116,38 @@ while IFS= read -r var; do
 	if ([ "$result" -eq 1 ] && [ ${kmers} -gt 5 ] && [ ${matches} -le ${max_hits} ]); then
 		if [[ -f "${outdir}/${source}.gz" ]]; then
 			echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
-#		if [[ -f "${GCF_name}.gz" ]]; then
-#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
 			matches=$(( matches + 1))
 		else
-			filename=$(echo ${source} | cut -d'_' -f3- | rev | cut -d'_' -f2,3,4 | rev)
-			GCF_name=$(echo "${source}" | cut -d'_' -f3-)
-			GCF_check=${GCF_name:0:4}
-			if [[ "${GCF_check}" = "GCF_" ]]; then
-				alpha=${filename:4:3}
-				beta=${filename:7:3}
-				charlie=${filename:10:3}
-				echo "Copying - ${filename}"
-				echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz"
-				$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz
-	#			echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz"
-	#			wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz
-				#curl --remote-name --remote-time "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz"
-				# Check if file exists and is not empty, if so it will move on to the next best hit. Dont really know a better way to deal with a crappy download situation
-				if [[ -s "${outdir}/${source}.gz" ]]; then
-					echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
-		#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
-					matches=$(( matches + 1))
-				else
-					echo "${source} did not download correctly"
-				fi
-			else
-				echo "GCF check did not pass, look into the differences of ${source}"
-				# Try alternative parsing of GCF_name
-				GCF_name=$(echo "${source}" | cut -d'_' -f2-)
+			# Loop through field numbers 3-6 to find valid GCF_ pattern
+			GCF_found=0
+			for field_num in {3..6}; do
+				GCF_name=$(echo "${source}" | cut -d'_' -f${field_num}-)
 				GCF_check=${GCF_name:0:4}
 				if [[ "${GCF_check}" = "GCF_" ]]; then
-					filename=$(echo ${GCF_name} | cut -d'_' -f1)
+					GCF_found=1
+					filename=$(echo ${source} | cut -d'_' -f${field_num}- | rev | cut -d'_' -f2,3,4 | rev)
 					alpha=${filename:4:3}
 					beta=${filename:7:3}
 					charlie=${filename:10:3}
-					echo "Retrying with fallback GCF_name - ${GCF_name}"
-					echo "Trying fallback - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz"
+					echo "Copying - ${filename}"
+					echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz"
 					$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz
+		#			echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz"
+		#			wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz
+					#curl --remote-name --remote-time "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz"
+					# Check if file exists and is not empty, if so it will move on to the next best hit. Dont really know a better way to deal with a crappy download situation
 					if [[ -s "${outdir}/${source}.gz" ]]; then
 						echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
-						matches=$(( matches + 1 ))
+			#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
+						matches=$(( matches + 1))
 					else
-						echo "Fallback GCF download failed for ${source}"
+						echo "${source} did not download correctly" >> ${sample_name}_genome_download_log.txt
 					fi
-				else
-					echo "Fallback GCF check did not pass for ${source} either"
+					break  # Exit the for loop once GCF_ is found
 				fi
+			done
+			if [[ ${GCF_found} -eq 0 ]]; then
+				echo "GCF check did not pass for any field position in ${source}" >> ${sample_name}_genome_download_log.txt
 			fi
 		fi
 	else
