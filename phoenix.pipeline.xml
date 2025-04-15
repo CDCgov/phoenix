@@ -60,6 +60,12 @@ All files will be staged in workflow.launchDir</pd:description>
                     <pd:booleanType/>
                     <pd:value>false</pd:value>
                 </pd:parameter>
+                <pd:parameter code="centar" minValues="1" maxValues="1" classification="USER">
+                    <pd:label>centar</pd:label>
+                    <pd:description>Set to true if you want additional information (Toxin A/B Variants, Other Toxins and C. difficile Specific AR Mutations) on C. diff isolates.</pd:description>
+                    <pd:booleanType/>
+                    <pd:value>false</pd:value>
+                </pd:parameter>
             </pd:tool>
         </pd:step>
         <pd:step execution="MANDATORY" code="scaffolds entry parameters">
