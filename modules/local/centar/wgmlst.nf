@@ -4,7 +4,7 @@ process WGMLST {
     container params.wgmlst_container
 
     input:
-    tuple val(meta), path(assembly), val(fairy_outcome)
+    tuple val(meta), path(assembly)
     path(blast_kb)
     val(blastdb)
     val(loci)

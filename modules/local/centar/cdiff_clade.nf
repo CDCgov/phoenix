@@ -5,14 +5,11 @@ process CDIFF_CLADE {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    tuple val(meta), path(mlst_combined_file), val(taxa_id), path(mlst_database)
+    tuple val(meta), path(mlst_combined_file), path(mlst_database)
 
     output:
     tuple val(meta), path("*clade.tsv"), emit: clade
     path "versions.yml"                , emit: versions
-
-    when:
-   "${taxa_id}" == "Clostridioides difficile"
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.

@@ -413,7 +413,7 @@ workflow PHOENIX_EXTERNAL {
         // Run centar if necessary
 
         //First, check if any isolates are Clostridioides difficile and filter those to go through the channel
-        determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides difficile"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
+        determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
 
         if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
             // centar subworkflow requires project_ID as part of the meta

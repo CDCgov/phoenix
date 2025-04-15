@@ -63,8 +63,8 @@ def get_taxa(input_ch){
             }
         }
     // Change from Genus species match, to just species. Since Clostridioidesd only has a very small list of species we will go ahead and check all to gauge toxicity
-    return [input_ch[0], "$genus $species" ]
-    //return [input_ch[0], "$genus" ]
+    //return [input_ch[0], "$genus $species" ]
+    return [input_ch[0], "$genus" ]
 }
 
 def get_only_taxa(input_ch){ 
@@ -111,24 +111,22 @@ workflow CENTAR_SUBWORKFLOW {
 
         // Check the taxa file to confirm the organism is Clostridioides difficile
         cdiff_check = taxonomy.map{it -> get_taxa(it)} // get organism from file
-        cdiff_check2 = taxonomy.map{it -> get_taxa(it)} // get organism from file
-         
-        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        // we will filter out an samples that aren't Clostridioides difficile
-        filtered_scaffolds_ch = filtered_scaffolds.map{        meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}\
-            .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\
-            .join(cdiff_check, by: [[0][0],[0][1]]).filter{    meta, filtered_scaffolds, fairy_outcome, taxa_id -> taxa_id.tokenize()[0] == "Clostridioides" }.map{ meta, filtered_scaffolds, fairy_outcome, taxa_id -> [meta, filtered_scaffolds, fairy_outcome]}
+        clade_ch = combined_mlst.join(taxonomy.map{it -> get_taxa(it)}, by: [[0][0],[0][1]])
+                    .filter{ meta, combined_mlst, cdiff_check -> cdiff_check.tokenize()[0] == "Clostridioides" }
+                    .map{meta, combined_mlst, cdiff_check -> [meta, combined_mlst] }.combine(mlst_db)
 
         CDIFF_CLADE (
-            combined_mlst.join(cdiff_check2, by: [[0][0],[0][1]]).combine(mlst_db)
+            clade_ch
         )
         ch_versions = ch_versions.mix(CDIFF_CLADE.out.versions)
 
-        /* Removing this until we get a methosd to test for cdiff plasmids
-        CDIFF_PLASMIDS (
-            filtered_scaffolds_ch, params.cdiff_plasmid_db
-        )
-        ch_versions = ch_versions.mix(CDIFF_PLASMIDS.out.versions)*/
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        // we will filter out an samples that aren't Clostridioides difficile
+        filtered_scaffolds_ch = filtered_scaffolds.map{        meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}\
+            .join(fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+            .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }
+            .join(cdiff_check, by: [[0][0],[0][1]]).filter{   meta, filtered_scaffolds, taxa_id -> taxa_id.tokenize()[0] == "Clostridioides" }.map{ meta, filtered_scaffolds, taxa_id -> [meta, filtered_scaffolds ]}
 
         // Running gamma to identify toxin genes in scaffolds for general presence
         CDIFF_TOX_GENES (
@@ -191,11 +189,10 @@ workflow CENTAR_SUBWORKFLOW {
         .join(CDIFF_TOXINOTYPER.out.tox_file.map{        meta, tox_file                 -> [[id:meta.id, project_id:meta.project_id], tox_file]},               by: [[0][0],[0][1]])\
         .join(CDIFF_AR_GENES_AA.out.gamma.map{           meta, gamma                    -> [[id:meta.id, project_id:meta.project_id], gamma]},                  by: [[0][0],[0][1]])\
         .join(CDIFF_AR_GENES_NT.out.gamma.map{           meta, gamma                    -> [[id:meta.id, project_id:meta.project_id], gamma]},                  by: [[0][0],[0][1]])\
-//        .join(CDIFF_PLASMIDS.out.plasmids_file.map{      meta, plasmids_file            -> [[id:meta.id, project_id:meta.project_id], plasmids_file]},          by: [[0][0],[0][1]])\
         .join(detailed_ribotype_file_ch.map{             meta, detailed_ribotype_file   -> [[id:meta.id, project_id:meta.project_id], detailed_ribotype_file]}, by: [[0][0],[0][1]])
 
         CENTAR_CONSOLIDATER (
-           cdiff_summary_ch, params.cemb_strt_xwalk
+            cdiff_summary_ch, params.cemb_strt_xwalk
         )
         ch_versions = ch_versions.mix(CENTAR_CONSOLIDATER.out.versions)
 
