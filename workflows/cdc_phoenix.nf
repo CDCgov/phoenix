@@ -112,7 +112,8 @@ def get_taxa(input_ch){
                 species = line.split(":")[1].trim().split('\t')[1]
             }
         }
-        return ["$genus $species", input_ch[0], input_ch[1]]
+        //return ["$genus $species", input_ch[0], input_ch[1]]
+        return ["$genus", input_ch[0], input_ch[1]]
 }
 
 def get_only_taxa(input_ch){ 
@@ -125,7 +126,8 @@ def get_only_taxa(input_ch){
                 species = line.split(":")[1].trim().split('\t')[1]
             }
         }
-        return [ "$genus $species" ]
+        //return [ "$genus $species" ]
+        return [ "$genus" ]
 }
 
 def check_params_var(species_bol, species_param) {
@@ -445,7 +447,7 @@ workflow PHOENIX_EXQC {
         // Run centar if necessary
 
         //First, check if any isolates are Clostridioides difficile and filter those to go through the channel
-        determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides difficile"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
+        determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
 
         if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
             // centar subworkflow requires project_ID as part of the meta
@@ -590,7 +592,7 @@ workflow PHOENIX_EXQC {
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
         //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
-        centar_boolean = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides difficile"}.collect().sum().map{ it -> it[0] > 0 }
+        centar_boolean = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
         // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
         centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0

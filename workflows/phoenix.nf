@@ -107,7 +107,8 @@ def get_taxa(input_ch){
                 species = line.split(":")[1].trim().split('\t')[1]
             }
         }
-        return ["$genus $species", input_ch[0], input_ch[1]]
+        //return ["$genus $species", input_ch[0], input_ch[1]]
+        return ["$genus", input_ch[0], input_ch[1]]
 }
 
 def get_only_taxa(input_ch){ 
@@ -120,7 +121,8 @@ def get_only_taxa(input_ch){
                 species = line.split(":")[1].trim().split('\t')[1]
             }
         }
-        return [ "$genus $species" ]
+        //return [ "$genus $species" ]
+        return [ "$genus" ]
 }
 
 def add_project_id(old_meta, input_ch, outdir_path){
@@ -554,7 +556,7 @@ workflow PHOENIX_EXTERNAL {
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
         //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
-        centar_var = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides difficile"}.collect().sum().map{ it -> it[0] > 0 }
+        centar_var = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
