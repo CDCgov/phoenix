@@ -30,7 +30,7 @@ from species_specific_griphin import clean_and_format_centar_dfs, create_centar_
 
 # Function to get the script version
 def get_version():
-    return "2.0.0"
+    return "2.1.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
@@ -428,7 +428,7 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
         kraken_wtasmbld_report = 'Unknown'
     return kraken_trim_genus, kraken_wtasmbld_genus
 
-def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds):
+def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds, sample_name):
     """Checking auto pass fail conditions"""
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
     QC_reason = []
@@ -482,7 +482,12 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
         QC_reason = "Assembly file not found"
         if "is corrupt and is unable to be unzipped" in check_QC_reason:
             new_QC_reason = [item for item in check_QC_reason.split(",") if "corrupt" in item ]
-            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+            if len(new_QC_reason) == 1:
+                QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+            elif len(new_QC_reason) == 2:
+                QC_reason = "No assembly due to: " + sample_name + "_R1 and " + sample_name + "_R2 files being corrupted."
+            else:
+                print(f"This shouldn't happen, please open a github issue.")
         elif "The # of reads in raw R1/R2 files are NOT equal" in check_QC_reason:
             new_QC_reason = [item for item in check_QC_reason.split(",") if "NOT equal" in item]
             QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
@@ -815,7 +820,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         gc_stdev = sample_gc = out_of_range_stdev = species_gc_mean = 'Unknown'
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
-        QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count)
+        QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count, sample_name)
     except FileNotFoundError: 
         print("Warning: Possibly coverage and assembly length was not calculated and/or "+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
@@ -1684,6 +1689,7 @@ def main():
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
         full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
+        print(full_centar_df)
         ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
         centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
         # combing centar with phx qc information

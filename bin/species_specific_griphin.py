@@ -65,6 +65,7 @@ def clean_and_format_centar_dfs(centar_df):
     #   existing_columns_in_order = A_B_Tox_col + other_Tox_col + mutations_col + RB_type_col 
     #if clean_centar_df.empty or clean_centar_df.columns.tolist() == ["WGS_ID"]: #for cases where centar wasn't run for that sample - not c. diff or a qc failure sample
     #    clean_centar_df = pd.DataFrame(columns = existing_columns_in_order) # Assign the headers to the DataFrame
+    print(clean_centar_df)
     ordered_centar_df = clean_centar_df[existing_columns_in_order]
     return ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len
 
@@ -73,7 +74,7 @@ def create_centar_combined_df(directory, sample_name):
     # Filtering rows where Final_Taxa_ID contains 'shigella' or 'e.coli'
     # if there is a trailing / remove it
     directory = directory.rstrip('/')
-     # create file names
+    # create file names
     centar_summary = directory + "/CENTAR/" + sample_name + "_centar_output.tsv"
     #centar_summary = sample_name + "_centar_output.tsv"
     par='/'.join(directory.split('/')[0:-1])

@@ -3,6 +3,7 @@
 import sys
 import glob
 import os
+import fnmatch
 from decimal import *
 getcontext().prec = 4
 import argparse
@@ -41,10 +42,10 @@ def List_TSV(output_file, input_list, busco):
 
 def collect_files():
     summary_files = glob.glob('*.tsv')
-    try: #check to see if the empty_summaryline file is there and remove it if so
-        summary_files.remove('empty_summaryline.tsv')
-    except ValueError:
-        pass # just do nothing
+    files_to_remove = ['empty_summaryline.tsv', '*_centar_output.tsv', 'Phoenix_Summary.tsv']
+    summary_files = [file for file in summary_files
+                        if not any(fnmatch.fnmatch(file, pattern) for pattern in files_to_remove)]
+    print(summary_files)
     return summary_files
 
 def main():

@@ -288,13 +288,13 @@ def Get_Kraken_reads(stats, trimd_kraken):
             if line.startswith("G:"):
                 genus_match = line.split(": ")[1]
                 genus_percent = line.split(": ")[1]
-                genus_match = re.sub( "\d+|\n|\s|\.", '', genus_match)
-                genus_percent = re.sub( "[a-zA-Z]*|\n|\s", '', genus_percent)
+                genus_match = re.sub( r"\d+|\n|\s|\.", '', genus_match)
+                genus_percent = re.sub( r"[a-zA-Z]*|\n|\s", '', genus_percent)
             if line.startswith("s:"):
                 species_match = line.split(": ")[1]
                 species_percent = line.split(": ")[1]
-                species_match = re.sub( "\d+|\n|\.", '', species_match)
-                species_percent = re.sub( "[a-zA-Z]*|\n|\s", '', species_percent)
+                species_match = re.sub( r"\d+|\n|\.", '', species_match)
+                species_percent = re.sub( r"[a-zA-Z]*|\n|\s", '', species_percent)
         read_match = genus_match + "(" + genus_percent + "%)" + species_match + "(" + species_percent + "%)"
     return read_match
 

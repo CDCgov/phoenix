@@ -71,12 +71,12 @@ fi
 
 # set the correct path for bc/wget - needed for terra
 if [[ $terra = "terra" ]]; then
-	bc_path=/opt/conda/envs/phoenix/bin/bc
 	wget_path=/opt/conda/envs/phoenix/bin/wget
+	python_path=/opt/conda/envs/phoenix/bin/python3
 	certificate_check="--no-check-certificate"
 else
-	bc_path=bc
-	wget_path=/usr/bin/wget
+	python_path=/usr/bin/wget
+	wget_path=/pyenv/shims/python3
 	certificate_check=""
 fi
 
@@ -111,7 +111,7 @@ while IFS= read -r var; do
 	kmers=$(echo ${var} | cut -d' ' -f5 | cut -d'/' -f1)
 	echo "dist-${dist} - ${source}"
 	#use python to handle cases of scientific notation
-	result=$(python3 -c "print(1 if float('$dist') <= float('$cutoff') else 0)")
+	result=$($python_path -c "print(1 if float('$dist') <= float('$cutoff') else 0)")
 	# Also setting a minimum kmer threshold to ensure 1000 crappy hits dont make it ner the top with 1/1000 kmer matches
 	if ([ "$result" -eq 1 ] && [ ${kmers} -gt 5 ] && [ ${matches} -le ${max_hits} ]); then
 		if [[ -f "${outdir}/${source}.gz" ]]; then

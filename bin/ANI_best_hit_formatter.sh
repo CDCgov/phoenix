@@ -110,7 +110,7 @@ else
 		if [[ "$(echo "${best_file}" | cut -d'_' -f2)" != *complex* ]]; then
 			best_species=$(echo "${best_file}" | cut -d'_' -f2)
 		else
-			best_species=$(echo "${best_file%%_GCF*}" | sed 's/-/ /g' | cut -d'_' -f2) # remove everything after _GCF, remove excess - then split to get species
+			best_species=$(echo "${best_file%%_GCF*}" | sed 's/-/ /g' | sed 's/^[^_]*_//') # remove everything after _GCF, remove excess - then remove everything before first underscore to get species 
 			echo $best_species
 		fi
 	fi

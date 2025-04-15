@@ -182,29 +182,28 @@ Check_source 0
 
 # Check if species was assigned and get starting taxID
 if [[ -n ${species} ]]; then
-	species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )
-	# Check if the string contains "sp."
-	if [[ $species == *sp.* ]]; then
-		# If yes, add a space after "sp."
-		species="${species/sp./sp. }"
-	fi
-	echo $species
+	if [[ "$species" != *complex* && "$species" != *strain* ]]; then
+		species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )
+		# Check if the string contains "sp."
+		if [[ $species == *sp.* ]]; then
+			# If yes, add a space after "sp."
+			species="${species/sp./sp. }"
+		fi
 	# Check if "strain" is in the string
-	if [[ $species == *"strain"* ]]; then
+	elif [[ $species == *"strain"* ]]; then
 		# Extract everything after "strain"
 		#strain=$(echo "$species" | sed -E 's/.*strain[- ]*//')
 		# Extract "strain" and everything after it
 		strain=$(echo "$species" | grep -o 'strain.*')
 		# Extract everything before "strain" and remove trailing "-" or " "
-		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*strain.*$/\1/' | sed -E 's/-.*//' )
-		echo $species
-	elif [[ $species == *"complex-sp."* ]]; then
-		# Extract "strain" and everything after it
-		strain=$(echo "$species" | grep -o 'complex-sp.*')
+		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*strain.*$/\1/' | sed -E 's/-.*//' | sed 's/[[:space:]]*$//')
+	elif [[ $species == *"complex sp."* ]]; then
+		# Extract "complex-sp." and everything after it
+		strain=$(echo "$species" | grep -o 'complex sp.*')
 		# Extract everything before "strain" and remove trailing "-" or " "
-		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*complex-sp.*$/\1/' | sed -E 's/-.*//' )
-		echo $species
+		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*complex sp.*$/\1/' | sed -E 's/-.*//' | sed 's/[[:space:]]*$//')
 	else
+		species=""
 		strain=""
 	fi
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
@@ -237,7 +236,6 @@ if [[ -n ${species} ]]; then
 		done
 	fi
 fi
-
 
 # See if we can at least start at genus level to fill in upper taxonomy
 if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
