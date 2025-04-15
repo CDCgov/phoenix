@@ -75,8 +75,8 @@ if [[ $terra = "terra" ]]; then
 	python_path=/opt/conda/envs/phoenix/bin/python3
 	certificate_check="--no-check-certificate"
 else
-	python_path=/usr/bin/wget
-	wget_path=/pyenv/shims/python3
+	wget_path=/usr/bin/wget
+	python_path=python3
 	certificate_check=""
 fi
 
