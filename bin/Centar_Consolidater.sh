@@ -414,7 +414,11 @@ if [[ -f "${tox_input}" ]]; then
         tcdC_IDN=$(echo "$tcdC_raw_IDN * 100" | bc | cut -d'.' -f1)
         tcdC_length=$(echo "$tcdC_raw_length * 100" | bc | cut -d'.' -f1)
         if [[ "${tcdC_matchtype}" = *"Trunc"* ]]; then
-            tcdC="TRUNC:CODON[${tcdC_IDA}AA]"
+            if [[ "${tcdC_IDA}" = "100" ]]; then
+                tcdC=1
+            else
+                tcdC="TRUNC:CODON[${tcdC_IDA}AA]"
+            fi
         elif (( $(echo "$tcdC_length*100 < 90" | bc -l) )); then
             tcdC="TRUNC:LENGTH<90[${tcdC_length}COV]"
         else
@@ -459,7 +463,11 @@ if [[ -f "${tox_input}" ]]; then
             tcdC_matchtype=$(echo "${tcdC_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${tcdC} = "" ]]; then
                 if [[ "${tcdC_matchtype}" = *"Trunc"* ]]; then
-                    tcdC="TRUNC:CODON[${tcdC_IDA}AA]"
+                    if [[ "${tcdC_IDA}" = "100" ]]; then
+                        tcdC=1
+                    else
+                        tcdC="TRUNC:CODON[${tcdC_IDA}AA]"
+                    fi
                 elif (( $(echo "$tcdC_length*100 < 90" | bc -l) )); then
                     tcdC="TRUNC:LENGTH<90[${tcdC_length}COV]"
                 else
@@ -467,7 +475,11 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             else
                 if [[ "${tcdC_matchtype}" = *"Trunc"* ]]; then
-                    tcdC="${tcdC}-TRUNC:CODON[${tcdC_IDA}AA]"
+                    if [[ "${tcdC_IDA}" = "100" ]]; then
+                        tcdC="${tcdC}-1"
+                    else
+                        tcdC="${tcdC}-TRUNC:CODON[${tcdC_IDA}AA]"
+                    fi
                 elif (( $(echo "$tcdC_length*100 < 90" | bc -l) )); then
                     tcdC="${tcdC}-TRUNC:LENGTH<90[${tcdC_length}COV]"
                 else
@@ -654,7 +666,6 @@ if [[ -f "${tox_input}" ]]; then
         done
         tcdE_set="${tcdE}\t${tcdE_stats}"
     fi
-
         # Check and format for PaLoc_NonTox count
     PaLoc_NonTox_count=$(grep -c 'PaLoc_NonTox' "${tox_input}")
     if [[ "${PaLoc_NonTox_count}" -eq 0 ]]; then
@@ -671,8 +682,13 @@ if [[ -f "${tox_input}" ]]; then
         PaLoc_NonTox_IDA=$(echo "$PaLoc_NonTox_raw_IDA * 100" | bc | cut -d'.' -f1)
         PaLoc_NonTox_IDN=$(echo "$PaLoc_NonTox_raw_IDN * 100" | bc | cut -d'.' -f1)
         PaLoc_NonTox_length=$(echo "$PaLoc_NonTox_raw_length * 100" | bc | cut -d'.' -f1)
+        #Dont check for codon trunc because it has one in the reference
         if [[ "${PaLoc_NonTox_matchtype}" = *"Trunc"* ]]; then
-            PaLoc_NonTox="TRUNC:CODON[${PaLoc_NonTox_IDA}AA]"
+            if [[ "${PaLoc_NonTox_IDA}" = "100" ]]; then
+                PaLoc_NonTox=1
+            else
+                PaLoc_NonTox="TRUNC:CODON[${PaLoc_NonTox_IDA}AA]"
+            fi
         elif (( $(echo "$PaLoc_NonTox_length*100 < 90" | bc -l) )); then
             PaLoc_NonTox="TRUNC:LENGTH<90[${PaLoc_NonTox_length}COV]"
         else
@@ -714,9 +730,14 @@ if [[ -f "${tox_input}" ]]; then
             PaLoc_NonTox_IDN=$(echo "$PaLoc_NonTox_raw_IDN * 100" | bc | cut -d'.' -f1)
             PaLoc_NonTox_length=$(echo "$PaLoc_NonTox_raw_length * 100" | bc | cut -d'.' -f1)
             PaLoc_NonTox_matchtype=$(echo "${PaLoc_NonTox_arr[count]}" | cut -d$'\t' -f5)
+            #Dont check for codon trunc since it has one in the reference
             if [[ ${PaLoc_NonTox} = "" ]]; then
                 if [[ "${PaLoc_NonTox_matchtype}" = *"Trunc"* ]]; then
-                    PaLoc_NonTox="TRUNC:CODON[${PaLoc_NonTox_IDA}AA]"
+                    if [[ "${PaLoc_NonTox_IDA}" = "100" ]]; then
+                        PaLoc_NonTox=1
+                    else
+                        PaLoc_NonTox="TRUNC:CODON[${PaLoc_NonTox_IDA}AA]"
+                    fi
                 elif (( $(echo "$PaLoc_NonTox_length*100 < 90" | bc -l) )); then
                     PaLoc_NonTox="TRUNC:LENGTH<90[${PaLoc_NonTox_length}COV]"
                 else
@@ -724,7 +745,11 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             else
                 if [[ "${PaLoc_NonTox_matchtype}" = *"Trunc"* ]]; then
-                    PaLoc_NonTox="${PaLoc_NonTox}-TRUNC:CODON[${PaLoc_NonTox_IDA}AA]"
+                    if [[ "${PaLoc_NonTox_IDA}" = "100" ]]; then
+                        PaLoc_NonTox="${PaLoc_NonTox}"-1
+                    else
+                        PaLoc_NonTox="${PaLoc_NonTox}-TRUNC:CODON[${PaLoc_NonTox_IDA}AA]"
+                    fi
                 elif (( $(echo "$PaLoc_NonTox_length*100 < 90" | bc -l) )); then
                     PaLoc_NonTox="${PaLoc_NonTox}-TRUNC:LENGTH<90[${PaLoc_NonTox_length}COV]"
                 else
@@ -929,7 +954,11 @@ if [[ -f "${tox_input}" ]]; then
         cdtR_IDN=$(echo "$cdtR_raw_IDN * 100" | bc | cut -d'.' -f1)
         cdtR_length=$(echo "$cdtR_raw_length * 100" | bc | cut -d'.' -f1)
         if [[ "${cdtR_matchtype}" = *"Trunc"* ]]; then
-            cdtR="TRUNC:CODON[${cdtR_IDA}AA]"
+            if [[ "${cdtR_IDA}" = "100" ]]; then
+                cdtR=1
+            else
+                cdtR="TRUNC:CODON[${cdtR_IDA}AA]"
+            fi
         elif (( $(echo "$cdtR_length*100 < 90" | bc -l) )); then
             cdtR="TRUNC:LENGTH<90[${cdtR_length}COV]"
         else
@@ -940,7 +969,7 @@ if [[ -f "${tox_input}" ]]; then
         fi 
         cdtR_set="${cdtR}\t${cdtR_allele}\t${cdtR_muts}\t[${cdtR_IDN}NT|${cdtR_IDA}AA|${cdtR_length}COV]"
     else
-        cdtA=1
+        cdtR=1
         cdtR_array=()
         tc=0
         while IFS= read -r var; do
@@ -973,7 +1002,11 @@ if [[ -f "${tox_input}" ]]; then
             cdtR_matchtype=$(echo "${cdtR_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${cdtR} = "" ]]; then
                 if [[ "${cdtR_matchtype}" = *"Trunc"* ]]; then
-                    cdtR="TRUNC:CODON[${cdtR_IDA}AA]"
+                    if [[ "${cdtR_IDA}" = "100" ]]; then
+                        cdtR=1
+                    else
+                        cdtR="TRUNC:CODON[${cdtR_IDA}AA]"
+                    fi
                 elif (( $(echo "$cdtR_length*100 < 90" | bc -l) )); then
                     cdtR="TRUNC:LENGTH<90[${cdtR_length}COV]"
                 else
@@ -981,7 +1014,11 @@ if [[ -f "${tox_input}" ]]; then
                 fi
             else
                 if [[ "${cdtR_matchtype}" = *"Trunc"* ]]; then
-                    cdtR="${cdtR}-TRUNC:CODON[${cdtR_IDA}AA]"
+                    if [[ "${cdtR_IDA}" = "100" ]]; then
+                        cdtR="${cdtR}-1"
+                    else
+                        cdtR="${cdtR}-TRUNC:CODON[${cdtR_IDA}AA]"
+                    fi
                 elif (( $(echo "$cdtR_length*100 < 90" | bc -l) )); then
                     cdtR="${cdtR}-TRUNC:LENGTH<90[${cdtR_length}COV]"
                 else
@@ -1177,8 +1214,13 @@ if [[ -f "${tox_input}" ]]; then
         nontox_IDA=$(echo "$nontox_raw_IDA * 100" | bc | cut -d'.' -f1)
         nontox_IDN=$(echo "$nontox_raw_IDN * 100" | bc | cut -d'.' -f1)
         nontox_length=$(echo "$nontox_raw_length * 100" | bc | cut -d'.' -f1)
+        # Don't need a codon check as nontox is a known truncation
         if [[ "${nontox_matchtype}" = *"Trunc"* ]]; then
-            nontox="TRUNC:CODON[${nontox_IDA}AA]"
+            if [[ ${nontox_IDA} = "100" ]]; then
+                nontox=1
+            else
+                nontox="TRUNC:CODON[${nontox_IDA}AA]"
+            fi
         elif (( $(echo "$nontox_length*100 < 90" | bc -l) )); then
             nontox="TRUNC:LENGTH<90[${nontox_length}COV]"
         else
@@ -1217,15 +1259,23 @@ if [[ -f "${tox_input}" ]]; then
             nontox_matchtype=$(echo "${nontox_arr[count]}" | cut -d$'\t' -f5)
             if [[ ${nontox} = "" ]]; then
                 if [[ "${nontox_matchtype}" = *"Trunc"* ]]; then
-                    nontox="TRUNC:CODON[${nontox_IDA}AA]"
+                    if [[ ${nontox_IDA} = "100" ]]; then
+                        nontox=1
+                    else
+                        nontox="TRUNC:CODON[${nontox_IDA}AA]"
+                    fi
                 elif (( $(echo "$nontox_length*100 < 90" | bc -l) )); then
-                    nontox="TRUNC:LENGTH<90[${nontox_length}COV]"
-                else
-                    nontox=1
-                fi
+                        nontox="TRUNC:LENGTH<90[${nontox_length}COV]"
+                    else
+                        nontox=1
+                    fi
             else
                 if [[ "${nontox_matchtype}" = *"Trunc"* ]]; then
-                    nontox="${nontox}-TRUNC:CODON[${nontox_IDA}AA]"
+                    if [[ ${nontox_IDA} = "100" ]]; then
+                        nontox="${nontox}-1"
+                    else
+                        nontox="${nontox}-TRUNC:CODON[${nontox_IDA}AA]"
+                    fi
                 elif (( $(echo "$nontox_length*100 < 90" | bc -l) )); then
                     nontox="${nontox}-TRUNC:LENGTH<90[${nontox_length}COV]"
                 else
