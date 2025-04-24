@@ -75,7 +75,7 @@ def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new
     if os.path.exists(sample_directory + "/"+ output):
         # File exists, append a new line
         with open(output, 'a') as f:
-            f.write(date_string + "\t" + phoenix_ver + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\n')
+            f.write(date_string + "\t" + phx_versions + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\n')
     else:
         # File doesn't exist, write header and new line
         with open(output, 'w') as f:
