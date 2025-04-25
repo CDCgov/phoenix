@@ -6,8 +6,7 @@ process RASUSA {
     errorStrategy 'ignore'
 
     input:
-    tuple val(meta), path(reads)
-    tuple val(meta), path(estimation)
+    tuple val(meta), path(fastq_lr), path(estimation)
     val depth
 
     output:
@@ -17,11 +16,11 @@ process RASUSA {
     script:
     """
     cat $estimation > error.txt
-    echo "FASTQ: $reads" >> error.txt
+    echo "FASTQ: $fastq_lr" >> error.txt
     GENOME_SIZE=\$(<$estimation)
     echo "Estimated size: \$GENOME_SIZE" >> error.txt
     GENOME_SIZE=\$(<$estimation)
-    rasusa --input ${reads} --genome-size \$GENOME_SIZE --coverage $depth -o ${meta.id}_${depth}X.fastq.gz
+    rasusa --input $fastq_lr --genome-size \$GENOME_SIZE --coverage $depth -o ${meta.id}_${depth}X.fastq.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

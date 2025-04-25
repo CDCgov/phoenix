@@ -14,6 +14,9 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
 
 workflow GENERATE_PIPELINE_STATS_WF {
     take:
+        
+        
+        
         nanostat               // For long-read entries
         fastp_raw_qc           // channel: tuple (meta) path(fastp_raw_qc): GATHERING_READ_QC_STATS.out.fastp_raw_qc
         fastp_total_qc         // channel: tuple (meta) path(fastp_total_qc): GATHERING_READ_QC_STATS.out.fastp_total_qc
@@ -41,6 +44,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
         amr_point_mutations    // channel: tuple val(meta), path(report): AMRFINDERPLUS_RUN.out.report
         gc_content             // CALCULATE_ASSEMBLY_RATIO.out.gc_content
         extended_qc            // true for internal phoenix and false otherwise
+        
 
     main:
         ch_versions = Channel.empty() // Used to collect the software versions

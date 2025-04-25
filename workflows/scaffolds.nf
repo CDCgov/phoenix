@@ -303,8 +303,41 @@ workflow SCAFFOLDS_EXTERNAL {
             assembly_ratios_ch, params.ncbi_assembly_stats
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
+        //Making channel to match meta with proper channels for griphin
+        
+        /*
+      
+        pipeline_ch = nanostat.map{meta, nano_stats   -> [[id:meta.id], nano_stats]}\
+        .join(empty1_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
+        .join(empty2_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
+        .join(empty3_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
+        .join(empty4_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
+        .join(empty5_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
+        .join(empty6_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
+        .join(RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{                         meta, renamed_scaffolds-> [[id:meta.id], renamed_scaffolds]}, by: [0])
+        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map     {                         meta, filtered_scaffolds-> [[id:meta.id], filtered_scaffolds]}, by: [0])
+        .join(DO_MLST.out.checked_MLSTs.map{                         meta, checked_MLSTs-> [[id:meta.id], checked_MLSTs]}, by: [0])
+        .join(GAMMA_HV.out.gamma.map{                         meta, gamma-> [[id:meta.id], gamma]}, by: [0])
+        .join(GAMMA_AR.out.gamma.map{                         meta, gamma-> [[id:meta.id], gamma]}, by: [0])
+        .join(GAMMA_PF.out.gamma.map{                         meta, gamma-> [[id:meta.id], gamma]}, by: [0])
+        .join(QUAST.out.report_tsv.map{                         meta, report_tsv-> [[id:meta.id], report_tsv]}, by: [0])
+        .join(busco.out.batch_summary.map{it -> create_empty_ch(it)}, by: [0])
+        .join(KRAKEN2_ASMBLD.out.report.map{it -> create_empty_ch(it)}, by: [0])
+        .join(KRAKEN2_ASMBLD.out.krona_html.map{it -> create_empty_ch(it)}, by: [0])
+        .join(KRAKEN2_ASMBLD.out.k2_bh_summary.map{it -> create_empty_ch(it)}, by: [0])
+        .join(KRAKEN2_WTASMBLD.out.report.map{                         meta, report-> [[id:meta.id], report]}, by: [0])
+        .join(KRAKEN2_WTASMBLD.out.krona_html.map{                         meta, krona_html-> [[id:meta.id], krona_html]}, by: [0])
+        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                         meta, k2_bh_summary-> [[id:meta.id], k2_bh_summary]}, by: [0])
+        .join(DETERMINE_TAXA_ID.out.taxonomy.map{                         meta, taxonomy-> [[id:meta.id], taxonomy]}, by: [0])
+        .join(FORMAT_ANI.out.ani_best_hit.map{                         meta, ani_best_hit-> [[id:meta.id], ani_best_hit]}, by: [0])
+        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                         meta, ratio-> [[id:meta.id], ratio]}, by: [0])
+        .join(AMRFINDERPLUS_RUN.out.mutation_report.map{                         meta, mutation_report-> [[id:meta.id], mutation_report]}, by: [0])
+        .join(CALCULATE_ASSEMBLY_RATIO.out.gc_content.map{                         meta, gc_content-> [[id:meta.id], gc_content]}, by: [0])
+        */
 
+ 
         GENERATE_PIPELINE_STATS_WF (
+            
             nanostat, // only used with long-read entries
             [], \
             [], \
@@ -329,6 +362,7 @@ workflow SCAFFOLDS_EXTERNAL {
             AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
             false
+            
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 

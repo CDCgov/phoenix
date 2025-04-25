@@ -6,7 +6,7 @@ process LRGE {
     errorStrategy 'ignore'
 
     input:
-    tuple val(meta), path(reads)
+    tuple val(meta), path(fastq_lr)
 
     output:
     tuple val(meta), path("*_size.txt") , emit: estimation
@@ -16,7 +16,7 @@ process LRGE {
 
     script:
     """
-    lrge -t $task.cpus ${reads} > ${meta.id}_size.txt
+    lrge -t $task.cpus ${fastq_lr} > ${meta.id}_size.txt
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
