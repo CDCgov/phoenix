@@ -151,7 +151,10 @@ workflow PHOENIX_HYBRID_WF {
         RASUSA (sub_ch,params.depth)
         //ch_versions = ch_versions.mix(RASUSA.out.versions)
 
-        NANOQ (RAWSTATS.out.rawstats,RASUSA.out.subfastq,params.length,params.qscore)
+        stat_ch = RAWSTATS.out.rawstats.map{    meta, rawstats       -> [meta, rawstats]}\
+        .join(RASUSA.out.subfastq.map{                   meta, subfastq            -> [meta, subfastq]}, by: [0])
+        
+        NANOQ (stat_ch,params.length,params.qscore)
         //ch_versions = ch_versions.mix(NANOQ.out.versions)
 
     

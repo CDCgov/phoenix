@@ -6,8 +6,7 @@ process NANOQ {
     errorStrategy 'ignore'
 
     input:
-    tuple val(meta), path(rawstats)
-    tuple val(meta), path(subfastq)
+    tuple val(meta), path(rawstats), path(subfastq)
     val length
     val qscore
 
