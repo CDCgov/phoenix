@@ -1,15 +1,10 @@
 {
-    "name": "ph-core/phoenix",
-    "homePage": "https://github.com/ph-core/phoenix",
+    "name": "cdcgov/phoenix",
+    "homePage": "https://github.com/cdcgov/phoenix",
     "repos": {
         "https://github.com/nf-core/modules.git": {
             "modules": {
                 "nf-core": {
-                    "fastqc": {
-                        "branch": "master",
-                        "git_sha": "08108058ea36a63f141c25c4e75f9f872a5b2296",
-                        "installed_by": ["modules"]
-                    },
                     "multiqc": {
                         "branch": "master",
                         "git_sha": "f0719ae309075ae4a291533883847c3f7c441dad",

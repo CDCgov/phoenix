@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/ph-core/phoenix/master/assets/schema_input.json",
-    "title": "ph-core/phoenix pipeline - params.input schema",
+    "$id": "https://raw.githubusercontent.com/cdcgov/phoenix/master/assets/schema_input.json",
+    "title": "cdcgov/phoenix pipeline - params.input schema",
     "description": "Schema for the file provided with params.input",
     "type": "array",
     "items": {

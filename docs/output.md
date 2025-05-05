@@ -1,4 +1,4 @@
-# ph-core/phoenix: Output
+# cdcgov/phoenix: Output
 
 ## Introduction
 

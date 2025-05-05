@@ -4,98 +4,86 @@ nf_core_version: 3.2.0
 
 lint:
   files_unchanged:
+    - .github/.dockstore.yml
+    - .github/CONTRIBUTING.md
     - .github/ISSUE_TEMPLATE/bug_report.yml
     - .github/ISSUE_TEMPLATE/config.yml
     - .github/ISSUE_TEMPLATE/feature_request.yml
     - .github/PULL_REQUEST_TEMPLATE.md
     - .github/workflows/branch.yml
-    - .github/workflows/linting_comment.yml
     - .github/workflows/linting.yml
-    - .github/CONTRIBUTING.md
-    - .github/.dockstore.yml
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/ISSUE_TEMPLATE/config.yml
-    - .github/ISSUE_TEMPLATE/feature_request.yml
-    - .github/PULL_REQUEST_TEMPLATE.md
-    - .github/workflows/branch.yml
     - .github/workflows/linting_comment.yml
-    - .github/workflows/linting.yml
-    - .github/CONTRIBUTING.md
-    - .github/.dockstore.yml
-    - CODE_OF_CONDUCT.md
-    - assets/nf-core-phoenix_logo_light.png
-    - docs/images/nf-core-phoenix_logo_light.png
-    - docs/images/nf-core-phoenix_logo_dark.png
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/CONTRIBUTING.md
-    - .github/PULL_REQUEST_TEMPLATE.md
+    - .github/workflows/ci.yml
+    - .prettierignore
+    - LICENSE
+    - assets/email_template.html
     - assets/email_template.txt
+    - assets/nf-core-oamd-bio-workflow-phoenix-mirror_logo_light.png
+    - assets/sendmail_template.txt
     - docs/README.md
-  nextflow_config:
-    - process.cpus
-    - process.memory
-    - process.time
-    - custom_config
-    - params.custom_config_version
-    - params.custom_config_base
-    - manifest.name
-    - manifest.homePage
-    - validation.help.beforeText
-    - validation.help.afterText
-    - validation.summary.beforeText
-    - validation.summary.afterText
-  multiqc_config:
-    - report_comment
+    - docs/images/nf-core-oamd-bio-workflow-phoenix-mirror_logo_dark.png
+    - docs/images/nf-core-oamd-bio-workflow-phoenix-mirror_logo_light.png
+    - lib/WorkflowPhoenix.groovy 
+
+  nextflow_config: false
+  multiqc_config: false
   files_exist:
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/ISSUE_TEMPLATE/feature_request.yml
-    - .github/PULL_REQUEST_TEMPLATE.md
-    - .github/CONTRIBUTING.md
+    - .editorconfig
     - .github/.dockstore.yml
-    - .github/workflows/branch.yml
-    - .github/workflows/ci.yml
-    - .github/workflows/linting_comment.yml
-    - .github/workflows/linting.yml
-    - conf/igenomes.config
-    - conf/igenomes_ignored.config
-    - conf/igenomes.config
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/ISSUE_TEMPLATE/feature_request.yml
-    - .github/PULL_REQUEST_TEMPLATE.md
     - .github/CONTRIBUTING.md
-    - .github/.dockstore.yml
-    - .github/workflows/branch.yml
-    - .github/workflows/ci.yml
-    - .github/workflows/linting_comment.yml
-    - .github/workflows/linting.yml
-    - conf/igenomes.config
-    - conf/igenomes_ignored.config
-    - CODE_OF_CONDUCT.md
-    - assets/nf-core-phoenix_logo_light.png
-    - docs/images/nf-core-phoenix_logo_light.png
-    - docs/images/nf-core-phoenix_logo_dark.png
+    - .github/ISSUE_TEMPLATE/bug_report.yml
     - .github/ISSUE_TEMPLATE/config.yml
-    - .github/workflows/awstest.yml
+    - .github/ISSUE_TEMPLATE/feature_request.yml
+    - .github/PULL_REQUEST_TEMPLATE.md
     - .github/workflows/awsfulltest.yml
+    - .github/workflows/awstest.yml
+    - .github/workflows/branch.yml
+    - .github/workflows/ci.yml
+    - .github/workflows/linting.yml
+    - .github/workflows/linting_comment.yml
+    - .prettierignore
+    - .prettierrc.yml
+    - CODE_OF_CONDUCT.md
+    - LICENSE
+    - assets/multiqc_config.yml
+    - assets/nf-core-phoenix_logo_light.png
+    - conf/igenomes.config
+    - conf/igenomes_ignored.config
+    - conf/test.config
+    - conf/test_full.config
+    - docs/images/nf-core-phoenix_logo_dark.png
+    - docs/images/nf-core-phoenix_logo_light.png
+    - ro-crate-metadata.json
+    - .github/ISSUE_TEMPLATE/bug_report.md
+    - .github/ISSUE_TEMPLATE/feature_request.md
+    - lib/NfcoreTemplate.groovy
+    - lib/Utils.groovy
+    - lib/WorkflowMain.groovy
+    - lib/nfcore_external_java_deps.jar
+    - lib/WorkflowPhoenix.groovy
+    - .gitattributes 
   readme:
     - nextflow_badge
-    - nextflow_badge
-    - nextflow_badge
-  included_configs: false
 
 template:
   org: ph-core
   name: phoenix
-  description: 'PHoeNIx: a platform agnostic pipeline for healthcare-associated and
-    antimicrobial resistant pathogens'
-  author: AMD Platform
+  description: "PHoeNIx: a platform agnostic pipeline for healthcare-associated and
+    antimicrobial resistant pathogens"
+  author: Phoenix
   version: 1.0.0dev
   force: true
   outdir: .
   skip_features:
-    - github
     - ci
     - igenomes
-    - github_badges
-    - nf_core_configs
+    - code_linters
+    - multiqc
+    - fastqc
+    - license
+    - slackreport
+    - test_config
+    - seqera_platform
+    - rocrate
+    - vscode
   is_nfcore: false

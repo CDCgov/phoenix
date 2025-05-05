@@ -1,0 +1,23 @@
+HAISeq: PRJNA531911
+Gram_positive:
+Actinobacteria(P):
+Non_tuberculous mycobacterium:
+Mycobacterium(G): PRJNA542112
+Mycobacteroides(G): PRJNA542112
+Mycolicibacterium(G): PRJNA542112
+Tuberculous mycobacterium:
+Mycobacterium tuberculosis(G): blank
+Non_mycobacterium:
+Cutibacterium(G): blank
+Firmicutes(P):
+Bacillus(G): PRKNA590648
+Clostridioides(G) difficile(s): PRJNA629351
+Staphylococcus(G) non-aureus species(s): PRJNA591020
+Staphylococcus(G) aureus(s): PRJNA533550
+Enterococcus(G): PRJNA573902
+Others: blank
+Gram_negative:
+Proteobacteria(P): PRJNA288601
+Pseudomonadota(P): PRJNA288601
+Bacteroidetes(P): PRJNA288601
+Others: blank

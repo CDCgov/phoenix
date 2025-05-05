@@ -17,7 +17,7 @@
                         "size": "Large",
                         "weight": "Bolder",
                         "color": "<% if (success) { %>Good<% } else { %>Attention<%} %>",
-                        "text": "ph-core/phoenix v${version} - ${runName}",
+                        "text": "cdcgov/phoenix v${version} - ${runName}",
                         "wrap": true
                     },
                     {

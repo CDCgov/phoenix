@@ -1,10 +1,10 @@
 Run Name: $runName
 
 <% if (success){
-    out << "## ph-core/phoenix execution completed successfully! ##"
+    out << "## cdcgov/phoenix execution completed successfully! ##"
 } else {
     out << """####################################################
-## ph-core/phoenix execution completed unsuccessfully! ##
+## cdcgov/phoenix execution completed unsuccessfully! ##
 ####################################################
 The exit status of the task that caused the workflow execution to fail was: $exitStatus.
 The full error message was:
@@ -27,5 +27,5 @@ Pipeline Configuration:
 <% out << summary.collect{ k,v -> " - $k: $v" }.join("\n") %>
 
 --
-ph-core/phoenix
-https://github.com/ph-core/phoenix
+cdcgov/phoenix
+https://github.com/cdcgov/phoenix
