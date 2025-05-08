@@ -28,6 +28,7 @@ def transform_value(value):
         return ""
     return value
 
+# ******Note: this function is called in GRiPHin.py any changes to it need to be tested in -entry CDC_PHOENIX and PHOENIX******
 def clean_and_format_centar_dfs(centar_df):
     '''If Centar was run get info to add to the dataframe.'''
     cols_to_transform = [x for x in centar_df.columns if '[%Nuc_Identity' in x ]
@@ -40,8 +41,8 @@ def clean_and_format_centar_dfs(centar_df):
     clean_centar_df.rename(columns=lambda x: re.sub(r'\[%Nuc_Identity \| %AA_Identity \| %Coverage\]', '', x).strip(), inplace=True)
     clean_centar_df.rename(columns=lambda x: re.sub(r'\[%Nuc_Identity \| %Coverage\]', '', x).strip(), inplace=True)
     clean_centar_df.rename(columns=lambda x: re.sub(r'Diffbase_', '', x).strip(), inplace=True)
-    #Replace empty strings with NaN and drop columns that are completely blank
-    clean_centar_df = clean_centar_df.replace('', np.nan).dropna(axis=1, how='all')
+    #Replace empty strings with NaN and drop columns that are completely blank. ## .infer_objects(copy=False) ensures pandas infers correct types without creating a copy (retains legacy behavior)
+    clean_centar_df = clean_centar_df.replace('', np.nan).infer_objects(copy=False).dropna(axis=1, how='all')
     #separate dataframes
     RB_type = [ "CEMB RT Crosswalk", "Inferred RT", "Probability", "ML Note", "Plasmid Info" ]
     RB_type_col = [col for col in clean_centar_df.columns if any(substring in col for substring in RB_type) ]
@@ -75,18 +76,22 @@ def create_centar_combined_df(directory, sample_name):
     directory = directory.rstrip('/')
     # create file names
     centar_summary = directory + "/CENTAR/" + sample_name + "_centar_output.tsv"
-    #centar_summary = sample_name + "_centar_output.tsv"
-    par='/'.join(directory.split('/')[0:-1])
-    dat_loc=directory.split('/')[-1]
-    reiterate=True
     #clean up the dataframe
     try: # handling for samples that failed and didn't get centar files created
         centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
         centar_df["WGS_ID"] = sample_name
-    except FileNotFoundError: 
-        print("Warning: " + sample_name + "_centar_output.tsv file not found")
-        # Add a row to the DataFrame with the WGS_ID column set to sample_name
-        centar_df = pd.DataFrame({"WGS_ID": [sample_name]})
+    except FileNotFoundError:
+        try: #retry looking at a different location
+            centar_summary = "./" + sample_name + "_centar_output.tsv"
+            centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
+            centar_df["WGS_ID"] = sample_name
+        except FileNotFoundError: 
+            print("Warning: " + sample_name + "_centar_output.tsv file not found")
+            # Add a row to the DataFrame with the WGS_ID column set to sample_name
+            centar_df = pd.DataFrame({"WGS_ID": [sample_name]})
+    # make NOT_FOUND and - to blank to keep inline with the AR/PF/HV calls.
+    centar_df.replace("NOT_FOUND", "", inplace=True)
+    centar_df.replace("-", "", inplace=True)
     return centar_df
 
 ######################################## ShigaPass functions ##############################################

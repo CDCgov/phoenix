@@ -29,7 +29,7 @@ def create_samplesheet(directory):
         skip_list_a2 = glob.glob(directory + "/*_GRiPHin_Summary.tsv") # for if griphin is run on a folder that already has a report in it
         skip_list_a = [ item.split('/')[-1] for item in skip_list_a ]  # just get the excel name not the full path
         skip_list_a2 = [ item.split('/')[-1] for item in skip_list_a2 ]  # just get the excel name not the full path
-        skip_list_b = [ "Phoenix_Summary.tsv", "pipeline_info", "GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
+        skip_list_b = [ "Phoenix_Summary.tsv", "pipeline_info","centar_pipeline_info", "Directory_samplesheet.csv","GRiPHin_Summary.xlsx", "multiqc", "samplesheet_converted.csv", "GRiPHin_samplesheet.csv"]
         skip_list = skip_list_a + skip_list_a2 + skip_list_b
         for sample in dirs:
             if sample not in skip_list:

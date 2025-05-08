@@ -32,9 +32,9 @@ process GET_TRIMD_STATS {
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}FastP_QC.py \\
-      --trimmed_json ${fastp_trimd_json} \\
-      --single_json ${fastp_singles_json} \\
-      --name ${prefix}
+        --trimmed_json ${fastp_trimd_json} \\
+        --single_json ${fastp_singles_json} \\
+        --name ${prefix}
 
     # Check that there are still reads in R1 and R2 before fastqc. If there aren't reads then fastqc dies.
 

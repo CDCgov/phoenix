@@ -285,7 +285,8 @@ workflow UPDATE_PHOENIX_WF {
             //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
             [],
             params.coverage,
-            params.bldb
+            params.bldb,
+            false
         )
         ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 

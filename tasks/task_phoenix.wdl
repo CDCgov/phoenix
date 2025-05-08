@@ -301,7 +301,6 @@ task phoenix {
     File? centar_ar_NT_gamma      = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_NT_20240910.gamma"
     File? centar_tox_gamma        = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_toxins/~{samplename}_Cdiff_toxins_srst2_20240909.gamma"
     File? centar_clade            = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
-    #File? centar_plasmid          = "~{samplename}/phx_output/~{samplename}/CENTAR/plasmids/~{samplename}_plasmids.tsv"
     # NCBI files - optional
     File? ncbi_biosample          = "~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx"
     File? ncbi_sra_metadata       = "~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx"

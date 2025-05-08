@@ -496,7 +496,7 @@ workflow CENTAR {
             if (params.input) { ch_input = file(params.input) }
             // Allow outdir to be relative !!!! Does this need to be changed if outdir is empty??
             outdir = Channel.fromPath(params.outdir, relative: true)
-            griph_out = Channel.fromPath(params.griphin_out, relative: true)
+            //griph_out = Channel.fromPath(params.griphin_out, relative: true)
         }
     } else {
         if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
@@ -515,51 +515,26 @@ workflow CENTAR {
             } else {
                 // Allow outdir to be relative
                 outdir = Channel.fromPath(params.outdir, relative: true)
-                griph_out = Channel.fromPath(params.griphin_out, relative: true)
+                //griph_out = Channel.fromPath(params.griphin_out, relative: true)
             }
         } else { // if no samplesheet is passed and no input directory is given
             exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
-    if (params.combine_griphins == true){
-        //make sure outdir was passed
-        //if (params.outdir == "${launchDir}/phx_output") { exit 1, 'If --combine_griphins is passed you need to also pass --outdir.' }
-        if (params.griphin_out == "${launchDir}/phx_output") { exit 1, 'If --combine_griphins is passed you need to also pass --griphin_out.' 
-        } else if (params.indir != null) { exit 1, "Only pass --combine_griphins when using --input with samples from different projects (i.e. folders).\n You don't need to combine griphins when there is only one project in the input." 
-        } else {
-            griph_out=Channel.fromPath(params.griphin_out, relative: true)
-        }
-    } 
+    //make sure outdir and griphin_out aren't passed at the same time
+    //if (params.griphin_out != null && params.outdir != "${launchDir}/phx_output"){
+    //    exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir." 
+    //}
     // check if the wgmlst_container was passed
     if (params.wgmlst_container == null) { println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}") }
 
     main:
         RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
 
-        // make null input because we already have griphin files.
-        combine_input = null // should be null for all centar runs
-
-        if (params.combine_griphins == true) {
-
-            if (params.griphin_out != "${launchDir}/phx_output") {
-                // this would be if --combined_griphins and --outdir were passed --> save CENTAR files in their respective project_id folds and summary files in --outdir
-                COMBINE_GRIPHINS_WF ( 
-                    RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [griphin]},
-                    //RUN_CENTAR.out.griphins_tsv,
-                    combine_input,
-                    griph_out, //outdir_path
-                    RUN_CENTAR.out.valid_samplesheet,
-                    RUN_CENTAR.out.ch_versions // versions file
-                )
-            }
-        } 
-
     emit:
         //output for phylophoenix
-        griphins_tsv     = RUN_CENTAR.out.griphins_tsv
         griphins_excel   = RUN_CENTAR.out.griphins_excel
-        dir_samplesheet  = RUN_CENTAR.out.dir_samplesheet
 }
 
 /*

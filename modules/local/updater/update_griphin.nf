@@ -12,11 +12,12 @@ process UPDATE_GRIPHIN {
     path(valid_samplesheet_file)
     val(coverage)
     path(bldb)
+    val(species_specific_entry)
 
     output:
-    path("${project_id}_GRiPHin_Summary.xlsx"),    emit: griphin_report
-    path("${project_id}_GRiPHin_Summary.tsv"),     emit: griphin_tsv_report
-    path("versions.yml"),              emit: versions
+    path("${project_id}_GRiPHin_Summary.xlsx"), emit: griphin_report
+    path("${project_id}_GRiPHin_Summary.tsv"),  emit: griphin_tsv_report
+    path("versions.yml"),                       emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -34,19 +35,23 @@ process UPDATE_GRIPHIN {
         griphin_input = "--griphin_list"
     }
     def valid_samplesheet = valid_samplesheet_file ? "--samplesheet ${valid_samplesheet_file}" : ""
+    def remove_dups = species_specific_entry ? "--remove_dups" : "" // When we are running species specific pipelines we need to remove duplications from the original griphin reports so we can update with new data
     """
+
     ${ica}combine_GRiPHins.py ${griphin_input} \
         --output ${project_id}_GRiPHin_Summary \
         --coverage ${coverage} \
+        --parent_folder ${project_id} \
         --bldb ${bldb} \
+        ${remove_dups} \
         ${valid_samplesheet}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-       python: \$(python --version | sed 's/Python //g')
-       combine_GRiPHins.py: \$(${ica}combine_GRiPHins.py --version)
-       phoenix_base_container_tag: ${container_version}
-       phoenix_base_container: ${container}
+        python: \$(python --version | sed 's/Python //g')
+        combine_GRiPHins.py: \$(${ica}combine_GRiPHins.py --version)
+        phoenix_base_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

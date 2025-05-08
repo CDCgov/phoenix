@@ -37,8 +37,8 @@ process SAMPLESHEET_CHECK {
         script_version=\$(echo check_assembly_samplesheet.py: \$(${ica}check_assembly_samplesheet.py --version ))
     elif [ ${directory_check} = "true" ]; then
         echo "Running check of directory samplesheet"
-        ${ica}check_directory_samplesheet_v2.py ${samplesheet} samplesheet.valid.csv
-        script_version=\$(echo check_directory_samplesheet_v2.py: \$(${ica}check_directory_samplesheet.py --version ))
+        ${ica}check_directory_samplesheet.py ${samplesheet} samplesheet.valid.csv
+        script_version=\$(echo check_directory_samplesheet.py: \$(${ica}check_directory_samplesheet.py --version ))
     else
         echo "No valid check type provided, exiting."
         exit 1

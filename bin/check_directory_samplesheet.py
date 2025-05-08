@@ -1,232 +1,214 @@
 #!/usr/bin/env python
 
+# This script is based on the example at: https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/samplesheet/samplesheet_test_illumina_amplicon.csv
 
-"""Provide a command line tool to validate and transform tabular samplesheets."""
-
-
-import argparse
-import csv
-import glob
-import logging
+import os
 import sys
-from collections import Counter
+import errno
+import argparse
+import glob
 from pathlib import Path
+import pandas as pd
 
 # Function to get the script version
 def get_version():
     return "1.0.0"
 
-def parse_args(argv=None):
-    """Define and immediately parse command line arguments."""
-    parser = argparse.ArgumentParser( description="Validate and transform a tabular samplesheet.",
-        epilog="Example: python check_samplesheet.py samplesheet.csv samplesheet.valid.csv", )
-    parser.add_argument("file_in", metavar="FILE_IN", type=Path, help="Tabular input samplesheet in CSV or TSV format.", )
-    parser.add_argument("file_out", metavar="FILE_OUT", type=Path, help="Transformed output samplesheet in CSV format.", )
-    parser.add_argument("-l", "--log-level", help="The desired log level (default WARNING).", choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"), default="WARNING",)
+def parse_args(args=None):
+    Description = "Reformat cdcgov/phoenix samplesheet file and check its contents."
+    Epilog = "Example usage: python check_samplesheet.py <FILE_IN> <FILE_OUT>"
+    parser = argparse.ArgumentParser(description=Description, epilog=Epilog)
+    parser.add_argument("FILE_IN", help="Input samplesheet file.")
+    parser.add_argument("FILE_OUT", help="Output file.")
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
-    return parser.parse_args(argv)
-
-logger = logging.getLogger()
+    return parser.parse_args(args)
 
 
-class RowChecker:
-    """
-    Define a service that can validate and transform each given row.
-
-    Attributes:
-        modified (list): A list of dicts, where each dict corresponds to a previously
-            validated and transformed row. The order of rows is maintained.
-
-    """
-    def __init__(
-        self,
-        sample_col="sample",
-        first_col="directory",
-        **kwargs,
-    ):
-        """
-        Initialize the row checker with the expected column names.
-
-        Args:
-            sample_col (str): The name of the column that contains the sample name (default "sample").
-            first_col (str): The name of the column that contains the only the directory of a sample to update (default "directory").
-        """
-        super().__init__(**kwargs)
-        self._sample_col = sample_col
-        self._first_col = first_col
-        self._seen = set()
-        self.modified = []
-
-    def validate_and_transform(self, row):
-        """
-        Perform all validations on the given row and insert the read pairing status.
-
-        Args:
-            row (dict): A mapping from column headers (keys) to elements of that row
-                (values).
-
-        """
-        self._validate_sample(row)
-        self._validate_first(row)
-        self._seen.add((row[self._sample_col], row[self._first_col]))
-        self.modified.append(row)
-
-    def _validate_sample(self, row):
-        """Assert that the sample name exists and convert spaces to underscores."""
-        if len(row[self._sample_col]) <= 0:
-            raise AssertionError("Sample input is required.")
-        # Sanitize samples slightly.
-        row[self._sample_col] = row[self._sample_col].replace(" ", "_")
-
-    def _validate_first(self, row):
-        """Assert that the directory entry is non-empty and has the right format."""
-        if len(row[self._first_col]) <= 0:
-            raise AssertionError("At least a valid directory path is required.")
-
-    def validate_unique_samples(self):
-        """
-        Assert that the combination of sample name and directory name is unique.
-        """
-        if len(self._seen) != len(self.modified):
-            raise AssertionError("The pair of sample name and directory must be unique.")
-        seen = Counter()
-        samples_list = []
-        for row in self.modified:
-            sample = row[self._sample_col]
-            if sample not in samples_list: # check that sample names are unique.
-                samples_list.append(sample)
-            else:
-                raise AssertionError("ERROR: {} is used as a sample name more than once. Samples IDs should be unique.".format(sample))
-            seen[sample] += 1
-            #row[self._sample_col] = f"{sample}_T{seen[sample]}"
-            row[self._sample_col] = f"{sample}"
-
-    def validate_needed_files(self):
-        """
-        Checking for necesary files to run the pipeline
-        """
-        if len(self._seen) != len(self.modified):
-            raise AssertionError("The pair of sample name and directory must be unique.")
-        
-        files = []
-        # Define the file path
-        sample_name = self._sample_col
-        if str(self._first_col).endswith('/'):
-            path = str(self._first_col)[:-1]
-        else:
-            path = str(self._first_col)
-        files.append(path + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
-        files.append(path + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
-        files.append(path + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
-        files.append(path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
-        files.append(path + "/annotation/" + sample_name + ".faa")
-        files.append(path + "/annotation/" + sample_name + ".gff")
-        files.append(path + "/" + sample_name + ".tax")
-        files.append(path + "/" + sample_name + "_summaryline.tsv")
-        files.append(path + "/" + sample_name + ".synopsis")
-        files.append(glob.glob(path + "../" + "*_GRiPHin_Summary.xlsx")[0])
-        files.append(glob.glob(path + "../" + "*_GRiPHin_Summary.tsv")[0])
-        files.append(glob.glob(path + "../" + "*_Phoenix_Summary.tsv")[0])
-        for file_path in files:
-            # Check if the file exists
-            if Path(file_path).exists():
-                pass
-            else:
-                logger.critical("The file {} does not exist.".format(file_path))
-                sys.exit(1)
+def make_dir(path):
+    if len(path) > 0:
+        try:
+            os.makedirs(path)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise exception
 
 
-def read_head(handle, num_lines=10):
-    """Read the specified number of lines from the current position in the file."""
-    lines = []
-    for idx, line in enumerate(handle):
-        if idx == num_lines:
-            break
-        lines.append(line)
-    return "".join(lines)
+def print_error(error, context="Line", context_str=""):
+    error_str = "ERROR: Please check samplesheet -> {}".format(error)
+    if context != "" and context_str != "":
+        error_str = "ERROR: Please check samplesheet -> {}\n{}: '{}'".format(
+            error, context.strip(), context_str.strip()
+        )
+    print(error_str)
+    sys.exit(1)
 
-
-def sniff_format(handle, file_in):
-    """
-    Detect the tabular format.
-
-    Args:
-        handle (text file): A handle to a `text file`_ object. The read position is
-        expected to be at the beginning (index 0).
-
-    Returns:
-        csv.Dialect: The detected tabular format.
-
-    .. _text file:
-        https://docs.python.org/3/glossary.html#term-text-file
-
-    """
-    peek = read_head(handle)
-    handle.seek(0)
-    sniffer = csv.Sniffer()
-    dialect = sniffer.sniff(peek)
-    return dialect
-
+def check_for_duplicates(file_in):
+    df = pd.read_csv(file_in)
+    duplicate_mask = df.duplicated()
+    if duplicate_mask.any():
+        duplicate_rows = df[duplicate_mask]
+        for index, row in duplicate_rows.iterrows():
+            raise ValueError(f"Duplicate row found: {row}. The pair of sample name and directory must be unique.")
 
 def check_samplesheet(file_in, file_out):
     """
-    Check that the tabular samplesheet has the structure expected by nf-core pipelines.
+    This function checks that the samplesheet follows the following structure:
 
-    Validate the general shape of the table, expected columns, and each row. Also add
-    an additional column which records whether one or two FASTQ reads were found.
+    sample,fastq_1,fastq_2
+    SAMPLE_PE,SAMPLE_PE_RUN1_1.fastq.gz,SAMPLE_PE_RUN1_2.fastq.gz
+    SAMPLE_PE,SAMPLE_PE_RUN2_1.fastq.gz,SAMPLE_PE_RUN2_2.fastq.gz
+    SAMPLE_SE,SAMPLE_SE_RUN1_1.fastq.gz,
 
-    Args:
-        file_in (pathlib.Path): The given tabular samplesheet. The format can be either
-            CSV, TSV, or any other format automatically recognized by ``csv.Sniffer``.
-        file_out (pathlib.Path): Where the validated and transformed samplesheet should
-            be created; always in CSV format.
 
-    Example:
-        This function checks that the samplesheet follows the following structure,
-        see also the `viral recon samplesheet`_::
-
-            sample,assembly
-            SAMPLE_1,Directory
-            SAMPLE_2,Directory
+    For an example see:
+    https://raw.githubusercontent.com/nf-core/test-datasets/viralrecon/samplesheet/samplesheet_test_illumina_amplicon.csv
     """
-    required_columns = {"sample", "directory"}
-    # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
-    with file_in.open(newline="") as in_handle:
-        reader = csv.DictReader(in_handle, dialect=sniff_format(in_handle, file_in))
-        # Validate the existence of the expected header columns.
-        if not required_columns.issubset(reader.fieldnames):
-            req_cols = ", ".join(required_columns)
-            logger.critical(f"The sample sheet **must** contain these column headers: {req_cols}.")
+
+    sample_mapping_dict = {}
+    with open(file_in, "r") as fin:
+
+        ## Check header
+        MIN_COLS = 2
+        HEADER = ["sample", "directory"]
+        header = [x.strip('"') for x in fin.readline().strip().split(",")]
+        if header[: len(HEADER)] != HEADER:
+            print("ERROR: Please check samplesheet header -> {} != {}".format(",".join(header), ",".join(HEADER)))
             sys.exit(1)
-        # Validate each row.
-        checker = RowChecker()
-        for i, row in enumerate(reader):
+
+        ## Check sample entries
+        sample_name_list = [] # used to check if sample name has been used before
+        sample_dir_list = [] # used to check if sample name has been used before
+        Read_list = []
+        for line in fin:
+            lspl = [x.strip().strip('"') for x in line.strip().split(",")]
+
+            # Check for duplicate sample names
+            sample_name = line.split(",")[0]
+            project_id = line.split(",")[1].split("/")[-2]
+            uni_id = sample_name + "_" + project_id
+            if uni_id.split("_")[0] in sample_name_list:
+                print("WARNING: The sample id {} is used multiple times, but the directories are different so the pipeline is proceeding! If you didn't intend that remake the samplesheet.".format(uni_id.split("_")[0]))
+            else:
+                sample_name_list.append(uni_id.split("_")[0])
+            if uni_id in sample_dir_list:
+                print_error(
+                    "The sample id {} in the project dir {} is used multiple times! This combination needs to be unique.".format(uni_id.split("_")[0], uni_id.split("_")[1]),
+                    "Line",
+                    line,
+                )
+            else:
+                sample_dir_list.append(uni_id)
+
+            files = []
+            # Define the file path
+            dir = line.split(",")[1]
+            sample_folder = line.split(",")[0]
+            if str(dir).strip().endswith('/'):
+                path = str(dir).strip()[:-1]
+                sample_path = path
+                project_path = "/".join(sample_path.split("/")[:-1])
+            else:
+                path = str(dir).strip()
+                sample_path = path
+                project_path = "/".join(sample_path.split("/")[:-1])
+            #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
+            files.append(sample_path + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
+            files.append(sample_path + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
+            files.append(sample_path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
+            files.append(sample_path + "/annotation/" + sample_name + ".faa")
+            files.append(sample_path + "/annotation/" + sample_name + ".gff")
+            files.append(sample_path + "/" + sample_name + ".tax")
+            files.append(sample_path + "/" + sample_name + "_summaryline.tsv")
+            files.append(sample_path + "/" + sample_name + ".synopsis")
+            files.append(project_path + "/" + "Phoenix_Summary.tsv")
+            # Handle glob searches with potential errors
+            #try:
+                # Find the position of the last occurrence of "/"
+                #last_slash_index = path.rfind('/')
+                # Slice the string up to and including the last slash
+                #project_path = path[:last_slash_index + 1]
             try:
-                checker.validate_and_transform(row)
-            except AssertionError as error:
-                logger.critical(f"{str(error)} On line {i + 2}.")
-                sys.exit(1)
-        checker.validate_unique_samples()
-    header = list(reader.fieldnames)
-    #header.insert(1, "single_end")
-    # See https://docs.python.org/3.9/library/csv.html#id3 to read up on `newline=""`.
-    with file_out.open(mode="w", newline="") as out_handle:
-        writer = csv.DictWriter(out_handle, header, delimiter=",")
-        writer.writeheader()
-        for row in checker.modified:
-            writer.writerow(row)
+                full_path = path + "/file_integrity/"
+                fairy_file = glob.glob(path + "/"+ sample_name + "/file_integrity/" + sample_name + "*summary.txt")[0]
+                print(f"fairy_file found at " + fairy_file)
+                # check that the sample did not fail the file_integrity check
+                with open(fairy_file, 'r') as file:
+                    for line in file:
+                        if 'FAILED' in line:
+                            print("The file {} states the file failed integrity checks and should not be included in the analysis. Please remove this sample from the analysis.".format(fairy_file))
+                            sys.exit(1)
+            except IndexError:
+                #raise ValueError(f"No *_summary.tsv file found in {full_path}.")
+                print(f"No *_summary.txt file found in {full_path}.")
+            try:
+                glob.glob(project_path + "/*_GRiPHin_Summary.tsv")[0]
+            except IndexError:
+                raise ValueError(f"No *_GRiPHin_Summary.tsv file found in {project_path}.")
+            for file_path in files:
+                # Check if the file exists
+                if Path(file_path).exists():
+                    pass
+                elif ".trim.fastq." in file_path:
+                    print("Sample does not have a read file:"+file_path+". Is it assembly only?")
+                else:
+                    raise ValueError("The file {} does not exist and is required for the pipeline. Please remove this sample from the analysis.".format(file_path))
+
+            # Check valid number of columns per row
+            if len(lspl) < len(HEADER):
+                print_error(
+                    "Invalid number of columns (minimum = {})!".format(len(HEADER)),
+                    "Line",
+                    line,
+                )
+            num_cols = len([x for x in lspl if x])
+            if num_cols < MIN_COLS:
+                print_error(
+                    "Invalid number of populated columns (minimum = {})!".format(MIN_COLS),
+                    "Line",
+                    line,
+                )
+
+            ## Check sample name entries
+            sample, directory = lspl[: len(HEADER)]
+             # Define the file path
+            if str(directory).strip().endswith('/'):
+                directory = str(directory).strip()[:-1]
+            else:
+                directory = str(directory).strip()
+            sample = sample.replace(" ", "_")
+            if not sample:
+                print_error("Sample entry has not been specified!", "Line", line)
+
+            ## Create sample mapping dictionary = { sample: [ directory ] }
+            if sample not in sample_mapping_dict:
+                sample_mapping_dict[sample] = [directory]
+            else:
+                if directory in sample_mapping_dict[sample]:
+                    print_error("Samplesheet contains duplicate rows!", "Line", line)
+                else:
+                    sample_mapping_dict[sample].append(directory)
+
+    ## Write validated samplesheet with appropriate columns
+    if len(sample_mapping_dict) > 0:
+        out_dir = os.path.dirname(file_out)
+        make_dir(out_dir)
+        with open(file_out, "w") as fout:
+            fout.write(",".join(["sample", "directory"]) + "\n")
+            for sample in sorted(sample_mapping_dict.keys()):
+
+                ## Check that multiple runs of the same sample are of the same datatype
+                if not all(x[0] == sample_mapping_dict[sample][0][0] for x in sample_mapping_dict[sample]):
+                    print_error("Multiple runs of a sample must be of the same datatype!", "Sample: {}".format(sample))
+                for idx, val in enumerate(sample_mapping_dict[sample]):
+                    fout.write("{},{}\n".format(sample, val))
+    else:
+        print_error("No entries to process!", "Samplesheet: {}".format(file_in))
 
 
-def main(argv=None):
-    """Coordinate argument parsing and program execution."""
-    args = parse_args(argv)
-    logging.basicConfig(level=args.log_level, format="[%(levelname)s] %(message)s")
-    if not args.file_in.is_file():
-        logger.error(f"The given input file {args.file_in} was not found!")
-        sys.exit(2)
-    args.file_out.parent.mkdir(parents=True, exist_ok=True)
-    check_samplesheet(args.file_in, args.file_out)
-
+def main(args=None):
+    args = parse_args(args)
+    check_for_duplicates(args.FILE_IN)
+    check_samplesheet(args.FILE_IN, args.FILE_OUT)
 
 if __name__ == "__main__":
     sys.exit(main())

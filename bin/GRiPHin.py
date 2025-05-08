@@ -21,8 +21,8 @@ from pathlib import Path
 from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value, create_shiga_df, double_check_taxa_id, fill_taxa_id
 
 # Set display options to show all rows and columns
-#pd.set_option('display.max_rows', None)  # Show all rows
-#pd.set_option('display.max_columns', None)  # Show all columns
+pd.set_option('display.max_rows', None)  # Show all rows
+pd.set_option('display.max_columns', None)  # Show all columns
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
@@ -40,11 +40,13 @@ def parseArgs(args=None):
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
     parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
+    parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
     parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX, which is the default.')
     parser.add_argument('--shigapass', dest="shigapass", default=False, action='store_true', required=False, help='Use for when there are E. coli or Shigella isolates in samplesheet.')
     parser.add_argument('--centar', dest="centar", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
+    parser.add_argument('--filter_samples', dest="filter_samples", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
@@ -73,7 +75,7 @@ def Get_Parent_Folder(directory):
     project = os.path.basename(os.path.dirname(directory))
     # get project from directory path
     #project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
-    parent_folder = path.parent.parent.absolute()
+    parent_folder = path.parent.parent.resolve() # added resolve to handle symlinks rather than using .absolute()
     # get everything after CEMB
     #parent_folder = os.path.split(os.path.split(os.path.split(os.path.split(directory)[0])[0])[0])[0]
     return project, parent_folder
@@ -275,8 +277,8 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
     return alerts
 
 def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
-                     assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,\
-                     MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage, srst2_warning):
+                    assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,\
+                    MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage, srst2_warning):
     """
     <1,000,000 total reads for each raw and trimmed reads - Total_Sequenced_reads
     % raw and trimmed reads with Q30 average for R1 (<90%) and R2 (<70%) - Q30_R1_percent, Q30_R2_percent
@@ -383,7 +385,6 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         warnings = [item for item in warnings if "corrupt" in item]
     elif  "The # of reads in raw R1/R2 files are NOT equal." in warnings:
         warnings = [item for item in warnings if "NOT equal" in item]
-    print(warnings)
     return warnings
 
 def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name):
@@ -940,10 +941,10 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
             MLST_type_1 = ", ".join(Scheme_list[1][0]) # join together the STs for this one scheme
             MLST_alleles_1 = ",".join(Scheme_list[2][0])
             MLST_source_1 = ",".join(Scheme_list[3][0])
-            MLST_scheme_2 = "-"
-            MLST_type_2 = "-"
-            MLST_alleles_2 = "-"
-            MLST_source_2 = "-"
+            MLST_scheme_2 = ""
+            MLST_type_2 = ""
+            MLST_alleles_2 = ""
+            MLST_source_2 = ""
     except FileNotFoundError: 
         print("Warning: " + sample_name + "_combined.tsv not found")
         MLST_scheme_1 = MLST_scheme_2 = MLST_type_1 = MLST_type_2 = MLST_alleles_1 = MLST_alleles_2 = MLST_source_1 = MLST_source_2 = 'Unknown'
@@ -1051,13 +1052,15 @@ def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_p
         return data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
         Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L
 
-def Create_df(phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
+def Create_df(phx_version, phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
 Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L):
+    phx_version_L = [str(phx_version)] * len(Sample_Names)
     #combine all metrics into a dataframe
     if phoenix == True:
         data = {'WGS_ID'             : Sample_Names,
         'Parent_Folder'              : parent_folder_L,
         'Data_Location'              : data_location_L,
+        'PHX_Version'                : phx_version_L,
         'Minimum_QC_Check'           : QC_result_L,
         'Minimum_QC_Issues'          : QC_reason_L,
         'Warnings'                   : warnings_L,
@@ -1094,6 +1097,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         data = {'WGS_ID'             : Sample_Names,
         'Parent_Folder'              : parent_folder_L,
         'Data_Location'              : data_location_L,
+        'PHX_Version'                : phx_version_L,
         'Minimum_QC_Check'           : QC_result_L,
         'Minimum_QC_Issues'          : QC_reason_L,
         'Warnings'                   : warnings_L,
@@ -1132,7 +1136,6 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     return df
 
 def srst2_dedup(srst2_ar_df, gamma_ar_df):
-
     ##### First, we will drop columns with "partial" in the name
     # Filter out columns that contain the substring
     columns_to_drop = [col for col in srst2_ar_df.columns if "partial" in col]
@@ -1296,11 +1299,12 @@ def find_big_5(BLDB):
     # Condition to check if "Protein_name" contains "OXA"
     oxa_condition = final_df["Protein name"].str.contains("OXA", case=False, na=False)
     # Condition to filter "Subfamily" only for rows where "Protein_name" contains "OXA"
-    subfamily_condition = final_df["Subfamily"].isin(["OXA-48-like", "blaOXA-23-like", "blaOXA-24-like", "blaOXA-58-like", "blaOXA-143-like"])
+    subfamily_condition = final_df["Subfamily"].isin(["OXA-48-like", "OXA-23-like", "OXA-24-like", "OXA-58-like", "OXA-143-like"])
     # Keep all rows where "Protein_name" does NOT contain "OXA"
     non_oxa_rows = final_df[~oxa_condition]
     # Keep only filtered rows where "Protein_name" contains "OXA" and "Subfamily" is in the list
     filtered_oxa_rows1 = final_df[oxa_condition & subfamily_condition]
+    ###########print(filtered_oxa_rows1)
     filtered_oxa_rows = filtered_oxa_rows1[~(filtered_oxa_rows1["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~filtered_oxa_rows1["Subfamily"].str.contains("OXA-48-like", na=False))]
     # Combine both DataFrames
     filtered_final_df = pd.concat([non_oxa_rows, filtered_oxa_rows])
@@ -1459,8 +1463,12 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     cell_format_p4 = workbook.add_format({'bg_color': '#FFC0CB', 'font_color': '#000000', 'bold': True})
     # Headers
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
-    worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
-    worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
+    if "PHX_Version" in df.columns:
+        worksheet.merge_range('A1:D1', "PHoeNIx Summary", cell_format_light_blue)
+        worksheet.merge_range('E1:R1', "QC Metrics", cell_format_grey_blue)
+    else: # allow for backward compatibility with versions <2.2.0
+        worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
+        worksheet.merge_range('D1:S1', "QC Metrics", cell_format_grey_blue)
     #taxa columns 
     # Find start and end column letters
     # to allow backwards compatability with v2.1.1 we need a little try and catch...  
@@ -1484,8 +1492,14 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     worksheet.merge_range(f"{mlst_start_col}1:{mlst_end_col}1", "MLST Information", cell_format_green)
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
+        # as part of combine_GRiPHins.py organism specifc columns are in qc_max_col
         qc_minus_centar = qc_max_col - sum(centar_df_lens)
-        worksheet.merge_range(0, (qc_minus_centar), 0, (qc_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
+        if centar_df_lens[0] <= 1:
+            # Just write to the single cell
+            worksheet.write(0, qc_minus_centar, "Toxin A/B Variants", cell_format_p4)
+        else:
+            # Safe to merge multiple cells
+            worksheet.merge_range(0, (qc_minus_centar), 0, (qc_minus_centar + centar_df_lens[0] - 1), "Toxin A/B Variants", cell_format_p4)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_minus_centar + sum(centar_df_lens) - 1), "ML Predicted Ribotype", cell_format_p1)
@@ -1576,12 +1590,8 @@ def create_samplesheet(input_directory, scaffolds_entry):
         samplesheet.write('sample,directory\n')
     dirs = sorted(os.listdir(input_directory))
     # Filter directories based on the presence of *_1.trim.fastq.gz files
-    #if scaffolds_entry == False:
     valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "*_summaryline.tsv")) ]
     files_glob = "*_summaryline.tsv"
-    #else
-    #    valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "assembly", "*.filtered.scaffolds.fa.gz")) ]
-    #    files_glob = "./assembly/*.filtered.scaffolds.fa.gz"
     # Identify and warn about excluded directories
     excluded_dirs = [excluded_dir for excluded_dir in dirs if excluded_dir not in valid_directories]
     print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no '{files_glob}' files weren't found in these locations.\033[0m\n")
@@ -1641,21 +1651,23 @@ def main():
     if (args.samplesheet == None) and (args.directory == None): # if no directory give AND no sample sheet given exit
         sys.exit(CRED + "You MUST pass EITHER a samplesheet or a top directory of PHoeNIx output to create one.\n" + CEND)
     # If a directory is given then create a samplesheet from it if not use the samplesheet passed
-    if args.directory !=None:
+    if args.directory != None:
         samplesheet = create_samplesheet(args.directory, args.scaffolds)
     else:
         sort_samplesheet(args.samplesheet)
         samplesheet = args.samplesheet
-    if args.centar == True:
-        # for griphin nextflow module --outdir is passed, however, when using species specific pipelines and --input we need to make sure only samples in samplesheet are run
-        input_samplesheet = pd.read_csv(args.samplesheet)
-        samples_to_run = input_samplesheet["sample"].tolist()
+    if args.centar == True and args.samplesheet != None and args.filter_samples == True: 
+        # When using species specific pipelines and --samplesheet is  given this means we need to make sure only samples in samplesheet are run
+        input_samplesheet_df = pd.read_csv(args.samplesheet)
+        output_dir_string = str(args.output).replace("_GRiPHin_Summary","").replace("_GRiPHin","")
+        input_samplesheet_df = input_samplesheet_df[input_samplesheet_df["directory"].str.contains(fr"/{str(output_dir_string)}", na=False, regex=True)]
+        samples_to_run = input_samplesheet_df["sample"].tolist()
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
     with open(samplesheet) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
         csv_rows = list(csv_reader)  # Convert the iterator to a list to reuse it
-        if args.centar == True:
+        if args.centar == True and args.samplesheet != None and args.filter_samples == True:
             filtered_out_samples = [row[0] for row in csv_rows if any(sample not in row[0] for sample in samples_to_run)]
             csv_rows = [row for row in csv_rows if row[0] in samples_to_run]
             print("\n\033[93m Warning: The following sample(s) are not in samplesheet and were filtered out of reporting in griphin: {}\033[0m\n".format(list(set(filtered_out_samples) - set(samples_to_run))))
@@ -1681,15 +1693,20 @@ def main():
                 centar_df = create_centar_combined_df(directory, sample_name)
                 centar_dfs.append(centar_df)
     # combine all lists into a dataframe
-    df = Create_df(args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+    df = Create_df(args.phx_version, args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     if args.shigapass == True:
         df = double_check_taxa_id(shiga_df, df)
     else:
         df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     if args.centar == True:
-        full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
-        print(full_centar_df)
+        try:
+            full_centar_df = pd.concat(centar_dfs, ignore_index=True) # combine rows of c diff samples into one c diff df
+        except ValueError as e:
+            if "No objects to concatenate" in str(e):
+                print(CYELLOW + "\nThere was a ValueError: 'No objects to concatenate'. Check that --output is the same as the phx dir its used to get a path with --centar and --samplesheet. Search for 'output_dir_string' to find origin of the error.\n" + CEND)
+            else:
+                raise  # re-raise if it's not the one you expected
         ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len = clean_and_format_centar_dfs(full_centar_df)
         centar_df_lens = [ A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len ]
         # combing centar with phx qc information

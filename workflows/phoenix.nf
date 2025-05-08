@@ -125,6 +125,18 @@ def get_only_taxa(input_ch){
         return [ "$genus" ]
 }
 
+def check_params_var(species_bol, species_param) {
+    // species_bol -> was the species in question in the dataset?
+    // species_param - >did the user pass the argument to run the species specific modules?
+    if (species_bol == true && species_param == true){
+        return true
+    } else if (species_bol == true && species_param == false) {
+        return false
+    } else {
+        return false
+    }
+}
+
 def add_project_id(old_meta, input_ch, outdir_path){
     def meta = [:] // create meta array
     meta.id = old_meta.id
@@ -137,18 +149,6 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     meta_id = input_for_meta[0]
     output_array = [ meta_id, [] ]
     return output_array
-}
-
-def check_params_var(species_bol, species_param) {
-    // species_bol -> was the species in question in the dataset?
-    // species_param - >did the user pass the argument to run the species specific modules?
-    if (species_bol == true && species_param == true){
-        return true
-    } else if (species_bol == true && species_param == false) {
-        return false
-    } else {
-        return false
-    }
 }
 
 /*
@@ -168,7 +168,7 @@ workflow PHOENIX_EXTERNAL {
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
         // Allow relative paths for krakendb argument
-        kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
+        kraken2_db_path = Channel.fromPath(params.kraken2db, relative: true)
 
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
         INPUT_CHECK (
@@ -556,14 +556,16 @@ workflow PHOENIX_EXTERNAL {
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
         //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
-        centar_var = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
+        centar_boolean = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
+        // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
+        centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, params.coverage, true, false, false, shigapass_var, centar_var, params.bldb
+            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, workflow.manifest.version, params.coverage, true, false, false, shigapass_var, centar_var, params.bldb, true
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
