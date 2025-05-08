@@ -109,10 +109,16 @@ workflow PHOENIX_LR_WF {
     LRGE(INPUT_CHECK.out.reads)
     //ch_versions = ch_versions.mix(LRGE.out.versions)
 
-    RASUSA (INPUT_CHECK.out.reads,LRGE.out.estimation,params.depth)
+    sub_ch = RAWSTATS.out.fastq_lr.map{    meta, fastq_lr       -> [meta, fastq_lr]}\
+        .join(LRGE.out.estimation.map{                   meta, estimation            -> [meta, estimation]}, by: [0])
+
+    RASUSA (sub_ch,params.depth)
     //ch_versions = ch_versions.mix(RASUSA.out.versions)
 
-    NANOQ (RAWSTATS.out.rawstats,RASUSA.out.subfastq,params.length,params.qscore)
+    stat_ch = RAWSTATS.out.rawstats.map{    meta, rawstats       -> [meta, rawstats]}\
+        .join(RASUSA.out.subfastq.map{                   meta, subfastq            -> [meta, subfastq]}, by: [0])
+
+    NANOQ (stat_ch,params.length,params.qscore)
     //ch_versions = ch_versions.mix(NANOQ.out.versions)
 
 /*
