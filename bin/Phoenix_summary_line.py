@@ -15,7 +15,7 @@ import argparse
 
 # Function to get the script version
 def get_version():
-    return "2.0.0"
+    return "2.0.1"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
@@ -28,8 +28,9 @@ def parseArgs(args=None):
     parser.add_argument('-q', '--quast', required=False, help='QUAST file')
     parser.add_argument('-a', '--ar', required=False, help='AR GAMMA file')
     parser.add_argument('-p', '--pf', required=False, help='PF GAMMA file')
+    parser.add_argument('--shigapass', required=False, default="", help='ShigaPass file')
     parser.add_argument('-v', '--vir', required=False, help='hypervirulence GAMMA file')
-    parser.add_argument('-f', '--fastani', dest="fastani", required=False, help='Fastani file or empty placeholder.')
+    parser.add_argument('-f', '--fastani', dest="fastani", required=False, default="", help='Fastani file or empty placeholder.')
     parser.add_argument('-k', '--kraken_trim', dest="trimd_kraken", required=False, help='trimd_summary.txt from kraken2')
     parser.add_argument('-s', '--stats', dest="stats", required=False, help='Pipeline Stats file synopsis file')
     parser.add_argument('-e', '--extended_qc', dest="extended_qc", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
@@ -41,48 +42,21 @@ def parseArgs(args=None):
 CRED = '\033[91m'
 CEND = '\033[0m'
 
-# def MLST_Info_Only(MLST_file):
-#     """Pulls MLST info from *_Scheme.mlst file"""
-#     f = open(MLST_file, 'r')
-#     f.readline()
-#     String1 = f.readline()
-#     ST = String1.split()[2]
-#     Scheme = String1.split()[1]
-#     Out = ST + ' (' + Scheme + ')'
-#     return Out
-
-# def MLST_ST(MLST_file):
-#     """Pulls MLST info from *_Scheme.mlst file"""
-#     ST_list = []
-#     with open(MLST_file, 'r') as f:
-#         lines = f.readlines()
-#         lines.pop(0)
-#         for line in lines:
-#             ST = "ST" + line.split()[2]
-#             ST_list.append(ST)
-#         if "ST-" in ST_list:
-#             ST_list = [re.sub("ST-", "-", i) for i in ST_list]
-#     return ST_list
-
 def MLST_Scheme(MLST_file):
     """Pulls MLST info from *_Scheme.mlst file"""
     Scheme_list = [[],[],[],[],[]]
     with open(MLST_file, 'r') as f:
         lines = f.readlines()
         lines.pop(0)
-        #print(len(lines), lines)
         for rawline in lines:
             line=rawline.strip()
             split_line = line.split("\t")
-            #print("\n".join(split_line))
             source = split_line[1]
             date = split_line[2]
             DB_ID = split_line[3]
             Scheme = str(split_line[4])
             alleles = "-".join(split_line[5:])
             if DB_ID in Scheme_list[0]:
-                print("In Scheme_list[0]")
-                print(Scheme_list[0])
                 for i in range(0,len(Scheme_list[0])):
                     if DB_ID == Scheme_list[0][i]:
                         print("Adding to", Scheme_list[0][i], i)
@@ -93,10 +67,7 @@ def MLST_Scheme(MLST_file):
                         Scheme_list[2][i].append(alleles)
                         Scheme_list[3][i].append(source)
                         Scheme_list[4][i].append(date)
-                        print(Scheme_list)
             else:
-                print("NOT in Scheme_list[0]")
-                print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
                 Scheme_list[0].append(DB_ID)
                 if Scheme != "-" and Scheme != "Novel_allele" and Scheme != "Novel_profile":
                     Scheme_list[1].append(["ST"+Scheme])
@@ -105,11 +76,6 @@ def MLST_Scheme(MLST_file):
                 Scheme_list[2].append([alleles])
                 Scheme_list[3].append([source])
                 Scheme_list[4].append([date])
-                print(Scheme_list[0], Scheme_list[1], Scheme_list[2], Scheme_list[3], Scheme_list[4])
-            for i in Scheme_list:
-                for j in i:
-                    print(j)
-            #print("\n".join(Scheme_list))
     return Scheme_list
 
 def Contig_Count(input_quast):
@@ -276,13 +242,6 @@ def QC_Pass(stats):
     return status_end, reason_end, warning_count
 
 def Get_Kraken_reads(stats, trimd_kraken):
-#    if stats is not None:
-#        with open(stats, 'r') as f:
-#            for line in f:
-#                if line.startswith("KRAKEN2_CLASSIFY_READS"):
-#                    read_match = re.findall(r': .*? with', line)[0]
-#                    read_match = re.sub( ": SUCCESS  : | with", '', read_match)
-#    else:
     with open(trimd_kraken, "r") as f:
         for line in f:
             if line.startswith("G:"):
@@ -298,33 +257,40 @@ def Get_Kraken_reads(stats, trimd_kraken):
         read_match = genus_match + "(" + genus_percent + "%)" + species_match + "(" + species_percent + "%)"
     return read_match
 
-def Get_Taxa_Source(taxa_file, fastani):
+def Get_Taxa_Source(taxa_file, fastani, shigapass):
     with open(taxa_file, 'r') as f:
         first_line = f.readline()
         fline=first_line.strip().split("\t")
         taxa_source=fline[0]
-        percent_match=fline[1]
-        # set fastani as false as default
-        if (taxa_source == "ANI_REFSEQ"):
-            with open(fastani, 'r' ) as f2:
-                next(f2) # just use to skip first line
-                for line in f2:
-                    fastani_coverage = str(line.split('\t')[1])
-                    percent_match = str(line.split('\t')[0]) + " ANI_match"
-        if (taxa_source == "kraken2_trimmed"):
-            percent_match = percent_match + "% Reads_assigned"
-            fastani_coverage = "Unknown"
-        if (taxa_source == "kraken2_wtasmbld"):
-            percent_match = percent_match + "% Scaffolds_assigned"
-            fastani_coverage = "Unknown"
+        fastani_percent_match=fline[1]
         lines = f.readlines()
         for line in lines:
             if line.startswith("G:"):
                 genus = line.split('\t')[1].strip('\n')
             if line.startswith("s:"):
                 species = line.split('\t')[1].strip('\n')
-        Species = genus + " " + species
-    return taxa_source, percent_match, Species, fastani_coverage
+        final_taxa = genus + " " + species
+    if fastani != "":
+        with open(fastani, 'r' ) as f2:
+            next(f2) # just use to skip first line
+            for line in f2:
+                fastani_organism = str(line.split('\t')[2])
+                fastani_coverage = str(line.split('\t')[1])
+                fastani_percent_match = str(line.split('\t')[0])
+    else:
+        fastani_organism = "Unknown"
+        fastani_percent_match = "Unknown"
+        fastani_coverage = "Unknown"
+    if shigapass != "":
+        with open(shigapass, 'r' ) as shiga_file:
+            for line in shiga_file.readlines()[1:]:  # Skip the first line
+                if line.split(";")[9] == 'Not Shigella/EIEC\n':
+                    shigapass_organism = "Not Shigella/EIEC"
+                else:
+                    shigapass_organism = line.split(";")[7]
+    else:
+        shigapass_organism = ""
+    return final_taxa, taxa_source, fastani_percent_match, fastani_organism, fastani_coverage, shigapass_organism
 
 def Get_Mutations(amr_file):
     point_mutations_list = []
@@ -364,9 +330,6 @@ def Get_BUSCO_Gene_Count(stats):
     with open(stats, 'r') as f:
         matched_line = [line for line in f if "BUSCO" in line]
         split_list = matched_line[0].split(':')
-        #lineage = re.sub( "BUSCO_", '', split_list[0])
-        #percent = split_list[2].split(' ')[1]
-        #ratio = split_list[2].split(' ')[9].rstrip('\n')
         lineage="_".join(split_list[0].split("_")[-2:]).strip()
         percent=str(split_list[2].split("%")[0].strip())+"%"
         percent = re.sub("only ", "", percent)
@@ -375,7 +338,7 @@ def Get_BUSCO_Gene_Count(stats):
     busco_file = True
     return busco_line, lineage, busco_file
 
-def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file, pf_file, extended_qc):
+def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file, pf_file, extended_qc, shigapass):
     try:
         plasmid_marker_list = Get_Plasmids(pf_file)
     except:
@@ -385,11 +348,13 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
     except:
         point_mutations_list = 'Unknown'
     try:
-        taxa_source, percent_match, Species, fastani_coverage = Get_Taxa_Source(Taxa, fastani)
+        final_taxa, taxa_source, fastani_percent_match, fastani_organism, fastani_coverage, shigapass_organism = Get_Taxa_Source(Taxa, fastani, shigapass)
     except:
+        final_taxa = 'Unknown'
         taxa_source = 'Unknown'
-        percent_match = 'Unknown'
-        Species = 'Unknown'
+        shigapass_organism = 'Unknown'
+        fastani_percent_match = 'Unknown'
+        fastani_organism = 'Unknown'
         fastani_coverage = "Unknown"
     try:
         Coverage = Trim_Coverage(trimmed_counts, ratio_file)
@@ -417,55 +382,31 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
         GC = GC_Content(quast_file)
     except:
         GC = 'Unknown'
-    # Check the taxa_source to determine where to get Species from
-    # try:
-    #     ST = MLST_ST(MLST_file)
-    #     if len(ST) > 1:
-    #         ST_1 = ST[0]
-    #         ST_2 = ST[1]
-    #     else:
-    #         ST_1 = ST[0]
-    #         ST_2 = "-"
-    # except:
-    #     ST_1 = 'Unknown'
-    #     ST_2 = 'Unknown'
     try:
         Scheme = MLST_Scheme(MLST_file)
         if len(Scheme[0]) > 1:
             if Scheme[0][0].lower() < Scheme[0][1].lower():
                 MLST_scheme_1 = Scheme[0][0]
-                #print("1,1-before sort", Scheme[1][0])
                 mlst_types_1=sorted(Scheme[1][0])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 if Scheme[3][0] == "srst2":
                     MLST_type_1 += '^'
-                #print("1,1-after sort", MLST_type_1)
-                #MLST_alleles_1 = ",".join(Scheme[2][0])
                 MLST_scheme_2 = Scheme[0][1]
-                #print("2,1-before sort", Scheme[1][1])
                 mlst_types_2=sorted(Scheme[1][1])[::-1]
                 MLST_type_2 = ",".join(mlst_types_2)
                 if Scheme[3][1] == "srst2":
                     MLST_type_2 += '^'
-                #print("2,1-after sort", MLST_type_2)
-                #MLST_alleles_2 = ",".join(Scheme[2][1])
             else:
                 MLST_scheme_1 = Scheme[0][1]
-                #print("1,2-before sort", Scheme[1][1])
                 mlst_types_1=sorted(Scheme[1][1])[::-1]
                 MLST_type_1 = ",".join(mlst_types_1)
                 if Scheme[3][1] == "srst2":
                     MLST_type_1 += '^'
-                #print("1,2-after sort", MLST_type_1)
-                #MLST_alleles_1 = ",".join(Scheme[2][1])
                 MLST_scheme_2 = Scheme[0][0]
-                #print("2,2-before sort", Scheme[1][0])
                 mlst_types_2=sorted(Scheme[1][0])[::-1]
                 MLST_type_2 = ",".join(mlst_types_2)
                 if Scheme[3][0] == "srst2":
                     MLST_type_2 += '^'
-                #print("2,2-after sort", MLST_type_2)
-                #MLST_alleles_2 = ",".join(Scheme[2][0])
         else:
             MLST_scheme_1 = Scheme[0][0]
             MLST_type_1 = ",".join(Scheme[1][0])
@@ -513,26 +454,26 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
     except:
         read_match = "Unknown"
     if busco_file is None and extended_qc == False:
-        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + Species + '\t' + percent_match + '\t' + fastani_coverage + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + final_taxa + '\t' + taxa_source + '\t' + fastani_organism + '\t' + fastani_percent_match + '\t' + fastani_coverage + '\t' + shigapass_organism + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
         busco = False
     elif busco_file is not None or extended_qc == True:
-        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + Species + '\t' + percent_match + '\t' + fastani_coverage + '\t' + taxa_source + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
+        Line = ID + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + busco_line + '\t' + lineage + '\t' + final_taxa + '\t' + taxa_source + '\t' + fastani_organism + '\t' + fastani_percent_match + '\t' + fastani_coverage + '\t' + shigapass_organism + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
         busco = True
     return Line, busco, fastani
 
-def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations, pf_file, extended_qc):
+def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations, pf_file, extended_qc, shigapass):
     with open(out_file, 'w') as f:
-        Line, busco, fastani = Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file, extended_qc)
+        Line, busco, fastani = Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file, extended_qc, shigapass)
         if busco == True:
-            f.write('WGS_ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tBUSCO\tBUSCO_DB\tSpecies\tTaxa_Confidence\tTaxa_Coverage\tTaxa_Source\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
+            f.write('WGS_ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tBUSCO\tBUSCO_DB\tFinal_Taxa_ID\tTaxa_Source\tFastANI_Organism\tFastANI_%ID\tFastANI_%Coverage\tShigaPass_Organism\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
         else:
-            f.write('WGS_ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tSpecies\tTaxa_Confidence\tTaxa_Coverage\tTaxa_Source\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
+            f.write('WGS_ID\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tFinal_Taxa_ID\tTaxa_Source\tFastANI_Organism\tFastANI_%ID\tFastANI_%Coverage\tShigaPass_Organism\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
         f.write(Line)
 
 def main():
     args = parseArgs()
     # if the output file already exists remove it
-    Isolate_Line_File(args.taxa, args.fastani, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.mutations, args.pf, args.extended_qc)
+    Isolate_Line_File(args.taxa, args.fastani, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.mutations, args.pf, args.extended_qc, args.shigapass)
 
 if __name__ == '__main__':
     main()

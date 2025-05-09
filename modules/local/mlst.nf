@@ -17,9 +17,7 @@ process MLST {
 
     script:
     // helps set correct paths to get database version being used
-    if (params.terra==false) { terra = false }
-    else if (params.terra==true) { terra = true}
-    else { error "Please set params.terra to either \"true\" or \"false\""}
+    def terra = params.terra ? "true" : "false"
     //define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"

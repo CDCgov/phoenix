@@ -24,18 +24,10 @@ process SCAFFOLD_COUNT_CHECK {
 
     script:
     // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) { terra = ""} 
-    else if (params.terra==true) { terra = "-2 terra" }
-    else { error "Please set params.terra to either \"true\" or \"false\"" }
+    def terra = params.terra ? "-t terra" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { 
-        ica_python = ""
-        ica_bash = ""
-    } else if (params.ica==true) { 
-        ica_python = "python ${params.bin_dir}" 
-        ica_bash = "bash ${params.bin_dir}" 
-    }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    ica_python = params.ica ? "python ${params.bin_dir}" : ""
+    ica_bash = params.ica ? "bash ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def fairy_read_count_outcome_file = fairy_read_count_outcome ? "$fairy_read_count_outcome" : ""

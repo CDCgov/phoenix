@@ -271,12 +271,14 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Creation of `-entry UPDATE_CDC_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when.  
 - Creation of `-entry CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
 - `-centar` parameter can be passed when running `-entry PHOENIX` or `-entry CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#input--entry-centar-in-versions-220) for full documentation.   \
-- A column "PHX_Version" was added to the griphin summary.  
 - `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
-- The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-163","blaOXA-405","blaOXA-1012","blaOXA-1226","blaOXA-1240","blaOXA-1242","blaOXA-1304","blaOXA-1306","blaOXA-1307","blaOXA-1308","blaOXA-1309".  
-- The following OXA genes were added to be highlighted as blaOXA-24_40-like in the griphin summary: "blaOXA-1225", "blaOXA-1303" and "blaOXA-1322".  
+- Updating the big 5 genes to be highlighed, particularly OXA genes has become too big of lift to hard code so the BLDB databased was added to reference and the process is described in [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes).  
 - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` were removed from phx output. If you need or want these files you can get them from the workdir for the process(es) `KRAKEN2_TRIMD` and `KRAKEN2_ASMBLD`. Alternatively, you can create your own [config file](https://www.nextflow.io/docs/latest/config.html) and add back in the publishing of the files like [this](https://github.com/CDCgov/phoenix/blob/717d19c19338373fc0f89eba30757fe5cfb3e18a/conf/modules.config#L457)  
+
+**Summary File Changes:**
 - For spades failures, lack of reads after trimming or corruption we simplifed the warnings produced in `GRiPHin.py` by supressing other warnings as the root cause is the aforementioned failures. Similarly, if the reason for the Auto QC Failure is "Assembly file not found" then only that is reported rather than listing files with unknowns.  
+- New columns added to GriPHin summary files: `PHX_Version`, `Final_Taxa_ID` and `ShigaPass_Organism`
+- For alignment across GriPHin summary files and `Phoenix_Summary.tsv` in the latter the columns `Final_Taxa_ID` and `ShigaPass_Organism` were added. Additionally, the `Species` column was changed to `FastANI_Organism`, `Taxa_Confidence` to `FastANI_%ID`, and `Taxa_Coverage` to `FastANI_%Coverage`.  
 
 **Terra.bio Output Updates:**
 - Columns are now reported based on `*_GRiPHin_Summary.tsv` except for the columns `BETA_LACTAM_RESISTANCE_GENES`, `OTHER_AR_GENES`, `AMRFINDER_POINT_MUTATIONS`, `HYPERVIRULENCE_GENES` and `PLASMID_INCOMPATIBILITY_REPLICONS` still come from the `Phoenix_Summary.tsv` file. 
@@ -287,12 +289,13 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - `WARNINGS_COUNT` was changed to `WARNINGS` and it is print out of the warnings, rather than just a count.
    - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.  
    - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` are no longer output from PHX. `*.kraken2_asmbld.classifiedreads.txt` was added as an output as taxids are in that file, which is different from the `*.kraken2_wtasmbld.classifiedreads.txt`. These files aren't really needed expect for edge cases such as questions about conflicting results or investigating suspected contamination.  
+- Due to [deprecation of "When" block](https://www.nextflow.io/docs/latest/process.html#when) in nextflow were removed and `.filter{}` is used instead.  
 
 **Fixed Bugs:**  
 - Taxonomy Fixes:  
    - BAD BUG!! `sort_and_prep_dist.sh` was not evaluating scientific notation so in some cases exact matches were not being reported. For context, when reviewing our dataset of 71,670 samples, 2,837 (~4%) had scientific notation in their mash distances, 31 (0.04%) have different species if you sort with the scientific notation compared to what PHX was originally reported. All of the 31 would be considered in the same complex, e.g. *E. hormaechei*/*E. cloacae*, *E. coli*/*Shigella*, *K. michiganensis*/*K. oxytoca*. Thus, the impact of previously reported taxa isn't expected to be large, but this fix **could maybe** resolve differences reported between MALDI/WGS.  
    - [Shigapass](https://github.com/imanyass/ShigaPass) was added to distinguish correctly between *E. coli*/*Shigella*. If FastANI determines the species to be either *E. coli* or *Shigella* Shigapass will now run to confirm the call. In GRiPHin there is a new `Final_Taxa_ID` column that has the final determined call. The column `Taxa_source` will still say `ANI_REFSEQ` if the FastANI call was kept and now will have `Shigapass` if the FastANI call was determined to be wrong by Shigapass and was thus overwritten. This was added to all entry points.   
-- Changes were made to allow `-resume` to work correctly.  
+- Changes were made to allow `-resume` to work better.  
 - More robust checks in PHoeNIx to pull in only sample_names correctly.  
 - Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.  
 - Fix for `--coverage` being converted to a string when run on Seqera Cloud. Thanks to @DOH-JDJ0303 for the [PR](https://github.com/CDCgov/phoenix/pull/173).  
@@ -300,7 +303,6 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [Beta-Lactamase DataBase (BLDB)](http://bldb.eu/) is now used as an input to determine which genes to highlight rather than hard coding. The big-5 genes that have their function labelled as ESBL/IR/IR ESBL were removed from being highlighted as part of the `big 5` genes as are not thought to have carbapenemase acvitity.  
    - Full details on highlighing methods found in the [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes)
 - The column `Kraken_ID_Raw_Reads_%` in the GRiPHin summary files (xlsx and tsv) was changed to `Kraken_ID_Trimmed_Reads_%` to accurately reflect what that column has been reporting... whoopsie.  
-- Due to [deprecation of "When" block](https://www.nextflow.io/docs/latest/process.html#when) in nextflow were removed and `.filter{}` is used instead.  
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  

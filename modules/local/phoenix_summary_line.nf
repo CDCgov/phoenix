@@ -16,7 +16,8 @@ process CREATE_SUMMARY_LINE {
     path(taxonomy_file), \
     path(trimd_ksummary), \
     path(amr_report), \
-    path(fastani)
+    path(fastani), \
+    path(shigapass)
 
     output:
     tuple val(meta), path('*_summaryline.tsv'), emit: line_summary
@@ -24,15 +25,14 @@ process CREATE_SUMMARY_LINE {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${params.bin_dir}" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
     def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
     def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
     def fastani_file    = fastani ? "-f $fastani" : ""
+    def shigapass_file    = shigapass ? "--shigapass $shigapass" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
@@ -50,6 +50,7 @@ process CREATE_SUMMARY_LINE {
         -x $taxonomy_file \\
         $fastani_file \\
         $trim_ksummary \\
+        $shigapass_file \\
         -o ${prefix}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml

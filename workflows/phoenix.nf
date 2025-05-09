@@ -144,13 +144,6 @@ def add_project_id(old_meta, input_ch, outdir_path){
     return [meta, input_ch]
 }
 
-// Groovy funtion to make [ meta.id, [] ] - just an empty channel
-def create_empty_ch(input_for_meta) { // We need meta.id associated with the empty list which is why .ifempty([]) won't work
-    meta_id = input_for_meta[0]
-    output_array = [ meta_id, [] ]
-    return output_array
-}
-
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -417,7 +410,7 @@ workflow PHOENIX_EXTERNAL {
         //First, check if any isolates are Clostridioides difficile and filter those to go through the channel
         determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
 
-        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+        if (centar_param == true) { // don't run regardless of what the isolates are if  --centar isn't passed
             // centar subworkflow requires project_ID as part of the meta
             CENTAR_SUBWORKFLOW (
                 DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
@@ -507,6 +500,13 @@ workflow PHOENIX_EXTERNAL {
             .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{              meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},  by: [0])\
             .join(AMRFINDERPLUS_RUN.out.report.map{                 meta, report          -> [[id:meta.id], report]},         by: [0])\
             .join(ani_best_hit_ch.map{                              meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
+
+        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary
+        all_ids = line_summary_ch.map { meta -> meta[0].id }.mix(SHIGAPASS.out.summary.map{ meta, summary -> meta.id }).unique().map{ id -> [id: id] }
+        // For each ID, check if there's a matching shigapass entry. If not, create an empty placeholder with the same structure
+        backup_entries = all_ids.join(SHIGAPASS.out.summary, by: [0], remainder: true).filter{ meta, summary -> summary == null }.map { meta, summary -> [meta, []] }  // Use empty list as placeholder
+        // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
+        line_summary_ch = line_summary_ch.join(SHIGAPASS.out.summary.mix(backup_entries), by: [0])
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE (
