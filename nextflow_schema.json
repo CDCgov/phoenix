@@ -27,6 +27,24 @@
                     "fa_icon": "fas fa-database",
                     "description": "Path (full or relative) for where kraken2 database files are, which includes hash.k2d, taxo.k2d, opts.k2d and ktaxonomy.tsv files. You can pass a decompressed folder or in its compressed '.tar.gz' form. The database can be downloaded from https://benlangmead.github.io/aws-indexes/k2 . You must use a database created after 3/14/2023.",
                     "default": "null"
+                },
+                "depth": {
+                    "type": "integer",
+                    "description": "If you want to increase the depth of coverage for subsampling use --depth (ex. --depth 100)",
+                    "default": "50",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "qscore": {
+                    "type": "integer",
+                    "description": "If you want to increase or decrease the minimum long read qscore, use --qscore (ex. --qscore 10)",
+                    "default": "15",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "length": {
+                    "type": "integer",
+                    "description": "If you want to minimum long read length for assembly, use --length (ex. --length 2000)",
+                    "default": "1000",
+                    "fa_icon": "fas fa-hashtag"
                 }
             }
         },
