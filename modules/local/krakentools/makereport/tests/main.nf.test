@@ -1,0 +1,70 @@
+nextflow_process {
+
+    name "Test Process KRAKENTOOLS_MAKEKREPORT"
+    script "../main.nf"
+    config './nextflow.config'
+    process "KRAKENTOOLS_MAKEKREPORT"
+
+    tag "modules"
+    tag "krakentools"
+    tag "krakentools/makereport"
+
+    setup {
+        run("UNTAR") {  // Use consistent naming here
+            script "../../../../ph-core/untar/main.nf"
+            process {
+                """
+                input[0] = Channel.of([
+                    [],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/genome/kraken2-mindb.tar.gz', checkIfExists: true)
+                ])
+                """
+            }
+        }
+    }
+
+    test("kraken makereport") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test_sample' ], // meta map
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_wtasmbld.classifiedreads.txt')
+                ]
+                input[1] = UNTAR.out.untar.map { it[1] }
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+    test("kraken makereport - stub") {
+
+        options '-stub'
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test_sample' ], // meta map
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_wtasmbld.classifiedreads.txt')
+                ]
+                input[1] = UNTAR.out.untar.map { it[1] }
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+}

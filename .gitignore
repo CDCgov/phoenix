@@ -7,3 +7,8 @@ testing/
 testing*
 *.pyc
 null/
+conf/amdp*
+out
+phx_output
+tmp
+.nf-test

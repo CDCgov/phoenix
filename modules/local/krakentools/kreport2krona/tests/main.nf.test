@@ -1,0 +1,56 @@
+nextflow_process {
+
+    name "Test Process KRAKEN2_KRONA"
+    script "../main.nf"
+    process "KRAKEN2_KRONA"
+
+    tag "modules"
+    tag "krakentools"
+    tag "krakentools/kreport2krona"
+
+    test("kreport2krona [trimd summary]") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test_sample' ], // meta map
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.report.txt', checkIfExists: true)
+                ]
+                input[1] = "trimd"
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out).match() }
+            )
+        }
+    }
+
+    test("kreport2krona [trimd summary] - stub") {
+
+        options '-stub'
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test_sample' ], // meta map
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.report.txt', checkIfExists: true)
+                ]
+                input[1] = "trimd"
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out).match() }
+            )
+        }
+    }
+}

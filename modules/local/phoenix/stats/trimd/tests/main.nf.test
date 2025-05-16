@@ -1,0 +1,55 @@
+nextflow_process {
+
+    name "Test Process GET_TRIMD_STATS"
+    script "../main.nf"
+    process "GET_TRIMD_STATS"
+
+    test("get trimd stats") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [id: 'test'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/fastp/test.fastp.json'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/fastp/test_singles.fastp.json'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_raw_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_summary_old_2.txt')
+                ]
+                input[1] = false
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+    test("get trimd stats - stub") {
+
+        options '-stub'
+        when {
+            process {
+                """
+                input[0] = [
+                    [id: 'test'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/fastp/test.fastp.json'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/fastp/test_singles.fastp.json'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_raw_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_summary_old_2.txt')
+                ]
+                input[1] = false
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+}

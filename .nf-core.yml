@@ -23,7 +23,7 @@ lint:
     - docs/README.md
     - docs/images/nf-core-oamd-bio-workflow-phoenix-mirror_logo_dark.png
     - docs/images/nf-core-oamd-bio-workflow-phoenix-mirror_logo_light.png
-    - lib/WorkflowPhoenix.groovy 
+    - lib/WorkflowPhoenix.groovy
 
   nextflow_config: false
   multiqc_config: false
@@ -61,7 +61,7 @@ lint:
     - lib/WorkflowMain.groovy
     - lib/nfcore_external_java_deps.jar
     - lib/WorkflowPhoenix.groovy
-    - .gitattributes 
+    - .gitattributes
   readme:
     - nextflow_badge
 

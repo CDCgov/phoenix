@@ -1,0 +1,47 @@
+{
+    "generate pipeline stats exqc -stub": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "test.synopsis:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,d2811f0bcf5069ec22ea49dfb68271ff"
+                ],
+                "pipeline_stats": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "test.synopsis:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,d2811f0bcf5069ec22ea49dfb68271ff"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-15T13:19:13.183524851"
+    },
+    "generate pipeline stats exqc": {
+        "content": [
+            [
+                "versions.yml:md5,d2811f0bcf5069ec22ea49dfb68271ff"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-04-30T17:19:15.529836777"
+    }
+}

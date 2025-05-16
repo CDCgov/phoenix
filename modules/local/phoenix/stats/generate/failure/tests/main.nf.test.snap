@@ -1,0 +1,26 @@
+{
+    "generate pipeline stats failure -stub": {
+        "content": [
+            [
+                "versions.yml:md5,92718fbb61eae28ecc7d2a8399554aaa"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-12T08:38:27.933237833"
+    },
+    "generate pipeline stats failure": {
+        "content": [
+            [
+                "versions.yml:md5,92718fbb61eae28ecc7d2a8399554aaa"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-12T08:36:11.630164457"
+    }
+}

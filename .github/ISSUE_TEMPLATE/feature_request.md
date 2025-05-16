@@ -3,13 +3,12 @@ name: Feature request
 about: Requesting a new feature or program enhancement
 title: "[New Feature Request] - requested enhancement"
 labels: enhancement
-assignees: ''
-
+assignees: ""
 ---
 
 <!--- TO DO:
-1.  Fill out the information below 
-2. Delete the template and information not used 
+1.  Fill out the information below
+2. Delete the template and information not used
 3. Change the issue name  --->
 
 **Is your feature request related to a problem? Please describe.**

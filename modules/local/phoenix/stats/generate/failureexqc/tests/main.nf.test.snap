@@ -1,0 +1,26 @@
+{
+    "generate pipeline stats failure exqc": {
+        "content": [
+            [
+                "versions.yml:md5,6524ed8f1de9c6553f5a2712bd281b8f"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-12T08:51:39.548385452"
+    },
+    "generate pipeline stats failure exqc - stub": {
+        "content": [
+            [
+                "versions.yml:md5,6524ed8f1de9c6553f5a2712bd281b8f"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-12T08:51:48.669737542"
+    }
+}

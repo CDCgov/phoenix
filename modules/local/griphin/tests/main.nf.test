@@ -1,0 +1,72 @@
+nextflow_process {
+
+    name "Test Process GRIPHIN"
+    script "../main.nf"
+    config './nextflow.config'
+    process "GRIPHIN"
+
+    test("griphin") {
+
+        when {
+            process {
+                """
+                input[0] =
+                    [file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_empty_summaryline.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/placeholder.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test1_summaryline.tsv')]
+                input[1] = file(params.modules_testdata_base_path + '/generic/csv/test_phoenix_samplesheet.csv')
+                input[2] = file(params.modules_testdata_base_path + '/genomics/bacterial/genome/test_ResGANNCBI_20210507_srst2.fasta')
+                input[3] = file('.')
+                input[4] = "30"
+                input[5] = false
+                input[6] = false
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert { process.out.griphin_tsv_report.size() > 0 }
+            assert { process.out.converted_samplesheet.size() > 0 }
+            assert { proccess.out.griphin_report.size() > 0 }
+            assert snapshot(
+                process.out.versions
+            ).match()
+        }
+
+    }
+
+    test("griphin - stub") {
+
+        options '-stub'
+
+        when {
+            process {
+                """
+                input[0] =
+                    [file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_empty_summaryline.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/placeholder.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test1_summaryline.tsv')]
+                input[1] = file(params.modules_testdata_base_path + '/generic/csv/test_phoenix_samplesheet.csv')
+                input[2] = file(params.modules_testdata_base_path + '/genomics/bacterial/genome/test_ResGANNCBI_20210507_srst2.fasta')
+                input[3] = file('.')
+                input[4] = "30"
+                input[5] = false
+                input[6] = false
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert { process.out.griphin_tsv_report.size() > 0 }
+            assert { process.out.converted_samplesheet.size() > 0 }
+            assert { proccess.out.griphin_report.size() > 0 }
+            assert snapshot(
+                process.out.versions
+            ).match()
+        }
+
+    }
+
+}

@@ -1,0 +1,158 @@
+{
+    "test_untar_onlyfiles": {
+        "content": [
+            {
+                "0": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hello.txt:md5,e59ff97941044f85df5297e1c302d260"
+                        ]
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ],
+                "untar": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hello.txt:md5,e59ff97941044f85df5297e1c302d260"
+                        ]
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.1"
+        },
+        "timestamp": "2025-05-14T12:16:43.907737373"
+    },
+    "test_untar_onlyfiles - stub": {
+        "content": [
+            {
+                "0": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hello.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        ]
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ],
+                "untar": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hello.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        ]
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.1"
+        },
+        "timestamp": "2025-05-14T12:17:01.789618918"
+    },
+    "test_untar - stub": {
+        "content": [
+            {
+                "0": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hash.k2d:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "opts.k2d:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "taxo.k2d:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        ]
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ],
+                "untar": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hash.k2d:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "opts.k2d:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "taxo.k2d:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        ]
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.1"
+        },
+        "timestamp": "2025-05-14T12:16:52.864733755"
+    },
+    "test_untar": {
+        "content": [
+            {
+                "0": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hash.k2d:md5,8b8598468f54a7087c203ad0190555d9",
+                            "opts.k2d:md5,a033d00cf6759407010b21700938f543",
+                            "taxo.k2d:md5,094d5891cdccf2f1468088855c214b2c"
+                        ]
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ],
+                "untar": [
+                    [
+                        [
+                            
+                        ],
+                        [
+                            "hash.k2d:md5,8b8598468f54a7087c203ad0190555d9",
+                            "opts.k2d:md5,a033d00cf6759407010b21700938f543",
+                            "taxo.k2d:md5,094d5891cdccf2f1468088855c214b2c"
+                        ]
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,6063247258c56fd271d076bb04dd7536"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.1"
+        },
+        "timestamp": "2025-05-14T12:16:35.881041548"
+    }
+}

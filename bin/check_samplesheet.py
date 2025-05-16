@@ -9,9 +9,11 @@ import argparse
 import gzip
 import re
 
+
 # Function to get the script version
 def get_version():
     return "1.0.0"
+
 
 def parse_args(args=None):
     Description = "Reformat cdcgov/phoenix samplesheet file and check its contents."
@@ -19,7 +21,9 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description=Description, epilog=Epilog)
     parser.add_argument("FILE_IN", help="Input samplesheet file.")
     parser.add_argument("FILE_OUT", help="Output file.")
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument(
+        "--version", action="version", version=get_version()
+    )  # Add an argument to display the version
     return parser.parse_args(args)
 
 
@@ -63,11 +67,15 @@ def check_samplesheet(file_in, file_out):
         HEADER = ["sample", "fastq_1", "fastq_2"]
         header = [x.strip('"') for x in fin.readline().strip().split(",")]
         if header[: len(HEADER)] != HEADER:
-            print("ERROR: Please check samplesheet header -> {} != {}".format(",".join(header), ",".join(HEADER)))
+            print(
+                "ERROR: Please check samplesheet header -> {} != {}".format(
+                    ",".join(header), ",".join(HEADER)
+                )
+            )
             sys.exit(1)
 
         ## Check sample entries
-        sample_name_list = [] # used to check if sample name has been used before
+        sample_name_list = []  # used to check if sample name has been used before
         Read_list = []
         for line in fin:
             lspl = [x.strip().strip('"') for x in line.strip().split(",")]
@@ -76,7 +84,9 @@ def check_samplesheet(file_in, file_out):
             sample_name = line.split(",")[0]
             if sample_name in sample_name_list:
                 print_error(
-                    "The sample id {} is used multiple times! IDs need to be unique.".format(sample_name),
+                    "The sample id {} is used multiple times! IDs need to be unique.".format(
+                        sample_name
+                    ),
                     "Line",
                     line,
                 )
@@ -87,7 +97,9 @@ def check_samplesheet(file_in, file_out):
             sample_R1 = line.split(",")[1].split("/")[-1]
             if sample_R1 in Read_list:
                 print_error(
-                    "The forward read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R1),
+                    "The forward read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(
+                        sample_R1
+                    ),
                     "Line",
                     line,
                 )
@@ -97,7 +109,9 @@ def check_samplesheet(file_in, file_out):
             sample_R2 = line.split(",")[2].split("/")[-1].strip("\n")
             if sample_R2 in Read_list:
                 print_error(
-                    "The reverse read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R2),
+                    "The reverse read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(
+                        sample_R2
+                    ),
                     "Line",
                     line,
                 )
@@ -114,7 +128,9 @@ def check_samplesheet(file_in, file_out):
             num_cols = len([x for x in lspl if x])
             if num_cols < MIN_COLS:
                 print_error(
-                    "Invalid number of populated columns (minimum = {})!".format(MIN_COLS),
+                    "Invalid number of populated columns (minimum = {})!".format(
+                        MIN_COLS
+                    ),
                     "Line",
                     line,
                 )
@@ -130,12 +146,15 @@ def check_samplesheet(file_in, file_out):
                 if fastq:
                     if fastq.find(" ") != -1:
                         print_error("FastQ file contains spaces!", "Line", line)
-                    if not fastq.endswith(".fastq.gz") and not fastq.endswith(".fq.gz"): # If file is not gzipped then gzip it. 
+                    if not fastq.endswith(".fastq.gz") and not fastq.endswith(
+                        ".fq.gz"
+                    ):  # If file is not gzipped then gzip it.
                         fastq_gz = fastq + ".gz"
                         with open(fastq, "rb") as f_in:
-                            with gzip.open(fastq_gz, 'wb') as f_out: 
+                            with gzip.open(fastq_gz, "wb") as f_out:
                                 f_out.writelines(f_in)
-                        print("FastQ file does not have extension '.fastq.gz' or '.fq.gz'! Zipping file.",
+                        print(
+                            "FastQ file does not have extension '.fastq.gz' or '.fq.gz'! Zipping file.",
                             "Line",
                             line,
                         )
@@ -167,16 +186,26 @@ def check_samplesheet(file_in, file_out):
             for sample in sorted(sample_mapping_dict.keys()):
 
                 ## Check that multiple runs of the same sample are of the same datatype
-                if not all(x[0] == sample_mapping_dict[sample][0][0] for x in sample_mapping_dict[sample]):
-                    print_error("Multiple runs of a sample must be of the same datatype!", "Sample: {}".format(sample))
+                if not all(
+                    x[0] == sample_mapping_dict[sample][0][0]
+                    for x in sample_mapping_dict[sample]
+                ):
+                    print_error(
+                        "Multiple runs of a sample must be of the same datatype!",
+                        "Sample: {}".format(sample),
+                    )
 
-#                for idx, val in enumerate(sample_mapping_dict[sample]):
-#                    fout.write(",".join(["{}_T{}".format(sample, idx + 1)] + val) + "\n")
+                #                for idx, val in enumerate(sample_mapping_dict[sample]):
+                #                    fout.write(",".join(["{}_T{}".format(sample, idx + 1)] + val) + "\n")
                 for idx, val in enumerate(sample_mapping_dict[sample]):
-                    if not val[1].endswith(".gz"): # check that forward read is a gzip file
+                    if not val[1].endswith(
+                        ".gz"
+                    ):  # check that forward read is a gzip file
                         val[1] = re.sub(".fastq$", ".fastq.gz", val[1])
                         val[1] = re.sub(".fq$", ".fq.gz", val[1])
-                    if not val[2].endswith(".gz"): # check that reverse read is a gzip file
+                    if not val[2].endswith(
+                        ".gz"
+                    ):  # check that reverse read is a gzip file
                         val[2] = re.sub(".fastq$", ".fastq.gz", val[2])
                         val[2] = re.sub(".fq$", ".fq.gz", val[2])
                     fout.write(",".join(["{}".format(sample)] + val) + "\n")

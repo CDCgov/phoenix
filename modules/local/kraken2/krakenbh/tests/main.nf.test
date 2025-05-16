@@ -1,0 +1,60 @@
+nextflow_process {
+    name "Test Process KRAKEN_BEST_HIT"
+    script "../main.nf"
+    process "KRAKEN_BEST_HIT"
+
+    tag "modules"
+    tag "kraken2"
+    tag "kraken2/krakenbh"
+
+    test("Should run without failures with 'trimd' kraken_type") {
+        when {
+            params {
+                terra = false
+                ica = false
+            }
+            process {
+                """
+                input[0] = [
+                    [ id:'test_sample' ], // meta map
+                    file(params.modules_testdata_base + '/genomics/bacterial/kraken2/test.kraken2_trimd.report.txt'), // kraken_summary
+                    file(params.modules_testdata_base + '/genomics/bacterial/reports/test_trimmed_read_counts.txt') // count_file
+                ]
+                input[1] = "trimd" // kraken_type
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+    }
+
+    test("Should run without failures with 'trimd' kraken_type - stub") {
+
+        options '-stub'
+
+        when {
+            params {
+                terra = false
+                ica = false
+            }
+            process {
+                """
+                input[0] = [
+                    [ id:'test_sample' ], // meta map
+                    file(params.modules_testdata_base + '/genomics/bacterial/kraken2/test.kraken2_trimd.report.txt'), // kraken_summary
+                    file(params.modules_testdata_base + '/genomics/bacterial/reports/test_trimmed_read_counts.txt') // count_file
+                ]
+                input[1] = "trimd" // kraken_type
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+    }
+}

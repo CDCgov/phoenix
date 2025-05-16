@@ -31,37 +31,37 @@ def multiqc_report = []
 ========================================================================================
 */
 
-include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { GET_RAW_STATS                  } from '../modules/local/get_raw_stats'
-include { CORRUPTION_CHECK               } from '../modules/local/fairy_corruption_check'
-include { READ_COUNT_CHECK               } from '../modules/local/fairy_read_count_check'
-include { BBDUK                          } from '../modules/local/bbduk'
-include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp'
-include { FASTP_SINGLES                  } from '../modules/local/fastp_singles'
-include { FASTQC as FASTQCTRIMD          } from '../modules/local/fastqc'
-include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
-include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
-include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
-include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
-include { MLST                           } from '../modules/local/mlst'
-include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
-include { SCAFFOLD_COUNT_CHECK           } from '../modules/local/fairy_scaffold_count_check'
-include { QUAST                          } from '../modules/local/quast'
-include { MASH_DIST                      } from '../modules/local/mash_distance'
-include { FASTANI                        } from '../modules/local/fastani'
-include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/determine_top_mash_hits'
-include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
-include { GET_TRIMD_STATS                } from '../modules/local/get_trimd_stats'
-include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
-include { PROKKA                         } from '../modules/local/prokka'
-include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
-include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
-include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
-include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
-include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { GRIPHIN                        } from '../modules/local/griphin'
-include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/create_ncbi_upload_sheet'
+include { ASSET_CHECK                    } from '../modules/local/assets/check/main'
+include { GET_RAW_STATS                  } from '../modules/local/phoenix/stats/raw/main'
+include { CORRUPTION_CHECK               } from '../modules/local/fairy/corruptioncheck/main'
+include { READ_COUNT_CHECK               } from '../modules/local/fairy/readcountcheck/main'
+include { BBDUK                          } from '../modules/local/bbduk/main'
+include { FASTP as FASTP_TRIMD           } from '../modules/local/fastp/fastp/main'
+include { FASTP_SINGLES                  } from '../modules/local/fastp/fastpsingles/main'
+include { FASTQC as FASTQCTRIMD          } from '../modules/local/fastqc/main'
+include { RENAME_FASTA_HEADERS           } from '../modules/local/assets/rename/fastaheaders/main'
+include { GAMMA_S as GAMMA_PF            } from '../modules/local/gamma/gammas/main'
+include { GAMMA as GAMMA_AR              } from '../modules/local/gamma/gamma/main'
+include { GAMMA as GAMMA_HV              } from '../modules/local/gamma/gamma/main'
+include { MLST                           } from '../modules/local/mlst/mlst/main'
+include { BBMAP_REFORMAT                 } from '../modules/local/phoenix/stats/contigs/main'
+include { SCAFFOLD_COUNT_CHECK           } from '../modules/local/fairy/scaffoldcountcheck/main'
+include { QUAST                          } from '../modules/local/quast/main'
+include { MASH_DIST                      } from '../modules/local/mash/dist/main'
+include { FASTANI                        } from '../modules/local/fastani/fastani/main'
+include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/mash/tophits/main'
+include { FORMAT_ANI                     } from '../modules/local/fastani/formatani/main'
+include { GET_TRIMD_STATS                } from '../modules/local/phoenix/stats/trimd/main'
+include { DETERMINE_TAXA_ID              } from '../modules/local/phoenix/stats/taxaid/main'
+include { PROKKA                         } from '../modules/local/prokka/main'
+include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/amrfinderplus/gettaxa/main'
+include { AMRFINDERPLUS_RUN              } from '../modules/local/amrfinderplus/run/main'
+include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/phoenix/stats/assemblyratio/main'
+include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix/summary/line/main'
+include { FETCH_FAILED_SUMMARIES         } from '../modules/local/phoenix/summary/fetchfailed/main'
+include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix/summary/summary/main'
+include { GRIPHIN                        } from '../modules/local/griphin/main'
+include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/assets/metadata/ncbiupload/main'
 
 /*
 ========================================================================================
@@ -69,13 +69,13 @@ include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/create_ncbi_up
 ========================================================================================
 */
 
-include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-include { SPADES_WF                      } from '../subworkflows/local/spades_failure'
-include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
-include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
-include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
-include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
-include { DO_MLST                        } from '../subworkflows/local/do_mlst'
+include { INPUT_CHECK                    } from '../subworkflows/local/input_check/main'
+include { SPADES_WF                      } from '../subworkflows/local/spades_failure/main'
+include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats/main'
+include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona/main'
+include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona/main'
+include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona/main'
+include { DO_MLST                        } from '../subworkflows/local/do_mlst/main'
 
 /*
 ========================================================================================
@@ -434,7 +434,7 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
         if (ncbi_excel_creation == true && params.create_ncbi_sheet == true) {
-            // requiring files so that this process doesn't start until needed files are made. 
+            // requiring files so that this process doesn't start until needed files are made.
             required_files_ch = FASTP_TRIMD.out.reads.map{ meta, reads -> reads[0]}.collect().combine(DO_MLST.out.checked_MLSTs.map{ meta, checked_MLSTs -> checked_MLSTs}.collect()).combine(DETERMINE_TAXA_ID.out.taxonomy.map{ meta, taxonomy -> taxonomy}.collect())
 
             //Fill out NCBI excel sheets for upload based on what PHX found
@@ -479,16 +479,11 @@ workflow PHOENIX_EXTERNAL {
         ch_multiqc_files = ch_multiqc_files.mix(KRAKEN2_WTASMBLD.out.report.collect{it[1]}.ifEmpty([]))
 
         MULTIQC (
-            ch_multiqc_files.collect(),
-            ch_multiqc_config.toList(),
-            ch_multiqc_custom_config.toList(),
-            ch_multiqc_logo.toList(),
-            [],
-            []
+            ch_multiqc_files.collect()
         )
         multiqc_report = MULTIQC.out.report.toList()
         ch_versions    = ch_versions.mix(MULTIQC.out.versions)
-    
+
     emit:
         scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
         trimmed_reads    = FASTP_TRIMD.out.reads
@@ -500,7 +495,7 @@ workflow PHOENIX_EXTERNAL {
         griphin_tsv      = GRIPHIN.out.griphin_report
         griphin_excel    = GRIPHIN.out.griphin_tsv_report
         dir_samplesheet  = GRIPHIN.out.converted_samplesheet
-        //output for ncbi upload 
+        //output for ncbi upload
         ncbi_sra_sheet       = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_sra : null
         ncbi_biosample_sheet = params.create_ncbi_sheet ? CREATE_NCBI_UPLOAD_SHEET.out.ncbi_biosample : null
 }
@@ -523,7 +518,7 @@ if (params.ica==false) {
         }
     }
 } else if (params.ica==true) {
-    workflow.onComplete { 
+    workflow.onComplete {
         if (workflow.success) {
             println("Pipeline Completed Successfully")
             NfcoreTemplate.summary(workflow, params, log)
@@ -534,7 +529,7 @@ if (params.ica==false) {
             System.exit(1)
         }
     }
-    workflow.onError{ 
+    workflow.onError{
         // copy intermediate files + directories
         println("Getting intermediate files from ICA")
         ['cp','-r',"${workflow.workDir}","${workflow.launchDir}/out"].execute()

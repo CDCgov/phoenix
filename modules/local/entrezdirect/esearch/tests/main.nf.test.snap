@@ -1,0 +1,47 @@
+{
+    "pull sra metadata": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "SRR3242028"
+                        },
+                        "SRR3242028_sra_metadata.csv:md5,25b1b85cf9af03dfda7334295606df4b"
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,09e6188cfa1c7556aa1e16a11ff28da6"
+                ],
+                "metadata_csv": [
+                    [
+                        {
+                            "id": "SRR3242028"
+                        },
+                        "SRR3242028_sra_metadata.csv:md5,25b1b85cf9af03dfda7334295606df4b"
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,09e6188cfa1c7556aa1e16a11ff28da6"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-15T17:37:24.6236331"
+    },
+    "pull sra metadata - stub": {
+        "content": [
+            [
+                "versions.yml:md5,09e6188cfa1c7556aa1e16a11ff28da6"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-15T15:00:56.484556621"
+    }
+}

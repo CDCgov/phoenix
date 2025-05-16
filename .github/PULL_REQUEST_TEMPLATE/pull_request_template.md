@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
+title: ""
+labels: ""
+assignees: ""
 ---
 
 **Please describe the bug this fixes or the feature this adds.**
@@ -18,6 +18,6 @@ assignees: ''
 
 **Please include the following checks for open source contributing?**
 
-* [ ] Did you check for sensitive data, and remove any?
-* [ ] Are additional approvals needed for this change?
-* [ ] Are there potential vulnerabilities or licensing issues with any new dependencies introduced?
+- [ ] Did you check for sensitive data, and remove any?
+- [ ] Are additional approvals needed for this change?
+- [ ] Are there potential vulnerabilities or licensing issues with any new dependencies introduced?

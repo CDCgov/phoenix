@@ -1,0 +1,53 @@
+nextflow_process {
+
+    name "Test Process GET_TAXA_FOR_AMRFINDER"
+    script "../main.nf"
+    process "GET_TAXA_FOR_AMRFINDER"
+
+    tag "modules"
+    tag "amrfinderplus"
+    tag "amrfinderplus/gettaxa"
+
+    test("get taxa for AMRFinder") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [id:'test'],// meta map
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/taxa/test.tax')
+                ]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+    test("get taxa for AMRFinder - stub") {
+
+        options '-stub'
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [id:'test'],// meta map
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/taxa/test.tax')
+                ]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+}

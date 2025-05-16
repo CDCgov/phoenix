@@ -5,237 +5,237 @@
     "description": "PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens",
     "type": "object",
     "$defs": {
-      "input_output_options": {
-        "title": "Input/output options",
-        "type": "object",
-        "fa_icon": "fas fa-terminal",
-        "description": "Define where the pipeline should find input data and save output data.",
-        "required": [],
-        "properties": {
-          "input": {
-            "type": "string",
-            "format": "file-path",
-            "exists": true,
-            "schema": "assets/schema_input.json",
-            "mimetype": "text/csv",
-            "pattern": "^\\S+\\.csv$",
-            "description": "Path to comma-separated file containing information about the samples in the experiment.",
-            "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
-            "fa_icon": "fas fa-file-csv"
-          },
-          "kraken2db": {
-            "type": "string"
-          },
-          "pipelines_testdata_base_path": {
-            "type": "string"
-          },
-          "outdir": {
-            "type": "string",
-            "format": "directory-path",
-            "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
-            "fa_icon": "fas fa-folder-open",
-            "default": "${launchDir}/phx_output"
-          }
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": [],
+            "properties": {
+                "input": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "schema": "assets/schema_input.json",
+                    "mimetype": "text/csv",
+                    "pattern": "^\\S+\\.csv$",
+                    "description": "Path to comma-separated file containing information about the samples in the experiment.",
+                    "help_text": "You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 3 columns, and a header row.",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "kraken2db": {
+                    "type": "string"
+                },
+                "pipelines_testdata_base_path": {
+                    "type": "string"
+                },
+                "outdir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
+                    "fa_icon": "fas fa-folder-open",
+                    "default": "${launchDir}/phx_output"
+                }
+            }
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-file-import",
+            "description": "Less common options for the pipeline, typically set in a config file.",
+            "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
+            "properties": {
+                "validate_params": {
+                    "type": "boolean",
+                    "description": "Boolean whether to validate parameters against the schema at runtime",
+                    "default": true,
+                    "fa_icon": "fas fa-check-square",
+                    "hidden": true
+                }
+            }
         }
-      },
-      "generic_options": {
-        "title": "Generic options",
-        "type": "object",
-        "fa_icon": "fas fa-file-import",
-        "description": "Less common options for the pipeline, typically set in a config file.",
-        "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
-        "properties": {
-          "validate_params": {
-            "type": "boolean",
-            "description": "Boolean whether to validate parameters against the schema at runtime",
-            "default": true,
-            "fa_icon": "fas fa-check-square",
-            "hidden": true
-          }
-        }
-      }
     },
     "allOf": [
-      {
-        "$ref": "#/$defs/input_output_options"
-      },
-      {
-        "$ref": "#/$defs/generic_options"
-      }
+        {
+            "$ref": "#/$defs/input_output_options"
+        },
+        {
+            "$ref": "#/$defs/generic_options"
+        }
     ],
     "properties": {
-      "busco_db_path": {
-        "type": "string"
-      },
-      "coverage": {
-        "type": "integer",
-        "default": 30
-      },
-      "indir": {
-        "type": "string"
-      },
-      "scaffolds_ext": {
-        "type": "string",
-        "default": ".scaffolds.fa.gz"
-      },
-      "minlength": {
-        "type": "integer",
-        "default": 500
-      },
-      "phred": {
-        "type": "integer",
-        "default": 33
-      },
-      "input_sra": {
-        "type": "string"
-      },
-      "use_sra": {
-        "type": "boolean"
-      },
-      "microbe_example": {
-        "type": "string",
-        "default": "${launchDir}/assets/Microbe.1.0_Example_Data.xlsx"
-      },
-      "sra_metadata": {
-        "type": "string",
-        "default": "${launchDir}/assets/SRA_metadata_example.xlsx"
-      },
-      "osii_bioprojects": {
-        "type": "string",
-        "default": "${launchDir}/assets/osii-bioprojects.yaml"
-      },
-      "create_ncbi_sheet": {
-        "type": "boolean"
-      },
-      "terra": {
-        "type": "boolean"
-      },
-      "ica": {
-        "type": "boolean"
-      },
-      "placeholder": {
-        "type": "string",
-        "default": "${launchDir}/assets/placeholder.txt"
-      },
-      "bbdukdb": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/phiX.fasta"
-      },
-      "zipped_sketch": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/REFSEQ_20240124_Bacteria_complete.msh.gz"
-      },
-      "amrfinder_db": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/amrfinderdb_v3.12_20240131.1.tar.gz"
-      },
-      "ncbi_assembly_stats": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/NCBI_Assembly_stats_20240124.txt"
-      },
-      "taxa": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/taxes_20230516.csv"
-      },
-      "ardb": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/ResGANNCBI_20240229_srst2.fasta"
-      },
-      "gamdbpf": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/PF-Replicons_20240124.fasta"
-      },
-      "hvgamdb": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/HyperVirulence_20220414.fasta"
-      },
-      "custom_mlstdb": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/mlst_db_20240124.tar.gz"
-      },
-      "nodes": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/nodes_20240129.dmp.gz"
-      },
-      "names": {
-        "type": "string",
-        "default": "${launchDir}/assets/databases/names_20240129.dmp.gz"
-      },
-      "busco_config": {
-        "type": "string",
-        "default": "${launchDir}/conf/modules.config"
-      },
-      "publish_dir_mode": {
-        "type": "string",
-        "default": "copy"
-      },
-      "multiqc_config": {
-        "type": "string"
-      },
-      "multiqc_title": {
-        "type": "string"
-      },
-      "max_multiqc_email_size": {
-        "type": "string",
-        "default": "25.MB"
-      },
-      "tracedir": {
-        "type": "string",
-        "default": "${launchDir}/phx_output/pipeline_info"
-      },
-      "email": {
-        "type": "string"
-      },
-      "email_on_fail": {
-        "type": "string"
-      },
-      "plaintext_email": {
-        "type": "boolean"
-      },
-      "monochrome_logs": {
-        "type": "boolean"
-      },
-      "show_hidden_params": {
-        "type": "boolean"
-      },
-      "schema_ignore_params": {
-        "type": "string",
-        "default": "ica,nodes,names,sra_metadata,osii_bioprojects,microbe_example,custom_mlstdb,scaffolds_ext,input_sra,amrfinder_db,sra_fastqs,results,placeholder,zipped_sketch,terra,fasta,minlength,phred,ardb,hvgamdb,gamdbpf,taxa,ncbi_assembly_stats,refseq_fasta_database,bbdukdb,path2db,busco_config"
-      },
-      "enable_conda": {
-        "type": "boolean"
-      },
-      "custom_config_version": {
-        "type": "string",
-        "default": "master"
-      },
-      "custom_config_base": {
-        "type": "string",
-        "default": "https://raw.githubusercontent.com/nf-core/configs/master"
-      },
-      "config_profile_description": {
-        "type": "string"
-      },
-      "config_profile_contact": {
-        "type": "string"
-      },
-      "config_profile_url": {
-        "type": "string"
-      },
-      "config_profile_name": {
-        "type": "string"
-      },
-      "max_memory": {
-        "type": "string",
-        "default": "128.GB"
-      },
-      "max_cpus": {
-        "type": "integer",
-        "default": 16
-      },
-      "max_time": {
-        "type": "string",
-        "default": "240.h"
-      }
+        "busco_db_path": {
+            "type": "string"
+        },
+        "coverage": {
+            "type": "integer",
+            "default": 30
+        },
+        "indir": {
+            "type": "string"
+        },
+        "scaffolds_ext": {
+            "type": "string",
+            "default": ".scaffolds.fa.gz"
+        },
+        "minlength": {
+            "type": "integer",
+            "default": 500
+        },
+        "phred": {
+            "type": "integer",
+            "default": 33
+        },
+        "input_sra": {
+            "type": "string"
+        },
+        "use_sra": {
+            "type": "boolean"
+        },
+        "microbe_example": {
+            "type": "string",
+            "default": "${launchDir}/assets/Microbe.1.0_Example_Data.xlsx"
+        },
+        "sra_metadata": {
+            "type": "string",
+            "default": "${launchDir}/assets/SRA_metadata_example.xlsx"
+        },
+        "osii_bioprojects": {
+            "type": "string",
+            "default": "${launchDir}/assets/osii-bioprojects.yaml"
+        },
+        "create_ncbi_sheet": {
+            "type": "boolean"
+        },
+        "terra": {
+            "type": "boolean"
+        },
+        "ica": {
+            "type": "boolean"
+        },
+        "placeholder": {
+            "type": "string",
+            "default": "${launchDir}/assets/placeholder.txt"
+        },
+        "bbdukdb": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/phiX.fasta"
+        },
+        "zipped_sketch": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/REFSEQ_20240124_Bacteria_complete.msh.gz"
+        },
+        "amrfinder_db": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/amrfinderdb_v3.12_20240131.1.tar.gz"
+        },
+        "ncbi_assembly_stats": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/NCBI_Assembly_stats_20240124.txt"
+        },
+        "taxa": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/taxes_20230516.csv"
+        },
+        "ardb": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/ResGANNCBI_20240229_srst2.fasta"
+        },
+        "gamdbpf": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/PF-Replicons_20240124.fasta"
+        },
+        "hvgamdb": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/HyperVirulence_20220414.fasta"
+        },
+        "custom_mlstdb": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/mlst_db_20240124.tar.gz"
+        },
+        "nodes": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/nodes_20240129.dmp.gz"
+        },
+        "names": {
+            "type": "string",
+            "default": "${launchDir}/assets/databases/names_20240129.dmp.gz"
+        },
+        "busco_config": {
+            "type": "string",
+            "default": "${launchDir}/conf/modules.config"
+        },
+        "publish_dir_mode": {
+            "type": "string",
+            "default": "copy"
+        },
+        "multiqc_config": {
+            "type": "string"
+        },
+        "multiqc_title": {
+            "type": "string"
+        },
+        "max_multiqc_email_size": {
+            "type": "string",
+            "default": "25.MB"
+        },
+        "tracedir": {
+            "type": "string",
+            "default": "${launchDir}/phx_output/pipeline_info"
+        },
+        "email": {
+            "type": "string"
+        },
+        "email_on_fail": {
+            "type": "string"
+        },
+        "plaintext_email": {
+            "type": "boolean"
+        },
+        "monochrome_logs": {
+            "type": "boolean"
+        },
+        "show_hidden_params": {
+            "type": "boolean"
+        },
+        "schema_ignore_params": {
+            "type": "string",
+            "default": "ica,nodes,names,sra_metadata,osii_bioprojects,microbe_example,custom_mlstdb,scaffolds_ext,input_sra,amrfinder_db,sra_fastqs,results,placeholder,zipped_sketch,terra,fasta,minlength,phred,ardb,hvgamdb,gamdbpf,taxa,ncbi_assembly_stats,refseq_fasta_database,bbdukdb,path2db,busco_config"
+        },
+        "enable_conda": {
+            "type": "boolean"
+        },
+        "custom_config_version": {
+            "type": "string",
+            "default": "master"
+        },
+        "custom_config_base": {
+            "type": "string",
+            "default": "https://raw.githubusercontent.com/nf-core/configs/master"
+        },
+        "config_profile_description": {
+            "type": "string"
+        },
+        "config_profile_contact": {
+            "type": "string"
+        },
+        "config_profile_url": {
+            "type": "string"
+        },
+        "config_profile_name": {
+            "type": "string"
+        },
+        "max_memory": {
+            "type": "string",
+            "default": "128.GB"
+        },
+        "max_cpus": {
+            "type": "integer",
+            "default": 16
+        },
+        "max_time": {
+            "type": "string",
+            "default": "240.h"
+        }
     }
-  }
+}

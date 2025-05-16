@@ -2,22 +2,22 @@ name: Update Clone Badge
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs at midnight every day
+    - cron: "0 0 * * *" # Runs at midnight every day
 
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # Run only on v2.2.0-dev branch
+    if: github.ref == 'refs/heads/main' # Run only on v2.2.0-dev branch
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GH_ACTION }}
-          ref: v2.2.0-dev  # Specify the branch to checkout
-      
+          ref: v2.2.0-dev # Specify the branch to checkout
+
       - name: Get clone count for today
-        
+
         id: get_clone_count
         run: |
           # Fetch clone count from GitHub API for today

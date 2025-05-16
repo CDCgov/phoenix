@@ -1,0 +1,120 @@
+{
+    "kraken2 test - stub": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        [
+                            "2021CK-01676.classified.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "2021CK-01676.classifiedreads.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "2021CK-01676.unclassified.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        ]
+                    ]
+                ],
+                "1": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        "2021CK-01676.unclassified.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "2": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        "2021CK-01676.classifiedreads.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "3": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        "2021CK-01676.summary.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "4": [
+                    "versions.yml:md5,beb655c32df3c20929d11a7b5e77654a"
+                ],
+                "classified_reads_assignment": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        "2021CK-01676.classifiedreads.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "classified_reads_fastq": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        [
+                            "2021CK-01676.classified.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "2021CK-01676.classifiedreads.txt:md5,d41d8cd98f00b204e9800998ecf8427e",
+                            "2021CK-01676.unclassified.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                        ]
+                    ]
+                ],
+                "report": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        "2021CK-01676.summary.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "unclassified_reads_fastq": [
+                    [
+                        {
+                            "id": "2021CK-01676",
+                            "single_end": false
+                        },
+                        "2021CK-01676.unclassified.txt:md5,d41d8cd98f00b204e9800998ecf8427e"
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,beb655c32df3c20929d11a7b5e77654a"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-15T17:47:09.021341603"
+    },
+    "kraken2 test": {
+        "content": [
+            [
+                [
+                    {
+                        "id": "2021CK-01676",
+                        "single_end": false
+                    },
+                    "2021CK-01676.kraken2_trimd.summary.txt:md5,b91983c8be29aec75308ee7aad1d9ac8"
+                ]
+            ],
+            [
+                "versions.yml:md5,beb655c32df3c20929d11a7b5e77654a"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-05-15T17:46:57.099407989"
+    }
+}

@@ -1,4 +1,4 @@
-__author__ = 'Yueli Zheng'
+__author__ = "Yueli Zheng"
 
 import os
 import sys
@@ -9,17 +9,23 @@ import tools
 
 class FileLoader:
     def __init__(self):
-        ""
+        """"""
 
     # This list of isolates are required to submit to NCBI after the review or the publication
     def import_isolate_list(self, isolatelist):
         isolate_file_content = pd.read_csv(isolatelist, sep="\t", header=None)
-        pos_miseq = tools.find_index(list(isolate_file_content[0]), "MiSeqAnalysisFiles")[0]
-        pos_nov = tools.find_index(list(isolate_file_content[0]), "NovaSeqAnalysisFiles")[0]
+        pos_miseq = tools.find_index(
+            list(isolate_file_content[0]), "MiSeqAnalysisFiles"
+        )[0]
+        pos_nov = tools.find_index(
+            list(isolate_file_content[0]), "NovaSeqAnalysisFiles"
+        )[0]
         pos_haiseq = tools.find_index(list(isolate_file_content[0]), "NCBI_HAISeq")[0]
-        miseq_list = list(isolate_file_content[0])[pos_miseq: pos_nov]
-        nov_list = list(isolate_file_content[0])[pos_nov: pos_haiseq]
-        hai_list = list(isolate_file_content[0])[pos_haiseq: list(isolate_file_content[0]).__len__()]
+        miseq_list = list(isolate_file_content[0])[pos_miseq:pos_nov]
+        nov_list = list(isolate_file_content[0])[pos_nov:pos_haiseq]
+        hai_list = list(isolate_file_content[0])[
+            pos_haiseq : list(isolate_file_content[0]).__len__()
+        ]
         pos_list_miseq = self.find_pos_sep_project(miseq_list)
         pos_list_haiseq = self.find_pos_sep_project(hai_list)
         pos_list_novseq = self.find_pos_sep_project(nov_list)
@@ -49,13 +55,19 @@ class FileLoader:
             if i + 1 < len(pos_list):
                 runname = isolate_list[pos_list[i]].split(":")[1].strip()
                 for j in range(pos_list[i], pos_list[i + 1], 1):
-                    if "project" not in isolate_list[j] and "runname" not in isolate_list[j]:
+                    if (
+                        "project" not in isolate_list[j]
+                        and "runname" not in isolate_list[j]
+                    ):
                         sample_list.append(isolate_list[j])
                 sample_dict[runname] = sample_list
             if i + 1 >= len(pos_list):
                 runname = isolate_list[pos_list[i]].split(":")[1].strip()
                 for j in range(pos_list[i], len(isolate_list), 1):
-                    if "project" not in isolate_list[j] and "runname" not in isolate_list[j]:
+                    if (
+                        "project" not in isolate_list[j]
+                        and "runname" not in isolate_list[j]
+                    ):
                         sample_list.append(isolate_list[j])
                 sample_dict[runname] = sample_list
             run_name_list.append(sample_dict)
@@ -69,7 +81,9 @@ class FileLoader:
                 for run_name in runname_list:
                     runname = list(run_name.keys())[0]
                     for asample in list(run_name.values())[0]:
-                        apath = list(base_path.keys())[0] + "/" + runname + "/" + asample
+                        apath = (
+                            list(base_path.keys())[0] + "/" + runname + "/" + asample
+                        )
                         path.append(apath)
         return path
 
@@ -89,12 +103,15 @@ class FileLoader:
 
     # load the bioprojects
     def load_bioproject(self, bioproject_file):
-        #osii_bioproject_file = os.path.join(os.path.dirname(__file__), bioproject_file)
-        #bioprojects = pd.read_csv(bioproject_file, sep='\t', header=None)
-        with open(bioproject_file, 'r') as file:
+        # osii_bioproject_file = os.path.join(os.path.dirname(__file__), bioproject_file)
+        # bioprojects = pd.read_csv(bioproject_file, sep='\t', header=None)
+        with open(bioproject_file, "r") as file:
             bioprojects_taxo = yaml.safe_load(file)
-        bioprojects_taxo_clean = {key: value for key, value in bioprojects_taxo.items() if
-                                  value is not None and value != "blank"}
+        bioprojects_taxo_clean = {
+            key: value
+            for key, value in bioprojects_taxo.items()
+            if value is not None and value != "blank"
+        }
         return bioprojects_taxo_clean
 
 

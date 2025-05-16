@@ -1,0 +1,68 @@
+{
+    "get taxa for AMRFinder": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "test_AMRFinder_Organism.csv:md5,578fd45ddbba8f6320ba3f61ae23550e"
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,26bb6c517d5f31595e31703e5afdeba8"
+                ],
+                "amrfinder_taxa": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "test_AMRFinder_Organism.csv:md5,578fd45ddbba8f6320ba3f61ae23550e"
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,26bb6c517d5f31595e31703e5afdeba8"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-04-30T11:03:32.178902735"
+    },
+    "get taxa for AMRFinder - stub": {
+        "content": [
+            {
+                "0": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "test_AMRFinder_Organism.csv:md5,578fd45ddbba8f6320ba3f61ae23550e"
+                    ]
+                ],
+                "1": [
+                    "versions.yml:md5,26bb6c517d5f31595e31703e5afdeba8"
+                ],
+                "amrfinder_taxa": [
+                    [
+                        {
+                            "id": "test"
+                        },
+                        "test_AMRFinder_Organism.csv:md5,578fd45ddbba8f6320ba3f61ae23550e"
+                    ]
+                ],
+                "versions": [
+                    "versions.yml:md5,26bb6c517d5f31595e31703e5afdeba8"
+                ]
+            }
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "24.10.5"
+        },
+        "timestamp": "2025-04-30T11:03:38.525018138"
+    }
+}

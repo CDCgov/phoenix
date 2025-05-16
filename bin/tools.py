@@ -1,4 +1,4 @@
-__author__ = 'Yueli Zheng'
+__author__ = "Yueli Zheng"
 
 
 def find_index(alist, search_string):
@@ -19,7 +19,12 @@ def rearrange_oxford_pasteur(df, indices):
         tmp = "MLST" + str(df["ST"][0]).strip() + "_" + df["Database"][0].strip() + ", "
         isolate_mlst[df["Sample"][0].strip()] = ",".join(tmp.rsplit(",", 1)[:-1])
     if len(indices) == 1:
-        tmp = "MLST" + str(df["ST"][indices[0]]).strip() + "_" + df["Database"][indices[0]].strip().split("(")[1].strip(")")
+        tmp = (
+            "MLST"
+            + str(df["ST"][indices[0]]).strip()
+            + "_"
+            + df["Database"][indices[0]].strip().split("(")[1].strip(")")
+        )
         isolate_mlst[df["Sample"][0].strip()] = ", ".join(tmp.split(", ", 1)[::-1])
     if len(indices) == 2:
         tmp = ""
@@ -29,7 +34,14 @@ def rearrange_oxford_pasteur(df, indices):
                 ending = ", "
             else:
                 ending = ""
-            tmp = tmp + "MLST" + str(df["ST"][index]).strip() + "_" + df["Database"][index].strip().split("(")[1].strip(")") + ending
+            tmp = (
+                tmp
+                + "MLST"
+                + str(df["ST"][index]).strip()
+                + "_"
+                + df["Database"][index].strip().split("(")[1].strip(")")
+                + ending
+            )
             count = count + 1
         isolate_mlst[df["Sample"][0].strip()] = ", ".join(tmp.split(", ")[::-1])
     if len(indices) == 3:
@@ -40,12 +52,22 @@ def rearrange_oxford_pasteur(df, indices):
                 ending = ", "
             else:
                 ending = ""
-            tmp = tmp + "MLST" + str(df["ST"][index]).strip() + "_" + df["Database"][index].strip().split("(")[1].strip(")") + ending
+            tmp = (
+                tmp
+                + "MLST"
+                + str(df["ST"][index]).strip()
+                + "_"
+                + df["Database"][index].strip().split("(")[1].strip(")")
+                + ending
+            )
             count = count + 1
         isolate_mlst[df["Sample"][0].strip()] = ",".join(tmp.split(", ")[::-1])
     if len(indices) >= 3:
-        isolate_mlst[df["Sample"][0].strip()] = "ERROR: Unexpected MLST results. Review ~/mlst/*_combined.tsv file!"
+        isolate_mlst[df["Sample"][0].strip()] = (
+            "ERROR: Unexpected MLST results. Review ~/mlst/*_combined.tsv file!"
+        )
     return isolate_mlst
+
 
 def purify_dict(dict_container):
     pure_dict = {}

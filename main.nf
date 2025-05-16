@@ -28,10 +28,10 @@ if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!'
 */
 
 include { PHOENIX_EXTERNAL         } from './workflows/phoenix'
-include { PHOENIX_EXQC             } from './workflows/cdc_phoenix'
+include { PHOENIX_EXQC             } from './workflows/cdcphoenix'
 include { SCAFFOLDS_EXTERNAL       } from './workflows/scaffolds'
-include { SCAFFOLDS_EXQC           } from './workflows/cdc_scaffolds'
-include { SRA_PREP                 } from './workflows/sra_prep'
+include { SCAFFOLDS_EXQC           } from './workflows/cdcscaffolds'
+include { SRA_PREP                 } from './workflows/sraprep'
 include { PIPELINE_INITIALISATION  } from './subworkflows/local/utils_nfcore_phoenix_pipeline'
 
 
@@ -71,7 +71,7 @@ workflow PHOENIX {
         griphin_tsv      = PHOENIX_EXTERNAL.out.griphin_tsv
         griphin_excel    = PHOENIX_EXTERNAL.out.griphin_excel
         dir_samplesheet  = PHOENIX_EXTERNAL.out.dir_samplesheet
-        //output for ncbi upload 
+        //output for ncbi upload
         ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_sra_sheet : null
         ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXTERNAL.out.ncbi_biosample_sheet : null
 }
@@ -105,7 +105,7 @@ workflow CDC_PHOENIX {
         griphin_tsv      = PHOENIX_EXQC.out.griphin_tsv
         griphin_excel    = PHOENIX_EXQC.out.griphin_excel
         dir_samplesheet  = PHOENIX_EXQC.out.dir_samplesheet
-        //output for ncbi upload 
+        //output for ncbi upload
         ncbi_sra_sheet       = params.create_ncbi_sheet ? PHOENIX_EXQC.out.ncbi_sra_sheet : null
         ncbi_biosample_sheet = params.create_ncbi_sheet ? PHOENIX_EXQC.out.ncbi_biosample_sheet : null
 }
@@ -117,7 +117,7 @@ workflow CDC_PHOENIX {
 */
 
 //
-// WORKFLOW: Run internal version of phx based on sample SRA names, these will be pulled from NCBI for you. 
+// WORKFLOW: Run internal version of phx based on sample SRA names, these will be pulled from NCBI for you.
 //
 workflow SRA {
     // Validate input parameters
@@ -167,7 +167,7 @@ workflow SRA {
 }
 
 //
-// WORKFLOW: Run cdc version of phx based on sample SRA names, the fastq will be pulled from NCBI for you. 
+// WORKFLOW: Run cdc version of phx based on sample SRA names, the fastq will be pulled from NCBI for you.
 //
 
 workflow CDC_SRA {
@@ -234,7 +234,7 @@ workflow SCAFFOLDS {
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
+            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.'
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -249,7 +249,7 @@ workflow SCAFFOLDS {
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true)
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory!'
         }
     }
 
@@ -277,7 +277,7 @@ workflow CDC_SCAFFOLDS {
         // allow input to be relative
         //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
+            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.'
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -292,7 +292,7 @@ workflow CDC_SCAFFOLDS {
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true)
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory!'
         }
     }
 
@@ -307,6 +307,34 @@ workflow CDC_SCAFFOLDS {
         phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
 
+// choose workflow entry
+workflow {
+    //get appropriate workflow based on profile-selected workflow
+    if (params.workflow_selection) {
+        switch(params.workflow_selection) {
+            case 'CDC_PHOENIX':
+                CDC_PHOENIX()
+                break
+            case 'SRA':
+                SRA()
+                break
+            case 'CDC_SRA':
+                CDC_SRA()
+                break
+            case 'SCAFFOLDS':
+                SCAFFOLDS()
+                break
+            case 'CDC_SCAFFOLDS':
+                CDC_SCAFFOLDS()
+                break
+            default:
+                PHOENIX()
+                break
+        }
+    } else {
+        PHOENIX()
+    }
+}
 
 /*
 ========================================================================================

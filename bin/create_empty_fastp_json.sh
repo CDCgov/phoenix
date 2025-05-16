@@ -16,40 +16,40 @@
 version=2.0 # (11/15/2023) Changed to signify adoption of CLIA minded versioning. This version is equivalent to previous version 1.0 (04/18/2023)
 
 show_help () {
-	echo "Usage is ./crate_empty_fastp_json.sh  -n sample_name [-V version]"
-	echo "required: -n = sample name of isolate"
-	echo "optional: -V = show version and exit"
-	echo ""
-	echo "version: ${version}"
+    echo "Usage is ./crate_empty_fastp_json.sh  -n sample_name [-V version]"
+    echo "required: -n = sample name of isolate"
+    echo "optional: -V = show version and exit"
+    echo ""
+    echo "version: ${version}"
 }
 
 # Parse command line options
 options_found=0
 while getopts ":h?n:V" option; do
-	options_found=$(( options_found + 1 ))
-	case "${option}" in
-		\?)
-			echo "Invalid option found: ${OPTARG}"
-			show_help
-			exit 0
-			;;
-		n)
-			echo "Option -n triggered, argument = ${OPTARG}"
-			sample_name=${OPTARG};;
-		V)
-			show_version="True";;
-		:)
-			echo "Option -${OPTARG} requires as argument";;
-		h)
-			show_help
-			exit 0
-			;;
-	esac
+    options_found=$(( options_found + 1 ))
+    case "${option}" in
+        \?)
+            echo "Invalid option found: ${OPTARG}"
+            show_help
+            exit 0
+            ;;
+        n)
+            echo "Option -n triggered, argument = ${OPTARG}"
+            sample_name=${OPTARG};;
+        V)
+            show_version="True";;
+        :)
+            echo "Option -${OPTARG} requires as argument";;
+        h)
+            show_help
+            exit 0
+            ;;
+    esac
 done
 
 if [[ "${show_version}" = "True" ]]; then
-	echo "create_empty_fastp_json.sh: ${version}"
-	exit
+    echo "create_empty_fastp_json.sh: ${version}"
+    exit
 fi
 
 #literally just creating an empty json

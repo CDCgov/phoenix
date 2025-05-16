@@ -1,0 +1,59 @@
+
+nextflow_process {
+
+    name "Test Process MASH_DIST"
+    script "../main.nf"
+    process "MASH_DIST"
+
+    tag "modules"
+    tag "mash"
+    tag "mash/dist"
+
+    test("test-mash-dist") {
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [id: '2021CK-01754'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/scaffolds/test.filtered.scaffolds.fa.gz'),
+                    ['PASSED: File 2021CK-01754_R1 is not corrupt.', 'PASSED: File 2021CK-01754_R2 is not corrupt.', 'PASSED: Read pairs for 2021CK-01754 are equal.', 'PASSED: There are reads in 2021CK-01754 R1/R2 after trimming.', 'PASSED: More than 0 scaffolds in 2021CK-01754 after filtering.'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/genome/REFSEQ_20240124_Bacteria_complete.msh.gz')
+                    ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out).match() }
+            )
+        }
+    }
+
+    test("test-mash-dist - stub") {
+        options '-stub'
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [id: '2021CK-01754'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/scaffolds/test.filtered.scaffolds.fa.gz'),
+                    ['PASSED: File 2021CK-01754_R1 is not corrupt.', 'PASSED: File 2021CK-01754_R2 is not corrupt.', 'PASSED: Read pairs for 2021CK-01754 are equal.', 'PASSED: There are reads in 2021CK-01754 R1/R2 after trimming.', 'PASSED: More than 0 scaffolds in 2021CK-01754 after filtering.'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/genome/REFSEQ_20240124_Bacteria_complete.msh.gz')
+                    ]
+                """
+            }
+        }
+
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out).match() }
+            )
+        }
+    }
+
+}

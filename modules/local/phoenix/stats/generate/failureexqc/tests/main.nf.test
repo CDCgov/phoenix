@@ -1,0 +1,69 @@
+nextflow_process {
+
+    name "Test Process GENERATE_PIPELINE_STATS_FAILURE_EXQC"
+    script "../main.nf"
+    process "GENERATE_PIPELINE_STATS_FAILURE_EXQC"
+
+    test("generate pipeline stats failure exqc") {
+
+        when {
+            process {
+                """
+                // define inputs of the process here. Example:
+                input[0] = [
+                    [id: 'test'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_raw_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_trimmed_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/srst2/test__fullgenes__ResGANNCBI_20240229_srst2__results.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_trimd.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test_failure.kraken2_trimd.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/taxa/test.tax'),
+                    ["run_failure"]
+                ]
+                input[1] = '30'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out.versions).match()
+            assert (process.out.pipeline_stats).size() > 0
+        }
+
+    }
+
+    test("generate pipeline stats failure exqc - stub") {
+
+        options '-stub'
+
+        when {
+            process {
+                """
+                // define inputs of the process here. Example:
+                input[0] = [
+                    [id: 'test'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_raw_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_trimmed_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/srst2/test__fullgenes__ResGANNCBI_20240229_srst2__results.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_trimd.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test_failure.kraken2_trimd.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/taxa/test.tax'),
+                    ["run_failure"]
+                ]
+                input[1] = '30'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out.versions).match()
+            assert (process.out.pipeline_stats).size() > 0
+        }
+
+    }
+
+}

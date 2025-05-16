@@ -1,0 +1,53 @@
+nextflow_process {
+
+    name "Test Process ENTREZDIRECT_ESEARCH"
+    script "../main.nf"
+    process "ENTREZDIRECT_ESEARCH"
+
+    tag "modules"
+    tag "entrezdirect"
+    tag "entrezdirect/esearch"
+
+    test("pull sra metadata") {
+        when {
+            process {
+                """
+                def fastaDir = file("${workDir}/fastas")
+                input[0] = [
+                    [id:'SRR3242028'],// meta map
+                    fastaDir
+                ]
+                """
+            }
+        }
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out).match() }
+            )
+        }
+    }
+
+    test("pull sra metadata - stub") {
+
+        options '-stub'
+
+        when {
+            process {
+                """
+                def fastaDir = file("${workDir}/fastas")
+                input[0] = [
+                    [id:'SRR3242028'],// meta map
+                    fastaDir
+                ]
+                """
+            }
+        }
+        then {
+            assertAll(
+                { assert process.success },
+                { assert snapshot(process.out).match() }
+            )
+        }
+    }
+}

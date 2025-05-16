@@ -44,23 +44,23 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
-include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
-include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
-include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
-include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
-include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
-include { MASH_DIST                      } from '../modules/local/mash_distance'
-include { FASTANI                        } from '../modules/local/fastani'
-include { DETERMINE_TOP_TAXA             } from '../modules/local/determine_top_taxa'
-include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
-include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
-include { DETERMINE_TAXA_ID              } from '../modules/local/tax_classifier'
-include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
-include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
-include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { CHECK_MLST                     } from '../modules/local/check_mlst'
+include { ASSET_CHECK                    } from '../modules/local/assets/check/main'
+include { RENAME_FASTA_HEADERS           } from '../modules/local/assets/rename/fastaheaders/main'
+include { GAMMA_S as GAMMA_PF            } from '../modules/local/gamma/gammas/main'
+include { GAMMA as GAMMA_AR              } from '../modules/local/gamma/gamma/main'
+include { GAMMA as GAMMA_HV              } from '../modules/local/gamma/gamma/main'
+include { BBMAP_REFORMAT                 } from '../modules/local/phoenix/stats/contigs/main'
+include { MASH_DIST                      } from '../modules/local/mash/dist/main'
+include { FASTANI                        } from '../modules/local/fastani/fastani/main'
+include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/mash/tophits/main'
+include { FORMAT_ANI                     } from '../modules/local/fastani/formatani/main'
+// include { GATHERING_READ_QC_STATS        } from '../modules/local/fastp_minimizer'
+include { DETERMINE_TAXA_ID              } from '../modules/local/phoenix/stats/taxaid/main'
+include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/amrfinderplus/gettaxa/main'
+include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/phoenix/stats/assemblyratio/main'
+include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix/summary/line/main'
+include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix/summary/summary/main'
+include { CHECK_MLST                     } from '../modules/local/mlst/check/mlst/main'
 
 /*
 ========================================================================================
@@ -68,11 +68,11 @@ include { CHECK_MLST                     } from '../modules/local/check_mlst'
 ========================================================================================
 */
 
-include { INPUT_QC_CHECK                 } from '../subworkflows/local/input_qc_check'
-include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
-include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona'
-include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona'
-include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona'
+include { INPUT_QC_CHECK                 } from '../subworkflows/local/input_qc_check/main'
+include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats/main'
+include { KRAKEN2_WF as KRAKEN2_TRIMD    } from '../subworkflows/local/kraken2krona/main'
+include { KRAKEN2_WF as KRAKEN2_ASMBLD   } from '../subworkflows/local/kraken2krona/main'
+include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2krona/main'
 
 /*
 ========================================================================================
@@ -84,7 +84,7 @@ include { KRAKEN2_WF as KRAKEN2_WTASMBLD } from '../subworkflows/local/kraken2kr
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/fastqc/main'
+// include { FASTQC as FASTQCTRIMD        } from '../modules/nf-core/modules/fastqc/main'
 include { MULTIQC                      } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/custom/dumpsoftwareversions/main'
 

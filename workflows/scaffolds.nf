@@ -31,27 +31,27 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ========================================================================================
 */
 
-include { ASSET_CHECK                    } from '../modules/local/asset_check'
-include { RENAME_FASTA_HEADERS           } from '../modules/local/rename_fasta_headers'
-include { GAMMA_S as GAMMA_PF            } from '../modules/local/gammas'
-include { GAMMA as GAMMA_AR              } from '../modules/local/gamma'
-include { GAMMA as GAMMA_HV              } from '../modules/local/gamma'
-include { BBMAP_REFORMAT                 } from '../modules/local/contig_less500'
-include { SCAFFOLD_COUNT_CHECK           } from '../modules/local/fairy_scaffold_count_check'
-include { QUAST                          } from '../modules/local/quast'
-include { MASH_DIST                      } from '../modules/local/mash_distance'
-include { FASTANI                        } from '../modules/local/fastani'
-include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/determine_top_mash_hits'
-include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
-include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
-include { PROKKA                         } from '../modules/local/prokka'
-include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
-include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
-include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
-include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
-include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
-include { GRIPHIN                        } from '../modules/local/griphin'
+include { ASSET_CHECK                    } from '../modules/local/assets/check/main'
+include { RENAME_FASTA_HEADERS           } from '../modules/local/assets/rename/fastaheaders/main'
+include { GAMMA_S as GAMMA_PF            } from '../modules/local/gamma/gammas/main'
+include { GAMMA as GAMMA_AR              } from '../modules/local/gamma/gamma/main'
+include { GAMMA as GAMMA_HV              } from '../modules/local/gamma/gamma/main'
+include { BBMAP_REFORMAT                 } from '../modules/local/phoenix/stats/contigs/main'
+include { SCAFFOLD_COUNT_CHECK           } from '../modules/local/fairy/scaffoldcountcheck/main'
+include { QUAST                          } from '../modules/local/quast/main'
+include { MASH_DIST                      } from '../modules/local/mash/dist/main'
+include { FASTANI                        } from '../modules/local/fastani/fastani/main'
+include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/mash/tophits/main'
+include { FORMAT_ANI                     } from '../modules/local/fastani/formatani/main'
+include { DETERMINE_TAXA_ID              } from '../modules/local/phoenix/stats/taxaid/main'
+include { PROKKA                         } from '../modules/local/prokka/main'
+include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/amrfinderplus/gettaxa/main'
+include { AMRFINDERPLUS_RUN              } from '../modules/local/amrfinderplus/run/main'
+include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/phoenix/stats/assemblyratio/main'
+include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix/summary/line/main'
+include { FETCH_FAILED_SUMMARIES         } from '../modules/local/phoenix/summary/fetchfailed/main'
+include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix/summary/summary/main'
+include { GRIPHIN                        } from '../modules/local/griphin/main'
 
 /*
 ========================================================================================
@@ -59,11 +59,11 @@ include { GRIPHIN                        } from '../modules/local/griphin'
 ========================================================================================
 */
 
-include { CREATE_INPUT_CHANNEL                     } from '../subworkflows/local/create_input_channel'
-include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local/generate_pipeline_stats'
-include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
-include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'
-include { DO_MLST                                  } from '../subworkflows/local/do_mlst'
+include { CREATE_INPUT_CHANNEL                     } from '../subworkflows/local/create_input_channel/main'
+include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local/generate_pipeline_stats/main'
+include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona/main'
+include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona/main'
+include { DO_MLST                                  } from '../subworkflows/local/do_mlst/main'
 
 /*
 ========================================================================================
@@ -413,7 +413,7 @@ if (params.ica==false) {
         }
     }
 } else if (params.ica==true) {
-    workflow.onComplete { 
+    workflow.onComplete {
         if (workflow.success) {
             println("Pipeline Completed Successfully")
             NfcoreTemplate.summary(workflow, params, log)
@@ -424,7 +424,7 @@ if (params.ica==false) {
             System.exit(1)
         }
     }
-    workflow.onError { 
+    workflow.onError {
         // copy intermediate files + directories
         println("Getting intermediate files from ICA")
         ['cp','-r',"${workflow.workDir}","${workflow.launchDir}/out"].execute()

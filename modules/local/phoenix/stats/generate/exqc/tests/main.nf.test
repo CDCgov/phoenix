@@ -1,0 +1,102 @@
+nextflow_process {
+
+    name "Test Process GENERATE_PIPELINE_STATS_EXQC"
+    script "../main.nf"
+    process "GENERATE_PIPELINE_STATS_EXQC"
+
+    test("generate pipeline stats exqc") {
+
+        when {
+            process {
+                """
+                // define inputs of the process here. Example:
+                input[0] = [
+                    [id: 'test'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_raw_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_trimmed_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/srst2/test__fullgenes__ResGANNCBI_20240229_srst2__results.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_trimd.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/scaffolds/test.renamed.scaffolds.fa.gz'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test.bbmap_filtered.log'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/gamma/test_HyperVirulence_20220414.gamma'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/gamma/test_ResGANNCBI_20240229_srst2.gamma'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/gamma/test_PF-Replicons_20240124.gamma'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_report.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/scaffolds/short_summary.specific.pseudomonadales_odb10.test.filtered.scaffolds.fa.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_asmbld.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_asmbld.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_asmbld.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_wtasmbld.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_wtasmbld.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_wtasmbld.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/taxa/test.tax'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_REFSEQ_20240124.fastANI.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_Assembly_ratio_20240124.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_all_mutations.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_GC_content_20240124.txt')
+                ]
+                input[1] = '30'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.pipeline_stats.size() > 0
+            assert snapshot(process.out.versions).match()
+        }
+
+    }
+
+    test("generate pipeline stats exqc -stub") {
+
+        options '-stub'
+
+        when {
+            process {
+                """
+                // define inputs of the process here. Example:
+                input[0] = [
+                    [id: 'test'],
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_raw_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_trimmed_read_counts.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/srst2/test__fullgenes__ResGANNCBI_20240229_srst2__results.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_trimd.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_trimd.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/scaffolds/test.renamed.scaffolds.fa.gz'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test.bbmap_filtered.log'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/gamma/test_HyperVirulence_20220414.gamma'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/gamma/test_ResGANNCBI_20240229_srst2.gamma'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/gamma/test_PF-Replicons_20240124.gamma'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_report.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/scaffolds/short_summary.specific.pseudomonadales_odb10.test.filtered.scaffolds.fa.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_asmbld.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_asmbld.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_asmbld.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/krona/test_wtasmbld.html'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_wtasmbld.summary.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/kraken2/test.kraken2_wtasmbld.top_kraken_hit.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/taxa/test.tax'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_REFSEQ_20240124.fastANI.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_Assembly_ratio_20240124.txt'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_all_mutations.tsv'),
+                    file(params.modules_testdata_base_path + '/genomics/bacterial/reports/test_GC_content_20240124.txt')
+                ]
+                input[1] = '30'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert snapshot(process.out).match()
+        }
+
+    }
+
+}
