@@ -18,7 +18,7 @@ process CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS {
     script:
     """
     dumpsoftwareversions_mod_with_out.py \
-        --versions ${versions}
+        --versions ${versions} \
         --outdir ${project_path} \
         --workflow_name ${workflow.manifest.name} \
         --workflow_version ${workflow.manifest.version} \

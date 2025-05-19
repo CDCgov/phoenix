@@ -16,7 +16,8 @@ parser.add_argument("--nextflow_version", required=False, default="unknown")
 parser.add_argument("--source", required=False, default="default")
 args = parser.parse_args()
 
-outdir = Path(args.outdir)
+outdir = Path(args.outdir+"/"+args.source+"_pipeline_info")
+#source_pipeline = args.source
 outdir.mkdir(parents=True, exist_ok=True)
 
 # HTML table generator
@@ -99,11 +100,11 @@ else:
     filename=args.source+"_software_versions.yml"
 
 # Write output files
-with open(outdir / "Centar_pipeline_info" / filename, "w") as f:
+with open(outdir / filename, "w") as f:
     yaml.dump(versions_by_module, f, default_flow_style=False)
 
 #with open(outdir / "software_versions_mqc.yml", "w") as f:
 #    yaml.dump(versions_mqc, f, default_flow_style=False)
 
-with open(outdir / "Centar_pipeline_info/CENTAR_versions.yml", "w") as f:
-    yaml.dump(versions_dict, f, default_flow_style=False)
+#with open(outdir / "CENTAR_versions.yml", "w") as f:
+#    yaml.dump(versions_dict, f, default_flow_style=False)
