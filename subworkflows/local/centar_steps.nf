@@ -35,12 +35,53 @@ def get_taxa(input_ch){
         input_ch[1].eachLine { line ->
             try {
                 if (line.startsWith("G:")) {
-                    genus = line.split(":")[1].trim().split('\t')[1]
+                    // Check if we have the format with ID number like "G:32008 Burkholderia"
+                    String remaining = line.substring(2).trim();
+                    
+                    // Check if the remaining part starts with a number followed by space
+                    if (remaining.matches("^\\d+\\s+.*")) {
+                        // For format like "G:32008 Burkholderia"
+                        genus = remaining.replaceFirst("^\\d+\\s+", "").trim();
+                    } else {
+                        // For format like "G:      Serratia"
+                        genus = remaining;
+                    }
                 } else if (line.startsWith("s:")) {
-                    species = line.split(":")[1].trim().split('\t')[1]
+                    // Same logic for species
+                    String remaining = line.substring(2).trim();
+                    
+                    if (remaining.matches("^\\d+\\s+.*")) {
+                        // For format like "s:95486 cenocepacia"
+                        species = remaining.replaceFirst("^\\d+\\s+", "").trim();
+                    } else {
+                        // For format like "s:      marcescens"
+                        species = remaining;
+                    }
                 }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                // Handle specific "Index 1 out of bounds for length 1" error - when there are is only a genus. line.split(":")[1].trim().split('\t')[1] - [1] is not needed
+                println(line)
+                if (e.getMessage() != null) {
+                    if (e.message.contains("Index 1 out of bounds for length 1")) {
+                        if (line.startsWith("G:")) {
+                            // Use the fallback logic if accessing index 1 fails
+                            genus = line.split(":")[1].trim()
+                        } else if (line.startsWith("s:")) {
+                            species = line.split(":")[1].trim()
+                        }
+                    } else {
+                        println("E:" + e + "see get_taxa() in centar_steps.nf, parsing of *.tax failed.")
+                        // Re-throw or handle other ArrayIndexOutOfBoundsExceptions if necessary
+                        println "Unexpected ArrayIndexOutOfBoundsException: ${e.message}"
+                    }
+                } else {
+                    println("Error message is empty?!")
+                }
+
+                
             } catch (IndexOutOfBoundsException e) {
                 // Handle specific "Index 1 out of bounds for length 1" error - when there are is only a genus. line.split(":")[1].trim().split('\t')[1] - [1] is not needed
+                println(line)
                 if (e.getMessage() != null) {
                     if (e.message.contains("Index 1 out of bounds for length 1")) {
                         if (line.startsWith("G:")) {
@@ -64,6 +105,7 @@ def get_taxa(input_ch){
         }
     // Change from Genus species match, to just species. Since Clostridioidesd only has a very small list of species we will go ahead and check all to gauge toxicity
     //return [input_ch[0], "$genus $species" ]
+    println("G`:" + genus+"|S`:" + species)
     return [ input_ch[0], "$genus" ]
 }
 
