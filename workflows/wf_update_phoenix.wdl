@@ -33,13 +33,13 @@ workflow update_phoenix {
   }
   output {
     #phoenix summary output
-    File?  phoenix_tsv_summary     = update_phoenix.phoenix_tsv_summary
-    File?  griphin_xlsx_summary    = update_phoenix.griphin_xlsx_summary
-    File?  griphin_tsv_summary     = update_phoenix.griphin_tsv_summary
-    File?  biosample_excel_summary = update_phoenix.biosample_excel_summary
-    File?  sra_excel_summary       = update_phoenix.sra_excel_summary
-    String phoenix_version         = update_phoenix.phoenix_version
-    String phoenix_docker          = update_phoenix.phoenix_docker
-    String analysis_date           = update_phoenix.analysis_date
+    File?  phoenix_tsv_summary     = combine_phoenix_run.phoenix_tsv_summary
+    File?  griphin_xlsx_summary    = combine_phoenix_run.griphin_xlsx_summary
+    File?  griphin_tsv_summary     = combine_phoenix_run.griphin_tsv_summary
+    File?  biosample_excel_summary = combine_phoenix_run.biosample_excel_summary
+    File?  sra_excel_summary       = combine_phoenix_run.sra_excel_summary
+    String phoenix_version         = combine_phoenix_run.phoenix_version
+    String phoenix_docker          = combine_phoenix_run.phoenix_docker
+    String analysis_date           = combine_phoenix_run.analysis_date
   }
 }
