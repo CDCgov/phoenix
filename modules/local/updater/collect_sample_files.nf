@@ -9,6 +9,8 @@ process COLLECT_SAMPLE_FILES {
 
     output:
     tuple val(meta), path("${meta.id}/file_integrity/${meta.id}*_summary.txt"), optional: true,    emit: fairy_summary
+    tuple val(meta), path("${meta.id}/CENTAR/${meta.id}_centar_output.tsv"),    optional: true,    emit: centar_output
+    tuple val(meta), path("${meta.id}/ANI/${meta.id}_ShigaPass_summary.csv"),   optional: true,    emit: shigapass_output
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_1.trim.fastq.gz"),                    emit: read1
     tuple val(meta), path("${meta.id}/fastp_trimd/${meta.id}_2.trim.fastq.gz"),                    emit: read2
     tuple val(meta), path("${meta.id}/assembly/${meta.id}.filtered.scaffolds.fa.gz"),              emit: scaffolds
@@ -19,13 +21,14 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/kraken2_trimd/${meta.id}.kraken2_trimd.top_kraken_hit.txt"), emit: kraken_bh
     tuple val(meta), path("${meta.id}/quast/${meta.id}_summary.tsv"),                              emit: quast_report
     tuple val(meta), path("${meta.id}/ANI/${meta.id}_REFSEQ_*.fastANI.txt"),                       emit: ani_best_hit
+    tuple val(meta), path("${meta.id}/ANI/${meta.id}_REFSEQ_*.ani.txt"),                           emit: ani
     tuple val(meta), path("${meta.id}/qc_stats/*_trimmed_read_counts.txt"),                        emit: trimmed_stats
     tuple val(meta), path("${meta.id}/mlst/*_combined.tsv"),                                       emit: combined_mlst
     tuple val(meta), path("${meta.id}/${meta.id}_Assembly_ratio_*.txt"),                           emit: assembly_ratio
     tuple val(meta), path("${meta.id}/${meta.id}.synopsis"),                                       emit: synopsis
     tuple val(meta), path("${meta.id}/${meta.id}.tax"),                                            emit: tax
     tuple val(meta), path("${meta.id}/${meta.id}_summaryline.tsv"),                                emit: summary_line
-    path ("${meta.id}-CSF.csv"),                                                                   emit: collect_file                                                     
+    path ("${meta.id}-CSF.csv"),                                                                   emit: collect_file
     path("versions.yml"),                                                                          emit: versions
 
     script: 
@@ -39,8 +42,8 @@ process COLLECT_SAMPLE_FILES {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-       phoenix_base_container_tag: ${container_version}
-       phoenix_base_container: ${container}
+        phoenix_base_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }

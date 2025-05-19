@@ -11,9 +11,6 @@ process CREATE_FAIRY_FILE {
     tuple val(meta), path("${meta.id}_*_summary.txt"), emit: created_fairy_file
     path("versions.yml"),                              emit: versions
 
-    when:
-    "${file_integrity}" == false
-
     script: 
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"

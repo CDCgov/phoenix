@@ -31,6 +31,8 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 */
 
 include { ASSET_CHECK                          } from '../modules/local/asset_check'
+include { SHIGAPASS                            } from '../modules/local/shigapass'
+include { CHECK_SHIGAPASS_TAXA                 } from '../modules/local/check_shigapass_taxa'
 include { GAMMA as GAMMA_AR                    } from '../modules/local/gamma'
 include { GET_TAXA_FOR_AMRFINDER               } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN                    } from '../modules/local/run_amrfinder'
@@ -99,6 +101,34 @@ def add_meta(full_path_txt, griphin_ch) {
     return array
 }
 
+def get_only_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        //return [ "$genus $species" ]
+        return [ "$genus" ]
+}
+
+def get_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        //return ["$genus $species", input_ch[0], input_ch[1]]
+        return ["$genus", input_ch[0], input_ch[1]]
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -138,6 +168,38 @@ workflow UPDATE_PHOENIX_WF {
             params.zipped_sketch, params.custom_mlstdb, []
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
+
+        ////////////////////////////////////// RUN SHIGAPASS IF IT WASN'T BEFORE AND IS CORRECT TAXA //////////////////////////////////////
+
+        // First, create a set of isolate IDs that already have shigapass files --> we will use this to filter and only run samples that don't have shigapass files and need them
+        existing_shigapass_ids = CREATE_INPUT_CHANNELS.out.shigapass.map{ meta, shigapass_file -> [ meta.id ]} //[[id:], []]
+
+        // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
+        scaffolds_and_taxa_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}
+            .join(CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{                               meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}, by: [0])
+            .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{         meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+            .filter { meta, taxonomy, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}.combine(existing_shigapass_ids)
+            .filter { meta, taxonomy, filtered_scaffolds, fairy_outcome, existing_shigapass_ids -> !existing_shigapass_ids.contains(meta.id)} // Add the filter to exclude isolates that already have shigapass files
+            .map{ meta, taxonomy, filtered_scaffolds, fairy_outcome, existing_shigapass_ids -> return [meta, taxonomy, filtered_scaffolds ] }
+
+        // Get ID from ShigaPass
+        SHIGAPASS (
+            scaffolds_and_taxa_ch, params.shigapass_database
+        )
+        ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
+
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        checking_taxa_ch = CREATE_INPUT_CHANNELS.out.ani_best_hit.map{meta, ani_best_hit -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]} \
+            .join(CREATE_INPUT_CHANNELS.out.ani.map{                  meta, ani          -> [[id:meta.id, project_id:meta.project_id], ani ]},     by: [[0][0],[0][1]])\
+            .join(SHIGAPASS.out.summary.map{                          meta, summary      -> [[id:meta.id, project_id:meta.project_id], summary ]}, by: [[0][0],[0][1]])
+
+        // check shigapass and correct fastani taxa if its wrong
+        CHECK_SHIGAPASS_TAXA (
+            checking_taxa_ch
+        )
+        ch_versions = ch_versions.mix(CHECK_SHIGAPASS_TAXA.out.versions)
+
+        ///////////////////////////////////// RUNNING AR CALLING //////////////////////////////////////
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         filtered_scaffolds_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
@@ -199,7 +261,34 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
-         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
+        // Prepare channels with source information
+        ch_ani_input_tagged = CREATE_INPUT_CHANNELS.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'input']] }
+        ch_ani_shigapass_tagged = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'shigapass']] }
+        // For samples that were run through Shigapass we need to compare that to the list of previous ani_best_hit files, then only keep the shigapass files as that has the most up-to-date info
+        // Mix and group by ID
+        ch_ani_combined = ch_ani_input_tagged.mix(ch_ani_shigapass_tagged).groupTuple().map { id, values ->
+                // First check if we have both input and shigapass files
+                def shigapass_data = values.find { it[2] == 'shigapass' }
+                def input_data = values.find { it[2] == 'input' }
+                if (shigapass_data) {
+                    // If shigapass data exists, use it
+                    def (meta, file, _) = shigapass_data
+                    return [meta, file]
+                } else if (input_data) {
+                    // Only use input data if no shigapass data
+                    def (meta, file, _) = input_data
+                    return [meta, file]
+                } else {
+                    // This shouldn't happen 
+                    return null
+                }
+            }.filter { it != null } // Now ch_ani_combined contains the combined channel with prioritized files
+
+
+        //all_ids [[id:1602366], []]
+        //CREATE_INPUT_CHANNELS.out.shigapass [[id:1602366], /path/to/shigapass/summary.txt]
+
+        // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = CREATE_INPUT_CHANNELS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id, project_id:meta.project_id], fastp_total_qc]}\
         .join(DO_MLST.out.checked_MLSTs.map{                           meta, checked_MLSTs   -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]},  by: [[0][0],[0][1]])\
         .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{                  meta, gamma_hv        -> [[id:meta.id, project_id:meta.project_id], gamma_hv]},       by: [[0][0],[0][1]])\
@@ -211,7 +300,19 @@ workflow UPDATE_PHOENIX_WF {
         .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{                  meta, taxonomy        -> [[id:meta.id, project_id:meta.project_id], taxonomy]},       by: [[0][0],[0][1]])\
         .join(CREATE_INPUT_CHANNELS.out.k2_bh_summary.map{             meta, k2_bh_summary   -> [[id:meta.id, project_id:meta.project_id], k2_bh_summary]},  by: [[0][0],[0][1]])\
         .join(AMRFINDERPLUS_RUN.out.report.map{                        meta, report          -> [[id:meta.id, project_id:meta.project_id], report]},         by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.ani_best_hit.map{              meta, ani_best_hit    -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},   by: [[0][0],[0][1]])
+        .join(ch_ani_combined.map{                                     meta, ani_best_hit    -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},   by: [[0][0],[0][1]])
+
+        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary
+        all_ids = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{ meta, filtered_scaffolds -> [id:meta.id, project_id:meta.project_id] }
+                    //.join(SHIGAPASS.out.summary.map{               meta, summary            -> [[id:meta.id, project_id:meta.project_id], summary ]}, by: [[0][0],[0][1]], remainder: true)
+
+        all_ids.join(SHIGAPASS.out.summary.map{               meta, summary            -> [[id:meta.id, project_id:meta.project_id], summary ]}, by: [[0][0],[0][1]], remainder: true).view()
+        // For each ID, check if there's a matching shigapass entry. If not, create an empty placeholder with the same structure
+        backup_entries = all_ids.join(CREATE_INPUT_CHANNELS.out.shigapass, by: [[0][0],[0][1]], remainder: true).filter{ meta, summary -> summary == null }.map { meta, summary -> [meta, []] }  // Use empty list as placeholder
+        //backup_entries.view()
+        // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
+        line_summary_ch = line_summary_ch.join(CREATE_INPUT_CHANNELS.out.shigapass.mix(backup_entries), by: [[0][0],[0][1]])
+        //line_summary_ch.view()
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
@@ -251,11 +352,25 @@ workflow UPDATE_PHOENIX_WF {
                     buscoTrue: it[2] == true 
                     buscoFalse: it[2] == false}
 
+        // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
+        // This is used to double check params.centar to ensure that griphin parameters are set correctly
+        //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
+        centar_var = CREATE_INPUT_CHANNELS.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
+        // Now we need to check if --centar was passed when the samples were run previously. // "ifEmpty()" branch executes if no files match 
+        centar_var = CREATE_INPUT_CHANNELS.out.centar.filter{ meta, file -> file.toString().endsWith("_centar_output.tsv") }
+                        .ifEmpty { Channel.of(false)}.map { file -> return true}.first()  // If we get here with a file, it means we found a match and Take just the first result (true or false)
+        //centar_var.view() -- issue here
+
+        //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
+        shigapass_var = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
+            .collect().sum().map{ it -> it[0] > 0 }
+
         // for samples that were created with entry CDC_PHX
         GRIPHIN_NO_PUBLISH_CDC (
             busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, false, false, true, false, false, params.bldb
+            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
+            params.coverage, false, false, true, shigapass_var, centar_var, params.bldb, false
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH_CDC.out.versions)
 
@@ -263,7 +378,8 @@ workflow UPDATE_PHOENIX_WF {
         GRIPHIN_NO_PUBLISH (
             busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
             CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, params.coverage, true, false, true, false, false, params.bldb
+            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
+            params.coverage, true, false, true, shigapass_var, centar_var, params.bldb, false
         )
         ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 

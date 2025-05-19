@@ -17,7 +17,7 @@ process SRST2_MLST {
     path "versions.yml"                                          ,                emit: versions
 
     when:
-    (task.ext.when == null || task.ext.when) //&& "${status[0]}" == "False"
+    (task.ext.when == null || task.ext.when)
 
     script:
     // set up terra variables
