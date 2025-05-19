@@ -70,7 +70,7 @@
                 }
             }
         },
-        "Species_Specific_Subworkflows_Options": {
+        "Species_Specific_Workflows_Options": { 
             "title": "Species Specific Optional options",
             "type": "object",
             "fa_icon": "fas fa-terminal",
@@ -78,15 +78,15 @@
             "properties": {
                 "centar": { 
                     "type": "boolean",
-                    "description": "Pass --centar if you want additional information (Toxin A/B Variants, Other Toxins and C. difficile Specific AR Mutations) on C. diff isolates.",
+                    "description": "***Still undergoing validation, will be released in v2.3.0***. Pass --centar if you want additional information (Toxin A/B Variants, Other Toxins and C. difficile Specific AR Mutations) on C. diff isolates.",
                     "default": "False",
                     "fa_icon": "fas fa-hashtag"
                 },
-                "combine_griphins": { 
-                    "type": "boolean",
-                    "description": "Pass --combine_griphins .",
-                    "default": "False",
-                    "fa_icon": "fas fa-hashtag"
+                "griphin_out": { 
+                    "type": "string",
+                    "description": "***Still undergoing validation, will be released in v2.3.0***. Path to the output directory where the griphin summary files will be saved. Using this parameter, CENTAR files for isolates will be saved to their project directory.",
+                    "default": "${launchDir}",
+                    "fa_icon": "fas fa-keyboard"
                 }
             }
         },
@@ -309,8 +309,3 @@
         {
             "$ref": "#/definitions/max_job_request_options"
         },
-        {
-            "$ref": "#/definitions/generic_options"
-        }
-    ]
-}
