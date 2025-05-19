@@ -309,3 +309,8 @@
         {
             "$ref": "#/definitions/max_job_request_options"
         },
+        {
+            "$ref": "#/definitions/generic_options"
+        }
+    ]
+}
