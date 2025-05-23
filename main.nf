@@ -27,6 +27,8 @@ if (params.coverage.toInteger() < 30) { exit 1, 'The minimum coverage allowed fo
 // Check for incorrect --output parameter
 params.output = "" /// Initialise param so no warning is printed
 if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
+//comment out in v2.3.0 to run --centar
+if (params.centar == true) { exit 1, "Sorry, --centar available yet as it's validation isn't complete. It will be released with a newer version of phx in the future." }
 
 /*
 ========================================================================================
@@ -326,7 +328,7 @@ workflow CDC_SCAFFOLDS {
         phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
 
-//
+/*/
 // WORKFLOW: Entry point for CLIA analysis
 //
 workflow CLIA {
@@ -367,12 +369,12 @@ workflow CLIA {
     main:
         CLIA_INTERNAL ( ch_input, ch_versions )
 
-    /*emit:
+    emit:
         scaffolds        = CLIA_INTERNAL.out.scaffolds
         trimmed_reads    = CLIA_INTERNAL.out.trimmed_reads
         amrfinder_report = CLIA_INTERNAL.out.amrfinder_report
-        summary_report   = CLIA_INTERNAL.out.summary_report*/
-}
+        summary_report   = CLIA_INTERNAL.out.summary_report
+}*/
 
 /*
 ========================================================================================
@@ -473,7 +475,7 @@ workflow COMBINE_GRIPHINS {
 
 /*
 ========================================================================================
-    RUN Species specific WORKFLOWS
+    RUN Species specific WORKFLOWS - waiting for completed validation to be released with v2.3.0
 ========================================================================================
 */
 
@@ -481,11 +483,13 @@ workflow COMBINE_GRIPHINS {
 // WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
 workflow CENTAR {
+    // comment out to run CENTAR 
+    exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
+
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
-        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
             exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
@@ -518,14 +522,14 @@ workflow CENTAR {
                 //griph_out = Channel.fromPath(params.griphin_out, relative: true)
             }
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry CENTAR: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
     //make sure outdir and griphin_out aren't passed at the same time
-    //if (params.griphin_out != null && params.outdir != "${launchDir}/phx_output"){
-    //    exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir." 
-    //}
+    if (params.griphin_out != "${launchDir}" && params.outdir != "${launchDir}/phx_output"){
+        exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir. Please rerun with only one of these parameters." 
+    }
     // check if the wgmlst_container was passed
     if (params.wgmlst_container == null) { println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}") }
 

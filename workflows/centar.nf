@@ -52,6 +52,7 @@ include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_st
 //
 
 include { CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_centar'
+include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
 /*
 ========================================================================================
@@ -187,6 +188,7 @@ workflow RUN_CENTAR {
 
         //define var to be used globally
         def griphin_report
+        def griphin_out_path
         // For cases where the user is running isolates from multiple directories and wants the summary files output to their original project_id folders. 
         multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
         //griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
@@ -364,7 +366,7 @@ workflow RUN_CENTAR {
                 
             )
         } else {
-            exit 1, "You shouldn't be here"
+            exit 1, "You shouldn't be here, please open a github issue to report."
         }
 
     emit:

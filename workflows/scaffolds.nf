@@ -334,7 +334,7 @@ workflow SCAFFOLDS_EXTERNAL {
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
-        ////////////////////////////////////// CENTAR //////////////////////////////////////
+        ////////////////////////////////////// CENTAR ////////////////////////////////////// -- waiting for completed validation for release in v2.3.0
         // Run centar if necessary
 
         //First, check if any isolates are Clostridioides difficile and filter those to go through the channel

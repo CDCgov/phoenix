@@ -404,7 +404,7 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
-        ////////////////////////////////////// CENTAR //////////////////////////////////////
+        ////////////////////////////////////// CENTAR ////////////////////////////////////// -- waiting for completed validation for release in v2.3.0
         // Run centar if necessary
 
         //First, check if any isolates are Clostridioides difficile and filter those to go through the channel
@@ -502,11 +502,11 @@ workflow PHOENIX_EXTERNAL {
             .join(ani_best_hit_ch.map{                              meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary
-        all_ids = line_summary_ch.map { meta -> meta[0].id }.mix(SHIGAPASS.out.summary.map{ meta, summary -> meta.id }).unique().map{ id -> [id: id] }
+        all_ids = line_summary_ch.map { meta -> meta[0].id }.mix(SHIGAPASS.out.summary.map{ meta, summary -> meta.id ?: "none" }).unique().map{ id -> [id: id] }
         // For each ID, check if there's a matching shigapass entry. If not, create an empty placeholder with the same structure
         backup_entries = all_ids.join(SHIGAPASS.out.summary, by: [0], remainder: true).filter{ meta, summary -> summary == null }.map { meta, summary -> [meta, []] }  // Use empty list as placeholder
         // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
-        line_summary_ch = line_summary_ch.join(SHIGAPASS.out.summary.mix(backup_entries), by: [0])
+        line_summary_ch = line_summary_ch.join(SHIGAPASS.out.summary.mix(backup_entries), by: [0]) 
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE (
