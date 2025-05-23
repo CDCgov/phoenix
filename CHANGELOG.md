@@ -269,8 +269,6 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Implemented Enhancements:** 
 - Creation of `-entry UPDATE_CDC_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when.  
-- Creation of `-entry CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
-- `-centar` parameter can be passed when running `-entry PHOENIX` or `-entry CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki](https://github.com/CDCgov/phoenix/wiki/Running-PHoeNIx#input--entry-centar-in-versions-220) for full documentation.   \
 - `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
 - Updating the big 5 genes to be highlighed, particularly OXA genes has become too big of lift to hard code so the BLDB databased was added to reference and the process is described in [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes).  
 - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` were removed from phx output. If you need or want these files you can get them from the workdir for the process(es) `KRAKEN2_TRIMD` and `KRAKEN2_ASMBLD`. Alternatively, you can create your own [config file](https://www.nextflow.io/docs/latest/config.html) and add back in the publishing of the files like [this](https://github.com/CDCgov/phoenix/blob/717d19c19338373fc0f89eba30757fe5cfb3e18a/conf/modules.config#L457)  
@@ -289,7 +287,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - `WARNINGS_COUNT` was changed to `WARNINGS` and it is print out of the warnings, rather than just a count.
    - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.  
    - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` are no longer output from PHX. `*.kraken2_asmbld.classifiedreads.txt` was added as an output as taxids are in that file, which is different from the `*.kraken2_wtasmbld.classifiedreads.txt`. These files aren't really needed expect for edge cases such as questions about conflicting results or investigating suspected contamination.  
-- Due to [deprecation of "When" block](https://www.nextflow.io/docs/latest/process.html#when) in nextflow were removed and `.filter{}` is used instead.  
+- Due to [deprecation of "When" block](https://www.nextflow.io/docs/latest/process.html#when) in nextflow were removed and `.filter{}` is used throughout instead.  
 
 **Fixed Bugs:**  
 - Taxonomy Fixes:  
@@ -321,3 +319,9 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)
       - Mcr genes added, 2 false positives and 1 duplicate removed, and 2 modified gene. See [history.txt](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/history.txt) file for more details (for this new version changes from 2024-04-25 to 2024-12-13 are included).
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since last version release.
+
+## [vx.x.x](https://github.com/CDCgov/phoenix/releases/tag/vx.x.x) (XX/XX/202X)
+
+**Implemented Enhancements:** 
+- Creation of `-entry CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
+- `-centar` parameter can be passed when running `-entry PHOENIX` or `-entry CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki]() for full documentation.   

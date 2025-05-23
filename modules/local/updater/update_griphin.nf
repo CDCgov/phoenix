@@ -12,7 +12,7 @@ process UPDATE_GRIPHIN {
     path(valid_samplesheet_file)
     val(coverage)
     path(bldb)
-    val(species_specific_entry)
+    val(remove_dups_var)
 
     output:
     path("${project_id}_GRiPHin_Summary.xlsx"), emit: griphin_report
@@ -35,7 +35,7 @@ process UPDATE_GRIPHIN {
         griphin_input = "--griphin_list"
     }
     def valid_samplesheet = valid_samplesheet_file ? "--samplesheet ${valid_samplesheet_file}" : ""
-    def remove_dups = species_specific_entry ? "--remove_dups" : "" // When we are running species specific pipelines we need to remove duplications from the original griphin reports so we can update with new data
+    def remove_dups = remove_dups_var ? "--remove_dups" : "" // When we are running species specific and updater pipelines we need to remove duplications from the original griphin reports so we can update with new data
     """
 
     ${ica}combine_GRiPHins.py ${griphin_input} \

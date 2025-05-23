@@ -19,9 +19,6 @@ process GENERATE_PIPELINE_STATS_FAILURE_EXQC {
     tuple val(meta), path('*.synopsis'), emit: pipeline_stats
     path("versions.yml")               , emit: versions
 
-    when:
-    "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"
-
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths
     def terra = params.terra ? "-2 terra" : ""

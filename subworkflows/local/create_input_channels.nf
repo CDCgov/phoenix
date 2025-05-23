@@ -225,11 +225,17 @@ workflow CREATE_INPUT_CHANNELS {
             // get files for MLST updating 
             def shigapass_glob = append_to_path(params.indir.toString(),'*/ANI/*_ShigaPass_summary.csv')
 
+            Channel.fromPath(shigapass_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_ShigaPass_summary.csv", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).view()
+                //.filter{ meta, shiapass_files, all_passed_id -> all_passed_id.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
+                //.map{ meta, shiapass_files, all_passed_id -> [meta, shiapass_files]}.view()
+
             //collect .tax file channel with meta information 
             shigapass_files_ch = Channel.fromPath(shigapass_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, "_ShigaPass_summary.csv", params.indir.toString(),false)} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, shiapass_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
-                .map{ meta, shiapass_files, all_passed_id_channel -> [meta, shiapass_files]}.ifEmpty( [[id: ""], []] ) //remove all_passed_id_channel from output
+                .combine(all_passed_id_channel).filter{ meta, shiapass_files, all_passed_id -> all_passed_id.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
+                .map{ meta, shiapass_files, all_passed_id -> [meta, shiapass_files]} //remove all_passed_id_channel from output'
 
             // get CENTAR files
             def centar_glob = append_to_path(params.indir.toString(),'*/CENTAR/*_centar_output.tsv')
@@ -238,7 +244,7 @@ workflow CREATE_INPUT_CHANNELS {
             centar_files_ch = Channel.fromPath(centar_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, "_centar_output.tsv", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, centar_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
-                .map{ meta, centar_files, all_passed_id_channel -> [meta, centar_files]}.ifEmpty( [[id: ""], []] ) //remove all_passed_id_channel from output
+                .map{ meta, centar_files, all_passed_id_channel -> [meta, centar_files]}.ifEmpty( [[id: "", project_id: ""], []] ) //remove all_passed_id_channel from output
 
             /////////////////////////// COLLECT PROJECT LEVEL FILES ///////////////////////////////
 
@@ -583,7 +589,7 @@ def append_to_path(full_path, string) {
 def create_meta_with_wildcard(sample, file_extension, indir){
     '''Creating meta: [[id:sample1], $PATH/sample1_REFSEQ_20240124.fastANI.txt]'''
     def meta = [:] // create meta array
-    meta.id = sample.getName().replaceAll(file_extension, "").split('_')[0] // get file name without extention
+    meta.id = sample.getName().replaceAll(file_extension, "").split('_REFSEQ_\\d{8}')[0] // get file name without extention
     meta.project_id = indir.toString().split('/')[-1]
     return [ meta, sample ]
 }

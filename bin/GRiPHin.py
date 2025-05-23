@@ -702,6 +702,7 @@ def parse_ani(fast_ani_file):
     else:
         fastani_warning = ""
         ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
+        print(ani_df)
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
         organism = ani_df["Organism"][0].replace("-chromosome", "")
@@ -711,6 +712,7 @@ def parse_ani(fast_ani_file):
             organism = organism.replace("sp.","sp. ")
         source_file = ani_df["Source File"][0]
         #Species_Support = str(ID) + "%ID-" + str(coverage) + "%COV-" + organism + "(" + source_file + ")" #old way of reporting
+        print(organism)
         FastANI_output_list = [source_file, ID, coverage, organism]
         # get taxa to check mlst scheme
         scheme_guess = organism.split(' ')[0][0].lower() + organism.split(' ')[1][0:4]
@@ -1464,6 +1466,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Headers
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
     if "PHX_Version" in df.columns:
+        print("PHX_Version in df.columns")
         worksheet.merge_range('A1:D1', "PHoeNIx Summary", cell_format_light_blue)
         worksheet.merge_range('E1:R1', "QC Metrics", cell_format_grey_blue)
     else: # allow for backward compatibility with versions <2.2.0
@@ -1473,23 +1476,28 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Find start and end column letters
     # to allow backwards compatability with v2.1.1 we need a little try and catch...  
     if "Final_Taxa_ID" in df.columns:
+        print("Final_Taxa_ID in df.columns")
+        print(df.columns)
         taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
+        print(taxa_start_col)
     elif "Taxa_Source" in df.columns:
         taxa_start_col  = column_letter(list(df.columns).index("Taxa_Source"))  # Get index of start column
     else:
         raise ValueError("Final_Taxa_ID and Taxa_Source in the created dataframe. Something went wrong, please open a github issue to report the problem.")
     taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
+    print(taxa_end_col)
     # Dynamically merge based on start and end column
     worksheet.merge_range(f"{taxa_start_col}1:{taxa_end_col}1", "Taxonomic Information", cell_format_green)
     #MLST columns 
     # Define start and end column based on centar condition
     mlst_start_col = column_letter(list(df.columns).index("Primary_MLST_Scheme"))  # Get index of start column
     if centar:
+        print("centar is true")
         mlst_end_col = column_letter(list(df.columns).index("MLST Clade"))  # Use "MLST Clade" if centar is True
     else:
         mlst_end_col = column_letter(list(df.columns).index("Secondary_MLST_Alleles"))  # Otherwise, use "Secondary_MLST_Alleles"
     # Dynamically merge based on start and end column
-    worksheet.merge_range(f"{mlst_start_col}1:{mlst_end_col}1", "MLST Information", cell_format_green)
+    #worksheet.merge_range(f"{mlst_start_col}1:{mlst_end_col}1", "MLST Information", cell_format_green)
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         # as part of combine_GRiPHins.py organism specifc columns are in qc_max_col

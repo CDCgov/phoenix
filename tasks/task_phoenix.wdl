@@ -81,9 +81,9 @@ task phoenix {
       # Run failed
       tar -cf - work/ | gzip -n --best > work.tar.gz
       #save line for debugging specific file - just change "collated_versions.yml" to specific file name
-      find  /cromwell_root/ -path "*work*" -name "*.command.err" | xargs -I {} bash -c "echo {} && cat {}"
-      find  /cromwell_root/ -path "*work*" -name "*.command.out" | xargs -I {} bash -c "echo {} && cat {}"
-      find  /cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /mnt/disks/cromwell_root/ -path "*work*" -name "*.command.err" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /mnt/disks/cromwell_root/ -path "*work*" -name "*.command.out" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /mnt/disks/cromwell_root/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
       exit 1
     fi
 

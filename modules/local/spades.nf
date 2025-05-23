@@ -14,14 +14,13 @@ process SPADES {
     val(extended_qc) // true is for -entry CDC_PHOENIX and CDC_SCAFFOLDS
 
     output:
-    tuple val(meta), path('*.scaffolds.fa.gz')    , optional:true, emit: scaffolds // possible that contigs could be created, but not scaffolds
-    tuple val(meta), path('*.contigs.fa.gz')      ,                emit: contigs // minimum to complete sucessfully
-    tuple val(meta), path('*.assembly.gfa.gz')    , optional:true, emit: gfa
-    tuple val(meta), path('*.log')                ,                emit: log
-    tuple val(meta), path('*_summaryline.tsv')    , optional:true, emit: line_summary
-    tuple val(meta), path('*.synopsis')           , optional:true, emit: synopsis
-    path("versions.yml")                          ,                emit: versions
-    tuple val(meta), path("*_spades_outcome.csv") ,                emit: spades_outcome
+    tuple val(meta), path('*.scaffolds.fa.gz')        , optional:true, emit: scaffolds // possible that contigs could be created, but not scaffolds
+    tuple val(meta), path('*.contigs.fa.gz')          , optional:true, emit: contigs // minimum to complete sucessfully - changed to optional:true to allow for failure handling
+    tuple val(meta), path('*.assembly.gfa.gz')        , optional:true, emit: gfa
+    tuple val(meta), path('*.log')                    ,                emit: log
+    //tuple val(meta), path('*_summaryline_failure.tsv'), optional:true, emit: line_summary_failure
+    path("versions.yml")                              ,                emit: versions
+    tuple val(meta), path("*_spades_outcome.csv")     ,                emit: spades_outcome
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -36,9 +35,8 @@ process SPADES {
     def extended_qc_arg = extended_qc ? "-c" : ""
     def container = task.container.toString() - "staphb/spades@"
     """
-    # Overwrite default that spades was successful
-    # Lets downstream process know that spades completed ok - see spades_failure.nf subworkflow
-    spades_complete=run_completed
+    # Set default to be that spades fails and doesn't create scaffolds or contigs
+    spades_complete=run_failure
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
 
     {
@@ -61,18 +59,15 @@ process SPADES {
                 -o ./
         fi
 
+        # Overwrite default that spades was successful
+        # Lets downstream process know that spades completed ok - see spades_failure.nf subworkflow
+        spades_complete=run_completed
+        echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
+
     } || {
     
-        if [[ ! -e ${prefix}.contigs.fa.gz ]] || [[ -e ${prefix}.scaffolds.fa.gz ]]; then
-
-            # Set default to be that spades fails and doesn't create scaffolds or contigs
-            spades_complete=run_failure
-            echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
-
-            # preemptively create _summary_line.csv and .synopsis file in case spades fails (no contigs or scaffolds created) we can still collect upstream stats. 
-            ${ica}pipeline_stats_writer_trimd.sh -a ${fastp_raw_qc} -b ${fastp_total_qc} -c ${reads[0]} -d ${reads[1]} -e ${kraken2_trimd_report} -f ${k2_bh_summary} -g ${krona_trimd}
-            ${ica}beforeSpades.sh -k ${k2_bh_summary} -n ${prefix} -d ${full_outdir} ${extended_qc_arg}
-        fi
+        # SPAdes failed - outcome file already set to failure above
+        echo "SPAdes failed, keeping failure status and summary files"
     }
 
     mv spades.log ${prefix}.spades.log
@@ -81,17 +76,13 @@ process SPADES {
     ${ica}afterSpades.sh
 
     #get version information
-    bspades_version=\$(${ica}beforeSpades.sh -V)
-    pipestats_version=\$(${ica}pipeline_stats_writer_trimd.sh -V)
     aspades_version=\$(${ica}afterSpades.sh -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
         spades_container: ${container}
-        \${bspades_version}
         \${aspades_version}
-        \${pipestats_version}
     END_VERSIONS
     """
 }

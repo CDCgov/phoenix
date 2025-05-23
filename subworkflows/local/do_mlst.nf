@@ -21,16 +21,28 @@ workflow DO_MLST {
     main:
         ch_versions = Channel.empty() // Used to collect the software versions
 
-
         // Creating channel to ensure ID is paired with matching trimmed assembly
         if (run_type=="original") {
             mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id], fasta]}\
-            .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])\
-            .join(taxonomy.map{            meta, taxonomy      -> [[id:meta.id], taxonomy]}, by: [0])
+            .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .filter { meta, reads, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .join(taxonomy.map{meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0])
+            .map{ meta, fasta, fairy_outcome, taxonomy -> return [meta, fasta, taxonomy] }
         } else if (run_type=="update") {
-            mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id, project_id:meta.project_id], fasta]}\
+            /*mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id, project_id:meta.project_id], fasta]}\
             .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\
-            .join(taxonomy.map{             meta, taxonomy      -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])
+            .join(taxonomy.map{             meta, taxonomy      -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])*/
+
+            mlst_ch = trimmed_assembly.map{meta, fasta -> [[id:meta.id, project_id:meta.project_id], fasta]}
+                        .join(scaffold_count_check.map{ meta, fairy_outcome ->
+                            // Read the content of the fairy_outcome file to check for FAILED
+                            def content = file(fairy_outcome.toString()).text
+                            def passed = !content.contains("FAILED")
+                            [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
+                        .filter{ meta, fasta, fairy_data -> 
+                            fairy_data[1] == true // Keep only entries where passed is true (no FAILED found)
+                        }.map{ meta, fasta, fairy_data -> return [meta, fasta] }
+                        .join(taxonomy.map{meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])
         }
 
         // Running standard mlst tool (torstens) on assembly file using provided mlst database location for scemes, profiles, and allele definitions

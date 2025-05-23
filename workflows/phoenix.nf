@@ -144,6 +144,14 @@ def add_project_id(old_meta, input_ch, outdir_path){
     return [meta, input_ch]
 }
 
+def append_to_path(full_path, string) {
+    if (full_path.toString().endsWith('/')) {
+        return full_path.toString() + string
+    } else {
+        return full_path.toString() + '/' + string
+    }
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -371,7 +379,7 @@ workflow PHOENIX_EXTERNAL {
         scaffolds_and_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
             .join(BBMAP_REFORMAT.out.filtered_scaffolds.map{                                  meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}, by: [0])
             .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{            meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
-            .filter { meta, taxonomy, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .filter{ meta, taxonomy, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
             .map{ meta, taxonomy, filtered_scaffolds, fairy_outcome -> return [meta, taxonomy, filtered_scaffolds ] }
 
         // Get ID from ShigaPass
@@ -500,6 +508,7 @@ workflow PHOENIX_EXTERNAL {
             .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{              meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},  by: [0])\
             .join(AMRFINDERPLUS_RUN.out.report.map{                 meta, report          -> [[id:meta.id], report]},         by: [0])\
             .join(ani_best_hit_ch.map{                              meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
+            //.join(FASTANI.out.ani.map{                              meta, ani             -> [[id:meta.id], ani]},            by: [0])  // Not needed for the process, but adding to force completion of these steps before advancing.
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary
         all_ids = line_summary_ch.map { meta -> meta[0].id }.mix(SHIGAPASS.out.summary.map{ meta, summary -> meta.id ?: "none" }).unique().map{ id -> [id: id] }
@@ -514,24 +523,28 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
-        // Collect all the summary files prior to fetch step to force the fetch process to wait
-        failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no spades failure pass empty file to keep it moving...
         // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{ meta, line_summary -> [line_summary]}.collect().ifEmpty( [] )
+        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{ meta, line_summary -> [line_summary]}.collect().ifEmpty([])
+
+        /*/ get spades failure files
+        failed_summaries_ch = SPADES_WF.out.line_summary_failure.filter{ meta, file ->
+            def content = file.text
+            return content.contains("SPAdes_Failure")}
 
         // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
         FETCH_FAILED_SUMMARIES (
-            outdir_path, failed_summaries_ch, summaries_ch
+            failed_summaries_ch
         )
-        ch_versions = ch_versions.mix(FETCH_FAILED_SUMMARIES.out.versions)
+        ch_versions = ch_versions.mix(FETCH_FAILED_SUMMARIES.out.versions)*/
 
         // combine all line summaries into one channel
-        spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
-        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )\
-        .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
-        .ifEmpty( [] )
+        //spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line.collect().ifEmpty([])
+        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty([])\
+        .combine(SPADES_WF.out.summary_line.collect().ifEmpty([]))\
+        .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty([]))\
+        .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty([]))\
+        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty([]))\
+        .ifEmpty([])
 
         // if centar was run, pull in species specific files
         if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
@@ -541,10 +554,10 @@ workflow PHOENIX_EXTERNAL {
         shigapass_files_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
 
         // pulling it all together
-        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
-            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+        if (centar_param == true) { // don't run regardless of what the isolates is if --centar isn't passed
+            all_summaries_ch = summaries_ch.combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
         } else {
-            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_files_ch)
+            all_summaries_ch = summaries_ch.combine(fairy_summary_ch).combine(shigapass_files_ch)
         }
 
         // Combining sample summaries into final report
@@ -565,7 +578,7 @@ workflow PHOENIX_EXTERNAL {
 
         //create GRiPHin report
         GRIPHIN (
-            all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, workflow.manifest.version, params.coverage, true, false, false, shigapass_var, centar_var, params.bldb, true
+            all_summaries_ch.collect(), INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path, workflow.manifest.version, params.coverage, true, false, false, shigapass_var, centar_var, params.bldb, true
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
@@ -616,7 +629,7 @@ workflow PHOENIX_EXTERNAL {
         mlst             = DO_MLST.out.checked_MLSTs
         amrfinder_output = AMRFINDERPLUS_RUN.out.report
         gamma_ar         = GAMMA_AR.out.gamma
-        phx_summary     = GATHER_SUMMARY_LINES.out.summary_report
+        phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
         //output for phylophoenix
         griphin_tsv      = GRIPHIN.out.griphin_report
         griphin_excel    = GRIPHIN.out.griphin_tsv_report

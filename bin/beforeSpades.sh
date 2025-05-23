@@ -89,6 +89,6 @@ else
 	echo "${sample_name}	FAIL	${warning_count}	Unknown	Unknown	Unknown	Unknown	Unknown	${species_col}	${spercent}% Reads_assigned	Unknown	kraken2_trimmed	${name}	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	SPAdes_Failure" | tr -d '\n' >> ${sample_name}_summaryline_failure.tsv
 fi
 
-cp ${sample_name}_summaryline_failure.tsv ${output_path}/${sample_name}/
+#cp ${sample_name}_summaryline_failure.tsv ${output_path}/${sample_name}/
 # copy the synopsis file
 cp ${sample_name}.synopsis ${output_path}/${sample_name}

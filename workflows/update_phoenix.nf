@@ -42,6 +42,8 @@ include { FETCH_FAILED_SUMMARIES               } from '../modules/local/fetch_fa
 include { GATHER_SUMMARY_LINES                 } from '../modules/local/phoenix_summary'
 include { GRIPHIN as GRIPHIN_NO_PUBLISH        } from '../modules/local/griphin'
 include { GRIPHIN as GRIPHIN_NO_PUBLISH_CDC    } from '../modules/local/griphin'
+include { GRIPHIN as GRIPHIN_PUBLISH           } from '../modules/local/griphin'
+include { GRIPHIN as GRIPHIN_PUBLISH_CDC       } from '../modules/local/griphin'
 include { UPDATE_GRIPHIN                       } from '../modules/local/updater/update_griphin'
 include { UPDATE_GRIPHIN as UPDATE_CDC_GRIPHIN } from '../modules/local/updater/update_griphin'
 include { SRST2_AR                             } from '../modules/local/srst2_ar'
@@ -96,7 +98,7 @@ def add_meta(full_path_txt, griphin_ch) {
     def meta = [:] // create meta array
     def folder_path = full_path_txt.readLines().first()
     //meta.project_id = input_ch.getName().replaceAll("_GRiPHin.xlsx", "") // get file name without extention
-    meta.project_id = folder_path
+    meta.project_id = folder_path.toString().split('/')[-1]
     def array = [ meta, griphin_ch ]
     return array
 }
@@ -174,13 +176,26 @@ workflow UPDATE_PHOENIX_WF {
         // First, create a set of isolate IDs that already have shigapass files --> we will use this to filter and only run samples that don't have shigapass files and need them
         existing_shigapass_ids = CREATE_INPUT_CHANNELS.out.shigapass.map{ meta, shigapass_file -> [ meta.id ]} //[[id:], []]
 
-        // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
         scaffolds_and_taxa_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}
-            .join(CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{                               meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}, by: [0])
+                    .join(CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{                       meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}, by: [[0][0],[0][1]])
+                    .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.map{ meta, fairy_outcome ->
+                            // Read the content of the fairy_outcome file to check for FAILED
+                            def content = file(fairy_outcome.toString()).text
+                            def passed = !content.contains("FAILED")
+                            [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
+                            .filter{ meta, taxonomy, filtered_scaffolds, fairy_data -> 
+                                fairy_data[1] == true // Keep only entries where passed is true (no FAILED found)
+                            }.map{   meta, taxonomy, filtered_scaffolds, fairy_data -> return [meta, taxonomy, filtered_scaffolds] }.combine(existing_shigapass_ids)
+                            .filter{ meta, taxonomy, filtered_scaffolds, fairy_data, existing_shigapass_ids -> !existing_shigapass_ids.contains(meta.id)} // Add the filter to exclude isolates that already have shigapass files
+                            .map{    meta, taxonomy, filtered_scaffolds, fairy_data, existing_shigapass_ids -> return [meta, taxonomy, filtered_scaffolds ] }
+
+        /*/ For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
+        scaffolds_and_taxa_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}
+            .join(CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{                               meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}, by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{         meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
             .filter { meta, taxonomy, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}.combine(existing_shigapass_ids)
             .filter { meta, taxonomy, filtered_scaffolds, fairy_outcome, existing_shigapass_ids -> !existing_shigapass_ids.contains(meta.id)} // Add the filter to exclude isolates that already have shigapass files
-            .map{ meta, taxonomy, filtered_scaffolds, fairy_outcome, existing_shigapass_ids -> return [meta, taxonomy, filtered_scaffolds ] }
+            .map{ meta, taxonomy, filtered_scaffolds, fairy_outcome, existing_shigapass_ids -> return [meta, taxonomy, filtered_scaffolds ] }*/
 
         // Get ID from ShigaPass
         SHIGAPASS (
@@ -201,11 +216,22 @@ workflow UPDATE_PHOENIX_WF {
 
         ///////////////////////////////////// RUNNING AR CALLING //////////////////////////////////////
 
-        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file - written differently as fairy files might be variable in the number of lines in the file
+        filtered_scaffolds_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{ meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
+                                .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.map{ meta, fairy_outcome ->
+                                    // Read the content of the fairy_outcome file to check for FAILED
+                                    def content = file(fairy_outcome.toString()).text
+                                    def passed = !content.contains("FAILED")
+                                    [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
+                                .filter { meta, filtered_scaffolds, fairy_data -> 
+                                    fairy_data[1] // Keep only entries where passed is true (no FAILED found)
+                                    }.map{ meta, filtered_scaffolds, fairy_data -> return [meta, filtered_scaffolds] }
+
+        /*/combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         filtered_scaffolds_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
             .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome  -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
             .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
-            .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }
+            .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }*/
 
         // Running gamma to identify AR genes in scaffolds
         GAMMA_AR (
@@ -214,10 +240,20 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
         // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
-        trimd_reads_file_integrity_ch = CREATE_INPUT_CHANNELS.out.reads.join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
+        trimd_reads_file_integrity_ch = CREATE_INPUT_CHANNELS.out.reads.join(CREATE_INPUT_CHANNELS.out.fairy_outcome.map{ meta, fairy_outcome ->
+                                    // Read the content of the fairy_outcome file to check for FAILED
+                                    def content = file(fairy_outcome.toString()).text
+                                    def passed = !content.contains("FAILED")
+                                    [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
+                                .filter { meta, reads, fairy_data -> 
+                                    fairy_data[1] == true // Keep only entries where passed is true (no FAILED found)
+                                }.map{ meta, reads, fairy_data -> return [meta, reads] }
+                                .join(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch.map{meta, phoenix_tsv_ch -> [[id:meta.id, project_id:meta.project_id], meta.entry]}, by: [[0][0],[0][1]])
+
+        /*trimd_reads_file_integrity_ch = CREATE_INPUT_CHANNELS.out.reads.join(CREATE_INPUT_CHANNELS.out.fairy_outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])
                 .filter { meta, reads, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
                 .map{ meta, reads, fairy_outcome -> return [meta, reads ] }
-                .join(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch.map{meta, phoenix_tsv_ch -> [[id:meta.id, project_id:meta.project_id], meta.entry]}, by: [[0][0],[0][1]])
+                .join(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch.map{meta, phoenix_tsv_ch -> [[id:meta.id, project_id:meta.project_id], meta.entry]}, by: [[0][0],[0][1]])*/
 
         // now we will split the channel into its true (busco present) and false (busco wasn't run with this dataset) elements
         busco_boolean_1ch = trimd_reads_file_integrity_ch.branch{ 
@@ -284,10 +320,6 @@ workflow UPDATE_PHOENIX_WF {
                 }
             }.filter { it != null } // Now ch_ani_combined contains the combined channel with prioritized files
 
-
-        //all_ids [[id:1602366], []]
-        //CREATE_INPUT_CHANNELS.out.shigapass [[id:1602366], /path/to/shigapass/summary.txt]
-
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = CREATE_INPUT_CHANNELS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id, project_id:meta.project_id], fastp_total_qc]}\
         .join(DO_MLST.out.checked_MLSTs.map{                           meta, checked_MLSTs   -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]},  by: [[0][0],[0][1]])\
@@ -302,17 +334,15 @@ workflow UPDATE_PHOENIX_WF {
         .join(AMRFINDERPLUS_RUN.out.report.map{                        meta, report          -> [[id:meta.id, project_id:meta.project_id], report]},         by: [[0][0],[0][1]])\
         .join(ch_ani_combined.map{                                     meta, ani_best_hit    -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},   by: [[0][0],[0][1]])
 
-        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary
-        all_ids = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{ meta, filtered_scaffolds -> [id:meta.id, project_id:meta.project_id] }
-                    //.join(SHIGAPASS.out.summary.map{               meta, summary            -> [[id:meta.id, project_id:meta.project_id], summary ]}, by: [[0][0],[0][1]], remainder: true)
+        // First, check if SHIGAPASS.out.summary is empty and create appropriate channel - for cases where isolate set has no e.coli or shigella
+        shigapass_ch = SHIGAPASS.out.summary.mix(CREATE_INPUT_CHANNELS.out.shigapass)
 
-        all_ids.join(SHIGAPASS.out.summary.map{               meta, summary            -> [[id:meta.id, project_id:meta.project_id], summary ]}, by: [[0][0],[0][1]], remainder: true).view()
-        // For each ID, check if there's a matching shigapass entry. If not, create an empty placeholder with the same structure
-        backup_entries = all_ids.join(CREATE_INPUT_CHANNELS.out.shigapass, by: [[0][0],[0][1]], remainder: true).filter{ meta, summary -> summary == null }.map { meta, summary -> [meta, []] }  // Use empty list as placeholder
-        //backup_entries.view()
-        // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
-        line_summary_ch = line_summary_ch.join(CREATE_INPUT_CHANNELS.out.shigapass.mix(backup_entries), by: [[0][0],[0][1]])
-        //line_summary_ch.view()
+        // Extract [id, project_id] pairs for all isolates in line_summary_ch channel for joining // If shigapass_files is null (no match), replace with empty list
+        all_id_pairs_ch = line_summary_ch.join(shigapass_ch, by: [[0][0],[0][1]], remainder: true)
+                .map{ meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, shigapass_file ->
+                if (shigapass_file == null) { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, []]
+                } else { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, shigapass_file]}}
+        line_summary_ch = all_id_pairs_ch
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
@@ -325,10 +355,16 @@ workflow UPDATE_PHOENIX_WF {
             .map { dirs -> dirs.collectEntries { dir -> def dirName = dir.tokenize('/').last()
             return [dirName, dir]}}
 
-        // Group the line_summaries by their project id and add in the full path for the project dir
-        //the join is only to make sure SRST2 finished before going to the last step, we just combine and then kick it out
+        // Create an empty channel as a fallback for when SRST2_AR doesn't run
+        dummy_gene_results = Channel.empty()
+        // Mix the real gene results with the dummy channel. This way, if SRST2_AR.out.gene_results doesn't exist, the empty channel is used
+        def gene_results_ch
+        try { gene_results_ch = SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results] }
+        } catch (Exception e) { gene_results_ch = dummy_gene_results }
+
+        // Group the line_summaries by their project id and add in the full path for the project dir the join is only to make sure SRST2 finished before going to the last step, we just combine and then kick it out
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary
-            .join(SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]]) 
+            .join(gene_results_ch.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true) 
             .map{meta, summaryline, gene_results -> [meta.project_id, summaryline]}.groupTuple(by: 0)
             .map { group -> 
                 def (id, files) = group
@@ -359,52 +395,76 @@ workflow UPDATE_PHOENIX_WF {
         // Now we need to check if --centar was passed when the samples were run previously. // "ifEmpty()" branch executes if no files match 
         centar_var = CREATE_INPUT_CHANNELS.out.centar.filter{ meta, file -> file.toString().endsWith("_centar_output.tsv") }
                         .ifEmpty { Channel.of(false)}.map { file -> return true}.first()  // If we get here with a file, it means we found a match and Take just the first result (true or false)
-        //centar_var.view() -- issue here
 
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
         shigapass_var = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
 
-        // for samples that were created with entry CDC_PHX
-        GRIPHIN_NO_PUBLISH_CDC (
-            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
-            CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
-            params.coverage, false, false, true, shigapass_var, centar_var, params.bldb, false
-        )
-        ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH_CDC.out.versions)
+        if (params.indir != null) { // If the input directory is not null, we need to check if the input directory is the same as the output directory
+            // for samples that were created with entry CDC_PHX
+            GRIPHIN_PUBLISH_CDC (
+                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
+                CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
+                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
+                params.coverage, false, false, true, shigapass_var, false, params.bldb, false
+            )
+            ch_versions = ch_versions.mix(GRIPHIN_PUBLISH_CDC.out.versions)
 
-        // for samples that were created with entry PHX
-        GRIPHIN_NO_PUBLISH (
-            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
-            CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-            busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
-            params.coverage, true, false, true, shigapass_var, centar_var, params.bldb, false
-        )
-        ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
+            // for samples that were created with entry PHX
+            GRIPHIN_PUBLISH (
+                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
+                CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
+                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
+                params.coverage, true, false, true, shigapass_var, false, params.bldb, false
+            )
+            ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
-        // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
-        griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten().collate(2)\
-                                .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
+            griphin_tsv_report = GRIPHIN_PUBLISH_CDC.out.griphin_tsv_report.mix(GRIPHIN_PUBLISH.out.griphin_tsv_report)
+            griphin_report = GRIPHIN_PUBLISH_CDC.out.griphin_report.mix(GRIPHIN_PUBLISH.out.griphin_report)
+        } else {
+            // for samples that were created with entry CDC_PHX
+            GRIPHIN_NO_PUBLISH_CDC (
+                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
+                CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
+                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
+                params.coverage, false, false, true, shigapass_var, false, params.bldb, false
+            )
+            ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH_CDC.out.versions)
 
-        // join old and new griphins for combining
-        griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-        .join(griphin_reports_ch.map{meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{            meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [[0][0],[0][1]])
-        //.join(CREATE_INPUT_CHANNELS.out.valid_samplesheet.map {      meta, valid_samplesheet      -> [[project_id:meta.project_id], valid_samplesheet]}, by: [[0][0],[0][1]])
+            // for samples that were created with entry PHX
+            GRIPHIN_NO_PUBLISH (
+                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
+                CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
+                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
+                params.coverage, true, false, true, shigapass_var, false, params.bldb, false
+            )
+            ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
-        // combine griphin files, the new one just created and the old one that was found in the project dir. 
-        UPDATE_GRIPHIN (
-            griphins_ch.map{ meta, old_excel, new_excel, directory -> [ old_excel, new_excel ] }, 
-            griphins_ch.map{ meta, old_excel, new_excel, directory -> directory },
-            griphins_ch.map{ meta, old_excel, new_excel, directory -> meta.project_id.toString().split('/')[-1] },
-            //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
-            [],
-            params.coverage,
-            params.bldb,
-            false
-        )
-        ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
+            // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
+            griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten().collate(2)
+                                    .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
+
+            // join old and new griphins for combining
+            griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
+                .join(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [0])\
+                .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [0])
+
+            // combine griphin files, the new one just created and the old one that was found in the project dir. 
+            UPDATE_GRIPHIN (
+                griphins_ch.map{ meta, old_excel, new_excel, directory -> [ old_excel, new_excel ] }, 
+                griphins_ch.map{ meta, old_excel, new_excel, directory -> directory },
+                griphins_ch.map{ meta, old_excel, new_excel, directory -> meta.project_id },
+                //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
+                [],
+                params.coverage,
+                params.bldb,
+                true
+            )
+            ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
+
+            griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report
+            griphin_report = UPDATE_GRIPHIN.out.griphin_report
+        }
 
         /// need to figure out how to do this on a per directory 
         // Collecting the software versions
@@ -418,8 +478,8 @@ workflow UPDATE_PHOENIX_WF {
         gamma_ar         = GAMMA_AR.out.gamma
         phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
         //output for phylophoenix
-        griphin_tsv      = UPDATE_GRIPHIN.out.griphin_tsv_report
-        griphin_excel    = UPDATE_GRIPHIN.out.griphin_report
+        griphin_tsv      = griphin_tsv_report
+        griphin_excel    = griphin_report
         //dir_samplesheet  = UPDATE_CDC_GRIPHIN.out.converted_samplesheet
 }
 

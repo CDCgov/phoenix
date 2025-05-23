@@ -5,15 +5,11 @@ process MLST {
     container 'quay.io/jvhagey/mlst@sha256:14c4ef46ab0614d8de6ad6f2b1edd1820fea29f08ac12c31339701003b8b5266'
 
     input:
-    tuple val(meta), path(fasta), val(fairy_outcome), path(taxonomy)
+    tuple val(meta), path(fasta), path(taxonomy)
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsv
     path("versions.yml")          , emit: versions
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     // helps set correct paths to get database version being used

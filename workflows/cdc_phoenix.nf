@@ -557,24 +557,28 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
-        // Collect all the summary files prior to fetch step to force the fetch process to wait
-        failed_summaries_ch = SPADES_WF.out.line_summary.collect().ifEmpty(params.placeholder) // if no failures pass empty file to keep it moving...
         // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{ meta, line_summary -> [line_summary]}.collect().ifEmpty( [] )
 
+        /*/ get spades failure files
+        failed_summaries_ch = SPADES_WF.out.line_summary_failure.filter{ meta, file ->
+            def content = file.text
+            return content.contains("SPAdes_Failure")}
+
         // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
         FETCH_FAILED_SUMMARIES (
-            outdir_path, failed_summaries_ch, summaries_ch
+            failed_summaries_ch
         )
-        ch_versions = ch_versions.mix(FETCH_FAILED_SUMMARIES.out.versions)
+        ch_versions = ch_versions.mix(FETCH_FAILED_SUMMARIES.out.versions)*/
 
         // combine all line summaries into one channel
-        spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line
-        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )\
-        .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
-        .ifEmpty( [] )
+        //spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line.collect().ifEmpty([])
+        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty([])\
+        .combine(SPADES_WF.out.summary_line.collect().ifEmpty([]))\
+        .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty([]))\
+        .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty([]))\
+        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty([]))\
+        .ifEmpty([])
 
         // if centar was run, pull in species specific files
         if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
@@ -585,9 +589,9 @@ workflow PHOENIX_EXQC {
 
         // pulling it all together
         if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
-            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+            all_summaries_ch = summaries_ch.combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
         } else {
-            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_files_ch)
+            all_summaries_ch = summaries_ch.combine(fairy_summary_ch).combine(shigapass_files_ch)
         }
 
         // Combining sample summaries into final report

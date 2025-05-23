@@ -4,9 +4,8 @@ process FETCH_FAILED_SUMMARIES {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    path(directory)
-    path(failed_summaries)
-    path(summaries)
+    tuple val(meta), path(failed_summaries)
+    //path(summaries)
 
     output:
     path('*_summaryline.tsv'), emit: spades_failure_summary_line
@@ -16,20 +15,8 @@ process FETCH_FAILED_SUMMARIES {
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    #for each summaryline_failure.tsv file check to see if 'SPAdes_Failure' is in the file.
-    if [ -f ${directory}/*/*_summaryline_failure.tsv ]; then
-        for file in ${directory}/*/*_summaryline_failure.tsv; do 
-            if grep -q SPAdes_Failure "\$file"; then
-                # if so then add the sample name to the front of the file and move it to the correct place.
-                fname=\$(basename \$file _summaryline_failure.tsv)
-                cp \$file \${fname}_summaryline.tsv
-                mv \$file ${directory}/\${fname}/\${fname}_summaryline.tsv
-            fi
-        done
-    # If the summarylines file doesn't exist then just create an empty file. 
-    else
-        touch empty_summaryline.tsv
-    fi
+    #summaryline_failure.tsv rename and publish
+    mv ${meta.id}_summaryline_failure.tsv ${meta.id}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
