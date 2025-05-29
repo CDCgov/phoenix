@@ -2,27 +2,26 @@ process CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS {
     label 'process_low'
     tag "${project_id_dir}"
 
+
+    // Requires `pyyaml` which does not have a dedicated container but is in the MultiQC container
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/multiqc:1.14--pyhdfd78af_0' :
         'quay.io/biocontainers/multiqc:1.14--pyhdfd78af_0' }"
 
     input:
-    path versions
-    path project_path
+    path(versions)
+    path(project_id_dir)
+    val(project_dir_val)
 
-//    output:
-//    path 'CENTAR_software_versions.yml',        emit: yml
-//    path "software_versions_mqc.yml", emit: mqc_yml
-//    path "versions.yml",              emit: versions
+    output:
+    path "software_versions.yml"    , emit: yml
+    path "software_versions_mqc.yml", emit: mqc_yml
+    path "versions.yml"             , emit: versions
+
+    // 📦 This replaces the logic in modules.config. Must use a seperate val var because of runtime restrictions
+    publishDir "${project_dir_val}/centar_pipeline_info", mode: 'copy', pattern: '*_versions.yml'
 
     script:
-    """
-    dumpsoftwareversions_mod_with_out.py \
-        --versions ${versions} \
-        --outdir ${project_path} \
-        --workflow_name ${workflow.manifest.name} \
-        --workflow_version ${workflow.manifest.version} \
-        --nextflow_version ${workflow.nextflow.version} \
-        --source "CENTAR"
-    """
+    def args = task.ext.args ?: ''
+    template 'dumpsoftwareversions.py'
 }
