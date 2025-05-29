@@ -10,7 +10,7 @@ process CHECK_SHIGAPASS_TAXA {
     output:
     tuple val(meta), path('edited/*.fastANI.txt'), emit: ani_best_hit
     //tuple val(meta), path("${meta.id}.tax"), emit: tax_file
-    path("versions.yml"),                   emit: versions
+    path("versions.yml"),                          emit: versions
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.

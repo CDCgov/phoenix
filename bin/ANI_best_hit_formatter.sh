@@ -82,7 +82,7 @@ fi
 topline=$(head -n1 ${ani_file})
 percent_id=$(head -n1 ${ani_file} | cut -d$'\t' -f3)
 if (( $(echo "${percent_id} < 80" | $bc_path -l) )); then
-	echo -e "Mash/FastANI Error: No hits above an ANI value >=80%" > "${sample_name}_${db_name}_initial.fastANI.txt"
+	echo -e "Mash/FastANI Error: No hits above an ANI value >=80%" > "${sample_name}_${db_name}.fastANI_initial.txt"
 else
 	sorted_ani=${ani_file//.txt/.sorted.txt}
 
@@ -117,8 +117,8 @@ else
 	best_organism_guess="${best_genus} ${best_species}"
 
 	#Creates a line at the top of the file to show the best match in an easily readable format that matches the style on the MMB_Seq log
-	echo -e "% ID	% Coverage	Organism	Source File" > "${sample_name}_${db_name}_initial.fastANI.txt"
-	echo -e "${best_percent}	${best_coverage}	${best_organism_guess}	${best_file}" >> "${sample_name}_${db_name}_initial.fastANI.txt"
+	echo -e "% ID	% Coverage	Organism	Source File" > "${sample_name}_${db_name}.fastANI_initial.txt"
+	echo -e "${best_percent}	${best_coverage}	${best_organism_guess}	${best_file}" >> "${sample_name}_${db_name}.fastANI_initial.txt"
 
 	### Add headers to file for Splunk integration
 	# sed 1i 'Isolate_Assembly_File	RefSEQ_Assembly_File	ANI_value	Mtaching_fragments	Total_fragments' "${sorted_ani}"

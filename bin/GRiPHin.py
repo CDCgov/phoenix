@@ -278,7 +278,7 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
 
 def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
                     assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,\
-                    MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage, srst2_warning):
+                    MLST_scheme_1, MLST_scheme_2, scheme_guess, genus, fastani_warning, busco_id, FastANI_ID, FastANI_coverage, srst2_warning, QC_reason):
     """
     <1,000,000 total reads for each raw and trimmed reads - Total_Sequenced_reads
     % raw and trimmed reads with Q30 average for R1 (<90%) and R2 (<70%) - Q30_R1_percent, Q30_R2_percent
@@ -330,7 +330,10 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         if float(Asmbld_Genus_percent) <float(70.00):
             warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     elif scaffolds == "Unknown" and Wt_asmbld_unclassified_percent == "Unknown" and Asmbld_Genus_percent == "Unknown":
-        warnings.append("No assembly file found possible SPAdes failure.")
+        if "No assembly due to:" in QC_reason: # if there is already a QC reason for no assembly then don't add this warning
+            pass
+        else:
+            warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
         warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
@@ -702,7 +705,6 @@ def parse_ani(fast_ani_file):
     else:
         fastani_warning = ""
         ani_df = pd.read_csv(fast_ani_file, sep='\t', header=0) # should only be one line long.
-        print(ani_df)
         ID = ani_df["% ID"][0]
         coverage = ani_df["% Coverage"][0]
         organism = ani_df["Organism"][0].replace("-chromosome", "")
@@ -712,7 +714,6 @@ def parse_ani(fast_ani_file):
             organism = organism.replace("sp.","sp. ")
         source_file = ani_df["Source File"][0]
         #Species_Support = str(ID) + "%ID-" + str(coverage) + "%COV-" + organism + "(" + source_file + ")" #old way of reporting
-        print(organism)
         FastANI_output_list = [source_file, ID, coverage, organism]
         # get taxa to check mlst scheme
         scheme_guess = organism.split(' ')[0][0].lower() + organism.split(' ')[1][0:4]
@@ -954,7 +955,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
                                     Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent,\
                                     kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, MLST_scheme_1, MLST_scheme_2, scheme_guess,\
-                                    genus, fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2], srst2_warning)
+                                    genus, fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2], srst2_warning, QC_reason)
     except:
         warnings = ""
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
@@ -1466,7 +1467,6 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Headers
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
     if "PHX_Version" in df.columns:
-        print("PHX_Version in df.columns")
         worksheet.merge_range('A1:D1', "PHoeNIx Summary", cell_format_light_blue)
         worksheet.merge_range('E1:R1', "QC Metrics", cell_format_grey_blue)
     else: # allow for backward compatibility with versions <2.2.0
@@ -1476,23 +1476,18 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # Find start and end column letters
     # to allow backwards compatability with v2.1.1 we need a little try and catch...  
     if "Final_Taxa_ID" in df.columns:
-        print("Final_Taxa_ID in df.columns")
-        print(df.columns)
         taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
-        print(taxa_start_col)
     elif "Taxa_Source" in df.columns:
         taxa_start_col  = column_letter(list(df.columns).index("Taxa_Source"))  # Get index of start column
     else:
         raise ValueError("Final_Taxa_ID and Taxa_Source in the created dataframe. Something went wrong, please open a github issue to report the problem.")
     taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
-    print(taxa_end_col)
     # Dynamically merge based on start and end column
     worksheet.merge_range(f"{taxa_start_col}1:{taxa_end_col}1", "Taxonomic Information", cell_format_green)
     #MLST columns 
     # Define start and end column based on centar condition
     mlst_start_col = column_letter(list(df.columns).index("Primary_MLST_Scheme"))  # Get index of start column
     if centar:
-        print("centar is true")
         mlst_end_col = column_letter(list(df.columns).index("MLST Clade"))  # Use "MLST Clade" if centar is True
     else:
         mlst_end_col = column_letter(list(df.columns).index("Secondary_MLST_Alleles"))  # Otherwise, use "Secondary_MLST_Alleles"

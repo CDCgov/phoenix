@@ -28,10 +28,10 @@ def get_taxa(taxa_file):
         for line in f:
             if line.startswith("G:"):
                 genus_match = line.split(":")[1]
-                genus_match = re.sub( "\d+|\n|\s|\.", '', genus_match)
+                genus_match = re.sub(r"\d+|\n|\s|\.", '', genus_match)
             if line.startswith("s:"):
                 species_match = line.split(":")[1]
-                species_match = re.sub( "\d+|\n|\.|\s", '', species_match)
+                species_match = re.sub(r"\d+|\n|\.|\s", '', species_match)
         gen_sp = genus_match + "_" + species_match
     return genus_match, species_match, gen_sp
 

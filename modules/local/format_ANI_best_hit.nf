@@ -37,11 +37,11 @@ process FORMAT_ANI {
         ${ica}ANI_best_hit_formatter.sh -a ${ani_file} -n ${prefix} -d \${db_version} ${terra}
 
         # since we need to check any files that have Escherichia or Shigella in them we will rename files
-        if grep -qE "Escherichia|Shigella" "${prefix}_\${db_version}_initial.fastANI.txt"; then
-            mv ${prefix}_\${db_version}_initial.fastANI.txt ${prefix}_\${db_version}.to_check_fastANI.txt
+        if grep -qE "Escherichia|Shigella" "${prefix}_\${db_version}.fastANI_initial.txt"; then
+            mv ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.to_check_fastANI.txt
         else
-            cp ${prefix}_\${db_version}_initial.fastANI.txt ${prefix}_\${db_version}.to_check_fastANI.txt
-            mv ${prefix}_\${db_version}_initial.fastANI.txt ${prefix}_\${db_version}.fastANI.txt
+            cp ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.to_check_fastANI.txt
+            mv ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.fastANI.txt
         fi
     fi
 
