@@ -212,14 +212,21 @@ workflow RUN_CENTAR {
             griphin_report = CENTAR_GRIPHIN_INDIR.out.griphin_report
 
             // to be able to create software_versions.yml 
-            software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml') // combine with CENTAR_GRIPHIN.out to ensure this runs after
+            software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
+
+            // Combine with griphin_report to delay execution
+            software_versions_ch
                 .combine(griphin_report)
-                .map{version, meta_file, griphin -> [meta_file.splitText().first().toString().trim(), version]}
+                .map { version, griphin_file ->
+                    def project_dir = griphin_file.getParent()
+                    tuple(version, file(project_dir), project_dir.toString())
+                }
+                .set { software_versions_triplets }
             
-            // Collecting the software versions
-            CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-                software_versions_ch.map{meta_file, version -> version},
-                software_versions_ch.map{projectDir, version -> projectDir}
+            CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS(
+                software_versions_triplets.map { v, p, s -> v },
+                software_versions_triplets.map { v, p, s -> p },
+                software_versions_triplets.map { v, p, s -> s }
             )
 
         } else if (params.input !=null) { // --input
@@ -339,77 +346,50 @@ workflow RUN_CENTAR {
 
             griphin_report = UPDATE_CENTAR_GRIPHIN_MULTI_DIR.out.griphin_report.mix(UPDATE_CENTAR_GRIPHIN.out.griphin_report).mix(CENTAR_GRIPHIN_INPUT.out.griphin_report)
 
-            // First, collect all unique directories where Griphin was run
-            unique_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch
-                .map { meta, dir -> dir }
-                .unique()
+            if (params.outdir != "${launchDir}/phx_output") {
+                // Single outdir: just emit to that one
+                software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
 
-            // Wait for griphin step to complete before proceeding with version output
-            griphin_complete_ch = griphin_report.map { it -> true }.collect()
+                software_versions_ch
+                    .combine(outdir_path)
+                    .map { version_file, dir_path ->
+                        def path_obj = file(dir_path)
+                        def val_obj = dir_path.toString()
+                        tuple(version_file, path_obj, val_obj)
+                    }
+                    .set { software_versions_per_dir }
 
-            // Create a channel that combines versions with each directory
-            software_versions_for_dirs_ch = ch_versions
-                .unique()
-                .collectFile(name: 'collated_versions.yml')
-                .combine(griphin_complete_ch)  // Wait for griphin completion with minimal overhead
-                .combine(unique_directories_ch)  // Get all directories
-                .transpose()  // Transpose the combined channel to pair each versions_file with its corresponding directory
-                .map { versions_file, _, dir -> [versions_file, dir] }  // Clean up format
+                CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS(
+                    software_versions_per_dir.map { v, p, s -> v },
+                    software_versions_per_dir.map { v, p, s -> p },
+                    software_versions_per_dir.map { v, p, s -> s }
+                )
 
-            software_versions_for_dirs_ch.view()
-
-            // Call CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS to generate software version reports for each directory.
-            // This ensures that each directory has an associated versions.yml file for tracking software versions used in the workflow.
-            CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-                software_versions_for_dirs_ch.map { versions_file, dir -> versions_file },
-                software_versions_for_dirs_ch.map { versions_file, dir -> dir }
-                
-            )
-            // First, collect all unique directories where Griphin was run
-            unique_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch
-                .map { meta, dir -> dir }
-                .unique()
-
-            // Wait for griphin step to complete before proceeding with version output
-            griphin_complete_ch = griphin_report.map { it -> true }.collect()
-
-            // Create a channel that combines versions with each directory
-            software_versions_for_dirs_ch = ch_versions
-                .unique()
-                .collectFile(name: 'collated_versions.yml')
-                .combine(griphin_complete_ch)  // Wait for griphin completion with minimal overhead
-                .combine(unique_directories_ch)  // Get all directories
-                .transpose()  // Transpose the combined channel to pair each versions_file with its corresponding directory
-                .map { versions_file, _, dir -> [versions_file, dir] }  // Clean up format
-
-            software_versions_for_dirs_ch.view()
-
-            // Call CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS to generate software version reports for each directory.
-            // This ensures that each directory has an associated versions.yml file for tracking software versions used in the workflow.
-            CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-                software_versions_for_dirs_ch.map { versions_file, dir -> versions_file },
-                software_versions_for_dirs_ch.map { versions_file, dir -> dir }
-                
-            )
+            } else {
+                // Multiple project output dirs
+                software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
+                project_dirs_ch = update_griphin_ch
+                    .map{meta, old_griphin_excel, griphin_excel, dir -> dir}
+                    .mix(update_griphin_multi_dir_ch
+                        .map{meta, old_griphin_excel, griphin_excel, dir -> dir})
+                    .distinct()
+                software_versions_ch
+                    .combine(project_dirs_ch)
+                    .map { version_file, dir_path ->
+                        def path_obj = file(dir_path)
+                        def val_obj = dir_path.toString()
+                        tuple(version_file, path_obj, val_obj)
+                    }
+                    .set { software_versions_per_dir }
+                CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS(
+                    software_versions_per_dir.map { v, p, s -> v },
+                    software_versions_per_dir.map { v, p, s -> p },
+                    software_versions_per_dir.map { v, p, s -> s }
+                )
+            }
         } else {
             exit 1, "You shouldn't be here, please open a github issue to report."
         }
-
-        if (params.outdir != "${launchDir}/phx_output"){
-            // to be able to create software_versions.yml 
-            software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml') // combine with CENTAR_GRIPHIN.out to ensure this runs after
-                .combine(outdir_path).combine(griphin_report).map{version, outdir_path, griphin -> [outdir_path, version]}
-        } else {
-            // to be able to create software_versions.yml 
-            software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml') // combine with CENTAR_GRIPHIN.out to ensure this runs after
-                .combine(griphin_report).map{version, meta_file, griphin -> [meta_file.splitText().first().toString().trim(), version]}
-        }
-
-        // Collecting the software versions
-        CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-            software_versions_ch.map{meta_file, version -> version},
-            software_versions_ch.map{projectDir, version -> projectDir}
-        )
         
 
     emit:
