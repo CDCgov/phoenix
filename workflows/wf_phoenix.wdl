@@ -34,6 +34,7 @@ workflow phoenix_workflow {
   output {
     #phoenix summary output values
     File?   work_files                        = phoenix.work_files
+    String  project_dir                       = phoenix.project_dir
     String  phoenix_version                   = phoenix.phoenix_version
     String  phoenix_docker                    = phoenix.phoenix_docker
     String  analysis_date                     = phoenix.analysis_date

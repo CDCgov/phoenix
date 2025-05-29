@@ -4,6 +4,7 @@ task update_phoenix {
   input {
     String   ch_input
     String   samplename
+    String   project_directory
     String   kraken2db = "null"
     Int?     coverage = 30
     Int      memory = 64
@@ -18,8 +19,8 @@ task update_phoenix {
     #download phoenix code to get the script from
     nextflow clone cdcgov/phoenix -r $version ./$version/
     # Make sample form
-    echo "sample,fastq_1,fastq_2" > sample.csv
-    echo "~{samplename},~{read1},~{read2}" >> sample.csv
+    echo "sample,directory" > sample.csv
+    echo "~{samplename},~{project_directory}" >> sample.csv
     # Run PHoeNIx
     mkdir ~{samplename}
     cd ~{samplename}
@@ -67,6 +68,7 @@ task update_phoenix {
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee WARNINGS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
     if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "UPDATE_PHOENIX" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
@@ -128,6 +130,7 @@ task update_phoenix {
   >>>
   output {
     File?   work_files                        = "work.tar.gz"
+    String  project_dir                       = read_string("PROJECT_DIR")
     String  phoenix_version                   = read_string("VERSION")
     String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.2.0"
     String  analysis_date                     = read_string("DATE")

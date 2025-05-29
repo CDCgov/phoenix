@@ -8,6 +8,7 @@ workflow update_phoenix {
   }
   input {
     String  samplename
+    String  project_directory
     Int?    coverage
   }
   call update_phoenix_nf.update_phoenix {
