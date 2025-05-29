@@ -2,16 +2,13 @@ version 1.0
 
 task update_phoenix {
   input {
-    Array[File]? phoenix_tsv_summaries
-    Array[File]? griphin_xlsx_summaries
-    Array[File]? griphin_tsv_summaries
-    Array[File]? ncbi_biosample_excel_files
-    Array[File]? ncbi_sra_excel_files
-    String? combined_phoenix_tsv_prefix
-    String? combined_griphin_xlsx_prefix
-    String? combined_griphin_tsv_prefix
-    String? combined_ncbi_biosample_xlsx_prefix
-    String? combined_ncbi_sra_xlsx_prefix
+    String   ch_input
+    String   samplename
+    String   kraken2db = "null"
+    Int?     coverage = 30
+    Int      memory = 64
+    Int      cpu = 8
+    Int      disk_size = 100
   }
   command <<<
     version="v2.2.0-dev"
@@ -20,216 +17,193 @@ task update_phoenix {
 
     #download phoenix code to get the script from
     nextflow clone cdcgov/phoenix -r $version ./$version/
+    # Make sample form
+    echo "sample,fastq_1,fastq_2" > sample.csv
+    echo "~{samplename},~{read1},~{read2}" >> sample.csv
+    # Run PHoeNIx
+    mkdir ~{samplename}
+    cd ~{samplename}
+    #set input variable
+    input_file="--input ../sample.csv"
+    #set scaffold as blank variable
 
-    # create file name depending on the user picked prefix
-    if [ ! -z "~{combined_phoenix_tsv_prefix}" ]; then
-      out_command="--out ~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
-      combined_phoenix_tsv_summary_name="~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv"
+    # set shigapass db path
+    shigapass_db="/opt/conda/envs/phoenix/share/shigapass-1.5.0/db"
+
+    #checking variables
+    echo $version
+    echo $input_file
+
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry UPDATE_PHOENIX --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --shigapass_database $shigapass_db; then
+      # Everything finished, pack up the results and clean up
+      #tar -cf - work/ | gzip -n --best > work.tar.gz
+      rm -rf .nextflow/ work/
+      cd ..
+      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz
     else
-      out_command="--out Phoenix_Summary.tsv"
-      combined_phoenix_tsv_summary_name="Phoenix_Summary.tsv"
-    fi
-    if [ ! -z "~{combined_griphin_xlsx_prefix}" ]; then
-      out_griphin_xlsx_command="--out ~{combined_griphin_xlsx_prefix}"
-      combined_griphin_xlsx_summary_name="~{combined_griphin_xlsx_prefix}_GRiPHin_Summary.xlsx"
-    else
-      out_griphin_xlsx_command=""
-      combined_griphin_xlsx_summary_name="GRiPHin_Summary.xlsx"
-    fi
-    if [ ! -z "~{combined_griphin_tsv_prefix}" ]; then
-      out_griphin_tsv_command="--out ~{combined_griphin_tsv_prefix}"
-      combined_griphin_tsv_summary_name="~{combined_griphin_tsv_prefix}_GRiPHin_Summary.tsv"
-    else
-      out_griphin_tsv_command=""
-      combined_griphin_tsv_summary_name="GRiPHin_Summary.tsv"
-    fi
-    if [ ! -z "~{combined_ncbi_sra_xlsx_prefix}" ]; then
-      out_ncbi_sra_command="--sra_output ~{combined_ncbi_sra_xlsx_prefix}"
-      combined_ncbi_sra_summary_name="~{combined_ncbi_sra_xlsx_prefix}_Sra_Microbe.1.0.xlsx"
-    else
-      out_ncbi_sra_command=""
-      combined_ncbi_sra_summary_name="Sra_Microbe.1.0.xlsx"
-    fi
-    if [ ! -z "~{combined_ncbi_biosample_xlsx_prefix}" ]; then
-      out_ncbi_biosample_command="--biosample_output ~{combined_ncbi_biosample_xlsx_prefix}"
-      combined_ncbi_biosample_summary_name="~{combined_ncbi_biosample_xlsx_prefix}_BiosampleAttributes_Microbe.1.0.xlsx"
-    else
-      out_ncbi_biosample_command=""
-      combined_ncbi_biosample_summary_name="BiosampleAttributes_Microbe.1.0.xlsx"
-    fi 
-
-    #if phoenix tsv files were passed then combine them
-    busco_array=()
-    if [ ! -z "~{sep=',' phoenix_tsv_summaries}" ]; then
-      echo "Combining and creating ${combined_phoenix_tsv_summary_name}"
-      COUNTER=1
-      PHX_ARRAY=(~{sep=',' phoenix_tsv_summaries})
-      for i in ${PHX_ARRAY//,/ }; do
-        echo "found $i copying to Phoenix_Summary_${COUNTER}.tsv"
-        cp $i ./Phoenix_Summary_${COUNTER}.tsv ;
-        #check if the phoenix summaries were run with CDC_PHOENIX or PHOENIX. They need to be the same.
-        busco_check=$(head -n 1 Phoenix_Summary_${COUNTER}.tsv | cut -d$'\t' -f9)
-        if [ "$busco_check" == "BUSCO" ]; then
-          busco_array+=(true)
-          cdc_phoenix="--busco"
-        else
-          busco_array+=(false)
-          cdc_phoenix=""
-        fi
-        COUNTER=$((COUNTER + 1))
-      done
-        # Check if all elements have the same boolean value
-        # printf prints each element of the array on a new line, then sorts and counts the unique lines using.
-        if [[ $(printf "%s\n" "${busco_array[@]}" | sort -u | wc -l) -eq 1 ]]; then
-          echo "Phoenix_Summary.tsv files passed check for the same entry point. Starting to combine files."
-          # here the variable cdc_phoenix is the same as the busco argument
-          python3 ./$version/bin/Create_phoenix_summary_tsv.py $out_command $cdc_phoenix
-        else
-          echo "ERROR: Phoenix_Summary.tsv files are a mix of CDC_PHOENIX and PHOENIX outputs and they need to be the same."
-          exit 1
-        fi
-
-      #check if the file is empty (aka has something in the 2nd line) and if it is then delete it to cause failure
-      if [[ "$(wc -l <${combined_phoenix_tsv_summary_name})" -eq 1 ]]; then
-        echo "ERROR: Phoenix_Summary.tsv only contains a single line. Combination failed."
-        rm -r ${combined_phoenix_tsv_summary_name}
-        exit 1
-      fi
-    # if array is empty
-    else
-      echo "WARNING: No Phoenix_Summary.tsv files provided skipping Phoenix_Summary.tsv combining step."
-    fi
-
-    #if griphin xlsx files were passed then combine them
-    if [ ! -z "~{sep=',' griphin_xlsx_summaries}" ]; then
-      echo "Combining and creating ${combined_griphin_xlsx_summary_name}"
-      COUNTER=1
-      GRIPHIN_ARRAY=(~{sep=',' griphin_xlsx_summaries})
-      for i in ${GRIPHIN_ARRAY//,/ }; do
-        echo "found $i copying to GRiPHin_${COUNTER}_Summary.xlsx"
-        cp $i ./GRiPHin_${COUNTER}_Summary.xlsx ;
-        COUNTER=$((COUNTER + 1))
-      done
-
-      ## combine griphin summaries. In the script it determines if phx or cdc_phx was run.
-      python3 ./$version/bin/terra_combine_griphin.py $out_griphin_xlsx_command
-
-      # If GRiPHin files were passed, but not a summary made at the end then throw an error
-      if [ ! -s "${combined_griphin_xlsx_summary_name}" ]; then
-        echo "ERROR: GRiPHin excel files were passed, but no combination file was made."
-        ls
-        exit 1
-      fi
-    # if array is empty
-    else
-      echo "WARNING: No GRiPHin_Summary.xlsx files provided skipping GRiPHin_Summary.xlsx combining step."
-    fi
-
-    #if griphin tsv files were passed then combine them
-    busco_gripin_array=()
-    if [ ! -z "~{sep=',' griphin_tsv_summaries}" ]; then
-      echo "Combining and creating ${combined_griphin_tsv_summary_name}"
-      COUNTER=1
-      GRIPHIN_ARRAY_TSV=(~{sep=',' griphin_tsv_summaries})
-      for i in ${GRIPHIN_ARRAY_TSV//,/ }; do
-        echo "found $i copying to GRiPHin_${COUNTER}_Summary.tsv"
-        cp $i ./GRiPHin_${COUNTER}_Summary.tsv ;
-        COUNTER=$((COUNTER + 1))
-      done
-
-      ## combine griphin reports. In the script it determines if phx or cdc_phx was run.
-      python3 ./$version/bin/terra_combine_griphin_tsv.py $out_griphin_tsv_command
-
-      # If GRiPHin files were passed, but not a summary made at the end then throw an error
-      if [ ! -s "${combined_griphin_tsv_summary_name}" ]; then
-        echo "ERROR: GRiPHin tsv files were passed, but no combination file was made."
-        ls
-        exit 1
-      fi
-    # if array is empty
-    else
-      echo "WARNING: No GRiPHin_Summary.tsv files provided skipping GRiPHin_Summary.tsv combining step."
-    fi
-
-  #if ncbi biosampe excel files were passed then combine them
-  if [ ! -z "~{sep=',' ncbi_biosample_excel_files}" ]; then
-    echo "Combining and creating ${combined_ncbi_biosample_summary_name}"
-    COUNTER=1
-    BIOSAMPLE_ARRAY_EXCEL=(~{sep=',' ncbi_biosample_excel_files})
-    for i in ${BIOSAMPLE_ARRAY_EXCEL//,/ }; do
-      echo "found $i copying to BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx"
-      cp $i ./BiosampleAttributes_${COUNTER}_Microbe.1.0.xlsx ;
-      COUNTER=$((COUNTER + 1))
-    done
-
-    ## combine ncbi biosample excel files. In the script it determines if phx or cdc_phx was run.
-    python3 ./$version/bin/terra_combine_ncbi_excel.py $out_ncbi_biosample_command
-
-    # If NCBI biosample files were passed, but not a summary made at the end then throw an error
-    if [ ! -s "${combined_ncbi_biosample_summary_name}" ]; then
-      echo "ERROR: BiosampleAttributes_Microbe.1.0.xlsx files were passed, but no combination file was made."
-      ls
+      # Run failed
+      tar -cf - work/ | gzip -n --best > work.tar.gz
+      #save line for debugging specific file - just change "collated_versions.yml" to specific file name
+      find  /mnt/disks/cromwell_root/~{samplename}/ -path "*work*" -name "*.command.err" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /mnt/disks/cromwell_root/~{samplename}/ -path "*work*" -name "*.command.out" | xargs -I {} bash -c "echo {} && cat {}"
+      find  /mnt/disks/cromwell_root/~{samplename}/ -name "*.nextflow.log" | xargs -I {} bash -c "echo {} && cat {}"
       exit 1
     fi
-  # if array is empty
-  else
-    echo "WARNING: No NCBI excel files provided skipping NCBI excel combining steps."
-  fi
 
-  if [ ! -z "~{sep=',' ncbi_sra_excel_files}" ]; then
-    echo "Combining and creating ${combined_ncbi_sra_summary_name}"
-    COUNTER=1
-    SRA_ARRAY_EXCEL=(~{sep=',' ncbi_sra_excel_files})
-    for i in ${SRA_ARRAY_EXCEL//,/ }; do
-      echo "found $i copying to Sra_${COUNTER}_Microbe.1.0.xlsx"
-      cp $i ./Sra_${COUNTER}_Microbe.1.0.xlsx ;
-      COUNTER=$((COUNTER + 1))
-    done
+    # Get N50 from Quast file
+    grep '^N50' ~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv | awk -F '\t' '{print $2}' | tee N50
 
-    ## combine sra excel files. In the script it determines if phx or cdc_phx was run.
-    python3 ./$version/bin/terra_combine_ncbi_excel.py $out_ncbi_sra_command
+    # Get AMRFinder+ output
+    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$12}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CLASSES
+    awk -F '\t' '{ if($8 == "core") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CORE_GENES
+    awk -F '\t' '{ if($8 == "plus") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_PLUS_GENES
+    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$13}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_SUBCLASSES
+    awk -F '\t' '{ if($9 == "STRESS") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_STRESS_GENES
+    awk -F '\t' '{ if($9 == "VIRULENCE") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
+    awk -F '\t' '{ if($11 == "BETA-LACTAM") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_BETA_LACTAM_GENES
 
-    # If NCBI biosample files were passed, but not a summary made at the end then throw an error
-    if [ ! -s "${combined_ncbi_sra_summary_name}" ]; then
-      echo "ERROR: Sra_Microbe.1.0.xlsx files were passed, but no combination file was made."
-      ls
+    # Gather Phoenix Output
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee WARNINGS
+    if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "UPDATE_PHOENIX" ]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIGAPASS_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}' | sed 's/ecoli//g' | sed 's/abaumannii//g' | tee MLST1_NCBI
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}' | sed 's/ecoli//g' | sed 's/abaumannii//g'| tee MLST2_NCBI
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+    elif [ ~{entry} == "SCAFFOLDS" ]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
+    elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee SHIGAPASS_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee FASTANI_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
+      # handling for abaumannii and ecoli 2nd schemes, novels
+      if [[ "$(sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}')"=="-_" ]]; then
+        sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32}' | tee MLST1_NCBI
+      elif [[ "$(sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}')"=="*Novel*" ]]; then
+        echo "" | tee MLST1_NCBI
+      else
+        sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
+      fi
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
+      # handling for abaumannii and ecoli 2nd schemes, novels
+      if [[ "$(sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}')"=="-_" ]]; then
+        sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36}' | tee MLST2_NCBI
+      elif [[ "$(sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}')"=="*Novel*" ]]; then
+        echo "" | tee MLST2_NCBI
+      else
+        sed -n 7p Terra_Dash_Failure/Terra_Dash_Failure_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+      fi
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      #sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee QC_REASON
+    else
+      echo "Entry point not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
       exit 1
     fi
-  # if array is empty
-  else
-    echo "WARNING: No NCBI excel files provided skipping NCBI excel combining steps."
-  fi
-
-
-  # series of checks to finish up
-  #check at least one file type was passed, if not then fail.
-  if [ -z "~{sep=',' phoenix_tsv_summaries}" ] && [ -z "~{sep=',' griphin_xlsx_summaries}" ] && [ -z "~{sep=',' griphin_tsv_summaries}" ] && [ -z "~{sep=',' ncbi_sra_excel_files}" ] && [ -z "~{sep=',' ncbi_biosample_excel_files}" ]; then
-    echo "ERROR: No summary files were passed, please pick an array of files to combine."
-    ls
-    exit 1
-  #check that something was made. If no files were created fail to let to user know
-  elif [ ! -s "${combined_phoenix_tsv_summary_name}" ] && [ ! -s "${combined_griphin_tsv_summary_name}" ] && [ ! -s "${combined_griphin_xlsx_summary_name}" ] && [ ! -s "${combined_ncbi_sra_summary_name}" ] && [ ! -s "${combined_ncbi_biosample_summary_name}" ]; then
-    echo "ERROR: No summary files were created something went wrong."
-    ls
-    exit 1
-  fi
-
   >>>
   output {
-    File?   phoenix_tsv_summary     = glob("*Phoenix_Summary.tsv")[0]
-    File?   griphin_xlsx_summary    = glob("*GRiPHin_Summary.xlsx")[0]
-    File?   griphin_tsv_summary     = glob("*GRiPHin_Summary.tsv")[0]
-    File?   biosample_excel_summary = glob("*BiosampleAttributes_Microbe.1.0.xlsx")[0]
-    File?   sra_excel_summary       = glob("*Sra_Microbe.1.0.xlsx")[0]
-    String  phoenix_version         = read_string("VERSION")
-    String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.0.2"
-    String  analysis_date           = read_string("DATE")
+    File?   work_files                        = "work.tar.gz"
+    String  phoenix_version                   = read_string("VERSION")
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.2.0"
+    String  analysis_date                     = read_string("DATE")
+    String  qc_outcome                        = read_string("QC_OUTCOME")
+    String  warnings                          = read_string("WARNINGS")
+    String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
+    String  taxa_source                       = read_string("TAXA_SOURCE")
+    String  shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
+    String  fastani_taxa                      = read_string("FASTANI_TAXA")
+    String  fastani_confidence                = read_string("FASTANI_CONFIDENCE")
+    String  fastani_coverage                  = read_string("FASTANI_COVERAGE") #make string for cases where it's "unknown"
+    String  mlst_scheme_1                     = read_string("MLST_SCHEME_1")
+    String  mlst_1                            = read_string("MLST_1")
+    String  mlst1_ncbi                        = read_string("MLST1_NCBI")
+    String  mlst_scheme_2                     = read_string("MLST_SCHEME_2")
+    String  mlst_2                            = read_string("MLST_2")
+    String  mlst2_ncbi                        = read_string("MLST2_NCBI")
+    String  gamma_beta_lactam_genes           = read_string("GAMMA_BETA_LACTAM_RESISTANCE_GENES")
+    String  other_ar_genes                    = read_string("OTHER_AR_GENES")
+    String  amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")
+    String  amrfinder_amr_classes             = read_string("AMRFINDERPLUS_AMR_CLASSES")
+    String  amrfinder_amr_subclasses          = read_string("AMRFINDERPLUS_AMR_SUBCLASSES")
+    String  amrfinder_core_genes              = read_string("AMRFINDERPLUS_AMR_CORE_GENES")
+    String  amrfinder_plus_genes              = read_string("AMRFINDERPLUS_AMR_PLUS_GENES")
+    String  amrfinder_stress_genes            = read_string("AMRFINDERPLUS_STRESS_GENES")
+    String  amrfinder_virulence_genes         = read_string("AMRFINDERPLUS_VIRULENCE_GENES")
+    String  amrfinder_beta_lactam_genes       = read_string("AMRFINDERPLUS_BETA_LACTAM_GENES")
+    String  hypervirulence_genes              = read_string("HYPERVIRULENCE_GENES")
+    String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
+    String  qc_issues                         = read_string("QC_ISSUES")
+    #summary files
+    File updater_log              =  "phx_output/~{samplename}/~{samplename}_updater_log.tsv"
+    File full_results             = "~{samplename}.tar.gz"
+    File griphin_excel_summary    = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx"
+    File griphin_tsv_summary      = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv"
+    File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
+    #phoenix ani
+    File? fast_ani                 = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20250214.ani.txt"
+    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20250214.fastANI.txt"
+    File? top_20_taxa_matches      = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20250214_best_MASH_hits.txt"
+    File? mash_distance            = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20250214.txt"
+    #phoenix quast and mlst
+    File? mlst_tsv                 = "~{samplename}/phx_output/~{samplename}/mlst/~{samplename}_combined.tsv"
+    # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
+    File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20250519_srst2__results.txt"
+    #phoenix gamma
+    File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250519_srst2.gamma"
+    File? blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250519_srst2.psl"
+    File? gamma_hv_calls           = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
+    File? blat_hv_calls            = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
+    File? gamma_pf_calls           = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20250214.gamma"
+    File? blat_pf_calls            = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20250214.psl"
+    #phoenix output
+    File  summary_line             = "~{samplename}/phx_output/~{samplename}/~{samplename}_summaryline.tsv"
+    File  synopsis                 = "~{samplename}/phx_output/~{samplename}/~{samplename}.synopsis"
+    File? best_taxa_id             = "~{samplename}/phx_output/~{samplename}/~{samplename}.tax"
+    #phoenix amrfinder
+    File? amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations.tsv"
+    File? amrfinder_taxa_match     = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
+    File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv"
+    #species specific
+    File? shigapass_summary       = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_ShigaPass_summary.csv"
+    #File? centar_summary          = "~{samplename}/phx_output/~{samplename}/CENTAR/~{samplename}_centar_output.tsv"
+    #File? centar_ar_AA_gamma      = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_AA_20240910.gamma"
+    #File? centar_ar_NT_gamma      = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_NT_20240910.gamma"
+    #File? centar_tox_gamma        = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_toxins/~{samplename}_Cdiff_toxins_srst2_20240909.gamma"
+    #File? centar_clade            = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
+    #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
+    File versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
+    File? multiqc_output          = "~{samplename}/phx_output/multiqc/multiqc_report.html"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix:2.0.2"
-    memory: "8 GB"
-    cpu: 1
-    disks:  "local-disk 100 SSD"
+    docker: "quay.io/jvhagey/phoenix:2.2.0"
+    memory: "~{memory} GB"
+    cpu: cpu
+    disks:  "local-disk ~{disk_size} SSD"
     maxRetries: 0
     preemptible: 0
   }
