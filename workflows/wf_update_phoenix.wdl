@@ -52,7 +52,7 @@ workflow update_phoenix {
     #phoenix summary output
     File   updater_log             = update_phoenix.updater_log
     File?  phoenix_tsv_summary     = update_phoenix.phoenix_tsv_summary
-    File?  griphin_xlsx_summary    = update_phoenix.griphin_xlsx_summary
+    File?  griphin_excel_summary   = update_phoenix.griphin_excel_summary
     File?  griphin_tsv_summary     = update_phoenix.griphin_tsv_summary
     String phoenix_version         = update_phoenix.phoenix_version
     String phoenix_docker          = update_phoenix.phoenix_docker
