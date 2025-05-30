@@ -570,7 +570,7 @@ workflow {
     //} else if(params.mode =="CENTAR") {
     //    CENTAR()
     } else {
-        exit 1, 'Please select an entry point either: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, and CENTAR'
+        exit 1, 'Please select an entry point either: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, UPDATE_PHOENIX and COMBINE_GRIPHINS'
     }
 }
 
