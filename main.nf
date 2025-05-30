@@ -386,9 +386,6 @@ workflow CLIA {
 // WORKFLOW: Entry point for updating phoenix mlst and ar output
 //
 workflow UPDATE_PHOENIX {
-    //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
     //Regardless of what is passed outdir needs to be the same as the input dir 
     //if you don't pass outdir then the indir
     //if (params.outdir == "${launchDir}/phx_output" ) { params.outdir = params.indir } else { println("You didn't specify an outdir so phx assumes its the same as the indir.") }
@@ -406,7 +403,7 @@ workflow UPDATE_PHOENIX {
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
             exit 1, 'For -entry UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
-            def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
+            def checkPathParamList = [ params.input, params.multiqc_config ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = null //keep input directory null if not passed
             // get full path for input and make channel
@@ -415,7 +412,7 @@ workflow UPDATE_PHOENIX {
     } else {
         if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
             ch_input = null //keep samplesheet input null if not passed
-            def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
+            def checkPathParamList = [ params.indir, params.multiqc_config ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
         } else { // if no samplesheet is passed and no input directory is given
