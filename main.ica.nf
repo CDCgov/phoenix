@@ -10,25 +10,6 @@
 
 nextflow.enable.dsl = 2
 
-/*
-========================================================================================
-    VALIDATE & PRINT PARAMETER SUMMARY
-========================================================================================
-*/
-
-WorkflowMain.initialise(workflow, params, log)
-#!/usr/bin/env nextflow
-/*
-========================================================================================
-    CDCgov/phoenix
-========================================================================================
-    Github : https://github.com/CDCgov/phoenix
-    Slack  : https://staph-b-dev.slack.com/channels/phoenix-dev
-----------------------------------------------------------------------------------------
-*/
-
-nextflow.enable.dsl = 2
-
 // ANSI escape code for orange (bright yellow)
 def orange = '\033[38;5;208m'
 def reset = '\033[0m'
@@ -46,6 +27,8 @@ if (params.coverage.toInteger() < 30) { exit 1, 'The minimum coverage allowed fo
 // Check for incorrect --output parameter
 params.output = "" /// Initialise param so no warning is printed
 if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
+//comment out in v2.3.0 to run --centar
+if (params.centar == true) { exit 1, "Sorry, --centar available yet as it's validation isn't complete. It will be released with a newer version of phx in the future." }
 
 /*
 ========================================================================================
@@ -345,7 +328,7 @@ workflow CDC_SCAFFOLDS {
         phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
 
-//
+/*/
 // WORKFLOW: Entry point for CLIA analysis
 //
 workflow CLIA {
@@ -386,16 +369,113 @@ workflow CLIA {
     main:
         CLIA_INTERNAL ( ch_input, ch_versions )
 
-    /*emit:
+    emit:
         scaffolds        = CLIA_INTERNAL.out.scaffolds
         trimmed_reads    = CLIA_INTERNAL.out.trimmed_reads
         amrfinder_report = CLIA_INTERNAL.out.amrfinder_report
-        summary_report   = CLIA_INTERNAL.out.summary_report*/
+        summary_report   = CLIA_INTERNAL.out.summary_report
+}*/
+
+/*
+========================================================================================
+    RUN PHX Utilities WORKFLOWS
+========================================================================================
+*/
+
+//
+// WORKFLOW: Entry point for updating phoenix mlst and ar output
+//
+workflow UPDATE_PHOENIX {
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
+
+    //Regardless of what is passed outdir needs to be the same as the input dir 
+    //if you don't pass outdir then the indir
+    //if (params.outdir == "${launchDir}/phx_output" ) { params.outdir = params.indir } else { println("You didn't specify an outdir so phx assumes its the same as the indir.") }
+
+    // check config file
+    if (!workflow.configFiles) {
+        error "The -c parameter (configuration file) is missing. If you don't pass this then the default databases for this version of phoenix will be used."
+    }
+
+    // Check mandatory parameters
+    ch_versions = Channel.empty() // Used to collect the software versions
+    // Check input path parameters to see if they exist
+    if (params.input != null ) {  // if a samplesheet is passed
+        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
+        if (params.indir != null ) { //if samplesheet is passed and an input directory exit
+            exit 1, 'For -entry UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory! Just pick one.' 
+        } else { // if only samplesheet is passed check to make sure input is an actual file
+            def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            ch_input_indir = null //keep input directory null if not passed
+            // get full path for input and make channel
+            if (params.input) { ch_input = file(params.input) }
+        }
+    } else {
+        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
+            ch_input = null //keep samplesheet input null if not passed
+            def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
+        } else { // if no samplesheet is passed and no input directory is given
+            exit 1, 'For -entry UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!' 
+        }
+    }
+
+    main:
+        UPDATE_PHOENIX_WF ( ch_input, ch_input_indir, ch_versions )
+
+    emit:
+        mlst             = UPDATE_PHOENIX_WF.out.mlst
+        amrfinder_output = UPDATE_PHOENIX_WF.out.amrfinder_output
+        gamma_ar         = UPDATE_PHOENIX_WF.out.gamma_ar
+        phx_summary      = UPDATE_PHOENIX_WF.out.phx_summary
+        //output for phylophoenix
+        griphin_tsv      = UPDATE_PHOENIX_WF.out.griphin_tsv
+        griphin_excel    = UPDATE_PHOENIX_WF.out.griphin_excel
+}
+
+//
+// WORKFLOW: Entry point for combining multiple griphin files
+//
+workflow COMBINE_GRIPHINS {
+    // Check mandatory parameters
+    ch_versions = Channel.empty() // Used to collect the software versions
+    // Check input path parameters to see if they exist
+    if (params.input != null ) {  // if a samplesheet is passed
+        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
+        if (params.indir != null ) { //if samplesheet is passed and an input directory exit
+            exit 1, 'For -entry COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
+        } else { // if only samplesheet is passed check to make sure input is an actual file
+            def checkPathParamList = [ params.input, params.multiqc_config ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            // get full path for input and make channel
+            if (params.input) { ch_input = file(params.input) }
+            //check outdir
+            if (params.outdir == "${launchDir}/phx_output" ) { 
+                println("${orange}Warning: No outdir was passed, combined griphin file will be saved to the default ${launchDir}/phx_output.${reset}")
+            } else {
+                // Allow outdir to be relative
+                outdir = Channel.fromPath(params.outdir, relative: true)
+            }
+        }
+    } else {
+        exit 1, 'For -entry COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
+    }
+
+    //no griphins to start - they should be in the input samplesheet
+    input_griphins_ch = null
+    //input_griphins_tsv_ch = null
+
+    main:
+        COMBINE_GRIPHINS_WF ( input_griphins_ch, ch_input, outdir, ch_versions )
+
 }
 
 /*
 ========================================================================================
-    RUN Species specific WORKFLOWS
+    RUN Species specific WORKFLOWS - waiting for completed validation to be released with v2.3.0
 ========================================================================================
 */
 
@@ -403,6 +483,9 @@ workflow CLIA {
 // WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
 workflow CENTAR {
+    // comment out to run CENTAR 
+    exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
+
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
     // Check input path parameters to see if they exist
@@ -439,14 +522,14 @@ workflow CENTAR {
                 //griph_out = Channel.fromPath(params.griphin_out, relative: true)
             }
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry CENTAR: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
     //make sure outdir and griphin_out aren't passed at the same time
-    //if (params.griphin_out != null && params.outdir != "${launchDir}/phx_output"){
-    //    exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir." 
-    //}
+    if (params.griphin_out != "${launchDir}" && params.outdir != "${launchDir}/phx_output"){
+        exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir. Please rerun with only one of these parameters." 
+    }
     // check if the wgmlst_container was passed
     if (params.wgmlst_container == null) { println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}") }
 
@@ -480,10 +563,14 @@ workflow {
         SCAFFOLDS()
     } else if(params.mode =="CDC_SCAFFOLDS") {
         CDC_SCAFFOLDS()
-    } else if(params.mode =="CENTAR") {
-        CENTAR()
+    } else if(params.mode =="UPDATE_PHOENIX") {
+        UPDATE_PHOENIX()
+    } else if(params.mode =="COMBINE_GRIPHINS") {
+        COMBINE_GRIPHINS()
+    //} else if(params.mode =="CENTAR") {
+    //    CENTAR()
     } else {
-        exit 1, 'Please select an entry point either: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, and CENTAR'
+        exit 1, 'Please select an entry point either: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, UPDATE_PHOENIX and COMBINE_GRIPHINS'
     }
 }
 

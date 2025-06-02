@@ -174,7 +174,7 @@ workflow UPDATE_PHOENIX_WF {
         ////////////////////////////////////// RUN SHIGAPASS IF IT WASN'T BEFORE AND IS CORRECT TAXA //////////////////////////////////////
 
         // First, create a set of isolate IDs that already have shigapass files --> we will use this to filter and only run samples that don't have shigapass files and need them
-        existing_shigapass_ids = CREATE_INPUT_CHANNELS.out.shigapass.map{ meta, shigapass_file -> [ meta.id ]} //[[id:], []]
+        existing_shigapass_ids = CREATE_INPUT_CHANNELS.out.shigapass.map{ meta, shigapass_file -> [ meta.id ]}.ifEmpty(["none"]) //[[id:], []]
 
         scaffolds_and_taxa_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}
                     .join(CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{                       meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}, by: [[0][0],[0][1]])
@@ -185,9 +185,11 @@ workflow UPDATE_PHOENIX_WF {
                             [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
                             .filter{ meta, taxonomy, filtered_scaffolds, fairy_data -> 
                                 fairy_data[1] == true // Keep only entries where passed is true (no FAILED found)
-                            }.map{   meta, taxonomy, filtered_scaffolds, fairy_data -> return [meta, taxonomy, filtered_scaffolds] }.combine(existing_shigapass_ids)
-                            .filter{ meta, taxonomy, filtered_scaffolds, fairy_data, existing_shigapass_ids -> !existing_shigapass_ids.contains(meta.id)} // Add the filter to exclude isolates that already have shigapass files
-                            .map{    meta, taxonomy, filtered_scaffolds, fairy_data, existing_shigapass_ids -> return [meta, taxonomy, filtered_scaffolds ] }
+                            }.map{   meta, taxonomy, filtered_scaffolds, fairy_data -> [meta, taxonomy, filtered_scaffolds] }.combine(existing_shigapass_ids)
+                            .filter{ meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> existing_shigapass_ids == 'none' || !existing_shigapass_ids.contains(meta.id)}
+                            .map{    meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> [meta, taxonomy, filtered_scaffolds ] }// Add the filter to exclude isolates that already have shigapass files
+
+        scaffolds_and_taxa_ch.view()
 
         /*/ For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
         scaffolds_and_taxa_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}
@@ -225,7 +227,7 @@ workflow UPDATE_PHOENIX_WF {
                                     [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
                                 .filter { meta, filtered_scaffolds, fairy_data -> 
                                     fairy_data[1] // Keep only entries where passed is true (no FAILED found)
-                                    }.map{ meta, filtered_scaffolds, fairy_data -> return [meta, filtered_scaffolds] }
+                                    }.map{ meta, filtered_scaffolds, fairy_data -> [meta, filtered_scaffolds] }
 
         /*/combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
         filtered_scaffolds_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id, project_id:meta.project_id], filtered_scaffolds]}
