@@ -2,10 +2,8 @@ version 1.0
 
 task update_phoenix {
   input {
-    String   ch_input
     String   samplename
     String   project_directory
-    String   kraken2db = "null"
     Int?     coverage = 30
     Int      memory = 64
     Int      cpu = 8
