@@ -27,28 +27,35 @@ workflow CREATE_INPUT_CHANNELS {
 
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
-
+            indir.view { "CIC_indir: $it" }
+//            println("IDGC: ${indir.getClass()}")
             def pattern = params.indir.toString()
+            println("Pattern 1 : ${pattern} ${pattern.getClass()}")
 
             // Create a channel that emits the names of all directories inside the parent directory - we will use this if no samples have a fairy file
-            dir_names_ch = indir.map{ parent -> parent.listFiles()  // Load the directory as a Path channel // Filter only directories and Filter out excluded directories
-                    .findAll { it.isDirectory() && it.listFiles().any{ file -> file.name.endsWith('_summaryline.tsv') } }}.flatten().map{dir -> dir.getName().replaceFirst(pattern, '').replaceFirst("/", '')}.collect() 
-                    .map { items -> new ArrayList<String>(items) }
+            dir_names_ch = indir.map{ parent -> parent.listFiles()  // Load the directory as a Path channel
+                    .findAll { it.isDirectory() && it.listFiles().any{ file -> file.name.endsWith('_summaryline.tsv') } }}.flatten().map{dir -> dir.getName().replaceFirst(pattern, '').replaceFirst("/", '')}.collect() // Filter only directories and Filter out excluded directories
+
+            dir_names_ch.view { "Directory names channel: $it" }
 
             //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
             def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
             passed_id_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter{ it != null }.ifEmpty([])
 
+            passed_id_ch.view { "Passed ID channel: $it" }
+
             // find the samples that do not have a fairy file and create them
-            no_fairy_file_id_ch = passed_id_ch.toList().combine(dir_names_ch.toList()).map{ passed_ids, dir_names -> passed_ids - dir_names}.ifEmpty([])
+            no_fairy_file_id_ch = passed_id_ch.toList().combine(dir_names_ch.toList()).map{ passed_ids, dir_names -> dir_names - passed_ids}.ifEmpty([])
+            no_fairy_file_id_ch.view { "No fairy file ID channel: $it" }
             // print out the samples that did not have a fairy file yet
             no_fairy_file_id_ch.subscribe { result -> if (!result.isEmpty()) { def flat_results = result.flatten().unique().collect() // Check if the channel is empty and print warning for user as this is required for the pipeline
                 println("${orange}Warning: There are no files in */file_integrity/*_summary.txt for ${flat_results}. This/These file(s) is required so we will make it.${reset}")}}
-
+            no_fairy_file_id_ch.view { "No fairy file ID channel after subscription: $it" }
             // Fallback to dir_names_ch if passed_id_channel is empty -- need to get all sample ids
-            passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().unique().collect().toList()
-
+            //passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().unique().collect().toList()
+            passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().flatten().unique().collect().toList()
+            passed_id_channel.view { "Passed ID channel after concat: $it" }
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             // Collect all ids and combine with indir
             isolates_that_need_file_integrity_ch = indir.map{ it -> get_ids(it) }.flatten().combine(indir).combine(no_fairy_file_id_ch).map{ tuple -> def (old_meta, indir, no_fairy_file_id) = tuple  // Safely destructure the combined tuple
@@ -57,10 +64,13 @@ workflow CREATE_INPUT_CHANNELS {
                 def cleanPath = indir.toString().startsWith('./') ? indir.toString()[2..-1] : indir.toString()
                 def cleanerPath = cleanPath.toString().split('/')[-1]
                 meta.project_id = cleanerPath
-                def cleaned_path = new File(cleanerPath).getAbsolutePath()
+                //def cleaned_path = new File(cleanerPath).getAbsolutePath()
+                def cleaned_path = new File(indir.toString()).getAbsolutePath()
                 def file_integrity_exists = !(no_fairy_file_id ?: []).contains(meta.id) // Check if the sample is in has no fairy file
                 //def file_integrity_exists = no_fairy_file_id.contains(meta.id)
-                return [ meta, cleaned_path, file_integrity_exists ]}.filter{ meta, dir, file_integrity_exists -> file_integrity_exists == false } // Filter out samples that already have a fairy file
+                return [ meta, cleaned_path, file_integrity_exists ]} //.filter{ meta, dir, file_integrity_exists -> file_integrity_exists == false } // Filter out samples that already have a fairy file
+
+            isolates_that_need_file_integrity_ch.view { "Isolates that need file integrity channel: $it" }
 
             // Now that we have list of samples that need fairy files created make them
             CREATE_FAIRY_FILE (

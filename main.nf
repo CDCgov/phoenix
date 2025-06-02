@@ -28,7 +28,7 @@ if (params.coverage.toInteger() < 30) { exit 1, 'The minimum coverage allowed fo
 params.output = "" /// Initialise param so no warning is printed
 if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
 //comment out in v2.3.0 to run --centar
-if (params.centar == true) { exit 1, "Sorry, --centar available yet as it's validation isn't complete. It will be released with a newer version of phx in the future." }
+//if (params.centar == true) { exit 1, "Sorry, --centar available yet as it's validation isn't complete. It will be released with a newer version of phx in the future." }
 
 /*
 ========================================================================================
@@ -484,7 +484,7 @@ workflow COMBINE_GRIPHINS {
 //
 workflow CENTAR {
     // comment out to run CENTAR 
-    exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
+//    exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
 
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions

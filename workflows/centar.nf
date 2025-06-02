@@ -148,6 +148,12 @@ workflow RUN_CENTAR {
         outdir_path
 
     main:
+
+//        ch_input_indir.view { "ch_input_indir: $it" }
+//        ch_input.view { "input: $it" }
+//        println ch_input_indir.getClass()
+//        error "Stopping execution: custom reason here"
+
         CREATE_INPUT_CHANNELS (
             ch_input_indir, ch_input, true
         )
@@ -214,11 +220,13 @@ workflow RUN_CENTAR {
             // to be able to create software_versions.yml 
             software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
 
+            griphin_report.view { "griphin_report: $it" }
+
             // Combine with griphin_report to delay execution
             software_versions_ch
                 .combine(griphin_report)
-                .map { version, griphin_file ->
-                    def project_dir = griphin_file.getParent()
+                .map { version, path_file, excel_file ->  // <-- Fixed: 3 parameters now
+                    def project_dir = path_file.text.trim()  // <-- Read contents of path file
                     tuple(version, file(project_dir), project_dir.toString())
                 }
                 .set { software_versions_triplets }

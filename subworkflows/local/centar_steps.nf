@@ -8,7 +8,7 @@ include { CDIFF_CLADE                    } from '../../modules/local/centar/cdif
 include { CDIFF_TOXINOTYPER              } from '../../modules/local/centar/cdiff_toxinotyper'
 //include { CDIFF_PLASMIDS                 } from '../../modules/local/centar/cdiff_plasmids'
 include { GAMMA as CDIFF_TOX_GENES       } from '../../modules/local/gamma'
-include { GAMMA as CDIFF_AR_GENES_ALL    } from '../../modules/local/gamma'
+//include { GAMMA as CDIFF_AR_GENES_ALL    } from '../../modules/local/gamma'
 include { GAMMA as CDIFF_AR_GENES_AA     } from '../../modules/local/gamma'
 include { GAMMA_S as CDIFF_AR_GENES_NT   } from '../../modules/local/gammas'
 include { WGMLST                         } from '../../modules/local/centar/wgmlst'
@@ -105,7 +105,6 @@ def get_taxa(input_ch){
         }
     // Change from Genus species match, to just species. Since Clostridioidesd only has a very small list of species we will go ahead and check all to gauge toxicity
     //return [input_ch[0], "$genus $species" ]
-    println("G`:" + genus+"|S`:" + species)
     return [ input_ch[0], "$genus" ]
 }
 
