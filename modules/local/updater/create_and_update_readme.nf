@@ -5,15 +5,15 @@ process CREATE_AND_UPDATE_README {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    tuple val(meta), path(directory), path(pipeline_info)
+    tuple val(meta), path(directory), path(pipeline_info), path(readme)
     val(current_phx_version)
     path(mlst_db)
     path(ar_db)
     path(amrfinder_db)
 
     output:
-    path('*_updater_log.tsv'), emit: updater_log
-    path("versions.yml"),      emit: versions
+    path('edited/*_updater_log.tsv'), emit: updater_log
+    path("versions.yml"),             emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -34,6 +34,10 @@ process CREATE_AND_UPDATE_README {
         -d ${directory}/${prefix} \\
         -v ${current_phx_version} \\
         -o ${prefix}_updater_log.tsv
+
+    #move to output location for process to complete
+    mkdir edited/
+    mv ${prefix}_updater_log.tsv edited/${prefix}_updater_log.tsv
 
     # since Readme is just being appended we need to create a file to signal we are done
 

@@ -65,10 +65,10 @@ def get_new_database_IDs(mlst_db, amrfinder_db):
     return new_mlst_db, new_amrfinderplus_db
 
 def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new_amrfinderplus_db, output, phoenix_ver, sample_directory, current_phx_version):
-    Gamma_db_updated = old_gamma + " --> " + new_ar_db
-    amrfinder_db_updated = old_amrfinder + " --> " + new_amrfinderplus_db
-    MLST_db_updated = old_mlst + " --> " + new_mlst_db
-    phx_versions = phoenix_ver + " --> " + current_phx_version
+    Gamma_db_updated = old_gamma + " --> " + new_ar_db.strip()
+    amrfinder_db_updated = old_amrfinder + " --> " + new_amrfinderplus_db.strip()
+    MLST_db_updated = old_mlst + " --> " + new_mlst_db.strip()
+    phx_versions = phoenix_ver + " --> " + current_phx_version.strip()
     # Convert date to string format
     date_string = date.today().strftime('%Y-%m-%d')
     # Check if the file exists

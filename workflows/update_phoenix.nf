@@ -154,7 +154,9 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(CREATE_INPUT_CHANNELS.out.versions)
 
         // combine directory and pipeline_info - make sure that id and project folder match
-        files_to_update_ch = CREATE_INPUT_CHANNELS.out.directory_ch.join(CREATE_INPUT_CHANNELS.out.pipeline_info, by: [[0][0],[0][1]])
+        //filter to remove [[id:, project_id:], null, []] that comes out as part of remainder = true. Then either add [] if no readme is present or keep channel as is
+        files_to_update_ch = CREATE_INPUT_CHANNELS.out.directory_ch.join(CREATE_INPUT_CHANNELS.out.pipeline_info, by: [[0][0],[0][1]]).join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][1]], remainder: true)
+                                .filter{ it -> it.size() == 4 }.map{ meta, dir, pipeline_info, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
 
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
@@ -188,8 +190,6 @@ workflow UPDATE_PHOENIX_WF {
                             }.map{   meta, taxonomy, filtered_scaffolds, fairy_data -> [meta, taxonomy, filtered_scaffolds] }.combine(existing_shigapass_ids)
                             .filter{ meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> existing_shigapass_ids == 'none' || !existing_shigapass_ids.contains(meta.id)}
                             .map{    meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> [meta, taxonomy, filtered_scaffolds ] }// Add the filter to exclude isolates that already have shigapass files
-
-        scaffolds_and_taxa_ch.view()
 
         /*/ For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
         scaffolds_and_taxa_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}
@@ -392,7 +392,7 @@ workflow UPDATE_PHOENIX_WF {
 
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
-        //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
+        // collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
         centar_var = CREATE_INPUT_CHANNELS.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
         // Now we need to check if --centar was passed when the samples were run previously. // "ifEmpty()" branch executes if no files match 
         centar_var = CREATE_INPUT_CHANNELS.out.centar.filter{ meta, file -> file.toString().endsWith("_centar_output.tsv") }

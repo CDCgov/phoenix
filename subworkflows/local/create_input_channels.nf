@@ -88,7 +88,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             //get all integrity files - ones that where already made and ones we just made.
             file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(glob_file_integrity_ch.ifEmpty([])).flatten().unique().buffer(size:2)
-            //file_integrity_ch.view()
+
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
             all_passed_id_channel = file_integrity_ch.map{meta, dir -> dir}.collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
 
@@ -220,10 +220,6 @@ workflow CREATE_INPUT_CHANNELS {
             // get files for MLST updating 
             def combined_mlst_glob = append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
 
-            /*filtered_combined_mlst_ch = Channel.fromPath(combined_mlst_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString(),false)} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, combined_mlst, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}.view()*/
-
             //create .tax file channel with meta information 
             filtered_combined_mlst_ch = Channel.fromPath(combined_mlst_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString(),false)} // create meta for sample
@@ -234,12 +230,6 @@ workflow CREATE_INPUT_CHANNELS {
 
             // get files for MLST updating 
             def shigapass_glob = append_to_path(params.indir.toString(),'*/ANI/*_ShigaPass_summary.csv')
-
-            Channel.fromPath(shigapass_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_ShigaPass_summary.csv", params.indir.toString(),false)} // create meta for sample
-                .combine(all_passed_id_channel).view()
-                //.filter{ meta, shiapass_files, all_passed_id -> all_passed_id.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
-                //.map{ meta, shiapass_files, all_passed_id -> [meta, shiapass_files]}.view()
 
             //collect .tax file channel with meta information 
             shigapass_files_ch = Channel.fromPath(shigapass_glob) // use created regrex to get samples
@@ -255,6 +245,19 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta(it, "_centar_output.tsv", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, centar_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
                 .map{ meta, centar_files, all_passed_id_channel -> [meta, centar_files]}.ifEmpty( [[id: "", project_id: ""], []] ) //remove all_passed_id_channel from output
+
+            /////////////////////////// COLLECT README FOR UPDATER ///////////////////////////////
+            def readme_glob = append_to_path(params.indir.toString(),'*/*_updater_log.tsv')
+
+            /*Channel.fromPath(readme_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_updater_log.tsv", params.indir.toString(), false)}.ifEmpty( [[id: "", project_id: ""], []] ) // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, readme_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}.ifEmpty( [[id: "", project_id: ""], [], []] )
+                .map{ meta, readme_files, all_passed_id_channel -> [meta, readme_files]}.view()*/
+
+            readme_files_ch = Channel.fromPath(readme_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_updater_log.tsv", params.indir.toString(), false)}.ifEmpty( [[id: "", project_id: ""], []] )  // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, readme_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}.ifEmpty( [[id: "", project_id: ""], [], []] ) //filtering out failed samples - keep those in all_passed_id_channel
+                .map{ meta, readme_files, all_passed_id_channel -> [meta, readme_files]} //remove all_passed_id_channel from output
 
             /////////////////////////// COLLECT PROJECT LEVEL FILES ///////////////////////////////
 
@@ -377,6 +380,8 @@ workflow CREATE_INPUT_CHANNELS {
             //species specific files
             shigapass_files_ch = COLLECT_SAMPLE_FILES.out.shigapass_output
             centar_files_ch = COLLECT_SAMPLE_FILES.out.centar_output
+            //readme files
+            readme_files_ch = COLLECT_SAMPLE_FILES.out.readme
 
             summary_files_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
 
@@ -411,6 +416,8 @@ workflow CREATE_INPUT_CHANNELS {
         //species specific files
         centar             = centar_files_ch
         shigapass          = shigapass_files_ch
+        //updater
+        readme             = readme_files_ch
 
         // sample specific files
         filtered_scaffolds = filtered_scaffolds_ch      // channel: [ meta, [ scaffolds_file ] ]

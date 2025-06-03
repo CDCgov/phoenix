@@ -28,6 +28,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/${meta.id}.synopsis"),                                       emit: synopsis
     tuple val(meta), path("${meta.id}/${meta.id}.tax"),                                            emit: tax
     tuple val(meta), path("${meta.id}/${meta.id}_summaryline.tsv"),                                emit: summary_line
+    tuple val(meta), path("${meta.id}/${meta.id}_updater_log.tsv"),             optional: true,    emit: readme
     path ("${meta.id}-CSF.csv"),                                                                   emit: collect_file
     path("versions.yml"),                                                                          emit: versions
 
