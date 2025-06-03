@@ -32,7 +32,7 @@ process ASSET_CHECK {
         #pigz -dc -L ${zipped_sketch} > ${unzipped_sketch}
     elif [[ ${zipped_sketch} = *.xz ]]
     then 
-        xz -kfd ${zipped_sketch}
+        xz -kfd --no-warn ${zipped_sketch}
     else
         :
     fi
