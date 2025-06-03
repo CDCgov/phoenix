@@ -134,6 +134,35 @@ def determine_entry(meta, tsv){
     return [[project_id:meta.project_id], noBusco]
 }
 
+def get_taxa_project_dir(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split('\t')[1]
+            }
+        }
+        return [input_ch[0], "$genus" ]
+}
+
+
+def validate_cdiff_presence(input_ch) {
+    def errors = []
+    def project_id = input_ch[0]
+    def genera_list = input_ch[1]
+    // Check if Escherichia is in the list
+    if (!genera_list.contains("Clostridioides")) {
+        errors.add("Project ${project_id} does not contain Clostridioides. Found genera: ${genera_list.join(', ')}")
+    }
+    // If any errors found, exit with error message
+    if (errors.size() > 0) {
+        error("Pipeline validation failed:\n" + errors.join('\n'))
+    }
+    return true
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -158,6 +187,10 @@ workflow RUN_CENTAR {
             ch_input_indir, ch_input, true
         )
         ch_versions = ch_versions.mix(CREATE_INPUT_CHANNELS.out.versions)
+
+        //confirm you have c diff samples in your run. 
+        CREATE_INPUT_CHANNELS.out.taxonomy.map{meta, taxonomy -> [[project_id:meta.project_id], taxonomy] }.map{ it -> get_taxa_project_dir(it) }.groupTuple(by: [0])
+                    .collect().map{ it -> validate_cdiff_presence(it)}
 
         //unzip any zipped databases
         ASSET_CHECK (
