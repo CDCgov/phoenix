@@ -52,7 +52,7 @@ workflow update_phoenix {
     #phoenix quast and mlst
     File  mlst_tsv                 = update_phoenix.mlst_tsv
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
-    File  srst2                    = update_phoenix.srst2
+    File? srst2                    = update_phoenix.srst2
     #phoenix gamma
     File  gamma_ar_calls           = update_phoenix.gamma_ar_calls
     File  blat_ar_calls            = update_phoenix.blat_ar_calls
