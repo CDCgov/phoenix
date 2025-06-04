@@ -87,7 +87,11 @@ task phoenix {
       exit 1
     fi
 
-    sed 's/.*\(gs:\/\/.*\/call-phoenix\).*/\1/' phoenix.log | sort -u |tee PROJECT_DIR
+    ls
+
+    echo $PWD
+
+    #sed 's/.*\(gs:\/\/.*\/call-phoenix\).*/\1/' phoenix.log | sort -u | tee PROJECT_DIR
 
     # Get N50 from Quast file
     grep '^N50' ~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv | awk -F '\t' '{print $2}' | tee N50
@@ -178,7 +182,7 @@ task phoenix {
   >>>
   output {
     File?   work_files                        = "work.tar.gz"
-    String  project_dir                       = read_string("PROJECT_DIR")
+    String  project_dir                       = pwd()
     String  phoenix_version                   = read_string("VERSION")
     String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.2.0"
     String  analysis_date                     = read_string("DATE")
