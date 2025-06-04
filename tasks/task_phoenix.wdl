@@ -87,7 +87,7 @@ task phoenix {
       exit 1
     fi
 
-    sed 's/.*\(gs:\/\/.*\/call-phoenix\).*/\1/' | tee PROJECT_DIR
+    sed 's/.*\(gs:\/\/.*\/call-phoenix\).*/\1/' phoenix.log | sort -u |tee PROJECT_DIR
 
     # Get N50 from Quast file
     grep '^N50' ~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv | awk -F '\t' '{print $2}' | tee N50
