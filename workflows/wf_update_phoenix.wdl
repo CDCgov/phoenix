@@ -14,7 +14,8 @@ workflow update_phoenix {
   call update_phoenix_nf.update_phoenix {
     input:
       samplename        = samplename,
-      coverage          = coverage
+      coverage          = coverage,
+      project_directory = project_directory
   }
   output {
     #phoenix summary output values
@@ -26,7 +27,7 @@ workflow update_phoenix {
     String  warnings                          = update_phoenix.warnings
     String  final_taxa_id                     = update_phoenix.final_taxa_id
     String  taxa_source                       = update_phoenix.taxa_source
-    String  shigapass_taxa                    = update_phoenix.shigapass_taxa
+    String? shigapass_taxa                    = update_phoenix.shigapass_taxa
     String  fastani_taxa                      = update_phoenix.fastani_taxa
     String  fastani_confidence                = update_phoenix.fastani_confidence
     String  fastani_coverage                  = update_phoenix.fastani_coverage
@@ -49,11 +50,30 @@ workflow update_phoenix {
     String  hypervirulence_genes              = update_phoenix.hypervirulence_genes
     String  plasmid_incompatibility_replicons = update_phoenix.plasmid_incompatibility_replicons
     String  qc_issues                         = update_phoenix.qc_issues
+    #phoenix ani
+    File? reformated_fast_ani      = update_phoenix.reformated_fast_ani
+    #phoenix quast and mlst
+    File  mlst_tsv                 = update_phoenix.mlst_tsv
+    # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
+    File  srst2                    = update_phoenix.srst2
+    #phoenix gamma
+    File  gamma_ar_calls           = update_phoenix.gamma_ar_calls
+    File  blat_ar_calls            = update_phoenix.blat_ar_calls
+    #phoenix output
+    File  summary_line             = update_phoenix.summary_line
+    File  synopsis                 = update_phoenix.synopsis
+    File? best_taxa_id             = update_phoenix.best_taxa_id
+    #phoenix amrfinder
+    File  amrfinder_mutations      = update_phoenix.amrfinder_mutations
+    File  amrfinder_taxa_match     = update_phoenix.amrfinder_taxa_match
+    File  amrfinder_hits           = update_phoenix.amrfinder_hits
+    #species specific
+    File? shigapass_summary       = update_phoenix.shigapass_summary
     #phoenix summary output
     File   updater_log             = update_phoenix.updater_log
-    File?  phoenix_tsv_summary     = update_phoenix.phoenix_tsv_summary
-    File?  griphin_excel_summary   = update_phoenix.griphin_excel_summary
-    File?  griphin_tsv_summary     = update_phoenix.griphin_tsv_summary
+    File   phoenix_tsv_summary     = update_phoenix.phoenix_tsv_summary
+    File   griphin_excel_summary   = update_phoenix.griphin_excel_summary
+    File   griphin_tsv_summary     = update_phoenix.griphin_tsv_summary
     String phoenix_version         = update_phoenix.phoenix_version
     String phoenix_docker          = update_phoenix.phoenix_docker
     String analysis_date           = update_phoenix.analysis_date
