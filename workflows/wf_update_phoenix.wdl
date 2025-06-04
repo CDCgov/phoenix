@@ -28,9 +28,6 @@ workflow update_phoenix {
     String  final_taxa_id                     = update_phoenix.final_taxa_id
     String  taxa_source                       = update_phoenix.taxa_source
     String? shigapass_taxa                    = update_phoenix.shigapass_taxa
-    String  fastani_taxa                      = update_phoenix.fastani_taxa
-    String  fastani_confidence                = update_phoenix.fastani_confidence
-    String  fastani_coverage                  = update_phoenix.fastani_coverage
     String  mlst_scheme_1                     = update_phoenix.mlst_scheme_1
     String  mlst_1                            = update_phoenix.mlst_1
     String  mlst1_ncbi                        = update_phoenix.mlst1_ncbi
