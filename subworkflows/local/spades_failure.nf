@@ -19,6 +19,7 @@ workflow SPADES_WF {
         krona_html        // channel: tuple (meta) path(krona_html): KRAKEN2_TRIMD.out.krona_html
         k2_bh_summary     // channel: tuple (meta) path(k2_bh_summary): KRAKEN2_TRIMD.out.k2_bh_summary
         extended_qc
+        outcome_to_edit   // fairy file
 
     main:
         ch_versions = Channel.empty() // Used to collect the software versions
@@ -31,7 +32,8 @@ workflow SPADES_WF {
         .join(fastp_raw_qc.map{              meta, fastp_raw_qc   -> [[id:meta.id],fastp_raw_qc]},   by: [0])\
         .join(fastp_total_qc.map{            meta, fastp_total_qc -> [[id:meta.id],fastp_total_qc]}, by: [0])\
         .join(report.map{                    meta, report         -> [[id:meta.id],report]},         by: [0])\
-        .join(krona_html.map{                meta, krona_html     -> [[id:meta.id],krona_html]},     by: [0])
+        .join(krona_html.map{                meta, krona_html     -> [[id:meta.id],krona_html]},     by: [0])\
+        .join(outcome_to_edit.map{           meta, outcome        -> [[id:meta.id],outcome]},        by: [0]) // Join with the fairy file to get the outcome to edit
 
         // Add in full path to outdir into the channel so each sample has a the path to go with it. If you don't do this then only one sample goes through pipeline
         passing_reads_ch = passing_reads_ch.combine(outdir_path)

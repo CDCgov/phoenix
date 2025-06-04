@@ -262,7 +262,8 @@ workflow PHOENIX_EXTERNAL {
             KRAKEN2_TRIMD.out.report, \
             KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
-            false
+            false,
+            GET_TRIMD_STATS.out.outcome_to_edit
         )
         ch_versions = ch_versions.mix(SPADES_WF.out.versions)
 
