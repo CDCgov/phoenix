@@ -302,6 +302,7 @@ workflow UPDATE_PHOENIX_WF {
         // Prepare channels with source information
         ch_ani_input_tagged = CREATE_INPUT_CHANNELS.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'input']] }
         ch_ani_shigapass_tagged = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'shigapass']] }
+
         // For samples that were run through Shigapass we need to compare that to the list of previous ani_best_hit files, then only keep the shigapass files as that has the most up-to-date info
         // Mix and group by ID
         ch_ani_combined = ch_ani_input_tagged.mix(ch_ani_shigapass_tagged).groupTuple().map { id, values ->
@@ -340,10 +341,11 @@ workflow UPDATE_PHOENIX_WF {
         shigapass_ch = SHIGAPASS.out.summary.mix(CREATE_INPUT_CHANNELS.out.shigapass)
 
         // Extract [id, project_id] pairs for all isolates in line_summary_ch channel for joining // If shigapass_files is null (no match), replace with empty list
-        all_id_pairs_ch = line_summary_ch.join(shigapass_ch, by: [[0][0],[0][1]], remainder: true)
+        all_id_pairs_ch = line_summary_ch.join(shigapass_ch, by: [[0][0],[0][1]], remainder: true).filter{ it[1] != null }
                 .map{ meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, shigapass_file ->
                 if (shigapass_file == null) { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, []]
                 } else { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, shigapass_file]}}
+
         line_summary_ch = all_id_pairs_ch
 
         // Generate summary per sample

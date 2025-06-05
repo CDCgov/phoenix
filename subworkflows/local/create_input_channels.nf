@@ -68,10 +68,6 @@ workflow CREATE_INPUT_CHANNELS {
                 //def file_integrity_exists = no_fairy_file_id.contains(meta.id)
                 return [ meta, cleaned_path, file_integrity_exists ]}.filter{ meta, dir, file_integrity_exists -> file_integrity_exists == false } // Filter out samples that already have a fairy file
 
-            isolates_that_need_file_integrity_ch.view()
-
-            //isolates_that_need_file_integrity_ch.view { "Isolates that need file integrity channel: $it" }
-
             // Now that we have list of samples that need fairy files created make them
             CREATE_FAIRY_FILE (
                 isolates_that_need_file_integrity_ch, true
