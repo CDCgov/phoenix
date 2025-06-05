@@ -147,7 +147,6 @@ def get_taxa_project_dir(input_ch){
         return [input_ch[0], "$genus" ]
 }
 
-
 def validate_cdiff_presence(input_ch) {
     def errors = []
     def project_id = input_ch[0]

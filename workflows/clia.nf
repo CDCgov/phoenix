@@ -259,7 +259,7 @@ workflow CLIA_INTERNAL {
         // Add in busco_db into the scaffolds channel so each scaffolds ch has a busco_db to go with it.
         busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}.combine(busco_db_path)\
         .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
- 
+
         // Checking single copy genes for assembly completeness
         BUSCO (
             busco_ch, 'auto', []
