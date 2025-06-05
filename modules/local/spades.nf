@@ -74,40 +74,18 @@ process SPADES {
 
     mv spades.log ${prefix}.spades.log
 
-    # Determine if downstream process GENERATE_PIPELINE_STATS_FAILURE and CREATE_SUMMARY_LINE_FAILURE will run (if spades creates contigs, but not scaffolds).
-    # also, will edit the fairy file
-    log=\$(find *.spades.log)
-    if [ -f scaffolds.fasta ]; then
-        mv scaffolds.fasta ${prefix}.scaffolds.fa
-        gzip -n ${prefix}.scaffolds.fa
-        spades_complete=scaffolds_created
-        echo ,\$spades_complete | tr -d "\n" >> ${prefix}_spades_outcome.csv
-    else
-        spades_complete=no_scaffolds
-        echo ,\$spades_complete | tr -d "\n" >> ${prefix}_spades_outcome.csv
-        # for samples that will fail spades we will rename the files so they are published
-        mv ${prefix}_summary_old_3.txt ${prefix}_trimstats_summary.txt
-    fi
-    if [ -f contigs.fasta ]; then
-        mv contigs.fasta ${prefix}.contigs.fa
-        gzip -n ${prefix}.contigs.fa
-        spades_complete=contigs_created
-        echo ,\$spades_complete | tr -d "\n" >> ${prefix}_spades_outcome.csv
-    else
-        spades_complete=no_contigs
-        echo ,\$spades_complete | tr -d "\n" >> ${prefix}_spades_outcome.csv
-        # for samples that will fail spades we will rename the files so they are published
-        mv ${prefix}_summary_old_3.txt ${prefix}_trimstats_summary.txt
-    fi
-    if [ -f assembly_graph_with_scaffolds.gfa ]; then
-        mv assembly_graph_with_scaffolds.gfa ${prefix}.assembly.gfa
-        gzip -n ${prefix}.assembly.gfa
-    fi
+    #This file will determine if downstream process GENERATE_PIPELINE_STATS_FAILURE and CREATE_SUMMARY_LINE_FAILURE will run (if spades creates contigs, but not scaffolds).
+    # also, will rename the fairy file to publish
+    ${ica}afterSpades.sh
+
+    #get version information
+    aspades_version=\$(${ica}afterSpades.sh -V)
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
         spades_container: ${container}
+        \${aspades_version}
     END_VERSIONS
     """
 }
