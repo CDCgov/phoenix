@@ -87,6 +87,9 @@ task phoenix {
       exit 1
     fi
 
+    save=$(find  ./ -path "*call-phoenix*" | sed 's/.*\(gs:\/\/.*\/call-phoenix\).*/\1/')
+    echo $save
+
     find  ./ -path "*call-phoenix*" | sed 's/.*\(gs:\/\/.*\/call-phoenix\).*/\1/' | tee PROJECT_DIR
 
     #sed 's/.*\(gs:\/\/.*\/call-phoenix\).*/\1/' phoenix.log | sort -u | tee PROJECT_DIR
