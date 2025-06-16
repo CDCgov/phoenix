@@ -38,7 +38,7 @@ jobs:
         id: calculate_new_total
         run: |
           # Calculate new total clone count by adding today's count to previous count
-          NEW_TOTAL=$((PREVIOUS_COUNT + ADJUSTED_COUNT))
+          NEW_TOTAL=$((PREVIOUS_COUNT + CLONE_COUNT))
           echo "NEW_TOTAL=$NEW_TOTAL" >> $GITHUB_ENV
 
       - name: Update README badge
