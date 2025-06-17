@@ -111,29 +111,6 @@ def check_isolate_count(folderPath, meta){
     return unmatchedDirs.size() > 0 && unmatchedDirs.size() < directories.size()
 }
 
-def determine_entry(meta, tsv){
-    // default is phoenix entry
-    def noBusco = true
-    try {
-        // Open and read the TSV file
-        def tsvFile = tsv.toFile()
-        if (tsvFile.exists()) {
-            // Read the first line (header)
-            def headerLine = tsvFile.withReader { reader -> reader.readLine() }
-            // Split the header by tab to get column names
-            def columnNames = headerLine.split("\t")
-            // Check if any column name contains "BUSCO" return true.
-            noBusco = columnNames.any { colName -> 
-                !colName.toUpperCase().contains("BUSCO") 
-            }
-        }
-    } catch (Exception e) {
-        // Handle any exceptions that might occur
-        println "Error processing file $tsv: ${e.message}. see determine_entry() function in centar entry."
-    }
-    return [[project_id:meta.project_id], noBusco]
-}
-
 def get_taxa_project_dir(input_ch){ 
         def genus = ""
         def species = ""
@@ -230,7 +207,7 @@ workflow RUN_CENTAR {
         griphin_input_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
             .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{     meta, centar_file  -> [[project_id:meta.project_id], centar_file]}.groupTuple(by: [0]), by: [0])\
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{         meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])\
-            .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> determine_entry(meta, tsv)}, by: [0])
+            .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> [[project_id:meta.project_id], tsv.readLines().first().contains('BUSCO')]}, by: [0])
 
         //define var to be used globally
         def griphin_report
@@ -248,7 +225,7 @@ workflow RUN_CENTAR {
             CENTAR_GRIPHIN_INDIR (
                 griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> [summary_line, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, 
-                griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> [dir]}, 
+                griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> [dir, []]}, 
                 workflow.manifest.version, params.coverage, 
                 griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> busco_var}, 
                 false, true, params.bldb, false
@@ -291,7 +268,7 @@ workflow RUN_CENTAR {
             CENTAR_GRIPHIN_INPUT (
                 griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> [summary_line, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, 
-                griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir]}, 
+                griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir, []]}, 
                 workflow.manifest.version, params.coverage, 
                 griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> busco_var}, 
                 false, true, params.bldb, false
@@ -311,7 +288,7 @@ workflow RUN_CENTAR {
             NO_PUB_CENTAR_GRIPHIN (
                 griphin_input_single_some_isolates_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple, filtering_samples -> [summary_lines, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb,
-                griphin_input_single_some_isolates_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir]}, 
+                griphin_input_single_some_isolates_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir, []]}, 
                 workflow.manifest.version, params.coverage,
                 griphin_input_single_some_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> busco_var}, 
                 false, true, params.bldb, true
@@ -342,13 +319,15 @@ workflow RUN_CENTAR {
             multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
             griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
 
+            griphin_input_multi_dir_ch.view()
+
             //Run this process if there is only a single dir in the --input samples (via griphin_input_multi_dir_ch)
             // if multiple_directories is true, then --input must have been used with samples from different directories. 
             // Also, if no --outdir is not passed then isolates should go back to their project_ID folders and we want all samples in that dir to be included in the griphin report. thus, we first make the griphin file with only the samples in --input
             NO_PUB_CENTAR_GRIPHIN_MULTI_DIR (
                 griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> [summary_lines, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb,
-                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> [dir]}, 
+                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> [dir, []]}, 
                 workflow.manifest.version, params.coverage,
                 griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> busco_var}, 
                 false, true, params.bldb, true

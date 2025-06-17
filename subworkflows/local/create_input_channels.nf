@@ -391,7 +391,9 @@ workflow CREATE_INPUT_CHANNELS {
             readme_files_ch = COLLECT_SAMPLE_FILES.out.readme
 
             summary_files_ch = samplesheet.flatten().splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
-                                    .map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
+                                .map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
+
+                                //.map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
 
             // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
