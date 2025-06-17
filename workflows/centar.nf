@@ -203,12 +203,10 @@ workflow RUN_CENTAR {
         )
         ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
 
-        //CREATE_INPUT_CHANNELS.out.directory_ch.view()
-
         // get summary lines and directory information to make sure all samples for a particular project folder stay together. 
         summaries_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{       meta, line_summary -> [[project_id:meta.project_id], line_summary] }
                         .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])
-                        .map{ meta, summary_line, dir -> [ meta, summary_line, dir, summary_line.head().text.contains('BUSCO') ]}
+                        .map{ meta, summary_line, dir -> [ meta, summary_line, dir, summary_line.readLines().first().contains('BUSCO') ]}
 
         // Combining sample summaries into final report
         CENTAR_GATHER_SUMMARY_LINES (

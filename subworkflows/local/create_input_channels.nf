@@ -326,6 +326,9 @@ workflow CREATE_INPUT_CHANNELS {
                 ch_versions = ch_versions.mix(CENTAR_SAMPLESHEET_CHECK.out.versions)
 
                 samplesheet = CENTAR_SAMPLESHEET_CHECK.out.csv
+
+                samplesheet_meta_ch = Channel.empty().ifEmpty([]) //only needed for --mode update_phoenix
+
             } else {
                 // if a samplesheet was passed then use that to create the channel
                 SAMPLESHEET_CHECK (
@@ -334,10 +337,11 @@ workflow CREATE_INPUT_CHANNELS {
                 ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
 
                 samplesheet = SAMPLESHEET_CHECK.out.csv
+
+                //only needed for --mode update_phoenix
+                samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
             }
 
-            //
-            samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }
