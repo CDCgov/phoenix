@@ -9,10 +9,11 @@ import argparse
 import glob
 from pathlib import Path
 import pandas as pd
+from collections import defaultdict
 
 # Function to get the script version
 def get_version():
-    return "1.0.0"
+    return "1.1.0"
 
 def parse_args(args=None):
     Description = "Reformat cdcgov/phoenix samplesheet file and check its contents."
@@ -21,6 +22,7 @@ def parse_args(args=None):
     parser.add_argument("FILE_IN", help="Input samplesheet file.")
     parser.add_argument("FILE_OUT", help="Output file.")
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument('--updater', default=False, action='store_true',)# Add an argument to display the version
     return parser.parse_args(args)
 
 
@@ -50,7 +52,7 @@ def check_for_duplicates(file_in):
         for index, row in duplicate_rows.iterrows():
             raise ValueError(f"Duplicate row found: {row}. The pair of sample name and directory must be unique.")
 
-def check_samplesheet(file_in, file_out):
+def check_samplesheet(file_in, file_out, updater):
     """
     This function checks that the samplesheet follows the following structure:
 
@@ -112,15 +114,21 @@ def check_samplesheet(file_in, file_out):
                 sample_path = path
                 project_path = "/".join(sample_path.split("/")[:-1])
             #files.append(path + "/" + sample_folder + "/file_integrity/" + sample_name + "_scaffolds_summary.txt")
+            files.append(project_path + "/" + "Phoenix_Summary.tsv")
             files.append(sample_path + "/fastp_trimd/" + sample_name + "_1.trim.fastq.gz")
             files.append(sample_path + "/fastp_trimd/" + sample_name + "_2.trim.fastq.gz")
-            files.append(sample_path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
-            files.append(sample_path + "/annotation/" + sample_name + ".faa")
-            files.append(sample_path + "/annotation/" + sample_name + ".gff")
-            files.append(sample_path + "/" + sample_name + ".tax")
+            #files.append(sample_path + "/" + sample_name + ".tax")
+            #files.append(sample_path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
+            #files.append(sample_path + "/annotation/" + sample_name + ".faa")
+            #files.append(sample_path + "/annotation/" + sample_name + ".gff")
             files.append(sample_path + "/" + sample_name + "_summaryline.tsv")
             files.append(sample_path + "/" + sample_name + ".synopsis")
-            files.append(project_path + "/" + "Phoenix_Summary.tsv")
+            if updater == False: # when updater is run we don't need the files we still want the old samples in the samplesheet
+                print("updater is set to false, so we are checking the files")
+                files.append(sample_path + "/" + sample_name + ".tax")
+                files.append(sample_path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
+                files.append(sample_path + "/annotation/" + sample_name + ".faa")
+                files.append(sample_path + "/annotation/" + sample_name + ".gff")
             # Handle glob searches with potential errors
             #try:
                 # Find the position of the last occurrence of "/"
@@ -170,7 +178,7 @@ def check_samplesheet(file_in, file_out):
 
             ## Check sample name entries
             sample, directory = lspl[: len(HEADER)]
-             # Define the file path
+            # Define the file path
             if str(directory).strip().endswith('/'):
                 directory = str(directory).strip()[:-1]
             else:
@@ -188,27 +196,48 @@ def check_samplesheet(file_in, file_out):
                 else:
                     sample_mapping_dict[sample].append(directory)
 
-    ## Write validated samplesheet with appropriate columns
-    if len(sample_mapping_dict) > 0:
+        if updater: # makes samplesheet by project_id
+            ## Write validated samplesheet with appropriate columns
+            out_dir = os.path.dirname(file_out)
+            make_dir(out_dir)
+                
+            # Group samples by project_id
+            projects = defaultdict(list)
+            for sample in sorted(sample_mapping_dict.keys()):
+                # Validate datatypes
+                if not all(x[0] == sample_mapping_dict[sample][0][0] for x in sample_mapping_dict[sample]):
+                    print_error("Multiple runs of a sample must be of the same datatype!", "Sample: {}".format(sample))
+                    
+                for val in sample_mapping_dict[sample]:
+                    directory = val[1] if isinstance(val, tuple) else val
+                    project_id = directory.rstrip('/').split('/')[-2]  # Extract project_id
+                    projects[project_id].append((sample, val))
+            # Write samplesheet for each project
+            base_name, ext = os.path.splitext(file_out)
+            for project_id, samples in projects.items():
+                project_file = f"{base_name}_{project_id}{ext}"
+                with open(project_file, "w") as f:
+                    f.write("sample,directory\n")
+                    for sample, val in samples:
+                        f.write(f"{sample},{val}\n")
+
         out_dir = os.path.dirname(file_out)
         make_dir(out_dir)
         with open(file_out, "w") as fout:
             fout.write(",".join(["sample", "directory"]) + "\n")
             for sample in sorted(sample_mapping_dict.keys()):
-
                 ## Check that multiple runs of the same sample are of the same datatype
                 if not all(x[0] == sample_mapping_dict[sample][0][0] for x in sample_mapping_dict[sample]):
                     print_error("Multiple runs of a sample must be of the same datatype!", "Sample: {}".format(sample))
                 for idx, val in enumerate(sample_mapping_dict[sample]):
                     fout.write("{},{}\n".format(sample, val))
-    else:
-        print_error("No entries to process!", "Samplesheet: {}".format(file_in))
+
 
 
 def main(args=None):
     args = parse_args(args)
     check_for_duplicates(args.FILE_IN)
-    check_samplesheet(args.FILE_IN, args.FILE_OUT)
+    check_samplesheet(args.FILE_IN, args.FILE_OUT, args.updater)
 
 if __name__ == "__main__":
     sys.exit(main())

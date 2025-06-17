@@ -67,8 +67,7 @@ include { DO_MLST                        } from '../subworkflows/local/do_mlst'
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { MULTIQC                      } from '../modules/nf-core/modules/multiqc/main'
-include { CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
+include { CUSTOM_DUMPSOFTWAREVERSIONS as UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
 /*
 ========================================================================================
@@ -103,18 +102,63 @@ def add_meta(full_path_txt, griphin_ch) {
     return array
 }
 
-def get_only_taxa(input_ch){ 
-        def genus = ""
-        def species = ""
-        input_ch[1].eachLine { line ->
-            if (line.startsWith("G:")) {
-                genus = line.split(":")[1].trim().split('\t')[1]
-            } else if (line.startsWith("s:")) {
-                species = line.split(":")[1].trim().split('\t')[1]
+def add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet) {
+    // Step 1: Extract sample_name from griphin file
+    def griphinFile = new File(griphin_tsv.toString())
+    // Get second line, split on tab, get first element
+    def sample_name = griphinFile.readLines()[1].split('\t')[0]
+    //print("Sample name extracted from GRiPHin file: ${sample_name}\n")
+    // Step 2: Extract the line with matching sample_name from samplesheet TSV file
+    def matchingLine = null
+
+    new File(samplesheet.toString()).withReader { reader ->
+        // Skip header
+        reader.readLine()
+        // Read through the file line by line
+        String line
+        while ((line = reader.readLine()) != null) {
+            // Split the line by tabs and check the first column
+            def columns = line.split(',')
+            if (columns[0].trim() == sample_name.trim()) {
+                matchingLine = line
+                print("Matching line found in samplesheet: ${matchingLine}\n")
+                def meta = [:] // create meta array
+                // Step 3: Extract the project_id from the matching line
+                def cleanline = matchingLine.split(',')[1].trim()
+                meta.project_id = cleanline.substring(0, cleanline.lastIndexOf('/'))
+                //print("Meta project_id: ${meta.project_id}")
+                return [ meta, griphin_excel ]
             }
         }
-        //return [ "$genus $species" ]
-        return [ "$genus" ]
+    }
+}
+
+def get_only_taxa(input_ch){ 
+    def genus = ""
+    def species = ""
+    input_ch[1].eachLine { line ->
+        if (line.startsWith("G:")) {
+            genus = line.split(":")[1].trim().split('\t')[1]
+        } else if (line.startsWith("s:")) {
+            species = line.split(":")[1].trim().split('\t')[1]
+        }
+    }
+    //return [ "$genus $species" ]
+    return [ "$genus" ]
+}
+
+def get_taxa_and_project_ID(input_ch){ 
+    def genus = ""
+    def species = ""
+    input_ch[1].eachLine { line ->
+        if (line.startsWith("G:")) {
+            genus = line.split(":")[1].trim().split('\t')[1]
+        } else if (line.startsWith("s:")) {
+            species = line.split(":")[1].trim().split('\t')[1]
+        }
+    }
+    //def clean_project_id = in_meta.project_id.replaceAll(/^['"]/, '').replaceAll(/['"]$/, '')
+    return [input_ch[0], "$genus", input_ch[2] ]
 }
 
 def get_taxa(input_ch){ 
@@ -155,8 +199,12 @@ workflow UPDATE_PHOENIX_WF {
 
         // combine directory and pipeline_info - make sure that id and project folder match
         //filter to remove [[id:, project_id:], null, []] that comes out as part of remainder = true. Then either add [] if no readme is present or keep channel as is
-        files_to_update_ch = CREATE_INPUT_CHANNELS.out.directory_ch.join(CREATE_INPUT_CHANNELS.out.pipeline_info, by: [[0][0],[0][1]]).join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][1]], remainder: true)
-                                .filter{ it -> it.size() == 4 }.map{ meta, dir, pipeline_info, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
+        // Extract just the project name from the path
+        files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
+                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
+                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
+                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
+                                .filter{ it -> it.size() == 4 }.map{ meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
 
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
@@ -367,30 +415,46 @@ workflow UPDATE_PHOENIX_WF {
         } catch (Exception e) { gene_results_ch = dummy_gene_results }
 
         // Group the line_summaries by their project id and add in the full path for the project dir the join is only to make sure SRST2 finished before going to the last step, we just combine and then kick it out
+        // remainder: true is used to ensure that if there are no gene results, the channel is still created
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary
-            .join(gene_results_ch.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true) 
+            .join(gene_results_ch.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true)
             .map{meta, summaryline, gene_results -> [meta.project_id, summaryline]}.groupTuple(by: 0)
             .map { group -> 
+                def meta = [:] // create meta array
                 def (id, files) = group
                 id2 = id.split('/')[-1] // Remove full path and cut just the project id for use
+                meta.project_id = id.split('/')[-1] // Remove full path and cut just the project id for use
                 def dirPath = project_ids.value[id2]  // Retrieve the matching directory path
-                return [id, dirPath, files]}
+                return [meta, dirPath, files]}
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            summaries_ch.map{ project_id, dir, summary_lines -> summary_lines}, summaries_ch.map{ project_id, dir, summary_lines -> dir}, true
+            summaries_ch.map{ project_id, dir, summary_lines -> project_id}, 
+            summaries_ch.map{ project_id, dir, summary_lines -> summary_lines}, 
+            summaries_ch.map{ project_id, dir, summary_lines -> dir}, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         // check if the incoming file was created with CDC_PHOENIX or PHOENIX
         buscoExists_ch = summaries_ch.map{ project_id, dir, summary_lines -> 
                 def busco_boolean = summary_lines.head().text.contains('BUSCO')
-                return [ summary_lines, dir, busco_boolean ]}
+                return [ project_id, summary_lines, dir, busco_boolean ]}
 
         // now we will split the channel into its true and false elements for if we need to run the CDC version of GRIPHIN or not. 
         busco_boolean_ch = buscoExists_ch.branch{
-                    buscoTrue: it[2] == true 
-                    buscoFalse: it[2] == false}
+                    buscoTrue: it[3] == true 
+                    buscoFalse: it[3] == false}
+
+        // If the input directory is not null, we need to check if the input directory is the same as the output directory
+        if (params.outdir != "${launchDir}/phx_output") {
+            outdir_full_path = Channel.fromPath(params.outdir)
+            //this means that files need to be directed to the --outdir so we need to update the dir in the channel 
+            buscoTrue_updated = busco_boolean_ch.buscoTrue.combine(outdir_full_path).map{project_id, summary_line, dir, busco_boolean, outdir -> [project_id, summary_line, outdir, busco_boolean] }
+            buscoFalse_updated = busco_boolean_ch.buscoFalse.combine(outdir_full_path).map{project_id, summary_line, dir, busco_boolean, outdir -> [project_id, summary_line, outdir, busco_boolean] }
+
+             // Use the updated channels
+            busco_boolean_ch = [buscoTrue: buscoTrue_updated, buscoFalse: buscoFalse_updated]
+        }
 
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
@@ -400,64 +464,91 @@ workflow UPDATE_PHOENIX_WF {
         centar_var = CREATE_INPUT_CHANNELS.out.centar.filter{ meta, file -> file.toString().endsWith("_centar_output.tsv") }
                         .ifEmpty { Channel.of(false)}.map { file -> return true}.first()  // If we get here with a file, it means we found a match and Take just the first result (true or false)
 
-        //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
-        shigapass_var = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
-            .collect().sum().map{ it -> it[0] > 0 }
-
         if (params.indir != null) { // If the input directory is not null, we need to check if the input directory is the same as the output directory
+            //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
+            shigapass_var = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
+                            .collect().sum().map{ it -> it[0] > 0 }
+
             // for samples that were created with entry CDC_PHX
             GRIPHIN_PUBLISH_CDC (
-                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
+                busco_boolean_ch.buscoTrue.map{project_id, summary_line, dir, busco_boolean -> summary_line}, \
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
-                params.coverage, false, false, true, shigapass_var, false, params.bldb, false
+                busco_boolean_ch.buscoTrue.map{project_id, summary_line, dir, busco_boolean -> [dir.toString(), []]}, workflow.manifest.version, \
+                params.coverage, false, shigapass_var, false, params.bldb, false
             )
             ch_versions = ch_versions.mix(GRIPHIN_PUBLISH_CDC.out.versions)
 
             // for samples that were created with entry PHX
             GRIPHIN_PUBLISH (
-                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
+                busco_boolean_ch.buscoFalse.map{project_id, summary_line, dir, busco_boolean -> summary_line}, \
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
-                params.coverage, true, false, true, shigapass_var, false, params.bldb, false
+                busco_boolean_ch.buscoFalse.map{project_id, summary_line, dir, busco_boolean -> [dir.toString(), []]}, workflow.manifest.version, \
+                params.coverage, true, shigapass_var, false, params.bldb, false
             )
             ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
             griphin_tsv_report = GRIPHIN_PUBLISH_CDC.out.griphin_tsv_report.mix(GRIPHIN_PUBLISH.out.griphin_tsv_report)
             griphin_report = GRIPHIN_PUBLISH_CDC.out.griphin_report.mix(GRIPHIN_PUBLISH.out.griphin_report)
+
         } else {
+
+            // check for shigapass
+            shigapass_var_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{ meta, tax -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], tax, meta.project_id]}
+                                .map{it -> get_taxa_and_project_ID(it)}.groupTuple().map{meta, shiga_var, project_id -> [ meta, shiga_var, project_id.unique() ]}
+                                .map{ meta, genus_list, project_id ->  [meta, genus_list.any{ genus -> genus == "Escherichia" || genus == "Shigella" }, project_id] }
+
+            //add in the samplesheet specific to each project dir
+            busco_true_ch = busco_boolean_ch.buscoTrue.join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
+            busco_false_ch = busco_boolean_ch.buscoFalse.join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
+
             // for samples that were created with entry CDC_PHX
             GRIPHIN_NO_PUBLISH_CDC (
-                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> summary_line}, \
-                CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-                busco_boolean_ch.buscoTrue.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
-                params.coverage, false, false, true, shigapass_var, false, params.bldb, false
+                busco_true_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> summary_line}, \
+                busco_true_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> samplesheet}, \
+                params.ardb, \
+                busco_true_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> [dir.toString(), project_id]}, workflow.manifest.version, \
+                params.coverage, false, \
+                busco_true_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> shigapass_var}, \
+                false, params.bldb, false
             )
             ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH_CDC.out.versions)
 
             // for samples that were created with entry PHX
             GRIPHIN_NO_PUBLISH (
-                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> summary_line}, \
-                CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
-                busco_boolean_ch.buscoFalse.map{ summary_line, dir, busco_boolean -> dir.toString()}, workflow.manifest.version, \
-                params.coverage, true, false, true, shigapass_var, false, params.bldb, false
+                busco_false_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> summary_line}, \
+                busco_false_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> samplesheet}, \
+                params.ardb, \
+                busco_false_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> [dir.toString(), project_id]}, workflow.manifest.version, \
+                params.coverage, true, \
+                busco_false_ch.map{meta, summary_line, dir, busco_boolean, samplesheet, shigapass_var, project_id -> shigapass_var}, \
+                false, params.bldb, true
             )
             ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
-            // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
-            griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten().collate(2)
+            //define var to be used globally
+            def griphin_reports_ch
+
+            if (params.outdir == "${launchDir}/phx_output") {
+                // If the output directory is not the default, we need to update the path in the channel
+                griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten().collate(2)
                                     .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
+            } else {
+                GRIPHIN_NO_PUBLISH.out.griphins.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphins.collect().ifEmpty([])).flatten().collate(3).combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).view()
+                griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphins.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphins.collect().ifEmpty([])).flatten().collate(3)
+                                    .combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).map{path_txt, griphin_excel, griphin_tsv, samplesheet -> add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet)}
+            }
 
             // join old and new griphins for combining
-            griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}\
-                .join(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id], griphin_report]}, by: [0])\
-                .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id], directory_ch]},   by: [0])
+            griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id], griphin_excel_ch]}.unique()\
+                .join(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]}, by: [0])\
+                .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.unique(), by: [0])
+
 
             // combine griphin files, the new one just created and the old one that was found in the project dir. 
             UPDATE_GRIPHIN (
                 griphins_ch.map{ meta, old_excel, new_excel, directory -> [ old_excel, new_excel ] }, 
                 griphins_ch.map{ meta, old_excel, new_excel, directory -> directory },
-                griphins_ch.map{ meta, old_excel, new_excel, directory -> meta.project_id },
+                griphins_ch.map{ meta, old_excel, new_excel, directory -> meta.project_id}, // Get the project_id from the directory
                 //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
                 [],
                 params.coverage,
@@ -472,7 +563,7 @@ workflow UPDATE_PHOENIX_WF {
 
         /// need to figure out how to do this on a per directory 
         // Collecting the software versions
-        CUSTOM_DUMPSOFTWAREVERSIONS (
+        UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
             ch_versions.unique().collectFile(name: 'collated_versions.yml')
         )
 

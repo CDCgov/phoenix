@@ -7,34 +7,34 @@ process GRIPHIN {
     path(summary_line_files)
     path(original_samplesheet)
     path(db)
-    path(outdir) // output directory used as prefix for the summary file
+    tuple path(outdir), path(dir2) // output directory used as prefix for the summary file, dir2 is the location of original input folder (need for update_phoenix when multi dirs are given in --input )
     val(phx_version)
     val(coverage)
     val(entry)
-    val(scaffolds_entry)
-    val(update) //should be true to for updater and species specific entry points
     val(shigapass_detected)
     val(centar_detected)
     path(bldb)
     val(filter_var) // needed for species specific entry points
 
     output:
-    tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), emit: griphin_report
-    path("*_GRiPHin*.tsv"),                                    emit: griphin_tsv_report
-    path("Directory_samplesheet.csv"),          optional:true, emit: converted_samplesheet //the only time this isn't made is with --centar with --samplesheet
-    path("versions.yml"),                                      emit: versions
+    tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"),                         emit: griphin_report
+    tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), path("*_GRiPHin*.tsv"), emit: griphins
+    path("*_GRiPHin*.tsv"),                                                            emit: griphin_tsv_report
+    path("Directory_samplesheet.csv"),          optional:true,                         emit: converted_samplesheet //the only time this isn't made is with --centar with --samplesheet
+    path("versions.yml"),                                                              emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def phoenix = entry ? "--phoenix" : ""
-    def scaffolds = scaffolds_entry ? "--scaffolds" : ""
+    def scaffolds = (params.mode == "SCAFFOLDS" || params.mode == "CDC_SCAFFOLDS") ? "--scaffolds" : "" 
     def shigapass = shigapass_detected ? "--shigapass" : ""
     def centar = centar_detected ? "--centar" : ""
+    def updater = (params.mode == "UPDATE_PHOENIX") ? "--updater" : "" 
     //def samplesheet_command = (centar_detected && original_samplesheet) ? "--samplesheet ${original_samplesheet}" : ""
     def filter = filter_var ? "--filter_samples" : ""
-    def output_prefix = update ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary"
+    def output_prefix = (params.mode == "UPDATE_PHOENIX" || params.mode == "CENTAR") ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """
@@ -44,7 +44,7 @@ process GRIPHIN {
     echo \$full_path > full_path_file.txt
 
     ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --bldb ${bldb} --phx_version ${phx_version} ${filter}\
-        --coverage ${coverage} ${phoenix} ${shigapass} ${centar} ${scaffolds} --samplesheet ${original_samplesheet}
+        --coverage ${coverage} ${phoenix} ${shigapass} ${centar} ${scaffolds} --samplesheet ${original_samplesheet} ${updater}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

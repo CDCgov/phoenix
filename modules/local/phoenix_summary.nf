@@ -4,12 +4,13 @@ process GATHER_SUMMARY_LINES {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
+    val(meta) // need for meta.project_id in -profile update_phoenix
     path(summary_line_files)
     path(outdir_path)
     val(busco_val)
 
     output:
-    path('Phoenix_Summary.tsv'), emit: summary_report
+    path('*hoenix_Summary.tsv'), emit: summary_report
     path("versions.yml")       , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
@@ -19,9 +20,10 @@ process GATHER_SUMMARY_LINES {
     def busco_parameter = busco_val ? "--busco" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def output = (params.mode == "UPDATE_PHOENIX") ? "${meta.project_id}_Phoenix_Summary.tsv" : "Phoenix_Summary.tsv" 
     """
     ${ica}Create_phoenix_summary_tsv.py \\
-        --out Phoenix_Summary.tsv \\
+        --out ${output} \\
         $busco_parameter
 
     cat <<-END_VERSIONS > versions.yml

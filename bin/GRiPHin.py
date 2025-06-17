@@ -23,6 +23,7 @@ from species_specific_griphin import clean_and_format_centar_dfs, create_centar_
 # Set display options to show all rows and columns
 pd.set_option('display.max_rows', None)  # Show all rows
 pd.set_option('display.max_columns', None)  # Show all columns
+pd.set_option('display.max_colwidth', None)  # Show all columns
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
@@ -43,6 +44,7 @@ def parseArgs(args=None):
     parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
+    parser.add_argument('--updater', dest="updater", default=False, action='store_true', help='When passed files locations are checked in two locations on in -d and in the dir listed in samplesheet.valid.csv.')
     parser.add_argument('--phoenix', dest="phoenix", default=False, action='store_true', required=False, help='Use for -entry PHOENIX rather than CDC_PHOENIX, which is the default.')
     parser.add_argument('--shigapass', dest="shigapass", default=False, action='store_true', required=False, help='Use for when there are E. coli or Shigella isolates in samplesheet.')
     parser.add_argument('--centar', dest="centar", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
@@ -513,7 +515,7 @@ def duplicate_column_clean(df):
         for dup in dups:
             new_col = df[dup].agg(';'.join, axis=1).astype(str).values[0]
             #drop old frame(s)
-            df = df.drop(dup, axis=1)
+            df.drop(dup, axis=1, inplace=True)
             #add in new frame
             df[dup] = new_col
     return df
@@ -960,56 +962,138 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         warnings = ""
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
     Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2
+    
 
-def Get_Files(directory, sample_name):
+def try_paths(path1, path2):
+    """Function to try the first path, then fall back to second path if file doesn't exist"""
+    if os.path.exists(path1):
+        return path1
+    elif os.path.exists(path2):
+        return path2
+    else:
+        return path1  # Return the first path even if it doesn't exist, for consistent error handling
+
+def Get_Files(directory1, sample_name, directory2):
+    print(sample_name)
     '''Create file paths to collect files from sample folder.'''
     # if there is a trailing / remove it
-    directory = directory.rstrip('/')
+    directory1 = directory1.rstrip('/')
+    directory2 = directory2.rstrip('/')
     # create file names
-    trim_stats = directory + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt"
-    raw_stats = directory + "/raw_stats/" + sample_name + "_raw_read_counts.txt"
-    kraken_trim = directory + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt"
-    kraken_trim_report = directory + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt"
-    kraken_wtasmbld = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt"
-    kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt"
-    quast_report = directory + "/quast/" + sample_name + "_summary.tsv"
-    mlst_file = directory + "/mlst/" + sample_name + "_combined.tsv"
-    fairy_file = glob.glob(directory + "/file_integrity/" + sample_name + "_*_summary.txt")
-    # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
-    # You only need this for glob because glob will throw an index error if not.
+    trim_stats = try_paths( directory1 + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt", directory2 + "/" + sample_name + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt" )
+    raw_stats = try_paths( directory1 + "/raw_stats/" + sample_name + "_raw_read_counts.txt", directory2 + "/" + sample_name + "/raw_stats/" + sample_name + "_raw_read_counts.txt" )
+    kraken_trim = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt" )
+    kraken_trim_report = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt" )
+    kraken_wtasmbld = try_paths( directory1 + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt" )
+    kraken_wtasmbld_report = try_paths( directory1 + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt" )
+    quast_report = try_paths( directory1 + "/quast/" + sample_name + "_summary.tsv", directory2 + "/" + sample_name + "/quast/" + sample_name + "_summary.tsv" )
+    mlst_file = try_paths( directory1 + "/mlst/" + sample_name + "_combined.tsv", directory2 + "/" + sample_name + "/mlst/" + sample_name + "_combined.tsv" )
+    # For glob patterns, try both directories
+    fairy_file_1 = glob.glob(directory1 + "/file_integrity/" + sample_name + "_*_summary.txt")
+    fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "_*_summary.txt")
+    fairy_file = fairy_file_1 if fairy_file_1 else fairy_file_2
+    # For the remaining glob patterns, handle with try-except but attempt both directories
     try:
-        busco_short_summary =  glob.glob(directory + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")[0]
+        busco_short_summary_1 = glob.glob(directory1 + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
+        if busco_short_summary_1:
+            busco_short_summary = busco_short_summary_1[0]
+        else:
+            busco_short_summary_2 = glob.glob(directory2 + "/" + sample_name + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
+            if busco_short_summary_2:
+                busco_short_summary = busco_short_summary_2[0]
+            else:
+                busco_short_summary = directory1 + "/BUSCO/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     except IndexError:
-        busco_short_summary =  directory + "/BUSCO/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+        busco_short_summary = directory1 + "/BUSCO/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     try:
-        asmbld_ratio = glob.glob(directory + "/" + sample_name + "_Assembly_ratio_*.txt")[0]
+        asmbld_ratio_1 = glob.glob(directory1 + "/" + sample_name + "_Assembly_ratio_*.txt")
+        if asmbld_ratio_1:
+            asmbld_ratio = asmbld_ratio_1[0]
+        else:
+            asmbld_ratio_2 = glob.glob(directory2 + "/" + sample_name + "/" + sample_name + "_Assembly_ratio_*.txt")
+            if asmbld_ratio_2:
+                asmbld_ratio = asmbld_ratio_2[0]
+            else:
+                asmbld_ratio = directory1 + "/" + sample_name + "_Assembly_ratio_blank.txt"
     except IndexError:
-        asmbld_ratio = directory + "/" + sample_name + "_Assembly_ratio_blank.txt"
+        asmbld_ratio = directory1 + "/" + sample_name + "_Assembly_ratio_blank.txt"
     try:
-        gc = glob.glob(directory + "/" + sample_name + "_GC_content_*.txt")[0]
+        gc_1 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
+        if gc_1:
+            gc = gc_1[0]
+        else:
+            gc_2 = glob.glob(directory2 + "/" + sample_name + "/" + sample_name + "_GC_content_*.txt")
+            if gc_2:
+                gc = gc_2[0]
+            else:
+                gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
     except IndexError:
-        gc = directory + "/" + sample_name + "_GC_content_blank.txt"
+        gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
+    # Continue with similar pattern for remaining glob patterns
     try:
-        gamma_ar_file = glob.glob(directory + "/gamma_ar/" + sample_name + "_*.gamma")[0]
+        gamma_ar_file_1 = glob.glob(directory1 + "/gamma_ar/" + sample_name + "_*.gamma")
+        if gamma_ar_file_1:
+            gamma_ar_file = gamma_ar_file_1[0]
+        else:
+            gamma_ar_file_2 = glob.glob(directory2 + "/" + sample_name + "/gamma_ar/" + sample_name + "_*.gamma")
+            if gamma_ar_file_2:
+                gamma_ar_file = gamma_ar_file_2[0]
+            else:
+                gamma_ar_file = directory1 + "/gamma_ar/" + sample_name + "_blank.gamma"
     except IndexError:
-        gamma_ar_file = directory + "/gamma_ar/" + sample_name + "_blank.gamma"
+        gamma_ar_file = directory1 + "/gamma_ar/" + sample_name + "_blank.gamma"
+    # Apply the same pattern for the remaining files
     try:
-        gamma_pf_file = glob.glob(directory + "/gamma_pf/" + sample_name + "_*.gamma")[0]
+        gamma_pf_file_1 = glob.glob(directory1 + "/gamma_pf/" + sample_name + "_*.gamma")
+        if gamma_pf_file_1:
+            gamma_pf_file = gamma_pf_file_1[0]
+        else:
+            gamma_pf_file_2 = glob.glob(directory2 + "/" + sample_name + "/gamma_pf/" + sample_name + "_*.gamma")
+            if gamma_pf_file_2:
+                gamma_pf_file = gamma_pf_file_2[0]
+            else:
+                gamma_pf_file = directory1 + "/gamma_pf/" + sample_name + "_blank.gamma"
     except IndexError:
-        gamma_pf_file = directory + "/gamma_pf/" + sample_name + "_blank.gamma"
+        gamma_pf_file = directory1 + "/gamma_pf/" + sample_name + "_blank.gamma"
     try: 
-        gamma_hv_file = glob.glob(directory + "/gamma_hv/" + sample_name + "_*.gamma")[0]
+        gamma_hv_file_1 = glob.glob(directory1 + "/gamma_hv/" + sample_name + "_*.gamma")
+        if gamma_hv_file_1:
+            gamma_hv_file = gamma_hv_file_1[0]
+        else:
+            gamma_hv_file_2 = glob.glob(directory2 + "/" + sample_name + "/gamma_hv/" + sample_name + "_*.gamma")
+            if gamma_hv_file_2:
+                gamma_hv_file = gamma_hv_file_2[0]
+            else:
+                gamma_hv_file = directory1 + "/gamma_hv/" + sample_name + "_blank.gamma"
     except IndexError:
-        gamma_hv_file = directory + "/gamma_hv/" + sample_name + "_blank.gamma"
+        gamma_hv_file = directory1 + "/gamma_hv/" + sample_name + "_blank.gamma"
     try:
-        fast_ani_file = glob.glob(directory + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")[0]
+        fast_ani_file_1 = glob.glob(directory1 + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")
+        if fast_ani_file_1:
+            fast_ani_file = fast_ani_file_1[0]
+        else:
+            fast_ani_file_2 = glob.glob(directory2 + "/" + sample_name + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")
+            if fast_ani_file_2:
+                fast_ani_file = fast_ani_file_2[0]
+            else:
+                fast_ani_file = directory1  + "/ANI/" + sample_name + ".fastANI.txt"
     except IndexError:
-        fast_ani_file = directory + "/ANI/" + sample_name + ".fastANI.txt"
-    tax_file = directory + "/" + sample_name + ".tax" # this file will tell you if kraken2 wtassembly, kraken2 trimmed (reads) or fastani determined the taxa
+        fast_ani_file = directory1 + "/ANI/" + sample_name + ".fastANI.txt"
+    # For regular paths, use the try_paths function
+    tax_file = try_paths(  directory1 + "/" + sample_name + ".tax", directory2 + "/" + sample_name + "/" + sample_name + ".tax")
     try:
-        srst2_file = glob.glob(directory + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")[0]
+        srst2_file_1 = glob.glob(directory1 + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")
+        if srst2_file_1:
+            srst2_file = srst2_file_1[0]
+        else:
+            srst2_file_2 = glob.glob(directory2 + "/" + sample_name + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")
+            if srst2_file_2:
+                srst2_file = srst2_file_2[0]
+            else:
+                srst2_file = directory1 + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
     except IndexError:
-        srst2_file = directory + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
+        srst2_file = directory1 + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
+
     return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
 def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
@@ -1143,7 +1227,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
     # Filter out columns that contain the substring
     columns_to_drop = [col for col in srst2_ar_df.columns if "partial" in col]
     # Drop the columns
-    srst2_ar_df = srst2_ar_df.drop(columns=columns_to_drop)
+    srst2_ar_df.drop(columns=columns_to_drop, inplace=True)
     ##### Second we will look for GAMMA + genes, but different alleles found my SRST2 and dedup them (AKA we will remove and not report them) #####
     # Iterate over each row in the first DataFrame -> this will give all the srst2 genes and alleles
     for idx, row in srst2_ar_df.iterrows():
@@ -1207,7 +1291,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     # Convert extracted values to integer type and keep NA values
                     df['Percent_Match'] = pd.to_numeric(df['Percent_Match'], errors='coerce')
                     df['Coverage'] = pd.to_numeric(df['Coverage'], errors='coerce')
-                    df = df.dropna(subset=['Percent_Match']) #drop rows with no values
+                    df.dropna(subset=['Percent_Match'], inplace=True) #drop rows with no values
                     ### Filtering steps to get the top hit for srst2
                     # Step 1: Identify the Max Percent_Match
                     max_percent_match = df['Percent_Match'].max()
@@ -1231,7 +1315,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                     # For the sample in question remove the data from cell if the particular allele(s) we want to drop
                     srst2_ar_df.loc[index, index_diff.tolist()] = ""
                 multiple_occurrences.append(val)
-        srst2_ar_df = srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1)
+        srst2_ar_df.drop(srst2_ar_df.columns[srst2_ar_df.apply(lambda col: all(val == '' or pd.isna(val) for val in col))], axis=1, inplace=True)
     return srst2_ar_df
 
 def order_ar_gene_columns(ar_combined_df, is_combine):
@@ -1637,6 +1721,24 @@ def convert_excel_to_tsv(output):
     #Write dataframe into csv
     data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
 
+def get_second_dir(samplesheet, sample_name):
+    """Function to get the second directory for updater."""
+    with open(samplesheet, 'r') as f:
+        # Skip header
+        next(f)
+        for line in f:
+            # Check if line starts with sample name
+            if line.startswith(sample_name + ','):
+                # Split on comma and take the second item (directory)
+                directory = line.split(',')[1].strip()
+                # Pattern to capture the directory name immediately before /{sample_name}
+                pattern = rf'/([^/]+)/{re.escape(sample_name)}'
+                # Split on sample name and take the first part to get just the directory path
+                return "./" + re.search(pattern, directory).group(1)
+    # If sample not found, return empty string
+    print(f"\033[93mWarning: Sample '{sample_name}' not found in samplesheet.\033[0m")
+    return ""
+
 def main():
     args = parseArgs()
     # create empty lists to append to later
@@ -1659,6 +1761,9 @@ def main():
     else:
         sort_samplesheet(args.samplesheet)
         samplesheet = args.samplesheet
+    if args.updater == True:
+        input_samplesheet_df = pd.read_csv(args.samplesheet)
+        samples_to_run = input_samplesheet_df["sample"].tolist()
     if args.centar == True and args.samplesheet != None and args.filter_samples == True: 
         # When using species specific pipelines and --samplesheet is  given this means we need to make sure only samples in samplesheet are run
         input_samplesheet_df = pd.read_csv(args.samplesheet)
@@ -1670,16 +1775,21 @@ def main():
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
         csv_rows = list(csv_reader)  # Convert the iterator to a list to reuse it
-        if args.centar == True and args.samplesheet != None and args.filter_samples == True:
+        if args.centar == True or args.updater == True and args.samplesheet != None and args.filter_samples == True:
             filtered_out_samples = [row[0] for row in csv_rows if any(sample not in row[0] for sample in samples_to_run)]
             csv_rows = [row for row in csv_rows if row[0] in samples_to_run]
             print("\n\033[93m Warning: The following sample(s) are not in samplesheet and were filtered out of reporting in griphin: {}\033[0m\n".format(list(set(filtered_out_samples) - set(samples_to_run))))
         for row in csv_rows:
             sample_name = row[0]
+            if args.updater == True:
+                # If updater is true then we need to get the second directory for updater
+                directory2 = get_second_dir(args.samplesheet, sample_name)
+            else:
+                directory2 = ""
             directory = row[1]
             # check if species specific information is present
             data_location, parent_folder = Get_Parent_Folder(directory)
-            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name)
+            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
             QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)

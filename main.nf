@@ -12,6 +12,7 @@ nextflow.enable.dsl = 2
 
 // ANSI escape code for orange (bright yellow)
 def orange = '\033[38;5;208m'
+def red = '\033[1;31m'  // Bright red
 def reset = '\033[0m'
 
 /*
@@ -29,6 +30,7 @@ params.output = "" /// Initialise param so no warning is printed
 if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
 //comment out in v2.3.0 to run --centar
 //if (params.centar == true) { exit 1, "Sorry, --centar available yet as it's validation isn't complete. It will be released with a newer version of phx in the future." }
+// Access workflow metadata
 
 /*
 ========================================================================================
@@ -480,9 +482,6 @@ workflow COMBINE_GRIPHINS {
 // WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
 workflow CENTAR {
-    // comment out to run CENTAR 
-//    exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
-
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
     // Check input path parameters to see if they exist
@@ -536,6 +535,44 @@ workflow CENTAR {
     emit:
         //output for phylophoenix
         griphins_excel   = RUN_CENTAR.out.griphins_excel
+}
+
+/*
+========================================================================================
+    Setting up profiles
+========================================================================================
+*/
+
+//
+// WORKFLOW: Execute a single named workflow for the pipeline
+//
+workflow {
+    if(params.mode =="PHOENIX" || params.mode == "phoenix") {
+        PHOENIX()
+    } else if(params.mode =="CDC_PHOENIX" || params.mode == "cdc_phoenix") {
+        CDC_PHOENIX()
+    } else if(params.mode =="SRA" || params.mode == "sra") {
+        SRA()
+    } else if(params.mode =="CDC_SRA" || params.mode == "cdc_sra") {
+        CDC_SRA()
+    } else if(params.mode =="SCAFFOLDS" || params.mode == "scaffolds") {
+        SCAFFOLDS()
+    } else if(params.mode =="CDC_SCAFFOLDS" || params.mode == "cdc_scaffolds") {
+        CDC_SCAFFOLDS()
+    } else if(params.mode =="UPDATE_PHOENIX" || params.mode == "update_phoenix") {
+        UPDATE_PHOENIX()
+    } else if(params.mode =="CLIA" || params.mode == "clia") {
+        CLIA()
+        println("${red}WARNING: While this pipeline is undergoing CLIA validation at CDC, other users MUST conduct their own validation of this workflow and obtain explicit approval from THEIR CLIA director before considering it CLIA certified. Using this pipeline and reporting it's results to the patient, their care provider, or placed in the patient's medical record without proper validation may violate regulatory requirements.${reset}")
+    } else if(params.mode =="COMBINE_GRIPHINS" || params.mode == "combine_griphins") {
+        COMBINE_GRIPHINS()
+    } else if(params.mode =="CENTAR" || params.mode == "centar") {
+        CENTAR()
+        // comment out to run CENTAR 
+        //exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
+    } else {
+        exit 1, 'Please select an entry point either: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, UPDATE_PHOENIX and COMBINE_GRIPHINS'
+    }
 }
 
 /*

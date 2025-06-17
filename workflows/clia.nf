@@ -15,6 +15,10 @@ def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 // Info required for completion email and summary
 def multiqc_report = []
 
+// ANSI escape code for orange (bright yellow)
+def red = '\033[1;31m'  // Bright red
+def reset = '\033[0m'
+
 /*
 ========================================================================================
     CONFIG FILES
@@ -354,7 +358,7 @@ workflow CLIA_INTERNAL {
         .join(GET_TAXA_FOR_AMRFINDER.out.abritamr_taxa.splitCsv(strip:true).map{meta, abritamr_taxa      -> [meta, abritamr_taxa ]}, by: [0])
 
         ABRITAMR (
-            abritamr_ch
+            abritamr_ch, params.amrfinder_db
         )
         ch_versions = ch_versions.mix(ABRITAMR.out.versions)
 
@@ -419,7 +423,7 @@ workflow CLIA_INTERNAL {
 
         //create GRiPHin report
         CLIA_GRIPHIN (
-            all_summaries_ch, fairy_summary_ch, INPUT_CHECK.out.valid_samplesheet, params.amrfinder_db, outdir_path, params.coverage, all_spades_outcomes_ch
+            all_summaries_ch, fairy_summary_ch, INPUT_CHECK.out.valid_samplesheet, params.amrfinder_db, outdir_path.combine([]), params.coverage, all_spades_outcomes_ch
         )
         ch_versions = ch_versions.mix(CLIA_GRIPHIN.out.versions)
 
@@ -471,6 +475,9 @@ workflow CLIA_INTERNAL {
 // Adding if/else for running on ICA
 if (params.ica==false) {
     workflow.onComplete {
+        if (params.workflow_selection == "CLIA") {
+            println("${red}WARNING: While this pipeline is undergoing CLIA validation at CDC, other users MUST conduct their own validation of this workflow and obtain explicit approval from THEIR CLIA director before considering it CLIA certified. Using this pipeline and reporting it's results to the patient, their care provider, or placed in the patient's medical record without proper validation may violate regulatory requirements.${reset}")
+        }
         if (count == 0) {
             if (params.email || params.email_on_fail) {
                 NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)

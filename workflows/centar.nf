@@ -61,7 +61,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/nf-core/modules/
 */
 
 
-def filter_out_meta(input_ch) {
+/*def filter_out_meta(input_ch) {
     // Create an empty list to store the filtered items
     def filteredList = []
     def indir = input_ch[-1]
@@ -73,7 +73,7 @@ def filter_out_meta(input_ch) {
         }
     }
     return [ filteredList, indir ]
-}
+}*/
 
 def create_meta(file_path, input_ch) {
     def meta = [:] // create meta array
@@ -148,6 +148,7 @@ def get_taxa_project_dir(input_ch){
 }
 
 def validate_cdiff_presence(input_ch) {
+    print(input_ch)
     def errors = []
     def project_id = input_ch[0]
     def genera_list = input_ch[1]
@@ -177,11 +178,6 @@ workflow RUN_CENTAR {
 
     main:
 
-//        ch_input_indir.view { "ch_input_indir: $it" }
-//        ch_input.view { "input: $it" }
-//        println ch_input_indir.getClass()
-//        error "Stopping execution: custom reason here"
-
         CREATE_INPUT_CHANNELS (
             ch_input_indir, ch_input, true
         )
@@ -207,14 +203,19 @@ workflow RUN_CENTAR {
         )
         ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
 
+        //CREATE_INPUT_CHANNELS.out.directory_ch.view()
+
         // get summary lines and directory information to make sure all samples for a particular project folder stay together. 
-        summaries_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }
-            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{     meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])
-            .map { it -> filter_out_meta(it) }
+        summaries_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{       meta, line_summary -> [[project_id:meta.project_id], line_summary] }
+                        .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])
+                        .map{ meta, summary_line, dir -> [ meta, summary_line, dir, summary_line.head().text.contains('BUSCO') ]}
 
         // Combining sample summaries into final report
         CENTAR_GATHER_SUMMARY_LINES (
-            summaries_ch.map{ summary_line, dir -> summary_line}, summaries_ch.map{ summary_line, dir -> dir}, true
+            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> meta},
+            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> summary_line},
+            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> dir}, 
+            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean}
         )
         ch_versions = ch_versions.mix(CENTAR_GATHER_SUMMARY_LINES.out.versions)
 
@@ -223,6 +224,8 @@ workflow RUN_CENTAR {
             .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{     meta, centar_file  -> [[project_id:meta.project_id], centar_file]}.groupTuple(by: [0]), by: [0])\
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{         meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])\
             .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> determine_entry(meta, tsv)}, by: [0])
+
+        griphin_input_ch.view()
 
         //define var to be used globally
         def griphin_report
@@ -243,7 +246,7 @@ workflow RUN_CENTAR {
                 griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> [dir]}, 
                 workflow.manifest.version, params.coverage, 
                 griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> busco_var}, 
-                false, false, false, true, params.bldb, false
+                false, true, params.bldb, false
             )
             ch_versions = ch_versions.mix(CENTAR_GRIPHIN_INDIR.out.versions)
 
@@ -286,7 +289,7 @@ workflow RUN_CENTAR {
                 griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir]}, 
                 workflow.manifest.version, params.coverage, 
                 griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> busco_var}, 
-                false, false, false, true, params.bldb, false
+                false, true, params.bldb, false
             )
             ch_versions = ch_versions.mix(CENTAR_GRIPHIN_INPUT.out.versions)
 
@@ -306,7 +309,7 @@ workflow RUN_CENTAR {
                 griphin_input_single_some_isolates_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir]}, 
                 workflow.manifest.version, params.coverage,
                 griphin_input_single_some_isolates_ch.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> busco_var}, 
-                false, true, false, true, params.bldb, true
+                false, true, params.bldb, true
             )
             ch_versions = ch_versions.mix(NO_PUB_CENTAR_GRIPHIN.out.versions)
 
@@ -343,7 +346,7 @@ workflow RUN_CENTAR {
                 griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> [dir]}, 
                 workflow.manifest.version, params.coverage,
                 griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> busco_var}, 
-                false, true, false, true, params.bldb, true
+                false, true, params.bldb, true
             )
             ch_versions = ch_versions.mix(NO_PUB_CENTAR_GRIPHIN_MULTI_DIR.out.versions)
 

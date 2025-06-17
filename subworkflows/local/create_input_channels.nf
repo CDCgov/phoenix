@@ -46,8 +46,10 @@ workflow CREATE_INPUT_CHANNELS {
             // find the samples that do not have a fairy file and create them
             no_fairy_file_id_ch = passed_id_ch.toList().combine(dir_names_ch.toList()).combine(failed_fairy_ids_ch.toList()).map{ passed_ids, dir_names, failed_ids -> dir_names - failed_ids - passed_ids}.ifEmpty([])
 
-            // print out the samples that did not have a fairy file yet
-            no_fairy_file_id_ch.subscribe { result -> if (!result.isEmpty()) { def flat_results = result.flatten().unique().collect() // Check if the channel is empty and print warning for user as this is required for the pipeline
+
+            // print out the samples that did not have a fairy file yet - we will also add in files that have the v2.1.1 style of fairy file
+            old_style_fairy_file_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_old_fairy_samples(it)}.filter{ it != null }.ifEmpty([])
+            no_fairy_file_id_ch.combine(old_style_fairy_file_ch.toList()).subscribe { result -> if (!result.isEmpty()) { def flat_results = result.flatten().unique().collect() // Check if the channel is empty and print warning for user as this is required for the pipeline
                 println("${orange}Warning: There are no files in */file_integrity/*_summary.txt for ${flat_results}. This/These file(s) is required so we will make it.${reset}")}}
 
             // Fallback to dir_names_ch if passed_id_channel is empty -- need to get all sample ids
@@ -297,9 +299,10 @@ workflow CREATE_INPUT_CHANNELS {
             }
 
             // combining all summary files into one channel
-            summary_files_ch = all_griphin_excel_ch.join(all_griphin_tsv_ch.map{meta, griphin_tsv   -> [[id:meta.id, project_id:meta.project_id], griphin_tsv]},   by: [[0][0],[0][1]])
-                                    .join(all_phoenix_tsv_ch.map{               meta, phoenix_tsv   -> [[id:meta.id, project_id:meta.project_id], phoenix_tsv]},   by: [[0][0],[0][1]])
-                                    .join(all_pipeline_info_ch.map{             meta, pipeline_info -> [[id:meta.id, project_id:meta.project_id], pipeline_info]}, by: [[0][0],[0][1]])
+            summary_files_ch = all_griphin_excel_ch.join(all_griphin_tsv_ch.map{meta, griphin_tsv   -> [[project_id:meta.project_id], griphin_tsv]},   by: [[0][0],[0][1]])
+                                    .join(all_phoenix_tsv_ch.map{               meta, phoenix_tsv   -> [[project_id:meta.project_id], phoenix_tsv]},   by: [[0][0],[0][1]])
+                                    .join(all_pipeline_info_ch.map{             meta, pipeline_info -> [[project_id:meta.project_id], pipeline_info]}, by: [[0][0],[0][1]])
+                                    .map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
 
             // pulling all the necessary project level files into channels - need to do this for the name change.
             COLLECT_PROJECT_FILES (
@@ -311,6 +314,7 @@ workflow CREATE_INPUT_CHANNELS {
             griphin_tsv_ch = COLLECT_PROJECT_FILES.out.griphin_tsv
             phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> add_entry_meta(it)}
             pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
+            samplesheet_meta_ch = Channel.empty().ifEmpty([]) // No multiple samplesheets meta channel for indir
 
         } else if (samplesheet != null) {
 
@@ -332,12 +336,15 @@ workflow CREATE_INPUT_CHANNELS {
                 samplesheet = SAMPLESHEET_CHECK.out.csv
             }
 
+            //
+            samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
+
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }
 
             CREATE_FAIRY_FILE (
                 file_integrity_exists, false
-            )
+            ) 
             ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
 
             directory_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> create_dir_channels(it) }
@@ -379,7 +386,8 @@ workflow CREATE_INPUT_CHANNELS {
             //readme files
             readme_files_ch = COLLECT_SAMPLE_FILES.out.readme
 
-            summary_files_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
+            summary_files_ch = samplesheet.flatten().splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
+                                    .map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
 
             // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
@@ -414,6 +422,7 @@ workflow CREATE_INPUT_CHANNELS {
         shigapass          = shigapass_files_ch
         //updater
         readme             = readme_files_ch
+        samplesheet_meta_ch = samplesheet_meta_ch
 
         // sample specific files
         filtered_scaffolds = filtered_scaffolds_ch      // channel: [ meta, [ scaffolds_file ] ]
@@ -441,6 +450,13 @@ workflow CREATE_INPUT_CHANNELS {
 ========================================================================================
 */
 
+def transformSamplesheets(input_ch) {
+    def meta = [:] // create meta array
+    def matcher = input_ch.name =~ /valid_(.+)\.csv$/ // Extract project_id from filename pattern: everything between valid_ and .csv
+    meta.project_id = matcher ? matcher[0][1] : "unknown"
+    return [meta, input_ch]
+}
+
 def check_file_integrity(LinkedHashMap row) {
     def meta = [:] // create meta array
     meta.id = row.sample
@@ -454,13 +470,14 @@ def check_file_integrity(LinkedHashMap row) {
     File dir = new File(clean_path + "/file_integrity/")
     // List files matching the regex pattern
     def files = dir.listFiles { file -> file.name ==~ /${regexPattern}/ }
-    if (files && files.length > 0) {
-        files.each { file ->
+    //if (files && files.length > 0) {
+    if (files) {
+        /*files.each { file ->
             def lines = file.readLines()
             if (lines.size() != 5) {
-                exit 1, "ERROR: File '${file.name}' in '${file.parent}' has ${lines.size()} lines instead of 5, this will cause errors downstream, please fix and rerun."
+                exit 1, "ERROR: File '${file.name}' in '${file.parent}' has ${lines.size()} lines instead of 5, this will cause errors downstream, please rerun with phx >2.2.0 and rerun."
             }
-        }
+        }*/
         return [ meta, clean_path, true ]
     } else {
         return [ meta, clean_path, false ]
@@ -585,6 +602,26 @@ def get_only_passing_samples(filePaths) {
             // Remove everything after the regex '_*_summary.txt'
             def passing_file1 = fileName.replaceAll(/_scaffolds_summary\.txt/, '').replaceAll(/_rawstats_summary\.txt/, '').replaceAll(/_corruption_summary\.txt/, '').replaceAll(/_trimstats_summary\.txt/, '')
             def passing_file2 = passing_file1.replaceAll(/_summary\.txt/, '')
+            passingFiles << passing_file2 // Add the passing file name to the list
+        }
+    }
+    return passingFiles
+}
+
+def get_old_fairy_samples(filePaths) {
+    def passingFiles = [] // Initialize an empty list to store passing file names
+    filePaths.each { filePath ->
+        // Exclude file paths containing ".nextflow"
+        if (filePath.toString().contains('.nextflow')) {
+            println("Skipping: ${filePath} (contains .nextflow dir).")
+            return  // Skip this iteration
+        }
+        def fileObj = new File(filePath.toString())
+        if (fileObj.exists() && fileObj.readLines().size() >= 5) { // Check if the file does not contain 'FAILED' or contains 'End_of_File'. End_of_File happens with a spades failure.
+            // Get the file name by removing the path and extension
+            def fileName = filePath.getFileName().toString().split('/')[-1]
+            // Remove everything after the regex '_*_summary.txt'
+            def passing_file2 = fileName.replaceAll(/_summary\.txt/, '')
             passingFiles << passing_file2 // Add the passing file name to the list
         }
     }

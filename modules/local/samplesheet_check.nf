@@ -12,8 +12,9 @@ process SAMPLESHEET_CHECK {
     val(directory_entry)
 
     output:
-    path('samplesheet.valid.csv'),  emit: csv
-    path("versions.yml"),           emit: versions
+    path('samplesheet.valid.csv'),                   emit: csv
+    path('samplesheet.valid_*.csv'),  optional:true, emit: csv_by_dir // only need if multiple dirs in --input for -profile update_phoenix
+    path("versions.yml"),                            emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -23,6 +24,7 @@ process SAMPLESHEET_CHECK {
     def reads_check = reads_entry ? "true" : "false"
     def scaffolds_check = scaffolds_entry ? "true" : "false"
     def directory_check = directory_entry ? "true" : "false"
+    def updater = (params.mode == "UPDATE_PHOENIX" ) ? "--updater" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     if [ ${reads_check} = "true" ]; then
@@ -35,7 +37,7 @@ process SAMPLESHEET_CHECK {
         script_version=\$(echo check_assembly_samplesheet.py: \$(${ica}check_assembly_samplesheet.py --version ))
     elif [ ${directory_check} = "true" ]; then
         echo "Running check of directory samplesheet"
-        ${ica}check_directory_samplesheet.py ${samplesheet} samplesheet.valid.csv
+        ${ica}check_directory_samplesheet.py ${samplesheet} samplesheet.valid.csv ${updater}
         script_version=\$(echo check_directory_samplesheet.py: \$(${ica}check_directory_samplesheet.py --version ))
     else
         echo "No valid check type provided, exiting."
