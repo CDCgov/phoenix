@@ -148,13 +148,22 @@ def get_taxa_project_dir(input_ch){
 }
 
 def validate_cdiff_presence(input_ch) {
-    print(input_ch)
     def errors = []
-    def project_id = input_ch[0]
-    def genera_list = input_ch[1]
-    // Check if Escherichia is in the list
-    if (!genera_list.contains("Clostridioides")) {
-        errors.add("Project ${project_id} does not contain Clostridioides. Found genera: ${genera_list.join(', ')}")
+    // Process the flattened list in pairs (meta, genera_list)
+    for (int i = 0; i < input_ch.size(); i += 2) {
+        def project_meta = input_ch[i]
+        def genera_list = input_ch[i + 1]
+        //println("DEBUG: Processing project_meta: ${project_meta}")
+        //println("DEBUG: Processing genera_list: ${genera_list}")
+        
+        // Extract project_id from the meta map
+        def project_id = project_meta['project_id']
+        // Convert ArrayBag to List first, then ensure all elements are strings
+        genera_list = genera_list.toList().collect { it.toString() }
+        // Check if Clostridioides is in the list
+        if (!genera_list.contains("Clostridioides")) {
+            errors.add("Project ${project_id} does not contain Clostridioides. Found genera: ${genera_list.join(', ')}")
+        }
     }
     // If any errors found, exit with error message
     if (errors.size() > 0) {
@@ -222,8 +231,6 @@ workflow RUN_CENTAR {
             .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{     meta, centar_file  -> [[project_id:meta.project_id], centar_file]}.groupTuple(by: [0]), by: [0])\
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{         meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])\
             .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> determine_entry(meta, tsv)}, by: [0])
-
-        griphin_input_ch.view()
 
         //define var to be used globally
         def griphin_report
