@@ -58,8 +58,12 @@ CYELLOW = '\033[93m'
 CEND = '\033[0m'
 
 def print_df(df_toprint, label, all):
+    pd.set_option('display.max_rows', 200)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
     print(label+"  ------------------------------------------------------")
-    print("Columns:", df_toprint.columns)
+    for col in df_toprint.columns.tolist():
+        print(col)
     if all == True:
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000, 'display.colheader_justify', 'center', 'display.precision', 2, 'display.max_colwidth', 100):  # more options can be specified also
             print(df_toprint)
@@ -1552,10 +1556,10 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
     if "PHX_Version" in df.columns:
         worksheet.merge_range('A1:D1', "PHoeNIx Summary", cell_format_light_blue)
-        worksheet.merge_range('E1:R1', "QC Metrics", cell_format_grey_blue)
+        worksheet.merge_range('E1:S1', "QC Metrics", cell_format_grey_blue)
     else: # allow for backward compatibility with versions <2.2.0
         worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
-        worksheet.merge_range('D1:S1', "QC Metrics", cell_format_grey_blue)
+        worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
     #taxa columns 
     # Find start and end column letters
     # to allow backwards compatability with v2.1.1 we need a little try and catch...  
@@ -1576,7 +1580,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     else:
         mlst_end_col = column_letter(list(df.columns).index("Secondary_MLST_Alleles"))  # Otherwise, use "Secondary_MLST_Alleles"
     # Dynamically merge based on start and end column
-    #worksheet.merge_range(f"{mlst_start_col}1:{mlst_end_col}1", "MLST Information", cell_format_green)
+    worksheet.merge_range(f"{mlst_start_col}1:{mlst_end_col}1", "MLST Information", cell_format_green)
     if centar == True:
         # qc_max_col centar columns to make merging easier so we need to substract the total number of centar columns from the qc_max_col to get the right starting point
         # as part of combine_GRiPHins.py organism specifc columns are in qc_max_col
