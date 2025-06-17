@@ -5,6 +5,7 @@ process ABRITAMR {
 
     input:
     tuple val(meta), path(fasta), val(fairy_outcome), val(organism_param)
+    path(ar_bd)
 
     output:
     tuple val(meta), path("*.summary_matches.txt")  , emit: matches
@@ -33,6 +34,7 @@ process ABRITAMR {
         --contigs $fasta_name \\
         --prefix ID_${meta.id} \\
         --jobs $task.cpus \\
+        --d ${ar_bd} \\
         $species
 
     # Rename output files to prevent name collisions
