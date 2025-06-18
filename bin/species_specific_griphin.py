@@ -3,6 +3,16 @@
 import pandas as pd
 import numpy as np
 import re
+import os
+
+def try_paths(path1, path2):
+    """Function to try the first path, then fall back to second path if file doesn't exist"""
+    if os.path.exists(path1):
+        return path1
+    elif os.path.exists(path2):
+        return path2
+    else:
+        return path1  # Return the first path even if it doesn't exist, for consistent error handling
 
 ##################################  Centar functions   #########################################
 def transform_value(value):
@@ -81,13 +91,13 @@ def clean_and_format_centar_dfs(centar_df):
     ordered_centar_df = clean_centar_df[existing_columns_in_order]
     return ordered_centar_df, A_B_Tox_len, other_Tox_len, mutant_len, RB_type_len
 
-def create_centar_combined_df(directory, sample_name):
+def create_centar_combined_df(directory1, sample_name, directory2):
     '''If Centar was run get info to add to the dataframe.'''
     # Filtering rows where Final_Taxa_ID contains 'shigella' or 'e.coli'
     # if there is a trailing / remove it
-    directory = directory.rstrip('/')
+    directory1 = directory1.rstrip('/')
     # create file names
-    centar_summary = directory + "/CENTAR/" + sample_name + "_centar_output.tsv"
+    centar_summary = try_paths( directory1 + "/CENTAR/" + sample_name + "_centar_output.tsv", directory2 + "/" + sample_name + "/CENTAR/" + sample_name + "_centar_output.tsv" )
     #clean up the dataframe
     try: # handling for samples that failed and didn't get centar files created
         centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
@@ -107,34 +117,40 @@ def create_centar_combined_df(directory, sample_name):
     return centar_df
 
 ######################################## ShigaPass functions ##############################################
-def create_shiga_df(directory, sample_name, shiga_df, taxa):
+def create_shiga_df(directory1, sample_name, shiga_df, taxa, directory2):
     '''If Shigapass was run get info to add to the dataframe.'''
     # if there is a trailing / remove it
-    directory = directory.rstrip('/')
+    directory1   = directory1.rstrip('/')
     if "Escherichia" in taxa or "Shigella" in taxa:
         # create file names
-        shiga_summary = directory + "/ANI/" + sample_name + "_ShigaPass_summary.csv"
+        shiga_summary = try_paths( directory1 + "/ANI/" + sample_name + "_ShigaPass_summary.csv", directory2 + "/" + sample_name + "/ANI/" + sample_name + "_ShigaPass_summary.csv" )
         # Create a dictionary to store row information
         row_data = { "WGS_ID": sample_name, "ShigaPass_Organism": ""}
-        row_data["WGS_ID"] = sample_name
-        with open(shiga_summary) as shiga_file:
-            for line in shiga_file.readlines()[1:]:  # Skip the first line
-                if line.split(";")[9] == 'Not Shigella/EIEC\n':
-                    row_data["ShigaPass_Organism"] = "Not Shigella/EIEC"
-                else:
-                    row_data["ShigaPass_Organism"] = line.split(";")[7]
-                # Convert the row data into a DataFrame and concatenate with the main DataFrame
-                shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
-        # Define the mapping of short strings to longer strings
-        mapping_dict = {'SB': 'Shigella boydii',
-                        'SD': 'Shigella dysenteriae',
-                        'SS': 'Shigella sonnei',
-                        'SF1-5': 'Shigella flexneri'}
-        # Apply the mapping using map()
-        shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict)
+        try:
+            with open(shiga_summary) as shiga_file:
+                for line in shiga_file.readlines()[1:]:  # Skip the first line
+                    if line.split(";")[9] == 'Not Shigella/EIEC\n':
+                        row_data["ShigaPass_Organism"] = "Not Shigella/EIEC"
+                    else:
+                        row_data["ShigaPass_Organism"] = line.split(";")[7]
+                    # Convert the row data into a DataFrame and concatenate with the main DataFrame
+                    shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
+            # Define the mapping of short strings to longer strings
+            mapping_dict = {'SB': 'Shigella boydii',
+                            'SD': 'Shigella dysenteriae',
+                            'SS': 'Shigella sonnei',
+                            'SF1-5': 'Shigella flexneri'}
+            # Apply the mapping using map()
+            shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict)
+        except FileNotFoundError: 
+            print("Warning: ShigaPass file for " + sample_name + " not found")
+            # Add a row to the DataFrame with the WGS_ID column set to sample_name
+            new_row = pd.DataFrame({"WGS_ID": [sample_name], "ShigaPass_Organism": [""]})
+            shiga_df = pd.concat([shiga_df, new_row], ignore_index=True)
     else:
         # Add a row to the DataFrame with the WGS_ID column set to sample_name
-        shiga_df = pd.DataFrame({"WGS_ID": [sample_name], "ShigaPass_Organism": [""]})
+        new_row = pd.DataFrame({"WGS_ID": [sample_name], "ShigaPass_Organism": [""]})
+        shiga_df = pd.concat([shiga_df, new_row], ignore_index=True)
     return shiga_df
 
 def double_check_taxa_id(shiga_df, phx_df):

@@ -10,7 +10,6 @@ import numpy as np
 import argparse
 import re
 from re import search
-import operator
 import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
@@ -18,7 +17,7 @@ import string
 from Bio import SeqIO
 from itertools import chain
 from pathlib import Path
-from species_specific_griphin import clean_and_format_centar_dfs, create_centar_combined_df, transform_value, create_shiga_df, double_check_taxa_id, fill_taxa_id
+from species_specific_griphin import try_paths, clean_and_format_centar_dfs, create_centar_combined_df, transform_value, create_shiga_df, double_check_taxa_id, fill_taxa_id
 
 # Set display options to show all rows and columns
 pd.set_option('display.max_rows', None)  # Show all rows
@@ -968,17 +967,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2
     
 
-def try_paths(path1, path2):
-    """Function to try the first path, then fall back to second path if file doesn't exist"""
-    if os.path.exists(path1):
-        return path1
-    elif os.path.exists(path2):
-        return path2
-    else:
-        return path1  # Return the first path even if it doesn't exist, for consistent error handling
-
 def Get_Files(directory1, sample_name, directory2):
-    print(sample_name)
     '''Create file paths to collect files from sample folder.'''
     # if there is a trailing / remove it
     directory1 = directory1.rstrip('/')
@@ -1790,8 +1779,10 @@ def main():
     if args.centar == True and args.samplesheet != None and args.filter_samples == True: 
         # When using species specific pipelines and --samplesheet is  given this means we need to make sure only samples in samplesheet are run
         input_samplesheet_df = pd.read_csv(args.samplesheet)
-        output_dir_string = str(args.output).replace("_GRiPHin_Summary","").replace("_GRiPHin","")
-        input_samplesheet_df = input_samplesheet_df[input_samplesheet_df["directory"].str.contains(fr"/{str(output_dir_string)}", na=False, regex=True)]
+        # Check if 'directory' column exists before filtering
+        if 'directory' in input_samplesheet_df.columns:
+            output_dir_string = str(args.output).replace("_GRiPHin_Summary","").replace("_GRiPHin","")
+            input_samplesheet_df = input_samplesheet_df[input_samplesheet_df["directory"].str.contains(fr"/{str(output_dir_string)}", na=False, regex=True)]
         samples_to_run = input_samplesheet_df["sample"].tolist()
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
     with open(samplesheet) as csv_file:
@@ -1824,9 +1815,9 @@ def main():
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
             if args.shigapass == True:
-                shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3])
+                shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3], directory2)
             if args.centar == True:
-                centar_df = create_centar_combined_df(directory, sample_name)
+                centar_df = create_centar_combined_df(directory, sample_name, directory2)
                 centar_dfs.append(centar_df)
     # combine all lists into a dataframe
     df = Create_df(args.phx_version, args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \

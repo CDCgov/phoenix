@@ -84,4 +84,4 @@ RUN pyenv local 3.12.3 && pip3 install biopython \
     pytest-shutil \
     openpyxl \
     pyyaml \
-    pyre2-updated
+    pyre2-updated 
