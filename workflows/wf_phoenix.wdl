@@ -12,7 +12,7 @@ workflow phoenix_workflow {
     File?   input_assembly
     String  samplename
     String  kraken2db
-    String  entry
+    String  mode
     Int?    coverage
     String? scaffold_ext
     Boolean? create_ncbi_sheet
@@ -25,7 +25,7 @@ workflow phoenix_workflow {
       input_assembly    = input_assembly,
       samplename        = samplename,
       kraken2db         = kraken2db,
-      entry             = entry,
+      mode              = mode,
       coverage          = coverage,
       scaffold_ext      = scaffold_ext,
       create_ncbi_sheet = create_ncbi_sheet,

@@ -7,7 +7,7 @@ task phoenix {
     File?    input_assembly
     String   samplename
     String   kraken2db = "null"
-    String   entry = "PHOENIX"
+    String   mode = "PHOENIX"
     String   scaffold_ext = ".scaffolds.fa.gz"
     Boolean? create_ncbi_sheet = false
     Boolean? centar = false
@@ -26,7 +26,7 @@ task phoenix {
     export TMP=$TMPDIR
     env
 
-    if [ ~{entry} == "SRA" ] || [ ~{entry} == "CDC_SRA" ]; then
+    if [ ~{mode} == "SRA" ] || [ ~{mode} == "CDC_SRA" ]; then
       # Make sample form
       echo "~{samplename}" > sample.csv
       # Run PHoeNIx
@@ -37,7 +37,7 @@ task phoenix {
       input_file="--input_sra ../sample.csv --use_sra"
       #set scaffold as blank variable
       scaffold_ext=""
-    elif [ ~{entry} == "SCAFFOLDS" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
+    elif [ ~{mode} == "SCAFFOLDS" ] || [ ~{mode} == "CDC_SCAFFOLDS" ]; then
       # Make sample form
       echo "sample,assembly" > sample.csv
       echo "~{samplename},~{input_assembly}" >> sample.csv
@@ -71,7 +71,7 @@ task phoenix {
     echo $create_ncbi_sheet
     echo $centar
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version -entry ~{entry} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --mode ~{mode} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -117,7 +117,7 @@ task phoenix {
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee NUM_SCAFFOLDS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee GC_PERCENT
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
-    if [ ~{entry} == "PHOENIX" ] || [ ~{entry} == "SRA" ] || [ ~{entry} == "SCAFFOLDS" ]; then
+    if [ ~{mode} == "PHOENIX" ] || [ ~{mode} == "SRA" ] || [ ~{mode} == "SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_CONFIDENCE
@@ -137,9 +137,9 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-      echo "Only run with CDC entry" | tee BUSCO_DB
-      echo "Only run with CDC entry" | tee BUSCO
-    elif [ ~{entry} == "CDC_PHOENIX" ] || [ ~{entry} == "CDC_SRA" ] || [ ~{entry} == "CDC_SCAFFOLDS" ]; then
+      echo "Only run with CDC_PHOENIX mode" | tee BUSCO_DB
+      echo "Only run with CDC_PHOENIX mode" | tee BUSCO
+    elif [ ~{mode} == "CDC_PHOENIX" ] || [ ~{mode} == "CDC_SRA" ] || [ ~{mode} == "CDC_SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
@@ -177,7 +177,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       #sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee QC_REASON
     else
-      echo "Entry point not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
+      echo "mode point not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
       exit 1
     fi
   >>>
@@ -268,7 +268,7 @@ task phoenix {
     File? kraken_wtasmbld_top_taxa = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
     File? wtasmbld_html            = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
     File? wtasmbld_krona           = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
-    ## phoenix asmbld kraken/krona -- only made when -entry CDC_PHOENIX or CDC_SCAFFOLDS is run
+    ## phoenix asmbld kraken/krona -- only made when -mode CDC_PHOENIX or CDC_SCAFFOLDS is run
     File? kraken_asmbld_output     = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.classifiedreads.txt"
     File? kraken_asmbld_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.summary.txt"
     File? kraken_asmbld_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.top_kraken_hit.txt"
