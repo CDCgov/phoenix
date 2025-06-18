@@ -1226,6 +1226,20 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     df = pd.DataFrame(data)
     return df
 
+def get_gene_fam(gene):
+    gene = gene.split('_')[0]
+    if "(" in gene:
+        if '-' in gene:
+            if gene.find('(') < gene.find('-'):
+                gene_family = gene.split(")")[0]+')' # In the cases where the gene name includes dashes inside of parentheses
+            else:
+                gene_family = gene.split('_')[0].split("-")[0] # If the dash occurs before the parentheses...Not sure if this occurs, but attempting to catch it
+        else:
+            gene_family = gene.split('_')[0].split('-')[0] ###AGK added this because not sure why you wouldn't want the genes without dashes?
+    else:
+        gene_family = gene.split('_')[0].split('-')[0] # split to remove allele number and just have gene name AGK changed     
+    return gene_family
+
 def srst2_dedup(srst2_ar_df, gamma_ar_df):
     ##### First, we will drop columns with "partial" in the name
     # Filter out columns that contain the substring
@@ -1241,25 +1255,27 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
         for col_name in srst2_ar_df.columns:
             if pd.notna(row[col_name]) and row[col_name] != "":
                 # split on _ to get just the gene/allele name for matching
-                gene = col_name.split('_')[0].split("-")[0]
+                gene = get_gene_fam(col_name)
                 gene_list.append(gene)
         # Extract unique genes in srst2 - positive SRST2 hits
         unique_gene_list = list(set(gene_list))
         # Check if the gene name (column name) exists in the GAMMA AR DataFrame -> if there is a match these would be GAMMA +, but a different allele and we want to remove these.
         for gene in unique_gene_list:
-            if '(' in gene and ')' not in gene:
-                ###!print("Fixing", gene, "to", gene+')')
-                gene = gene + ')'
-            if gamma_ar_df.columns.str.match(gene).any():
-                # Check for partial string match in the column names of the gamma DataFrame
-                matching_columns = gamma_ar_df.columns[gamma_ar_df.columns.str.contains(gene)].tolist()
+            if gamma_ar_df.columns.str.contains(gene,regex=False).any():
+                # Check for exact string match in the column names of the gamma family names
+                matching_columns = gamma_ar_df.columns[pd.Series(gamma_ar_df.columns).apply(get_gene_fam) == gene].tolist()
                 for column in matching_columns:
                     # check that for the column in question there is also a value found in the GAMMA column
                     if pd.notna(gamma_ar_df.at[str(idx), column]) and gamma_ar_df.at[str(idx), column] != "":
                         # Check if there is a value in the corresponding column in the second DataFrame
-                        #srst2_ar_df.at[idx, srst2_ar_df.columns.str.contains(gene)] = ""
-                        srst2_ar_df.loc[idx, srst2_ar_df.columns[srst2_ar_df.columns.str.contains(gene)]] = ""
-                        print(f"sample {idx}: Value found in column '{gene}' of srst2_df and this matches the '{matching_columns}' of gamma_df (alleles with srst/gamma or only gamma positive) and was removed for deduplication purposes.")
+                        selected_cols = srst2_ar_df.columns[pd.Series(srst2_ar_df.columns).apply(get_gene_fam) == gene]
+                        cols = []
+                        for col, val in srst2_ar_df.loc[idx, selected_cols].items():
+                            if pd.notna(val) and str(val).strip() != '':
+                                cols.append(col)
+                        colstr = ';'.join(cols)
+                        srst2_ar_df.loc[idx, srst2_ar_df.columns[pd.Series(srst2_ar_df.columns).apply(get_gene_fam) == gene]] = ""
+                        print(f"Sample {idx}: SRST2 identified '{colstr}' which matches GAMMA hit '{column}' by gene family name and was removed for deduplication.")
     ##### Third, we will look at GAMMA- samples and check the # of gene alleles and filter to only have the top hits. ####
     # These are now the GAMMA neg hits and we will now check the number of alleles for each gene - first we do some dataframe rearranging to make it "easier"
     # Check if DataFrame is not empty
@@ -1274,22 +1290,13 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
             multiple_occurrences = []
             count = 0
             for val in row["neg_genes"]:
-                # Gonna need to fix this soon. There are genes that have dashes in the gene name that dont relate to allele
-                if "(" in val:
-                    if '-' in val:
-                        if val.find('(') < val.find('-'):
-                            gene_list.append(val.split(")")[0]+')') # In the cases where the gene name includes dashes inside of parentheses
-                        else:
-                            gene_list.append(val.split("-")[0]) # If the dash occurs before the parentheses...Not sure if this occurs, but attempting to catch it
-                    else:
-                        continue # This would break downstream anyway, but in the case that a gene does not have ANY dash in it
-                else:
-                    gene_list.append(val.split("-")[0]) # split to remove allele number and just have gene name
+                gene_list.append(get_gene_fam(val))
             for val in gene_list:
                 count = count + 1 #only continue below if we have seen this gene before
                 if gene_list.count(val) > 1 and val not in multiple_occurrences:
-                    #get a dataframe of the gene in question
-                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, gamma_neg_srst2.columns.str.contains(val)])
+                    #get a dataframe of the gene in question 
+                    matching_columns = gamma_neg_srst2.columns[pd.Series(gamma_neg_srst2.columns).apply(get_gene_fam) == val].tolist()
+                    df = pd.DataFrame(gamma_neg_srst2.loc[row.name, matching_columns])
                     # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
                     df[['Percent_Match', 'Coverage']] = df[row.name].str.extract(r'\[(\d+)NT/(\d+)\]S')
                     # Convert extracted values to integer type and keep NA values
@@ -1358,22 +1365,34 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
         return ar_df
     ar_combined_df = pd.DataFrame() #create new dataframe to fill
     common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
+    ignore_cols = ['AR_Database', 'UNI','No_AR_Genes_Found', 'WGS_ID'] # These columns should not be included in gene processing
+    gene_common_cols = [x for x in common_cols if x not in ignore_cols] # Get gene columns that are common to both but not in the ignore list
     # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
-    for col in common_cols:
-        if col != "WGS_ID" and col != 'UNI':
-            ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
-            ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
-            ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
-        else:
-            ar_combined_df[col] = srst2_ar_df[col]
+    for col in gene_common_cols:
+        ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
+        ar_combined_df[col] = ar_combined_df[col].map(lambda x: str(x).lstrip(':').rstrip(':')) # clean up : for cases where there isn't a gamma and srst2 for all rows
+        ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
     # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
-    # drop columns from srst2 dataframe that are in common in the ar_db as these are already in ar_combined_df
+    # Subset SRST2 to just the overlapping gene columns
+    srst2_common = srst2_ar_df[gene_common_cols] 
+    # Create a mask to keep values in ar_combined_df that are different from srst2_common
+    mask = srst2_common.notna() & ((ar_combined_df.isna()) | (srst2_common != ar_combined_df)) 
+    # Keep only those differing values from ar_combined_df (rest filled with ''), meaning they don't have a solo SRST2 hit as these would be identical between the two dfs
+    ar_combined_nosolosrst2 = ar_combined_df.where(mask).fillna('')
+    # Determine which values exist only in SRST2 and not in GAMMA
+    srst2_has_value = srst2_common.notna() & (srst2_common != '')
+    gamma_has_value = ar_df[gene_common_cols].notna() & (ar_df[gene_common_cols] != '')
+    srst2_ar_df_only = srst2_common.where(srst2_has_value & ~gamma_has_value).fillna('')
+    
+    # Drop overlapping gene columns from original DataFrames to avoid duplication
+    ar_df.drop(gene_common_cols, axis = 1, inplace=True) #this one will be how we carry through WGS_ID and UNI
     srst2_ar_df.drop(common_cols, axis = 1, inplace=True) # This will leave GAMMA- samples
-    ar_df.drop(common_cols, axis = 1, inplace=True)
-    # Add cols that are unique to srst2
     ############### DEDUPING FOR SRST2 ###############
-    srst2_ar_df = srst2_dedup(srst2_ar_df, ar_df.join(ar_combined_df))
-    ar_combined_df = ar_combined_df.join(srst2_ar_df)
+    #srst2_ar_df = srst2_dedup(srst2_ar_df, ar_df.join(ar_combined_df))
+    srst2_ar_df = srst2_dedup(srst2_ar_df.join(srst2_ar_df_only), ar_df.join(ar_combined_nosolosrst2))
+    #recombine all parts into a single dataframe
+    #replace "" with np.nan and then replace back after combine_first because they treat "" as filled data
+    ar_combined_df = ar_combined_nosolosrst2.replace("",np.nan).combine_first(srst2_ar_df.replace("",np.nan)).replace(np.nan,"") #use combine_first for cases where they both have the same column there shouldn't be any overlap
     # Add cols that are unique to gamma ar_df
     ar_combined_df = ar_combined_df.join(ar_df)
     #fixing column orders
