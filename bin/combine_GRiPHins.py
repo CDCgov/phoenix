@@ -2,6 +2,7 @@
 
 #disable cache usage in the Python so __pycache__ isn't formed. If you don't do this using 'nextflow run cdcgov/phoenix...' a second time will causes and error
 import sys
+from packaging import version
 sys.dont_write_bytecode = True
 import glob
 import os
@@ -46,6 +47,23 @@ CEND = '\033[0m'
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 
+def df_has_index_dupes(df_to_check, label):
+    # Check if the DataFrame has duplicate indices
+    if df_to_check.index.duplicated().any():
+        print(label, "has duplicate indices.")
+    else:
+        print(label, "does not have duplicate indices.")
+
+def df_has_other_dupes(df_to_check, to_check, label):
+    # Check if the DataFrame has duplicate indices
+    if to_check in df_to_check.columns:
+        if df_to_check[to_check].duplicated().any():
+            print(label,'-',to_check, "has duplicate indices.")
+        else:
+            print(label,'-',to_check, "does not have duplicate indices.")
+    else:
+        print(label,'-',to_check, "column not found in DataFrame.")
+
 def sort_samples_df(df):
     samples = df["WGS_ID"]
     try:
@@ -61,8 +79,10 @@ def sort_samples_df(df):
     return df
 
 def sort_columns_to_primary_ungrouped(df_to_sort):
-    default_df = [ "UNI", "WGS_ID", "Parent_Folder", "Data_Location", "Minimum_QC_Check", "Minimum_QC_Issues", "Warnings", "Alerts", "Raw_Q30_R1_[%]", "Raw_Q30_R2_[%]", "Total_Raw_[reads]", "Paired_Trimmed_[reads]", "Total_Trimmed_[reads]", "Estimated_Trimmed_Coverage", "GC[%]", "Scaffolds", "Assembly_Length", "Assembly_Ratio", "Assembly_StDev", "Final_Taxa_ID", "Taxa_Source", "BUSCO_Lineage", "BUSCO_%Match", "Kraken_ID_Raw_Reads_%", "Kraken_ID_WtAssembly_%", "ShigaPass_Organism", "FastANI_Organism", "FastANI_%ID", "FastANI_%Coverage", "Species_Support_ANI", "Primary_MLST_Scheme", "Primary_MLST_Source", "Primary_MLST", "Primary_MLST_Alleles", "Secondary_MLST_Scheme", "Secondary_MLST_Source", "Secondary_MLST", "Secondary_MLST_Alleles", "MLST Clade", "Toxinotype", "Toxin-A_sub-type", "tcdA", "Toxin-B_sub-type", "tcdB", "tcdC_Variant", "tcdC other mutations", "tcdC", "tcdR", "tcdE", "PaLoc_NonTox_Variant", "PaLoc_NonTox other mutations", "PaLoc_NonTox", "cdtA", "cdtB", "cdtR_Variant", "cdtR other mutations", "cdtR", "cdtAB1", "cdtAB2", "gyrA known mutations", "gyrA other mutations", "gyrA", "gyrB known mutations", "gyrB other mutations", "gyrB", "dacS known mutations", "dacS other mutations", "dacS", "feoB known mutations", "feoB other mutations", "feoB", "fur known mutations", "fur other mutations", "fur", "gdpP known mutations", "gdpP other mutations", "gdpP", "glyC known mutations", "glyC other mutations", "glyC", "hemN known mutations", "hemN other mutations", "hemN", "hsmA known mutations", "hsmA other mutations", "hsmA","lscR known mutations", "lscR other mutations", "lscR", "marR known mutations", "marR other mutations", "marR", "murG known mutations", "murG other mutations", "murG", "nifJ known mutations", "nifJ other mutations", "nifJ", "PNimB known mutations", "PNimB other mutations", "PNimB", "rpoB known mutations", "rpoB other mutations", "rpoB", "rpoC known mutations", "rpoC other mutations", "rpoC", "sdaB known mutations", "sdaB other mutations", "sdaB", "thiH known mutations", "thiH other mutations", "thiH", "vanR known mutations", "vanR other mutations", "vanR", "vanS known mutations", "vanS other mutations", "vanS", "CEMB RT Crosswalk", "Inferred RT", "Probability", "ML Note", "Plasmid Info", "AR_Database", "No_AR_Genes_Found", "HV_Database", "No_HVGs_Found", "Plasmid_Replicon_Database", "No_Plasmid_Markers" ]
-    sorted_df = df_to_sort[[col for col in default_df if col in df_to_sort.columns]]
+    default_df = [ "UNI", "WGS_ID", "Parent_Folder", "Data_Location", "PHX_Version", "Minimum_QC_Check", "Minimum_QC_Issues", "Warnings", "Alerts", "Raw_Q30_R1_[%]", "Raw_Q30_R2_[%]", "Total_Raw_[reads]", "Paired_Trimmed_[reads]", "Total_Trimmed_[reads]", "Estimated_Trimmed_Coverage", "GC[%]", "Scaffolds", "Assembly_Length", "Assembly_Ratio", "Assembly_StDev", "Final_Taxa_ID", "Taxa_Source", "BUSCO_Lineage", "BUSCO_%Match", "Kraken_ID_Trimmed_Reads_%", "Kraken_ID_WtAssembly_%", "ShigaPass_Organism", "FastANI_Organism", "FastANI_%ID", "FastANI_%Coverage", "Species_Support_ANI", "Primary_MLST_Scheme", "Primary_MLST_Source", "Primary_MLST", "Primary_MLST_Alleles", "Secondary_MLST_Scheme", "Secondary_MLST_Source", "Secondary_MLST", "Secondary_MLST_Alleles", "MLST Clade", "Toxinotype", "Toxin-A_sub-type", "tcdA", "Toxin-B_sub-type", "tcdB", "tcdC_Variant", "tcdC other mutations", "tcdC", "tcdR", "tcdE", "PaLoc_NonTox_Variant", "PaLoc_NonTox other mutations", "PaLoc_NonTox", "cdtA", "cdtB", "cdtR_Variant", "cdtR other mutations", "cdtR", "cdtAB1", "cdtAB2", "gyrA known mutations", "gyrA other mutations", "gyrA", "gyrB known mutations", "gyrB other mutations", "gyrB", "dacS known mutations", "dacS other mutations", "dacS", "feoB known mutations", "feoB other mutations", "feoB", "fur known mutations", "fur other mutations", "fur", "gdpP known mutations", "gdpP other mutations", "gdpP", "glyC known mutations", "glyC other mutations", "glyC", "hemN known mutations", "hemN other mutations", "hemN", "hsmA known mutations", "hsmA other mutations", "hsmA","lscR known mutations", "lscR other mutations", "lscR", "marR known mutations", "marR other mutations", "marR", "murG known mutations", "murG other mutations", "murG", "nifJ known mutations", "nifJ other mutations", "nifJ", "PNimB known mutations", "PNimB other mutations", "PNimB", "rpoB known mutations", "rpoB other mutations", "rpoB", "rpoC known mutations", "rpoC other mutations", "rpoC", "sdaB known mutations", "sdaB other mutations", "sdaB", "thiH known mutations", "thiH other mutations", "thiH", "vanR known mutations", "vanR other mutations", "vanR", "vanS known mutations", "vanS other mutations", "vanS", "CEMB RT Crosswalk", "Inferred RT", "Probability", "ML Note", "Plasmid Info", "AR_Database", "No_AR_Genes_Found"] #, "HV_Database", "No_HVGs_Found", "Plasmid_Replicon_Database", "No_Plasmid_Markers" ]
+    rest_cols = [col for col in df_to_sort.columns if col not in default_df]
+    exist_cols = [col for col in default_df if col in df_to_sort.columns]
+    sorted_df = df_to_sort[ exist_cols + rest_cols ]
     return sorted_df
 
 def insert_shiga_column(df, add_col, insertion_col):
@@ -201,6 +221,8 @@ def combine_centar(ordered_centar_df_1, centar_df_lens_1, centar_df_column_names
     # Combine the centar_df_column_names lists
     return ordered_centar_df, centar_df_lens, centar_column_packages
 
+
+
 def combine_gene_dataframes(old_df, new_df):
     # Ensure the first column is 'WGS_ID'
     #if new_df.columns[0] != 'WGS_ID' or old_df.columns[0] != 'WGS_ID':
@@ -222,15 +244,81 @@ def combine_gene_dataframes(old_df, new_df):
 
 def combine_qc_dataframes(df1_qc, df2_qc):
     # Convert the 'WGS_ID' columns to the index to facilitate updating
+    #df_has_other_dupes(df1_qc, 'WGS_ID', 'df1_qc')
+    #df_has_other_dupes(df2_qc, 'WGS_ID', 'df2_qc')
     df1 = df1_qc.set_index('UNI', inplace=False)
     df2 = df2_qc.set_index('UNI', inplace=False)
     # Update df1_qc with matching rows from df2_qc
     df1.update(df2)
     # Append non-matching rows from df2_qc to df1_qc using pd.concat
     combined_df = pd.concat([df1, df2[~df2.index.isin(df1.index)]], copy=False)
+    
+    #df_has_other_dupes(combined_df, 'WGS_ID', 'combined df IN CQD')
     # Reset the index to restore the 'UNI' column
     combined_df.reset_index(inplace=True)
-    return combined_df
+    #df_has_other_dupes(combined_df, 'WGS_ID', 'combined_df after index reset')
+    combined_ordered_df = sort_columns_to_primary_ungrouped(combined_df)
+
+    # Overlord suggestoins on trying to filter duplicate rowws by WGS_ID
+    # Combine the DataFrames
+    #df_combined = pd.concat([df1, df2], ignore_index=True)
+
+    # Ensure 'PHX_Version' exists
+    if 'PHX_Version' not in combined_ordered_df.columns:
+        combined_ordered_df['PHX_Version'] = None
+
+    # Normalize PHX_Version values
+    def clean_version(ver):
+        if pd.isna(ver):
+            return version.parse("0.0.0")
+        ver = ver.replace("-dev", ".dev0") # or ".dev1" if you want it later than dev0
+        if ver[0:2] == "v.":
+            ver=ver[2:]
+        elif ver[0] == "v":
+            ver=ver[1:]
+        return version.parse(str(ver).strip())
+
+    # Track removed rows
+    removed_unis = []
+
+    def resolve_group(group):
+        check_cols = [
+            'Raw_Q30_R1_[%]',
+            'Raw_Q30_R2_[%]',
+            'Total_Raw_[reads]',
+            'Paired_Trimmed_[reads]',
+            'Total_Trimmed_[reads]',
+            'Estimated_Trimmed_Coverage',
+            'GC[%]'
+        ]
+
+        if group[check_cols].nunique().le(1).all():
+            group = group.copy()
+            group['PHX_Version_Clean'] = group['PHX_Version'].apply(clean_version)
+            sorted_group = group.sort_values(by='PHX_Version_Clean', ascending=False)
+            kept = sorted_group.head(1)
+            removed = sorted_group.iloc[1:]
+            removed_unis.extend(removed['UNI'].tolist())
+            return kept
+        else:
+            return group
+
+    deduped_df = (
+        combined_ordered_df.groupby('WGS_ID', group_keys=False)
+                .apply(resolve_group)
+                .drop(columns='PHX_Version_Clean', errors='ignore')
+                .reset_index(drop=True)
+    )
+
+    # Logging as before
+    if removed_unis:
+        print("Removed duplicate rows with the following UNI values (due to matching QC fields and lower PHX_Version):")
+        for u in removed_unis:
+            print(" -", u)
+    else:
+        print("No duplicate rows removed.")
+
+    return deduped_df#combined_ordered_df
 
 def make_empty_species_specific_df(species_specific_df, other_df, start_col, end_col):
     """Building a empty pandas dataframe with the right column names to be able to combine correctly"""
@@ -488,6 +576,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
 def main():
     # looping through excel files
     args = parseArgs()
+    #print(args)
     #figure out the name of the output file 
     if args.output != None:
         output_file = args.output
@@ -520,6 +609,8 @@ def main():
         base_file = griphin_files.pop(0)
         #combine first two files
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(base_file, griphin_files[0], args.samplesheet, False, args.parent_folder)
+        #print_df(combined_df_qc_final, "G ------- Combined QC DataFrame -------", False)
+        #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'G Combined QC DataFrame')
         combined_dataframes_final = [ combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, ordered_centar_df_final ]
         # Iterate over remaining files, progressively combining them with the base
         for count, next_file in enumerate(griphin_files[1:], start=1):
@@ -543,9 +634,21 @@ def main():
         # Reset the indices of both DataFrames during concat so they are aligned and we don't get NaNs in the final row of the dataframe
         ordered_centar_df_final = sort_columns_to_primary_ungrouped(ordered_centar_df_final)
         #combined_df_qc = pd.concat([combined_df_qc, ordered_centar_df], axis=1)
+        #print_df(combined_df_qc_final, "H ------- Combined QC DataFrame with Centar -------", False)
+        #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'H Combined QC DataFrame with Centar')
         combined_df_qc_final = pd.merge(combined_df_qc_final, ordered_centar_df_final, how="left", on = ['UNI', 'UNI'])
+        #print_df(combined_df_qc_final, "I ------- Combined QC DataFrame with Centar -------", False)
+        #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'I Combined QC DataFrame with Centar --- Post merge')
+        combined_df_qc_final = sort_columns_to_primary_ungrouped(combined_df_qc_final)
+    
     # call function from griphin script to combine all dfs
     final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), phoenix_final, True, args.bldb)
+
+
+    #print(list(final_df.index))
+    #print(final_df['WGS_ID'].tolist())
+    #print(final_df['UNI'].tolist())
+    #check if we need to add shiga pass information
     #get other information for excel writing
     combined_df_qc_final = combined_df_qc_final.drop('UNI', axis = 1)
     (qc_max_row, qc_max_col) = combined_df_qc_final.shape
@@ -554,6 +657,9 @@ def main():
     #write excel sheet
     final_df = final_df.drop('UNI', axis=1)
     final_df = sort_samples_df(final_df)
+    #df_has_index_dupes(final_df, "Final DataFrame after dropping UNI")
+    #df_has_other_dupes(final_df, 'UNI', 'Final_Dataframe after dropping UNI')
+    #df_has_other_dupes(final_df, 'WGS_ID', 'Final Dataframe after dropping UNI')
     write_to_excel(args.set_coverage, output_file, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db, phoenix_final, shiga_final, centar_final, centar_df_lens_final)
     #write tsv from excel
     convert_excel_to_tsv(output_file)

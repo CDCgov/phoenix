@@ -28,6 +28,18 @@ def transform_value(value):
         return ""
     return value
 
+def print_df(df_toprint, label, all):
+    pd.set_option('display.max_rows', 200)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    print(label+"  ------------------------------------------------------")
+    for col in df_toprint.columns.tolist():
+        print(col)
+#    print("Columns:", df_toprint.columns)
+    if all == True:
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000, 'display.colheader_justify', 'center', 'display.precision', 2, 'display.max_colwidth', 100):  # more options can be specified also
+            print(df_toprint)
+
 # ******Note: this function is called in GRiPHin.py any changes to it need to be tested in -entry CDC_PHOENIX and PHOENIX******
 def clean_and_format_centar_dfs(centar_df):
     '''If Centar was run get info to add to the dataframe.'''

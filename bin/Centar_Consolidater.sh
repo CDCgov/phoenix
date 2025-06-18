@@ -158,17 +158,18 @@ if [[ -f "${rt_file}" ]]; then
     # else
     #     new_rt="unset"
     # fi
-    raw_prob=$(echo "${line}" | cut -d$'\t' -f5)
-    temp_prob=$(echo "$raw_prob * 100" | bc)
-    prob=$(printf "%2.2f" "${temp_prob}")
-    echo "PROB-$raw_prob-$temp_prob-$prob"}
+    raw_prob=$(echo "${line}" | cut -f5)
+    prob=$(awk -v val="$raw_prob" 'BEGIN { printf "%.2f", val * 100 }')
+    echo "PROB-$raw_prob-$prob"
     clusterx=$(echo "${line}" | cut -d$'\t' -f2)
     clustery=$(echo "${line}" | cut -d$'\t' -f3)
     source=$(echo "${line}" | cut -d$'\t' -f6)
-    rt=$(echo "${line}" | cut -d$'\t' -f4)
+    rt=$(echo "${line}" | cut -d$'\t' -f8)
     note=$(echo "${line}" | cut -d$'\t' -f7)
     if [[ "${note}" = "" ]]; then
         ML_RT="${rt}\t${prob}\t${source}"
+    elif [[ "${note}" = "-" ]]; then
+        ML_RT="${rt}\t${prob}\t${source}\tNo Notes"   
     else
         ML_RT="${rt}\t${prob}\t${source}\t${note}"
     fi
