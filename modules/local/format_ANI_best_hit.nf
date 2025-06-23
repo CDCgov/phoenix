@@ -8,9 +8,9 @@ process FORMAT_ANI {
     tuple val(meta), path(ani_file)
 
     output:
-    tuple val(meta), path('*.fastANI.txt'), optional:true, emit: ani_best_hit
-    tuple val(meta), path('*.to_check_fastANI.txt'),       emit: ani_best_hit_to_check
-    path("versions.yml"),                                  emit: versions
+    tuple val(meta), path('*.fastANI.txt'),          optional:true, emit: ani_best_hit
+    tuple val(meta), path('*.to_check_fastANI.txt'), optional:true, emit: ani_best_hit_to_check
+    path("versions.yml"),                                           emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths

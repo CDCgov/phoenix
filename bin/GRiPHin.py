@@ -971,9 +971,12 @@ def Get_Files(directory1, sample_name, directory2):
     '''Create file paths to collect files from sample folder.'''
     # if there is a trailing / remove it
     directory1 = directory1.rstrip('/')
+    print("Directory 1: " + directory1)
     directory2 = directory2.rstrip('/')
+    print("Directory 2: " + directory2)
     # create file names
     trim_stats = try_paths( directory1 + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt", directory2 + "/" + sample_name + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt" )
+    print(trim_stats)
     raw_stats = try_paths( directory1 + "/raw_stats/" + sample_name + "_raw_read_counts.txt", directory2 + "/" + sample_name + "/raw_stats/" + sample_name + "_raw_read_counts.txt" )
     kraken_trim = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt" )
     kraken_trim_report = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt" )

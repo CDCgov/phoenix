@@ -20,7 +20,7 @@ process GATHER_SUMMARY_LINES {
     def busco_parameter = busco_val ? "--busco" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
-    def output = (params.mode == "UPDATE_PHOENIX") ? "${meta.project_id}_Phoenix_Summary.tsv" : "Phoenix_Summary.tsv" 
+    def output = (params.mode_upper == "UPDATE_PHOENIX") ? "${meta.project_id}_Phoenix_Summary.tsv" : "Phoenix_Summary.tsv" 
     """
     ${ica}Create_phoenix_summary_tsv.py \\
         --out ${output} \\

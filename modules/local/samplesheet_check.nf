@@ -24,7 +24,7 @@ process SAMPLESHEET_CHECK {
     def reads_check = reads_entry ? "true" : "false"
     def scaffolds_check = scaffolds_entry ? "true" : "false"
     def directory_check = directory_entry ? "true" : "false"
-    def updater = (params.mode == "UPDATE_PHOENIX" ) ? "--updater" : ""
+    def updater = (params.mode_upper == "UPDATE_PHOENIX" ) ? "--updater" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     if [ ${reads_check} = "true" ]; then

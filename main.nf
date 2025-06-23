@@ -547,26 +547,26 @@ workflow CENTAR {
 // WORKFLOW: Execute a single named workflow for the pipeline
 //
 workflow {
-    if(params.mode =="PHOENIX" || params.mode == "phoenix") {
+    if(params.mode_upper == "PHOENIX") {
         PHOENIX()
-    } else if(params.mode =="CDC_PHOENIX" || params.mode == "cdc_phoenix") {
+    } else if(params.mode_upper == "CDC_PHOENIX") {
         CDC_PHOENIX()
-    } else if(params.mode =="SRA" || params.mode == "sra") {
+    } else if(params.mode_upper == "SRA") {
         SRA()
-    } else if(params.mode =="CDC_SRA" || params.mode == "cdc_sra") {
+    } else if(params.mode_upper == "CDC_SRA") {
         CDC_SRA()
-    } else if(params.mode =="SCAFFOLDS" || params.mode == "scaffolds") {
+    } else if(params.mode_upper == "SCAFFOLDS") {
         SCAFFOLDS()
-    } else if(params.mode =="CDC_SCAFFOLDS" || params.mode == "cdc_scaffolds") {
+    } else if(params.mode_upper == "CDC_SCAFFOLDS") {
         CDC_SCAFFOLDS()
-    } else if(params.mode =="UPDATE_PHOENIX" || params.mode == "update_phoenix") {
+    } else if(params.mode_upper == "UPDATE_PHOENIX") {
         UPDATE_PHOENIX()
-    } else if(params.mode =="CLIA" || params.mode == "clia") {
+    } else if(params.mode_upper == "CLIA") {
         CLIA()
         println("${red}WARNING: While this pipeline is undergoing CLIA validation at CDC, other users MUST conduct their own validation of this workflow and obtain explicit approval from THEIR CLIA director before considering it CLIA certified. Using this pipeline and reporting it's results to the patient, their care provider, or placed in the patient's medical record without proper validation may violate regulatory requirements.${reset}")
-    } else if(params.mode =="COMBINE_GRIPHINS" || params.mode == "combine_griphins") {
+    } else if(params.mode_upper == "COMBINE_GRIPHINS") {
         COMBINE_GRIPHINS()
-    } else if(params.mode =="CENTAR" || params.mode == "centar") {
+    } else if(params.mode_upper == "CENTAR") {
         CENTAR()
         // comment out to run CENTAR 
         //exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
