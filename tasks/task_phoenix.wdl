@@ -26,7 +26,10 @@ task phoenix {
     export TMP=$TMPDIR
     env
 
-    if [ ~{mode} == "SRA" ] || [ ~{mode} == "CDC_SRA" ]; then
+    # Convert to lowercase using bash
+    mode_upper=$(echo ~{mode} | tr '[:lower:]' '[:upper:]')
+
+    if [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "CDC_SRA" ]; then
       # Make sample form
       echo "~{samplename}" > sample.csv
       # Run PHoeNIx
@@ -37,7 +40,7 @@ task phoenix {
       input_file="--input_sra ../sample.csv --use_sra"
       #set scaffold as blank variable
       scaffold_ext=""
-    elif [ ~{mode} == "SCAFFOLDS" ] || [ ~{mode} == "CDC_SCAFFOLDS" ]; then
+    elif [ ${mode_upper} == "SCAFFOLDS" ] || [ ${mode_upper} == "CDC_SCAFFOLDS" ]; then
       # Make sample form
       echo "sample,assembly" > sample.csv
       echo "~{samplename},~{input_assembly}" >> sample.csv
@@ -71,7 +74,7 @@ task phoenix {
     echo $create_ncbi_sheet
     echo $centar
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --mode ~{mode} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --mode ${mode_upper} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -117,7 +120,7 @@ task phoenix {
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee NUM_SCAFFOLDS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee GC_PERCENT
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
-    if [ ~{mode} == "PHOENIX" ] || [ ~{mode} == "SRA" ] || [ ~{mode} == "SCAFFOLDS" ]; then
+    if [ ${mode_upper} == "PHOENIX" ] || [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_CONFIDENCE
@@ -139,7 +142,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       echo "Only run with CDC_PHOENIX mode" | tee BUSCO_DB
       echo "Only run with CDC_PHOENIX mode" | tee BUSCO
-    elif [ ~{mode} == "CDC_PHOENIX" ] || [ ~{mode} == "CDC_SRA" ] || [ ~{mode} == "CDC_SCAFFOLDS" ]; then
+    elif [ ${mode_upper} == "CDC_PHOENIX" ] || [ ${mode_upper} == "CDC_SRA" ] || [ ${mode_upper} == "CDC_SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
@@ -177,7 +180,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       #sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee QC_REASON
     else
-      echo "mode point not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
+      echo "Mode not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
       exit 1
     fi
   >>>
