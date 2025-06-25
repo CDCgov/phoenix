@@ -48,6 +48,7 @@ def parseArgs(args=None):
     parser.add_argument('--shigapass', dest="shigapass", default=False, action='store_true', required=False, help='Use for when there are E. coli or Shigella isolates in samplesheet.')
     parser.add_argument('--centar', dest="centar", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--filter_samples', dest="filter_samples", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
+    parser.add_argument('--ar_gene_thresholds',default=None, nargs='+', required=False, dest='ar_gene_thresholds', help="Thresholds for SRST2 and GAMMA AR genes in the format  e.g. and the default --ar_gene_threshold SRST2-NT=98 SRST2-COV=90 GAMMA-AA=98,GAMMA-COV=90")
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
@@ -523,10 +524,11 @@ def duplicate_column_clean(df):
             df[dup] = new_col
     return df
 
-def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
+def parse_gamma_ar(gamma_ar_file, sample_name, final_df, ar_gene_thresholds):
     """Parsing the gamma file run on the antibiotic resistance database."""
     gamma_df = pd.read_csv(gamma_ar_file, sep='\t', header=0)
-    DB = (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2] + "([XNT/98AA/90]G:[98NT/90]S)"
+    thresholds_string = "([XNT/{:.0f}AA/{:.0f}]G:[{:.0f}NT/{:.0f}]S)".format(ar_gene_thresholds['GAMMA-AA'], ar_gene_thresholds['GAMMA-COV'], ar_gene_thresholds['SRST2-NT'], ar_gene_thresholds['SRST2-COV'])
+    DB = (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[1] + "_" + (gamma_ar_file.rsplit('/', 1)[-1]).replace(sample_name, "").rsplit('_')[2] + thresholds_string
     percent_BP_IDs = np.floor(gamma_df["BP_Percent"]*100).tolist() # round % to whole number
     percent_codon_IDs = np.floor(gamma_df["Codon_Percent"]*100).tolist() # round % to whole number
     percent_lengths = np.floor(gamma_df["Percent_Length"]*100).tolist() # round % to whole number
@@ -538,17 +540,17 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df):
     # loop through list of gamma info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}AA/{:.0f}:#{}]G".format(percent_BP_ID, percent_codon_ID, percent_length, contig_number) for percent_BP_ID, percent_codon_ID, percent_length, contig_number in zip(percent_BP_IDs, percent_codon_IDs, percent_lengths, contig_numbers)]
     # Minimum % length required to be included in report, otherwise removed from list
-    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 90]): 
-        index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < 90 ] # get index for value removed to remove from other lists (values less than 90)
-        percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= 90] # filter list to remove values below cutoff (keep those greater than or equal to 90)
+    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < ar_gene_thresholds['GAMMA-COV']]): 
+        index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < ar_gene_thresholds['GAMMA-COV']] # get index for value removed to remove from other lists (values less than 90)
+        percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= ar_gene_thresholds['GAMMA-COV']] # filter list to remove values below cutoff (keep those greater than or equal to 90)
         for index in sorted(index_remove_postion, reverse=True):
             del coverage[index]
             del column_name[index]
             del percent_codon_IDs[index]
     # Minimum % identity required to be included in report, otherwise removed from list
-    if bool([percent_codon_ID for percent_codon_ID in percent_codon_IDs if int(percent_codon_ID) < 98]):
-        index_remove_postion = [ n for n,percent_codon_ID in enumerate(percent_codon_IDs) if int(percent_codon_ID) < 98 ] # get index for value removed to remove from other lists (values less than 98)
-        percent_codon_IDs = [percent_codon_ID for percent_codon_ID in percent_codon_IDs if int(percent_codon_ID) >= 98] # filter list to remove values below cutoff (keep those greater than or equal to 98)
+    if bool([percent_codon_ID for percent_codon_ID in percent_codon_IDs if int(percent_codon_ID) < ar_gene_thresholds['GAMMA-AA']]):
+        index_remove_postion = [ n for n,percent_codon_ID in enumerate(percent_codon_IDs) if int(percent_codon_ID) < ar_gene_thresholds['GAMMA-AA']] # get index for value removed to remove from other lists (values less than 98)
+        percent_codon_IDs = [percent_codon_ID for percent_codon_ID in percent_codon_IDs if int(percent_codon_ID) >= ar_gene_thresholds['GAMMA-AA']] # filter list to remove values below cutoff (keep those greater than or equal to 98)
         #loop through list of indexes to delete and remove them from the other lists so they all match
         for index in sorted(index_remove_postion, reverse=True):
             del coverage[index]
@@ -724,7 +726,7 @@ def parse_ani(fast_ani_file):
         scheme_guess = organism.split(' ')[0][0].lower() + organism.split(' ')[1][0:4]
     return FastANI_output_list, scheme_guess, fastani_warning
 
-def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
+def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name,ar_gene_thresholds):
 #def parse_srst2_ar(srst2_file, final_srst2_df, sample_name):
     """Parsing the srst2 file run on the ar gene database."""
     srst2_df = pd.read_csv(srst2_file, sep='\t', header=0)
@@ -755,17 +757,17 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}]S".format(percent_BP_ID, percent_length) for percent_BP_ID, percent_length in zip(percent_BP_IDs, percent_lengths)]
     # Minimum % length required to be included in report, otherwise removed from list
-    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 90]): 
-        index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < 90 ] # get index for value removed to remove from other lists (values less than 90)
-        percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= 90] # filter list to remove values below cutoff (keep those greater than or equal to 90)
+    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < ar_gene_thresholds['SRST2-COV']]): 
+        index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < ar_gene_thresholds['SRST2-COV']] # get index for value removed to remove from other lists (values less than 90)
+        percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= ar_gene_thresholds['SRST2-COV']] # filter list to remove values below cutoff (keep those greater than or equal to 90)
         for index in sorted(index_remove_postion, reverse=True):
             del coverage[index]
             del column_name[index]
             del percent_codon_IDs[index]
     # Minimum % identity required to be included in report, otherwise removed from list
-    if bool([percent_BP_ID for percent_BP_ID in percent_BP_IDs if int(percent_BP_ID) < 98]):
-        index_remove_postion = [ n for n,percent_BP_ID in enumerate(percent_BP_IDs) if int(percent_BP_ID) < 98 ] # get index for value removed to remove from other lists (values less than 98)
-        percent_BP_IDs = [percent_BP_ID for percent_BP_ID in percent_BP_IDs if int(percent_BP_ID) >= 98] # filter list to remove values below cutoff (keep those greater than or equal to 98)
+    if bool([percent_BP_ID for percent_BP_ID in percent_BP_IDs if int(percent_BP_ID) < ar_gene_thresholds['SRST2-NT']]):
+        index_remove_postion = [ n for n,percent_BP_ID in enumerate(percent_BP_IDs) if int(percent_BP_ID) < ar_gene_thresholds['SRST2-NT']] # get index for value removed to remove from other lists (values less than 98)
+        percent_BP_IDs = [percent_BP_ID for percent_BP_ID in percent_BP_IDs if int(percent_BP_ID) >= ar_gene_thresholds['SRST2-NT']] # filter list to remove values below cutoff (keep those greater than or equal to 98)
         #loop through list of indexes to delete and remove them from the other lists so they all match
         for index in sorted(index_remove_postion, reverse=True):
             del coverage[index]
@@ -784,7 +786,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name):
 
     return final_srst2_df
 
-def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic):
+def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic,ar_gene_thresholds):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
         Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
@@ -841,7 +843,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
         scheme_guess_fastani = fastani_warning = ""
     try:
-        ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df)
+        ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df, ar_gene_thresholds)
     except FileNotFoundError: 
         print("Warning: Gamma file for ar database on " + sample_name + " not found")
         df = pd.DataFrame({'WGS_ID':[sample_name], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['GAMMA file not found'] })
@@ -875,7 +877,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
             df.index = [sample_name]
             srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
         else:
-            srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name)
+            srst2_ar_df = parse_srst2_ar(srst2_file, ar_dic, srst2_ar_df, sample_name, ar_gene_thresholds)
             #srst2_ar_df = parse_srst2_ar(srst2_file, srst2_ar_df, sample_name)
             srst2_warning = None
     except (FileNotFoundError, pd.errors.EmptyDataError) : # second one for an empty dataframe - srst2 module creates a blank file
@@ -1661,9 +1663,9 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # unbold
     no_bold = workbook.add_format({'bold': False})
     worksheet.write_url('A' + str(max_row + 7), 'https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#mlst-allele-symbols', string="Click for a full explaination of symbols used in MLST allele markers. The source of the MLST determination can be 'assembly' (MLST), 'reads' (SRST2) or both 'assembly/reads'.")
-    worksheet.write('A' + str(max_row + 8),"^Using Antibiotic Resistance Gene database " + ar_db + " (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database) using output thresholds ([98AA/90]G:[98NT/90]S); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
+    worksheet.write('A' + str(max_row + 8),"^Using Antibiotic Resistance Gene database " + ar_db + " (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
     worksheet.write('A' + str(max_row + 9),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database ( " + hv_db + " ); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
-    worksheet.write('A' + str(max_row + 10),"^^^Using the plasmid incompatibility replicons plasmidFinder database ( " + pf_db + " ) using output thresholds [95NT/60]; replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
+    worksheet.write('A' + str(max_row + 10),"^^^Using the plasmid incompatibility replicons plasmidFinder database ( " + pf_db + " ); replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
     worksheet.write('A' + str(max_row + 11),"DISCLAIMER: These data are preliminary and subject to change. The identification methods used and the data summarized are for public health surveillance or investigational purposes only and must NOT be communicated to the patient, their care provider, or placed in the patient’s medical record. These results should NOT be used for diagnosis, treatment, or assessment of individual patient health or management.", bold)
     #adding review and date info
     worksheet.write('A' + str(max_row + 13), "Reviewed by:", no_bold)
@@ -1732,7 +1734,7 @@ def convert_excel_to_tsv(output):
     #Replace all fields having line breaks with space
     #data_xlsx = data_xlsx.replace('\n', ' ',regex=True)
     #drop the footer information
-    data_xlsx = data_xlsx.iloc[:-10] 
+    data_xlsx = data_xlsx.iloc[:-11] 
     #Write dataframe into csv
     data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
 
@@ -1754,6 +1756,20 @@ def get_second_dir(samplesheet, sample_name):
     print(f"\033[93mWarning: Sample '{sample_name}' not found in samplesheet.\033[0m")
     return ""
 
+def parse_key_value(s):
+    try:
+        key, value = s.split("=", 1)
+        return key, float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid format for key=value: '{s}'")
+
+def parse_vars(pairs):
+    if not pairs:
+        # Return default dictionary
+        return {"SRST2-NT":98, "SRST2-COV":90, "GAMMA-AA":98,"GAMMA-COV":90}
+    return dict(parse_key_value(pair) for pair in pairs)
+
+
 def main():
     args = parseArgs()
     # create empty lists to append to later
@@ -1765,6 +1781,8 @@ def main():
     srst2_ar_df = pd.DataFrame()
     shiga_df = pd.DataFrame()
     centar_dfs = []
+    #import the ar thresholds:
+    ar_gene_thresholds = parse_vars(args.ar_gene_thresholds)
     # Since srst2 currently doesn't handle () in the gene names we will make a quick detour to fix this... first making a dictionary
     ar_dic = make_ar_dictionary(args.ar_db)
     # check if a directory or samplesheet was given
@@ -1809,7 +1827,7 @@ def main():
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
-            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic)
+            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic,ar_gene_thresholds)
             #Collect this mess of variables into appeneded lists
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = Append_Lists(data_location, parent_folder, sample_name, \
