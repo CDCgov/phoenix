@@ -15,7 +15,12 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
             if (params.scaffolds_ext !='.scaffolds.fa.gz') {
-                def ext = "*" + params.scaffolds_ext.toString()
+                def ext = ""
+                if (!params.scaffolds_ext.toString().startsWith("*")) {
+                    ext = "*" + params.scaffolds_ext.toString()
+                } else {
+                    ext = params.scaffolds_ext.toString()
+                }
                 def scaffolds_glob = append_to_path(params.indir.toString(), ext)
                 //create scaffolds channel with meta information -- annoying, but you have to keep this in the brackets instead of having it once outside.
                 scaffolds_ch = Channel.fromPath(scaffolds_glob) // use created regrex to get samples
@@ -23,6 +28,7 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
                     .filter( it -> !(it =~ 'renamed') ) // remove samples that are *.renamed.scaffolds.fa.gz
                     .filter( it -> !(it =~ 'contig') ) // remove samples that are *.contigs.fa.gz
                     .map{ it -> create_meta(it, params.scaffolds_ext.toString())} // create meta for sample
+                scaffolds_ch.view()
                 // Checking regrex has correct extension
                 scaffolds_ch.collect().map{ it -> check_scaffolds(it) }
             } else {

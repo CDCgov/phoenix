@@ -386,14 +386,26 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     # add srst2 warning
     if srst2_warning != None:
         warnings.append(srst2_warning)
-    warnings = ', '.join(warnings).strip(", ")
     # For spades failures, lack of reads after trimming or corruption we will simplify the warnings by supressing other warnings
     if "No assembly file found possible SPAdes failure." in warnings:
         warnings = "No assembly file found possible SPAdes failure."
     elif "is corrupt and is unable to be unzipped" in warnings:
         warnings = [item for item in warnings if "corrupt" in item]
-    elif  "The # of reads in raw R1/R2 files are NOT equal." in warnings:
+    elif "The # of reads in raw R1/R2 files are NOT equal." in warnings:
         warnings = [item for item in warnings if "NOT equal" in item]
+    # Reduce warnings if certain QC reasons are present
+    if "The # of reads in raw R1/R2 files are NOT equal." in QC_reason:
+        warnings = [item for item in warnings if "trimmed" not in item and "reads assigned" not in item]
+        warnings.insert(0, "Skipped trimmed steps: unequal R1/R2 read counts.")
+    elif "No reads remain after trimming" in QC_reason :
+        warnings = [item for item in warnings if "trimmed" not in item and "reads assigned" not in item]
+        warnings.insert(0, "Skipped trimmed steps: No reads remain after trimming.")
+    elif "corrupt" in QC_reason :
+        warnings = "Corrupted input FASTQ file(s): downstream steps skipped."
+    if isinstance(warnings, list) and len(warnings) > 1:
+        warnings = ', '.join(warnings).strip(", ")
+    elif warnings == [""]:
+        warnings = ""
     return warnings
 
 def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name):
@@ -973,12 +985,11 @@ def Get_Files(directory1, sample_name, directory2):
     '''Create file paths to collect files from sample folder.'''
     # if there is a trailing / remove it
     directory1 = directory1.rstrip('/')
-    print("Directory 1: " + directory1)
+    #print("Directory 1: " + directory1)
     directory2 = directory2.rstrip('/')
-    print("Directory 2: " + directory2)
+    #print("Directory 2: " + directory2)
     # create file names
     trim_stats = try_paths( directory1 + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt", directory2 + "/" + sample_name + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt" )
-    print(trim_stats)
     raw_stats = try_paths( directory1 + "/raw_stats/" + sample_name + "_raw_read_counts.txt", directory2 + "/" + sample_name + "/raw_stats/" + sample_name + "_raw_read_counts.txt" )
     kraken_trim = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt" )
     kraken_trim_report = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt" )
@@ -1632,10 +1643,10 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     orange_format.set_border(1) # add back border so it matches the rest of the column names
     orange_format_nb = workbook.add_format({'bg_color': '#F5CBA7', 'font_color': '#000000', 'bold': False})
     # Apply a conditional format for checking coverage is between set_coverage-100 in estimated coverage column. adding 2 to max row to account for headers
-    worksheet.conditional_format('M3:M' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  str(set_coverage), 'format': yellow_format})
-    worksheet.conditional_format('M3:M' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
+    worksheet.conditional_format('N3:N' + str(max_row + 2), {'type': 'cell', 'criteria': '<', 'value':  str(set_coverage), 'format': yellow_format})
+    worksheet.conditional_format('N3:N' + str(max_row + 2), {'type': 'cell', 'criteria': '>', 'value':  100.00, 'format': yellow_format})
     # Apply a conditional format for auto pass/fail in Auto_PassFail coverage column.
-    worksheet.conditional_format('D3:D' + str(max_row + 2), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
+    worksheet.conditional_format('E3:E' + str(max_row + 2), {'type': 'cell', 'criteria': 'equal to', 'value':  '"FAIL"', 'format': red_format})
     # conditional formating to highlight big 5 genes
     # Start iterating through the columns and the rows to apply the format
     column_count = 0

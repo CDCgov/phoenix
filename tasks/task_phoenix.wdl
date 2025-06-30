@@ -238,8 +238,8 @@ task phoenix {
     File? raw_read2_html          = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_2_fastqc.html"
     File? raw_read2_zip           = "~{samplename}/phx_output/~{samplename}/qc_stats/~{samplename}_2_fastqc.zip"
     #phoenix trimmed kraken/krona - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File? kraken_trimd_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.top_kraken_hit.txt"
-    File? kraken_trimd_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.trimd_summary.txt"
+    File? kraken_trimd_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.summary.txt"
+    File? kraken_trimd_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.kraken2_trimd.top_kraken_hit.txt"
     File? trimd_html              = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.html"
     File? trimd_krona             = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/krona/~{samplename}_trimd.krona"
     #File? classified_1            = "~{samplename}/phx_output/~{samplename}/kraken2_trimd/~{samplename}.classified_1.fasta.gz"
@@ -290,8 +290,8 @@ task phoenix {
     Array[File]? busco_specific   = glob("~{samplename}/phx_output/~{samplename}/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt")
     File? srst2                   = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20250214_srst2__results.txt"
     #phoenix gamma
-    File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250214_srst2.gamma"
-    File? blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250214_srst2.psl"
+    File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250519_srst2.gamma"
+    File? blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250519_srst2.psl"
     File? gamma_hv_calls           = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.gamma"
     File? blat_hv_calls            = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20220414.psl"
     File? gamma_pf_calls           = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20250214.gamma"

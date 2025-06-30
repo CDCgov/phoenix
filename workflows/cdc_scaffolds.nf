@@ -497,14 +497,14 @@ workflow SCAFFOLDS_EXQC {
         shigapass_files_ch = SHIGAPASS.out.summary.map{ meta, summary -> summary}.collect().ifEmpty([])
         // pulling it all together
         if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
-            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
+            all_summaries_ch = summaries_ch.combine(fairy_summary_ch).combine(centar_files_ch).combine(shigapass_files_ch)
         } else {
-            all_summaries_ch = spades_failure_summaries_ch.combine(failed_summaries_ch).combine(summaries_ch).combine(fairy_summary_ch).combine(shigapass_files_ch)
+            all_summaries_ch = summaries_ch.combine(fairy_summary_ch).combine(shigapass_files_ch)
         }
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            all_summaries_ch, outdir_path, true
+            [], all_summaries_ch, outdir_path, true
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
