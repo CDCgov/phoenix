@@ -221,7 +221,7 @@ workflow SCAFFOLDS_EXQC {
             .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
             .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
             .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }
-
+        
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
             filtered_scaffolds_ch, params.hvgamdb
@@ -521,7 +521,7 @@ workflow SCAFFOLDS_EXQC {
         //create GRiPHin report
         GRIPHIN (
             all_summaries_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path.map{outdir -> [outdir, []]}, workflow.manifest.version, 
-            params.coverage, false, shigapass_var, centar_var, params.bldb, true
+            params.coverage, false, shigapass_var, centar_var, params.bldb, false
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

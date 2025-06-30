@@ -894,7 +894,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
             srst2_warning = None
     except (FileNotFoundError, pd.errors.EmptyDataError) : # second one for an empty dataframe - srst2 module creates a blank file
         if phoenix_entry == False: #supress warning when srst2 is not run
-            print("Warning: " + sample_name + "__fullgenes__ResGANNCBI__*_srst2__results.txt not found")
+            print("Warning: " + sample_name + "__fullgenes__ResGANNCBI_*_srst2__results.txt not found")
         df = pd.DataFrame({'WGS_ID':[sample_name]})
         df.index = [sample_name]
         srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
@@ -1459,7 +1459,7 @@ def big5_check(final_ar_df, is_combine, BLDB):
     print(CYELLOW + "\nhighlighting colums:", columns_to_highlight, CEND)
     return columns_to_highlight
 
-def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine, BLDB):
+def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, scaffolds, is_combine, BLDB):
     hv_cols = list(hv_df)
     pf_cols = list(pf_df)
     ar_cols = list(ar_df)
@@ -1475,7 +1475,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, is_combine, BLDB)
     hv_df = hv_df.loc[:, hv_cols]
     ar_df = ar_df.loc[:, ar_cols]
     # if we run -entry PHOENIX then skip
-    if phoenix == True:
+    if phoenix == True or scaffolds == True:
         final_ar_df = ar_df
     else:
         # combining srst2 and gamma ar dataframes
@@ -1533,7 +1533,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     ##worksheet.set_column('M:N', None, number_comma_format) # scaffolds and assembly_length - use when python is >3.7.12
     # set formating for python 3.7.12
     worksheet.conditional_format('O3:P' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_comma_format})
-    worksheet.conditional_format('J3:L' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_comma_format})
+    worksheet.conditional_format('K3:M' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_comma_format})
     # Setting columns to float so its more human readable
     #number_dec_format = workbook.add_format({'num_format': '0.000'})
     #number_dec_format.set_align('left') - agh not working
@@ -1542,14 +1542,14 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     ##worksheet.set_column('F:G', None, number_dec_2_format) # Q30%s - use when python is >3.7.12
     ##worksheet.set_column('O:P', None, number_dec_2_format) # Assembly Ratio and StDev - use when python is >3.7.12
     # set formating for python 3.7.12
-    worksheet.conditional_format('M3:N' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
-    worksheet.conditional_format('H3:I' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
-    worksheet.conditional_format('Q3:R' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+    worksheet.conditional_format('N3:O' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+    worksheet.conditional_format('I3:J' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+    worksheet.conditional_format('R3:S' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
     if phoenix == True:
-        worksheet.conditional_format('W3:X' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+        worksheet.conditional_format('Z3:AA' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
         #worksheet.set_column('U:V', None, number_dec_2_format) # FastANI ID and Coverage
     else:
-        worksheet.conditional_format('Y3:Z' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
+        worksheet.conditional_format('AB3:AC' + str(max_row + 2), {'type': 'cell', 'criteria': 'not equal to', 'value': '"Unknown"', 'format': number_dec_2_format})
         #worksheet.set_column('W:X', None, number_dec_2_format) # FastANI ID and Coverage
     # getting values to set column widths automatically
     for idx, col in enumerate(df):  # loop through all columns
@@ -1877,7 +1877,7 @@ def main():
     (qc_max_row, qc_max_col) = df.shape
     pf_max_col = pf_df.shape[1] - 1 #remove one for the WGS_ID column
     hv_max_col = hv_df.shape[1] - 1 #remove one for the WGS_ID column
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix, False, args.bldb)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db = Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, args.phoenix, args.scaffolds, False, args.bldb)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)
