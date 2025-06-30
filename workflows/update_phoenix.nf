@@ -200,11 +200,28 @@ workflow UPDATE_PHOENIX_WF {
         // combine directory and pipeline_info - make sure that id and project folder match
         //filter to remove [[id:, project_id:], null, []] that comes out as part of remainder = true. Then either add [] if no readme is present or keep channel as is
         // Extract just the project name from the path
+        CREATE_INPUT_CHANNELS.out.readme.view()
+        CREATE_INPUT_CHANNELS.out.directory_ch.view()
+        
+        CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
+                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0]).view()
+
+        CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
+                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
+                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}.view()
+
+        CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
+                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
+                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
+                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true).view()
+
         files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
                                 .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
                                 .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
                                 .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
                                 .filter{ it -> it.size() == 4 }.map{ meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
+
+        files_to_update_ch.view() 
 
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
@@ -456,8 +473,6 @@ workflow UPDATE_PHOENIX_WF {
              // Use the updated channels
             busco_boolean_ch = [buscoTrue: buscoTrue_with_indir, buscoFalse: buscoFalse_with_indir]
 
-            busco_boolean_ch.buscoTrue.view()
-
             // for samples that were created with entry CDC_PHX
             GRIPHIN_PUBLISH_CDC (
                 busco_boolean_ch.buscoTrue.map{project_id, summary_line, dir, busco_boolean, indir -> summary_line}, \
@@ -522,7 +537,6 @@ workflow UPDATE_PHOENIX_WF {
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphin_report.collect().ifEmpty([])).flatten().collate(2)
                                     .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
             } else {
-                GRIPHIN_NO_PUBLISH.out.griphins.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphins.collect().ifEmpty([])).flatten().collate(3).combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).view()
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphins.collect().ifEmpty([]).combine(GRIPHIN_NO_PUBLISH_CDC.out.griphins.collect().ifEmpty([])).flatten().collate(3)
                                     .combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).map{path_txt, griphin_excel, griphin_tsv, samplesheet -> add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet)}
             }
