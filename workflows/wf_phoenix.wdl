@@ -44,6 +44,7 @@ workflow phoenix_workflow {
     String  genome_length                     = phoenix.genome_length #make string for cases where it's "unknown"
     String  n50                               = phoenix.N50
     String  assembly_ratio                    = phoenix.assembly_ratio
+    String  assembly_ratio_stdev              = phoenix.assembly_ratio_stdev #make string for cases where it's "unknown"
     String  scaffold_count                    = phoenix.scaffold_count #make string for cases where it's "unknown"
     String  gc_percent                        = phoenix.gc_percent #make string for cases where it's "unknown"
     String  final_taxa_id                     = phoenix.final_taxa_id

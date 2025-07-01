@@ -7,7 +7,7 @@ task phoenix {
     File?    input_assembly
     String   samplename
     String   kraken2db = "null"
-    String   mode = "PHOENIX"
+    String   pipeline = "PHOENIX"
     String   scaffold_ext = ".scaffolds.fa.gz"
     Boolean? create_ncbi_sheet = false
     Boolean? centar = false
@@ -27,9 +27,9 @@ task phoenix {
     env
 
     # Convert to lowercase using bash
-    mode_upper=$(echo ~{mode} | tr '[:lower:]' '[:upper:]')
+    pipeline_upper=$(echo ~{pipeline} | tr '[:lower:]' '[:upper:]')
 
-    if [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "CDC_SRA" ]; then
+    if [ ${pipeline_upper} == "SRA" ] || [ ${pipeline_upper} == "CDC_SRA" ]; then
       # Make sample form
       echo "~{samplename}" > sample.csv
       # Run PHoeNIx
@@ -40,7 +40,7 @@ task phoenix {
       input_file="--input_sra ../sample.csv --use_sra"
       #set scaffold as blank variable
       scaffold_ext=""
-    elif [ ${mode_upper} == "SCAFFOLDS" ] || [ ${mode_upper} == "CDC_SCAFFOLDS" ]; then
+    elif [ ${pipeline_upper} == "SCAFFOLDS" ] || [ ${pipeline_upper} == "CDC_SCAFFOLDS" ]; then
       # Make sample form
       echo "sample,assembly" > sample.csv
       echo "~{samplename},~{input_assembly}" >> sample.csv
@@ -74,7 +74,7 @@ task phoenix {
     echo $create_ncbi_sheet
     echo $centar
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --mode ${mode_upper} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --pipeline ${pipeline_upper} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -110,77 +110,91 @@ task phoenix {
     awk -F '\t' '{ if($11 == "BETA-LACTAM") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_BETA_LACTAM_GENES
 
     # Gather Phoenix Output
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee WARNINGS
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f13 | tee ESTIMATED_COVERAGE
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee GENOME_LENGTH
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee ASSEMBLY_RATIO
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee NUM_SCAFFOLDS
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee GC_PERCENT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_OUTCOME
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee QC_ISSUES
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f7 | awk -F',' '{print NF}' | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f7 | tee WARNINGS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee ESTIMATED_COVERAGE
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f18 | tee ASSEMBLY_RATIO
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee ASSEMBLY_RATIO_STDEV
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee GC_PERCENT
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
-    if [ ${mode_upper} == "PHOENIX" ] || [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_CONFIDENCE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_COVERAGE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee SHIGAPASS_TAXA
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}' | sed 's/ecoli//g' | sed 's/abaumannii//g' | tee MLST1_NCBI
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}' | sed 's/ecoli//g' | sed 's/abaumannii//g'| tee MLST2_NCBI
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-      echo "Only run with CDC_PHOENIX mode" | tee BUSCO_DB
-      echo "Only run with CDC_PHOENIX mode" | tee BUSCO
-    elif [ ${mode_upper} == "CDC_PHOENIX" ] || [ ${mode_upper} == "CDC_SRA" ] || [ ${mode_upper} == "CDC_SCAFFOLDS" ]; then
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee BUSCO_DB
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee KRAKEN2_TRIMD
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee KRAKEN2_WEIGHTED
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee SHIGAPASS_TAXA
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_TAXA
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee FASTANI_CONFIDENCE
+    if [ ${pipeline_upper} == "PHOENIX" ] || [ ${pipeline_upper} == "SRA" ] || [ ${pipeline_upper} == "SCAFFOLDS" ]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_CONFIDENCE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_COVERAGE
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
-      # handling for abaumannii and ecoli 2nd schemes, novels
-      if [[ "$(sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}')"=="-_" ]]; then
-        sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32}' | tee MLST1_NCBI
-      elif [[ "$(sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}')"=="*Novel*" ]]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee SHIGAPASS_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f29 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_1
+      # handling for abaumannii and ecoli primary schemes, novels
+      if [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $29); print $31 "_" $29}')"=="-_" ]]; then
+        sed -n 2p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $31); print "ML" $29}' | tee MLST1_NCBI
+      elif [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $29); print $31  "_" $29}')"=="*Novel*" ]]; then
         echo "" | tee MLST1_NCBI
       else
-        sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $29); print "ML" $31 "_" $29}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
       fi
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
-      # handling for abaumannii and ecoli 2nd schemes, novels
-      if [[ "$(sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}')"=="-_" ]]; then
-        sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36}' | tee MLST2_NCBI
-      elif [[ "$(sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}')"=="*Novel*" ]]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f33 | tee MLST_2
+      # handling for abaumannii and ecoli primary schemes, novels
+      if [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $33); print $31 "_" $33}')"=="-_" ]]; then
+        sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $33); print "ML" $31}' | tee MLST2_NCBI
+      elif [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $33); print $31 "_" $33}')"=="*Novel*" ]]; then
         echo "" | tee MLST2_NCBI
       else
-        sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $33); print "ML" $31 "_" $33}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
       fi
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-      #sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee QC_REASON
+      echo "Only run in CDC_PHOENIX pipeline" | tee BUSCO_DB
+      echo "Only run in CDC_PHOENIX pipeline" | tee BUSCO
+    elif [ ${pipeline_upper} == "CDC_PHOENIX" ] || [ ${pipeline_upper} == "CDC_SRA" ] || [ ${pipeline_upper} == "CDC_SCAFFOLDS" ]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee BUSCO
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO_DB
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee TAXA_SOURCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee KRAKEN2_TRIMD
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee KRAKEN2_WEIGHTED
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee SHIGAPASS_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_TAXA
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee FASTANI_CONFIDENCE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f29 | tee FASTANI_COVERAGE
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_SCHEME_1
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f33 | tee MLST_1
+      # handling for abaumannii and ecoli 2nd schemes, novels
+      if [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $31); print $33 "_" $31}')"=="-_" ]]; then
+        sed -n 7p phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $31); print "ML" $33}' | tee MLST1_NCBI
+      elif [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $31); print $33  "_" $31}')"=="*Novel*" ]]; then
+        echo "" | tee MLST1_NCBI
+      else
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $31); print "ML" $33 "_" $31}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
+      fi
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f35 | tee MLST_SCHEME_2
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f37 | tee MLST_2
+      # handling for abaumannii and ecoli 2nd schemes, novels
+      if [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $35); print $37 "_" $35}')"=="-_" ]]; then
+        sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $35); print "ML" $37}' | tee MLST2_NCBI
+      elif [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $35); print $37 "_" $35}')"=="*Novel*" ]]; then
+        echo "" | tee MLST2_NCBI
+      else
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $35); print "ML" $37 "_" $35}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+      fi
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
     else
-      echo "Mode not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
+      echo "Pipeline not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
       exit 1
     fi
   >>>
@@ -196,6 +210,7 @@ task phoenix {
     String  genome_length                     = read_string("GENOME_LENGTH") #make string for cases where it's "unknown"
     String  N50                               = read_string("N50")
     String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
+    String  assembly_ratio_stdev              = read_string("ASSEMBLY_RATIO_STDEV")
     String  scaffold_count                    = read_string("NUM_SCAFFOLDS") #make string for cases where it's "unknown"
     String  gc_percent                        = read_string("GC_PERCENT") #make string for cases where it's "unknown"
     String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
@@ -271,7 +286,7 @@ task phoenix {
     File? kraken_wtasmbld_top_taxa = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/~{samplename}.kraken2_wtasmbld.top_kraken_hit.txt"
     File? wtasmbld_html            = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.html"
     File? wtasmbld_krona           = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld_weighted/krona/~{samplename}_wtasmbld.krona"
-    ## phoenix asmbld kraken/krona -- only made when -mode CDC_PHOENIX or CDC_SCAFFOLDS is run
+    ## phoenix asmbld kraken/krona -- only made when --pipeline CDC_PHOENIX or CDC_SCAFFOLDS is run
     File? kraken_asmbld_output     = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.classifiedreads.txt"
     File? kraken_asmbld_summary    = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.summary.txt"
     File? kraken_asmbld_top_taxa   = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/~{samplename}.kraken2_asmbld.top_kraken_hit.txt"
