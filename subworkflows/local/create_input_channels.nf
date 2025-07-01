@@ -274,7 +274,9 @@ workflow CREATE_INPUT_CHANNELS {
             all_griphin_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(griphin_tsv_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} 
                 //.map{ it -> modifiedFileChannel(it, "_GRiPHin_Summary","_old_GRiPHin") }
             def phoenix_tsv_glob = append_to_path(params.indir.toString(),'Phoenix_Summary.tsv')
+            //Channel.fromPath(phoenix_tsv_glob).view()
             all_phoenix_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(phoenix_tsv_glob)).map{ it -> create_groups_id_and_busco(it, params.indir.toString())}
+            //all_phoenix_tsv_ch.view()
                 //.map{ it -> modifiedFileChannel(it, "_Summary","_Summary_Old") }
             def pipeline_info_glob = append_to_path(params.indir.toString(),'pipeline_info/software_versions.yml')
             all_pipeline_info_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(pipeline_info_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
@@ -299,12 +301,13 @@ workflow CREATE_INPUT_CHANNELS {
             }
 
             // combining all summary files into one channel
-            summary_files_ch = all_griphin_excel_ch.join(all_griphin_tsv_ch.map{meta, griphin_tsv   -> [[project_id:meta.project_id], griphin_tsv]},   by: [[0][0],[0][1]])
-                                    .join(all_phoenix_tsv_ch.map{               meta, phoenix_tsv   -> [[project_id:meta.project_id], phoenix_tsv]},   by: [[0][0],[0][1]])
-                                    .join(all_pipeline_info_ch.map{             meta, pipeline_info -> [[project_id:meta.project_id], pipeline_info]}, by: [[0][0],[0][1]])
+            summary_files_ch = all_griphin_excel_ch.map{            meta, griphin_excel -> [[project_id:meta.project_id], griphin_excel]}
+                                    .join(all_griphin_tsv_ch.map{   meta, griphin_tsv   -> [[project_id:meta.project_id], griphin_tsv]},   by: [0])
+                                    .join(all_phoenix_tsv_ch.map{   meta, phoenix_tsv   -> [[project_id:meta.project_id], phoenix_tsv]},   by: [0])
+                                    .join(all_pipeline_info_ch.map{ meta, pipeline_info -> [[project_id:meta.project_id], pipeline_info]}, by: [0])
                                     .map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
 
-            // pulling all the necessary project level files into channels - need to do this for the name change.
+            // pulling all the necessary project level files into channels - need to do this for the name change (*adding _old_ to the name to get make edits to )
             COLLECT_PROJECT_FILES (
                 summary_files_ch, false
             )

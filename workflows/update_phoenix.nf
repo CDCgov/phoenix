@@ -200,7 +200,7 @@ workflow UPDATE_PHOENIX_WF {
         // combine directory and pipeline_info - make sure that id and project folder match
         //filter to remove [[id:, project_id:], null, []] that comes out as part of remainder = true. Then either add [] if no readme is present or keep channel as is
         // Extract just the project name from the path
-        CREATE_INPUT_CHANNELS.out.readme.view()
+        /*/CREATE_INPUT_CHANNELS.out.readme.view()
         CREATE_INPUT_CHANNELS.out.directory_ch.view()
         
         CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
@@ -213,13 +213,18 @@ workflow UPDATE_PHOENIX_WF {
         CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
                                 .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
                                 .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
-                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true).view()
+                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true).view()*/
 
         files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
                                 .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
                                 .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
                                 .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
                                 .filter{ it -> it.size() == 4 }.map{ meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
+
+        CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id, meta, file] }
+                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
+                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
+                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true).view()
 
         files_to_update_ch.view() 
 
@@ -301,12 +306,13 @@ workflow UPDATE_PHOENIX_WF {
                                 .filter { meta, reads, fairy_data -> 
                                     fairy_data[1] == true // Keep only entries where passed is true (no FAILED found)
                                 }.map{ meta, reads, fairy_data -> return [meta, reads] }
-                                .join(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch.map{meta, phoenix_tsv_ch -> [[id:meta.id, project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], meta.entry]}, by: [[0][0],[0][1]])
+                                .combine(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch).filter { meta_reads, reads, meta_tsv, tsv_file -> meta_reads.project_id == meta_tsv.project_id }
+                                .map { meta_reads, reads, meta_tsv, tsv_file -> [meta_reads, reads, meta_tsv.entry]}
 
         // now we will split the channel into its true (busco present) and false (busco wasn't run with this dataset) elements
         busco_boolean_1ch = trimd_reads_file_integrity_ch.branch{ 
-                    buscoTrue: it[3] == true
-                    buscoFalse: it[3] == false}
+                    buscoTrue: it[2] == true
+                    buscoFalse: it[2] == false}
 
         // Idenitifying AR genes in trimmed reads - using only datasets that were previously run with CDC_PHOENIX entry
         SRST2_AR (
@@ -408,9 +414,9 @@ workflow UPDATE_PHOENIX_WF {
         // Create an empty channel as a fallback for when SRST2_AR doesn't run
         dummy_gene_results = Channel.empty()
         // Mix the real gene results with the dummy channel. This way, if SRST2_AR.out.gene_results doesn't exist, the empty channel is used
-        def gene_results_ch
-        try { gene_results_ch = SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results] }
-        } catch (Exception e) { gene_results_ch = dummy_gene_results }
+        gene_results_ch = SRST2_AR.out.gene_results.ifEmpty(dummy_gene_results)
+        //try { gene_results_ch = SRST2_AR.out.gene_results.ifEmpty(dummy_gene_results) }
+        //} catch (Exception e) { gene_results_ch = dummy_gene_results }
 
         // Group the line_summaries by their project id and add in the full path for the project dir the join is only to make sure SRST2 finished before going to the last step, we just combine and then kick it out
         // remainder: true is used to ensure that if there are no gene results, the channel is still created
@@ -424,6 +430,8 @@ workflow UPDATE_PHOENIX_WF {
                 meta.project_id = id.split('/')[-1] // Remove full path and cut just the project id for use
                 def dirPath = project_ids.value[id2]  // Retrieve the matching directory path
                 return [meta, dirPath, files]}
+
+        summaries_ch.view()
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (

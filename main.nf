@@ -547,26 +547,26 @@ workflow CENTAR {
 // WORKFLOW: Execute a single named workflow for the pipeline
 //
 workflow {
-    if(params.mode_upper == "PHOENIX") {
+    if(params.pipeline_upper == "PHOENIX") {
         PHOENIX()
-    } else if(params.mode_upper == "CDC_PHOENIX") {
+    } else if(params.pipeline_upper == "CDC_PHOENIX") {
         CDC_PHOENIX()
-    } else if(params.mode_upper == "SRA") {
+    } else if(params.pipeline_upper == "SRA") {
         SRA()
-    } else if(params.mode_upper == "CDC_SRA") {
+    } else if(params.pipeline_upper == "CDC_SRA") {
         CDC_SRA()
-    } else if(params.mode_upper == "SCAFFOLDS") {
+    } else if(params.pipeline_upper == "SCAFFOLDS") {
         SCAFFOLDS()
-    } else if(params.mode_upper == "CDC_SCAFFOLDS") {
+    } else if(params.pipeline_upper == "CDC_SCAFFOLDS") {
         CDC_SCAFFOLDS()
-    } else if(params.mode_upper == "UPDATE_PHOENIX") {
+    } else if(params.pipeline_upper == "UPDATE_PHOENIX") {
         UPDATE_PHOENIX()
-    } else if(params.mode_upper == "CLIA") {
+    } else if(params.pipeline_upper == "CLIA") {
         CLIA()
         println("${red}WARNING: While this pipeline is undergoing CLIA validation at CDC, other users MUST conduct their own validation of this workflow and obtain explicit approval from THEIR CLIA director before considering it CLIA certified. Using this pipeline and reporting it's results to the patient, their care provider, or placed in the patient's medical record without proper validation may violate regulatory requirements.${reset}")
-    } else if(params.mode_upper == "COMBINE_GRIPHINS") {
+    } else if(params.pipeline_upper == "COMBINE_GRIPHINS") {
         COMBINE_GRIPHINS()
-    } else if(params.mode_upper == "CENTAR") {
+    } else if(params.pipeline_upper == "CENTAR") {
         CENTAR()
         // comment out to run CENTAR 
         //exit 1, "Sorry, -entry CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"

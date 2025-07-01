@@ -27,8 +27,8 @@ process COLLECT_PROJECT_FILES {
         mv ./pipeline_info/software_versions.yml .
     fi
     #remove the "summary" part of the name so that the output can be picked up correctly in the UPDATE_GRIPHIN process
-    mv ${project_dir}_GRiPHin_Summary.xlsx ${project_dir}_old_GRiPHin.xlsx
-    mv ${project_dir}_GRiPHin_Summary.tsv ${project_dir}_old_GRiPHin.tsv
+    mv *_GRiPHin_Summary.xlsx ${project_dir}_old_GRiPHin.xlsx
+    mv *_GRiPHin_Summary.tsv ${project_dir}_old_GRiPHin.tsv
     mv Phoenix_Summary.tsv Phoenix_Summary_Old.tsv
 
     cat <<-END_VERSIONS > versions.yml
