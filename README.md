@@ -22,6 +22,13 @@ PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
+# SHARE IT Act Compliance
+Org: CDC/NCEZID/DHQP/CEMB
+Contact Email: ncezid_shareit@cdc.gov
+
+Purpose of the SHARE IT Act
+The SHARE IT Act is a federal law that says government agencies like CDC must be more transparent about the software we build using federal funds. It CDC publishes a public list that describes what custom-developed software we’ve created. This helps other agencies know what exists so we’re not reinventing the wheel. 
+
 # Quick Start
 
 1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`). 
