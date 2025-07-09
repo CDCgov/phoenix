@@ -156,13 +156,30 @@ workflow CREATE_INPUT_CHANNELS {
                 .combine(all_passed_id_channel).filter{ meta, gamma_hv, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, gamma_hv, all_passed_id_channel -> [meta, gamma_hv]} //remove all_passed_id_channel from output
 
-            // get .tax files for MLST updating
+            // get .gamma files for MLST updating
             def gamma_pf_glob = append_to_path(params.indir.toString(),'*/gamma_pf/*.gamma')
             //create .gamma file channel with meta information 
             filtered_gamma_pf_ch = Channel.fromPath(gamma_pf_glob) // use created regrex to get samples
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, gamma_pf, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, gamma_pf, all_passed_id_channel -> [meta, gamma_pf]} //remove all_passed_id_channel from output
+
+            // get .gamma files for MLST updating
+            def gamma_ar_glob = append_to_path(params.indir.toString(),'*/gamma_ar/*.gamma')
+            //create .gamma file channel with meta information 
+            filtered_gamma_ar_ch = Channel.fromPath(gamma_ar_glob) // use created regrex to get samples
+                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, gamma_ar, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, gamma_ar, all_passed_id_channel -> [meta, gamma_ar]} //remove all_passed_id_channel from output
+
+            // get .gamma files for MLST updating
+            def armfinder_glob = append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
+
+            //create .gamma file channel with meta information 
+            filtered_amrfinder_ch = Channel.fromPath(armfinder_glob) // use created regrex to get samples
+                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, ncbi_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, ncbi_report, all_passed_id_channel -> [meta, ncbi_report]} //remove all_passed_id_channel from output
 
             // get .tax files for MLST updating
             def quast_glob = append_to_path(params.indir.toString(),'*/quast/*_summary.tsv')
@@ -330,7 +347,7 @@ workflow CREATE_INPUT_CHANNELS {
 
                 samplesheet = CENTAR_SAMPLESHEET_CHECK.out.csv
 
-                samplesheet_meta_ch = Channel.empty().ifEmpty([]) //only needed for --mode update_phoenix
+                samplesheet_meta_ch = Channel.empty().ifEmpty([]) //only needed for --pipeline update_phoenix
 
             } else {
                 // if a samplesheet was passed then use that to create the channel
@@ -341,7 +358,7 @@ workflow CREATE_INPUT_CHANNELS {
 
                 samplesheet = SAMPLESHEET_CHECK.out.csv
 
-                //only needed for --mode update_phoenix
+                //only needed for --pipeline update_phoenix
                 samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
             }
 
@@ -379,6 +396,8 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_taxonomy_ch = COLLECT_SAMPLE_FILES.out.tax
             filtered_gamma_pf_ch = COLLECT_SAMPLE_FILES.out.gamma_pf
             filtered_gamma_hv_ch = COLLECT_SAMPLE_FILES.out.gamma_hv
+            filtered_gamma_ar_ch = COLLECT_SAMPLE_FILES.out.gamma_ar
+            filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report
             filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio
             filtered_kraken_bh_ch = COLLECT_SAMPLE_FILES.out.kraken_bh
             filtered_trimmed_stats_ch = COLLECT_SAMPLE_FILES.out.trimmed_stats
@@ -444,6 +463,8 @@ workflow CREATE_INPUT_CHANNELS {
         synopsis           = filtered_synopsis_ch
         ani                = filtered_ani_ch
         ani_best_hit       = filtered_ani_best_hit_ch
+        ncbi_report        = filtered_amrfinder_ch
+        gamma_ar           = filtered_gamma_ar_ch
         gamma_pf           = filtered_gamma_pf_ch
         gamma_hv           = filtered_gamma_hv_ch
         assembly_ratio     = filtered_assembly_ratio_ch
@@ -700,11 +721,13 @@ def create_meta_non_extension(sample, indir){
     def hyperVirulencePattern = /_HyperVirulence_\d{8}/
     def pfRepliconsPattern = /_PF-Replicons_\d{8}/
     def assemblyratioPattern = /_Assembly_ratio_\d{8}/
+    def arPattern = /_ResGANNCBI_\d{8}_srst2/
+    def amrfinderPattern = /_all_genes/
 
     // Check if the id contains either of the patterns
-    if (meta.id =~ hyperVirulencePattern || meta.id =~ pfRepliconsPattern || meta.id =~ assemblyratioPattern) {
+    if (meta.id =~ hyperVirulencePattern || meta.id =~ pfRepliconsPattern || meta.id =~ assemblyratioPattern || meta.id =~ arPattern || meta.id =~ amrfinderPattern) {
         // Remove the pattern if it matches
-        meta.id = meta.id.replaceAll(hyperVirulencePattern, '').replaceAll(pfRepliconsPattern, '').replaceAll(assemblyratioPattern, '').trim()} // Trim any trailing or leading spaces
+        meta.id = meta.id.replaceAll(hyperVirulencePattern, '').replaceAll(pfRepliconsPattern, '').replaceAll(assemblyratioPattern, '').replaceAll(arPattern, '').replaceAll(amrfinderPattern, '').trim()} // Trim any trailing or leading spaces
 
     meta.project_id = indir.toString().split('/')[-1]
     return [ meta, sample ]

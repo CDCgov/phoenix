@@ -17,8 +17,10 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/assembly/${meta.id}.filtered.scaffolds.fa.gz"),              optional: true, emit: scaffolds
     tuple val(meta), path("${meta.id}/annotation/${meta.id}.gff"),                                 optional: true, emit: gff
     tuple val(meta), path("${meta.id}/annotation/${meta.id}.faa"),                                 optional: true, emit: faa
+    tuple val(meta), path("${meta.id}/gamma_ar/${meta.id}_ResGANNCBI_*_srst2.gamma"),              optional: true, emit: gamma_ar
     tuple val(meta), path("${meta.id}/gamma_hv/${meta.id}_HyperVirulence_*.gamma"),                optional: true, emit: gamma_hv
     tuple val(meta), path("${meta.id}/gamma_pf/${meta.id}_PF-Replicons_*.gamma"),                  optional: true, emit: gamma_pf
+    tuple val(meta), path("${meta.id}/AMRFinder/${meta.id}_all_genes{,_*}.tsv"),                   optional: true, emit: amrfinder_report
     tuple val(meta), path("${meta.id}/kraken2_trimd/${meta.id}.kraken2_trimd.top_kraken_hit.txt"), optional: true, emit: kraken_bh
     tuple val(meta), path("${meta.id}/quast/${meta.id}_summary.tsv"),                              optional: true, emit: quast_report
     tuple val(meta), path("${meta.id}/ANI/${meta.id}_REFSEQ_*.fastANI.txt"),                       optional: true, emit: ani_best_hit

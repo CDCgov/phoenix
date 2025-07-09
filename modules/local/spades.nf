@@ -43,6 +43,7 @@ process SPADES {
 
     {
         if [[ -z \$(zcat $unpaired_reads) ]]; then
+            echo "I am here with paired reads"
             spades.py \\
                 $args \\
                 --threads $task.cpus \\
@@ -51,6 +52,7 @@ process SPADES {
                 --phred-offset $phred_offset\\
                 -o ./
         else
+            echo "I am here with unpaired reads"
             spades.py \\
                 $args \\
                 --threads $task.cpus \\

@@ -5,7 +5,7 @@ process CREATE_AND_UPDATE_README {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    tuple val(meta), path(directory), path(pipeline_info), path(readme)
+    tuple val(meta), path(directory), path(pipeline_info), path(readme), path(old_gamma_ar), path(new_gamma_ar), path(old_ncbi_ar), path(new_ncbi_ar)
     val(current_phx_version)
     path(mlst_db)
     path(ar_db)
@@ -26,14 +26,8 @@ process CREATE_AND_UPDATE_README {
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}Update_Readme.py \\
-        --mlst_db ${mlst_db} \\
-        --amrfinder_db ${amrfinder_db} \\
-        --ar_db ${ar_db} \\
-        -p ${pipeline_info} \\
-        -d ${directory}/${prefix} \\
-        -v ${current_phx_version} \\
-        -o ${prefix}_updater_log.tsv
+    ${ica}Update_Readme.py --mlst_db ${mlst_db} --amrfinder_db ${amrfinder_db} --ar_db ${ar_db} --old_gamma ${old_gamma_ar} --new_gamma ${new_gamma_ar} \\
+        --old_ncbi ${old_ncbi_ar} --new_ncbi ${new_ncbi_ar} -p ${pipeline_info} -d ${directory}/${prefix} -v ${current_phx_version} -o ${prefix}_updater_log.tsv
 
     #move to output location for process to complete
     mkdir edited/
