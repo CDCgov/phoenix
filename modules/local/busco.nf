@@ -72,6 +72,7 @@ process BUSCO {
         --cpu $task.cpus \\
         --in "\$INPUT_SEQS" \\
         --out ${prefix}-busco \\
+        -f \\
         $busco_lineage \\
         $busco_lineage_dir \\
         $busco_config \\
