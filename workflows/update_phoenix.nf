@@ -435,7 +435,6 @@ workflow UPDATE_PHOENIX_WF {
             .map { group -> 
                 def meta = [:] // create meta array
                 def (id, files) = group
-                print(id)
                 id2 = id.split('/')[-1] // Remove full path and cut just the project id for use
                 meta.project_id = id.split('/')[-1] // Remove full path and cut just the project id for use
                 def dirPath = project_ids.value[id2]  // Retrieve the matching directory path
