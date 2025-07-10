@@ -18,6 +18,7 @@ process CREATE_SUMMARY_LINE {
     path(amr_report), \
     path(fastani), \
     path(shigapass)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_summaryline.tsv'), emit: line_summary
@@ -51,6 +52,7 @@ process CREATE_SUMMARY_LINE {
         $fastani_file \\
         $trim_ksummary \\
         $shigapass_file \\
+        --phx_version $phx_version \\
         -o ${prefix}_summaryline.tsv
 
     cat <<-END_VERSIONS > versions.yml

@@ -11,6 +11,7 @@ process CREATE_SUMMARY_LINE_FAILURE {
     path(taxonomy_file), \
     val(spades_outcome)
     val(extended_qc)
+    val(phx_version)
 
     output:
     path('*_summaryline.tsv'), emit: line_summary
@@ -31,6 +32,7 @@ process CREATE_SUMMARY_LINE_FAILURE {
         -t $fastp_total_qc \\
         -s $synopsis \\
         -x $taxonomy_file \\
+        --phx_version $phx_version \\
         -o ${prefix}_summaryline.tsv \\
         $extended_qc_arg
 

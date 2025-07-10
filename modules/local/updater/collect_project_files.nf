@@ -1,6 +1,6 @@
 process COLLECT_PROJECT_FILES {
-    //tag "${meta.project_id.toString().split('/')[-1].replace(']', '')}"
-    tag "${meta.project_id}"
+    tag "${meta.project_id.toString().split('/')[-1].replace(']', '')}"
+    //tag "${meta.project_id}"
     stageInMode 'copy' // default is symlink. if its not set to copy changes in this script then changes original files.
     label 'process_low'
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'

@@ -175,6 +175,13 @@ def get_taxa(input_ch){
         return ["$genus", input_ch[0], input_ch[1]]
 }
 
+// Groovy funtion to make [ meta.id, [] ] - just an empty channel
+def create_empty_ch(input_for_meta) { // We need meta.id associated with the empty list which is why .ifempty([]) won't work
+    meta_id = input_for_meta[0]
+    output_array = [ meta_id, [] ]
+    return output_array
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -269,12 +276,11 @@ workflow UPDATE_PHOENIX_WF {
                                 .combine(CREATE_INPUT_CHANNELS.out.phoenix_tsv_ch).filter { meta_reads, reads, meta_tsv, tsv_file -> meta_reads.project_id == meta_tsv.project_id }
                                 .map { meta_reads, reads, meta_tsv, tsv_file -> [meta_reads, reads, meta_tsv.entry]}.unique()
 
+
         // now we will split the channel into its true (busco present) and false (busco wasn't run with this dataset) elements
         busco_boolean_1ch = trimd_reads_file_integrity_ch.branch{ 
                     buscoTrue: it[2] == true
                     buscoFalse: it[2] == false}
-
-        //busco_boolean_1ch.buscoTrue.view()
 
         // Idenitifying AR genes in trimmed reads - using only datasets that were previously run with CDC_PHOENIX entry
         SRST2_AR (
@@ -379,11 +385,12 @@ workflow UPDATE_PHOENIX_WF {
                 if (shigapass_file == null) { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, []]
                 } else { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, shigapass_file]}}
 
+        // rename to line_summary_ch --> just to keep the naming consistent with the original workflow
         line_summary_ch = all_id_pairs_ch
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
-            line_summary_ch
+            line_summary_ch, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
@@ -392,28 +399,49 @@ workflow UPDATE_PHOENIX_WF {
             .map { dirs -> dirs.collectEntries { dir -> def dirName = dir.tokenize('/').last()
             return [dirName, dir]}}
 
-        // Create an empty channel as a fallback for when SRST2_AR doesn't run
-        dummy_gene_results = Channel.empty()
+        // Creating empty channel that has the form [ meta.id, [] ] that can be passed as a blank below
+        empty_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{ it -> create_empty_ch(it) }
+
         // Mix the real gene results with the dummy channel. This way, if SRST2_AR.out.gene_results doesn't exist, the empty channel is used
-        gene_results_ch = SRST2_AR.out.gene_results.ifEmpty(dummy_gene_results)
-        //try { gene_results_ch = SRST2_AR.out.gene_results.ifEmpty(dummy_gene_results) }
-        //} catch (Exception e) { gene_results_ch = dummy_gene_results }
+        // Create channels to handle whether SRST2_AR ran or not
+        
+        // Group the line_summaries by their project id and add in the full path for the project dir
+        // The join is only to make sure SRST2 finished before going to the last step when it runs
+        // When SRST2_AR doesn't run, gene_results_ch will be empty and the join will effectively be skipped
+        // remainder: true ensures that all line_summary entries are preserved even when there are no gene results
 
         // Group the line_summaries by their project id and add in the full path for the project dir the join is only to make sure SRST2 finished before going to the last step, we just combine and then kick it out
         // remainder: true is used to ensure that if there are no gene results, the channel is still created
-        summaries_ch = CREATE_SUMMARY_LINE.out.line_summary
-            .join(gene_results_ch.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true)
-            .filter{ it[1] != null }
-            .map{meta, summaryline, gene_results -> [meta.project_id, summaryline]}.groupTuple(by: 0)
+        
+        // Implement fallback mechanism: if CREATE_SUMMARY_LINE produces null summaryline, use CREATE_INPUT_CHANNELS.out.line_summary
+        fallback_line_summary_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[id:meta.id, project_id:meta.project_id], line_summary]}
+        
+        // First, join CREATE_SUMMARY_LINE with gene_results and identify entries with null summaryline
+        primary_summaries_ch = CREATE_SUMMARY_LINE.out.line_summary
+            .join(SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true)
+            .map{meta, summaryline, gene_results -> [meta, summaryline, gene_results]}
+        
+        // Split into successful and failed summaries based on whether summaryline is null
+        successful_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, gene_results -> summaryline != null }.map{meta, summaryline, gene_results -> [meta.project_id, summaryline]}
+        failed_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, gene_results -> summaryline == null }.map{meta, summaryline, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}
+
+        // Implement fallback mechanism: if CREATE_SUMMARY_LINE produces null summaryline, use CREATE_INPUT_CHANNELS.out.line_summary
+        // Join failed summaries with fallback line_summary
+        fallback_summaries_ch = failed_summaries_ch.join(CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[id:meta.id, project_id:meta.project_id], line_summary]}, by: [[0][0],[0][1]])
+            .map{meta, gene_results, line_summary -> [meta.project_id, line_summary]}
+
+        // Combine successful and fallback summaries
+        summaries_ch = successful_summaries_ch.mix(fallback_summaries_ch).groupTuple(by: 0)
             .map { group -> 
                 def meta = [:] // create meta array
                 def (id, files) = group
+                print(id)
                 id2 = id.split('/')[-1] // Remove full path and cut just the project id for use
                 meta.project_id = id.split('/')[-1] // Remove full path and cut just the project id for use
                 def dirPath = project_ids.value[id2]  // Retrieve the matching directory path
                 return [meta, dirPath, files]}
 
-        // Combining sample summaries into final report
+        //  Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
             summaries_ch.map{ project_id, dir, summary_lines -> project_id}, 
             summaries_ch.map{ project_id, dir, summary_lines -> summary_lines}, 

@@ -448,7 +448,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
-            line_summary_ch
+            line_summary_ch, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 

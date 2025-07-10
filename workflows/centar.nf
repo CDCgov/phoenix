@@ -267,7 +267,8 @@ workflow RUN_CENTAR {
             summaries_ch.map{ meta, summary_line, dir, busco_boolean -> meta},
             summaries_ch.map{ meta, summary_line, dir, busco_boolean -> summary_line},
             summaries_ch.map{ meta, summary_line, dir, busco_boolean -> dir}, 
-            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean}
+            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean},
+            workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CENTAR_GATHER_SUMMARY_LINES.out.versions)
 
