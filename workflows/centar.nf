@@ -82,33 +82,72 @@ def create_meta(file_path, input_ch) {
     return array
 }
 
-def check_isolate_count(folderPath, meta){
-    // Get all directories in the specified folder
-    def excludeDirs = [ "pipeline_info","centar_pipeline_info", "multiqc"]
-    def directories = []
-    new File(folderPath).eachDir { dir ->
-        // Only add if not in the exclude list
-        if (!excludeDirs.contains(dir.name)) {
-            directories.add(dir.name)
-        }
+// def check_isolate_count(meta, folderPath){
+//     // Get all directories in the specified folder
+//     def excludeDirs = [ "pipeline_info","centar_pipeline_info", "multiqc"]
+//     def directories = []
+//     new File(folderPath).eachDir { dir ->
+//         // Only add if not in the exclude list
+//         println(meta.id, dir)
+//         if (!excludeDirs.contains(dir.name)) {
+//             directories.add(dir.name)
+//         }
+//     }
+//     // Keep track of unmatched directories
+//     def unmatchedDirs = []
+//     // Check which directories don't match any sample name
+//     directories.each { dirName ->
+//         if (!sampleNames.contains(dirName)) {
+//             unmatchedDirs.add(dirName)
+//         }
+//     }
+//     // Print unmatched directory names if any
+//     if (unmatchedDirs.size() > 0) {
+//         println "WARNING: The following directories do not match any sample name:"
+//         unmatchedDirs.each { dirName ->
+//             println "  - ${dirName}"
+//         }
+//     }
+//     // Return true if some directories matched and some didn't. (meaning there's at least one match AND at least one non-match)
+//     return unmatchedDirs.size() > 0 && unmatchedDirs.size() < directories.size()
+// }
+
+/**
+ * Check whether the given folder contains **only** sample directories that match known sample names.
+ * Returns true if **any directories are unmatched**, meaning a subset of the folder is being processed.
+ */
+def check_isolate_count(meta, folderPath, centar_files, summary_lines) {
+    def excludeDirs = ["pipeline_info", "centar_pipeline_info", "multiqc"]
+
+    // Extract sample IDs from centar and summary files
+    def sampleIdsFromCentar = centar_files.collect { file ->
+        file.getName().replaceFirst(/_centar_output\.tsv$/, '')
     }
-    // Keep track of unmatched directories
-    def unmatchedDirs = []
-    // Check which directories don't match any sample name
-    directories.each { dirName ->
-        if (!sampleNames.contains(dirName)) {
-            unmatchedDirs.add(dirName)
-        }
+
+    def sampleIdsFromSummary = summary_lines.collect { file ->
+        file.getName().replaceFirst(/_summaryline\.tsv$/, '')
     }
-    // Print unmatched directory names if any
-    if (unmatchedDirs.size() > 0) {
-        println "WARNING: The following directories do not match any sample name:"
-        unmatchedDirs.each { dirName ->
-            println "  - ${dirName}"
-        }
+
+    // Union the two sets (some may only be present in one)
+    def expectedSampleIds = (sampleIdsFromCentar + sampleIdsFromSummary).unique()
+
+    // List actual subdirectories in the folder, excluding known system dirs
+    def actualDirs = new File(folderPath)
+        .listFiles()
+        ?.findAll { it.isDirectory() && !excludeDirs.contains(it.name) }
+        ?.collect { it.name } ?: []
+
+    // Identify folders that don't match expected sample IDs
+    def unmatchedDirs = actualDirs.findAll { !expectedSampleIds.contains(it) }
+
+    // Optional: Log any mismatches
+    if (unmatchedDirs) {
+        println "⚠️  WARNING for ${meta.id}: The following directories do not match expected sample IDs:"
+        unmatchedDirs.each { println "  - ${it}" }
     }
-    // Return true if some directories matched and some didn't. (meaning there's at least one match AND at least one non-match)
-    return unmatchedDirs.size() > 0 && unmatchedDirs.size() < directories.size()
+
+    // Return true if any unmatched dirs were found
+    return unmatchedDirs.size() > 0
 }
 
 def determine_entry(meta, tsv){
@@ -282,13 +321,32 @@ workflow RUN_CENTAR {
 
             ///////////////////////////////// single dirs all samples in dir /////////////////////////////////////////////////
             // channel for isolates from the same dir, but we still need to check if we are running all the samples in the dir or not
-            griphin_input_single_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> is_multiple.toBoolean() == false}
-            griphin_input_single_dir_ch.view { "griphin_input_single_dir_ch: $it" }
-            filtering_samples_ch = griphin_input_single_dir_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> check_isolate_count(meta, dir) }
-            filtering_samples_ch.view { "filtering_samples_ch: $it" }
-            griphin_input_single_all_isolates_ch = griphin_input_single_dir_ch.combine(filtering_samples_ch).map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> filtering_samples.toBoolean() == false}
+//            griphin_input_single_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> is_multiple.toBoolean() == false}
+//            griphin_input_single_dir_ch.view { "griphin_input_single_dir_ch: $it" }
+//            filtering_samples_ch = griphin_input_single_dir_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> check_isolate_count(meta, dir, centar_files, summary_lines) }
+//            filtering_samples_ch.view { "filtering_samples_ch: $it" }
+//            griphin_input_single_all_isolates_ch = griphin_input_single_dir_ch.combine(filtering_samples_ch).map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> filtering_samples.toBoolean() == false}
 
-            griphin_input_single_all_isolates_ch.view { "griphin_input_single_all_isolates_ch: $it" }
+//            griphin_input_single_all_isolates_ch.view { "griphin_input_single_all_isolates_ch: $it" }
+
+            // 1. Keep only single-directory inputs
+            griphin_input_single_dir_ch = griphin_input_ch
+                .combine(multiple_directories_ch)
+                .filter { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple ->
+                    is_multiple.toBoolean() == false
+                }
+
+            // 2. Append filtering boolean to each tuple
+            griphin_input_with_filter_flag_ch = griphin_input_single_dir_ch.map { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple ->
+                def filtering_needed = check_isolate_count(meta, dir, centar_files, summary_lines)
+                tuple(meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_needed)
+            }
+
+            // 3. Filter down to entries that *do not* need sample filtering (i.e., want full directory)
+            griphin_input_single_all_isolates_ch = griphin_input_with_filter_flag_ch
+                .filter { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples ->
+                    filtering_samples.toBoolean() == false
+                }
 
             //Run this process if there is only a single dir in the --input samples (via griphin_input_single_dir_ch) 
             //if no --outdir is not passed then isolates should go back to their project_ID folders (coded in modules.conf) and we want all samples in samplesheet to be included in the griphin report.
@@ -307,8 +365,12 @@ workflow RUN_CENTAR {
 
             ///////////////////////////////// single dirs some samples in dir /////////////////////////////////////////////////
 
-            griphin_input_single_some_isolates_ch = griphin_input_single_dir_ch.combine(filtering_samples_ch).map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> filtering_samples.toBoolean() == true}
+//            griphin_input_single_some_isolates_ch = griphin_input_single_dir_ch.combine(filtering_samples_ch).map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> filtering_samples.toBoolean() == true}
             //griphin_input_single_some_isolates_ch.view()
+            griphin_input_single_some_isolates_ch = griphin_input_with_filter_flag_ch
+                .filter { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples ->
+                filtering_samples.toBoolean() == true
+    }
 
             //Run this process if there is only a single dir in the --input samples (via griphin_input_single_some_isolates_ch)
             // if multiple_directories is true, then --input must have been used with samples from different directories. 

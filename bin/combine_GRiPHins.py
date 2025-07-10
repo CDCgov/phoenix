@@ -282,6 +282,9 @@ def combine_qc_dataframes(df1_qc, df2_qc):
     removed_unis = []
 
     def resolve_group(group):
+	print(f"\nResolving group for WGS_ID: {group['WGS_ID'].iloc[0]}")
+	print(f"Group shape: {group.shape}")
+	print(f"QC uniqueness per column:\n{group[check_cols].nunique()}")
         check_cols = [
             'Raw_Q30_R1_[%]',
             'Raw_Q30_R2_[%]',
