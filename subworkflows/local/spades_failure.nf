@@ -128,7 +128,7 @@ workflow SPADES_WF {
 
         // Create one line summary for case when spades fails to create scaffolds
         CREATE_SUMMARY_LINE_FAILURE (
-            line_summary_ch, extended_qc
+            line_summary_ch, extended_qc, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE_FAILURE.out.versions)
 
