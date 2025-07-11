@@ -1464,12 +1464,18 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, scaffolds, is_com
     pf_cols = list(pf_df)
     ar_cols = list(ar_df)
     # move the column to head of list using index, pop and insert
-    pf_cols.insert(0, pf_cols.pop(pf_cols.index('No_Plasmid_Markers')))
-    pf_cols.insert(0, pf_cols.pop(pf_cols.index('Plasmid_Replicon_Database')))
-    hv_cols.insert(0, hv_cols.pop(hv_cols.index('No_HVGs_Found')))
-    hv_cols.insert(0, hv_cols.pop(hv_cols.index('HV_Database')))
-    ar_cols.insert(0, ar_cols.pop(ar_cols.index('No_AR_Genes_Found')))
-    ar_cols.insert(0, ar_cols.pop(ar_cols.index('AR_Database')))
+    if 'No_Plasmid_Markers' in pf_cols:
+        pf_cols.insert(0, pf_cols.pop(pf_cols.index('No_Plasmid_Markers')))
+    if 'Plasmid_Replicon_Database' in pf_cols:
+        pf_cols.insert(0, pf_cols.pop(pf_cols.index('Plasmid_Replicon_Database')))
+    if 'No_HVGs_Found' in pf_cols:
+        hv_cols.insert(0, hv_cols.pop(hv_cols.index('No_HVGs_Found')))
+    if 'HV_Database' in pf_cols:
+        hv_cols.insert(0, hv_cols.pop(hv_cols.index('HV_Database')))
+    if 'No_AR_Genes_Found' in pf_cols:
+        ar_cols.insert(0, ar_cols.pop(ar_cols.index('No_AR_Genes_Found')))
+    if 'AR_Database' in pf_cols:
+        ar_cols.insert(0, ar_cols.pop(ar_cols.index('AR_Database')))
     # use ix to reorder
     pf_df = pf_df.loc[:, pf_cols]
     hv_df = hv_df.loc[:, hv_cols]
