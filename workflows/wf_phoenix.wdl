@@ -64,7 +64,7 @@ workflow phoenix_workflow {
     String  mlst_2                            = phoenix.mlst_2
     String  mlst2_ncbi                        = phoenix.mlst2_ncbi
     String  gamma_beta_lactam_genes           = phoenix.gamma_beta_lactam_genes
-    String  other_ar_genes                    = phoenix.other_ar_genes
+    String  gamma_other_ar_genes              = phoenix.gamma_other_ar_genes
     String  amrfinder_point_mutations         = phoenix.amrfinder_point_mutations
     String  amrfinder_amr_classes             = phoenix.amrfinder_amr_classes
     String  amrfinder_amr_subclasses          = phoenix.amrfinder_amr_subclasses

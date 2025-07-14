@@ -31,6 +31,7 @@ def parseArgs(args=None):
     parser.add_argument('-g2', '--new_griphin', default=None, required=False, dest='griphin_new', help='The second griphin excel file to combine.')
     parser.add_argument('--parent_folder', required=False, default=None, dest='parent_folder', help='Directory that will be used for filling in the column "parent_folder" excel sheet if needed for backward compatibility.')
     parser.add_argument('-o', '--output', required=False, default=None, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
+    parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
     parser.add_argument('-b', '--bldb', required=True, default=None, dest='bldb', help='Name of output file default is GRiPHin_Summary.xlsx.')
     parser.add_argument('-s', '--samplesheet', required=False, default=None, dest='samplesheet', help='samplesheet with sample,directory columns. Used to doublecheck sample names.')
     parser.add_argument('--griphin_list', required=False, default=None, nargs='?', const=True, type=str, dest='griphin_list', help='pass instead of -g1/-g2 when you want to combine more than 2 griphins. If you just pass --griphin_list the script assumes you have multiple griphin_summary.xlsx files in the current dir. You can also pass a csv that just has the full paths to the griphin files you want to combine.')
@@ -282,19 +283,10 @@ def combine_qc_dataframes(df1_qc, df2_qc):
     removed_unis = []
 
     def resolve_group(group):
-	print(f"\nResolving group for WGS_ID: {group['WGS_ID'].iloc[0]}")
-	print(f"Group shape: {group.shape}")
-	print(f"QC uniqueness per column:\n{group[check_cols].nunique()}")
-        check_cols = [
-            'Raw_Q30_R1_[%]',
-            'Raw_Q30_R2_[%]',
-            'Total_Raw_[reads]',
-            'Paired_Trimmed_[reads]',
-            'Total_Trimmed_[reads]',
-            'Estimated_Trimmed_Coverage',
-            'GC[%]'
-        ]
-
+        #print(f"\nResolving group for WGS_ID: {group['WGS_ID'].iloc[0]}")
+        #print(f"Group shape: {group.shape}")
+        check_cols = [ 'Raw_Q30_R1_[%]', 'Raw_Q30_R2_[%]', 'Total_Raw_[reads]', 'Paired_Trimmed_[reads]', 'Total_Trimmed_[reads]', 'Estimated_Trimmed_Coverage', 'GC[%]']
+        #print(f"QC uniqueness per column:\n{group[check_cols].nunique()}")
         if group[check_cols].nunique().le(1).all():
             group = group.copy()
             group['PHX_Version_Clean'] = group['PHX_Version'].apply(clean_version)
@@ -579,7 +571,6 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
 def main():
     # looping through excel files
     args = parseArgs()
-    #print(args)
     #figure out the name of the output file 
     if args.output != None:
         output_file = args.output
@@ -645,7 +636,7 @@ def main():
         combined_df_qc_final = sort_columns_to_primary_ungrouped(combined_df_qc_final)
     
     # call function from griphin script to combine all dfs
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), phoenix_final, True, args.bldb)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), phoenix_final, args.scaffolds, True, args.bldb)
 
 
     #print(list(final_df.index))

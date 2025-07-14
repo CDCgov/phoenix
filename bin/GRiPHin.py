@@ -1480,7 +1480,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, scaffolds, is_com
     pf_df = pf_df.loc[:, pf_cols]
     hv_df = hv_df.loc[:, hv_cols]
     ar_df = ar_df.loc[:, ar_cols]
-    # if we run -entry PHOENIX then skip
+    # if we run --pipeline PHOENIX then skip
     if phoenix == True or scaffolds == True:
         final_ar_df = ar_df
     else:

@@ -150,11 +150,11 @@ task phoenix {
       else
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $33); print "ML" $31 "_" $33}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
       fi
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee GAMMA_OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       echo "Only run in CDC_PHOENIX pipeline" | tee BUSCO_DB
       echo "Only run in CDC_PHOENIX pipeline" | tee BUSCO
     elif [ ${pipeline_upper} == "CDC_PHOENIX" ] || [ ${pipeline_upper} == "CDC_SRA" ] || [ ${pipeline_upper} == "CDC_SCAFFOLDS" ]; then
@@ -188,11 +188,11 @@ task phoenix {
       else
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $35); print "ML" $37 "_" $35}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
       fi
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee GAMMA_OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee AMRFINDER_POINT_MUTATIONS
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f27 | tee HYPERVIRULENCE_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f28 | tee PLASMID_INCOMPATIBILITY_REPLICONS
     else
       echo "Pipeline not recognized. Enter one: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, or CDC_SRA."
       exit 1
@@ -230,7 +230,7 @@ task phoenix {
     String  mlst_2                            = read_string("MLST_2")
     String  mlst2_ncbi                        = read_string("MLST2_NCBI")
     String  gamma_beta_lactam_genes           = read_string("GAMMA_BETA_LACTAM_RESISTANCE_GENES")
-    String  other_ar_genes                    = read_string("OTHER_AR_GENES")
+    String  gamma_other_ar_genes              = read_string("GAMMA_OTHER_AR_GENES")
     String  amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")
     String  amrfinder_amr_classes             = read_string("AMRFINDERPLUS_AMR_CLASSES")
     String  amrfinder_amr_subclasses          = read_string("AMRFINDERPLUS_AMR_SUBCLASSES")
