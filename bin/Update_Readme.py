@@ -78,7 +78,8 @@ def extract_gamma_gene_name(gene_string):
     if len(parts) >= 3:
         # Return the gene name portion (second element) and the accession (third element)
         #return f"{parts[1]}__{parts[2]}"
-        return f"{parts[1]}"
+        allele_name = parts[2].split('_')[0]
+        return f"{allele_name}"
     return gene_string
 
 def compare_ar_files(old_file, new_file, file_type):

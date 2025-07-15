@@ -61,7 +61,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/nf-core/modules/
 */
 
 
-def filter_out_meta(input_ch) {
+/*def filter_out_meta(input_ch) {
     // Create an empty list to store the filtered items
     def filteredList = []
     def indir = input_ch[-1]
@@ -73,7 +73,7 @@ def filter_out_meta(input_ch) {
         }
     }
     return [ filteredList, indir ]
-}
+}*/
 
 def create_meta(file_path, input_ch) {
     def meta = [:] // create meta array
@@ -82,95 +82,17 @@ def create_meta(file_path, input_ch) {
     return array
 }
 
-// def check_isolate_count(meta, folderPath){
-//     // Get all directories in the specified folder
-//     def excludeDirs = [ "pipeline_info","centar_pipeline_info", "multiqc"]
-//     def directories = []
-//     new File(folderPath).eachDir { dir ->
-//         // Only add if not in the exclude list
-//         println(meta.id, dir)
-//         if (!excludeDirs.contains(dir.name)) {
-//             directories.add(dir.name)
-//         }
-//     }
-//     // Keep track of unmatched directories
-//     def unmatchedDirs = []
-//     // Check which directories don't match any sample name
-//     directories.each { dirName ->
-//         if (!sampleNames.contains(dirName)) {
-//             unmatchedDirs.add(dirName)
-//         }
-//     }
-//     // Print unmatched directory names if any
-//     if (unmatchedDirs.size() > 0) {
-//         println "WARNING: The following directories do not match any sample name:"
-//         unmatchedDirs.each { dirName ->
-//             println "  - ${dirName}"
-//         }
-//     }
-//     // Return true if some directories matched and some didn't. (meaning there's at least one match AND at least one non-match)
-//     return unmatchedDirs.size() > 0 && unmatchedDirs.size() < directories.size()
-// }
-
-/**
- * Check whether the given folder contains **only** sample directories that match known sample names.
- * Returns true if **any directories are unmatched**, meaning a subset of the folder is being processed.
- */
-def check_isolate_count(meta, folderPath, centar_files, summary_lines) {
+def check_isolate_count(folderPath, centar_files){
+    '''true means that not all samples in indir are being run through the pipeline.'''
     def excludeDirs = ["pipeline_info", "centar_pipeline_info", "multiqc"]
-
-    // Extract sample IDs from centar and summary files
-    def sampleIdsFromCentar = centar_files.collect { file ->
-        file.getName().replaceFirst(/_centar_output\.tsv$/, '')
-    }
-
-    def sampleIdsFromSummary = summary_lines.collect { file ->
-        file.getName().replaceFirst(/_summaryline\.tsv$/, '')
-    }
-
-    // Union the two sets (some may only be present in one)
-    def expectedSampleIds = (sampleIdsFromCentar + sampleIdsFromSummary).unique()
-
-    // List actual subdirectories in the folder, excluding known system dirs
-    def actualDirs = new File(folderPath)
-        .listFiles()
+    def directories = file(folderPath.toString()).listFiles()
         ?.findAll { it.isDirectory() && !excludeDirs.contains(it.name) }
         ?.collect { it.name } ?: []
-
-    // Identify folders that don't match expected sample IDs
-    def unmatchedDirs = actualDirs.findAll { !expectedSampleIds.contains(it) }
-
-    // Optional: Log any mismatches
-    if (unmatchedDirs) {
-        println "⚠️  WARNING for ${meta.id}: The following directories do not match expected sample IDs:"
-        unmatchedDirs.each { println "  - ${it}" }
-    }
-
-    // Return true if any unmatched dirs were found
-    return unmatchedDirs.size() > 0
-}
-
-def determine_entry(meta, tsv){
-    // default is phoenix entry
-    def noBusco = true
-    try {
-        // Open and read the TSV file
-        def tsvFile = tsv.toFile()
-        if (tsvFile.exists()) {
-            // Read the first line (header)
-            def headerLine = tsvFile.withReader { reader -> reader.readLine() }
-            // Split the header by tab to get column names
-            def columnNames = headerLine.split("\t")
-            // Check if any column name contains "BUSCO" return true.
-            noBusco = !columnNames.any { colName -> 
-                colName.toUpperCase().contains("BUSCO") 
-            }
-        }
-    } catch (Exception e) {
-        // Handle any exceptions that might occur
-        println "Error processing file $tsv: ${e.message}. see determine_entry() function in centar entry."
-    }
-    return [[project_id:meta.project_id], noBusco]
+    // Extract sample IDs from centar and summary files
+    def sampleIdsFromCentar = centar_files.collect{ file -> file.getName().replaceFirst(/_centar_output\.tsv$/, '') }
+    def unmatchedDirs = directories.findAll { !sampleIdsFromCentar.contains(it) }
+    //if (unmatchedDirs) { println "WARNING: Unmatched directories: ${unmatchedDirs.join(', ')}"}
+    return unmatchedDirs.size() > 0 && unmatchedDirs.size() < directories.size()
 }
 
 def get_taxa_project_dir(input_ch){ 
@@ -188,16 +110,21 @@ def get_taxa_project_dir(input_ch){
 
 def validate_cdiff_presence(input_ch) {
     def errors = []
-    def project_id = input_ch[0]
-    def genera_list = input_ch[1]
-    def unique_genera_list = genera_list.collect { it.trim() }.unique()
-    unique_genera_list.each { g ->
-        println(" - '${g}' (length: ${g.length()})")
-    }
-    println("Contains exact 'Clostridioides'? " + unique_genera_list.contains("Clostridioides"))
-    // Check if Escherichia is in the list
-    if (!unique_genera_list.contains("Clostridioides")) {
-        errors.add("Project ${project_id} does not contain Clostridioides. Found genera: ${unique_genera_list.join(', ')}")
+    // Process the flattened list in pairs (meta, genera_list)
+    for (int i = 0; i < input_ch.size(); i += 2) {
+        def project_meta = input_ch[i]
+        def genera_list = input_ch[i + 1]
+        //println("DEBUG: Processing project_meta: ${project_meta}")
+        //println("DEBUG: Processing genera_list: ${genera_list}")
+        
+        // Extract project_id from the meta map
+        def project_id = project_meta['project_id']
+        // Convert ArrayBag to List first, then ensure all elements are strings
+        genera_list = genera_list.toList().collect { it.toString() }
+        // Check if Clostridioides is in the list
+        if (!genera_list.contains("Clostridioides")) {
+            errors.add("Project ${project_id} does not contain Clostridioides. Found genera: ${genera_list.join(', ')}")
+        }
     }
     // If any errors found, exit with error message
     if (errors.size() > 0) {
@@ -220,11 +147,6 @@ workflow RUN_CENTAR {
         outdir_path
 
     main:
-
-//        ch_input_indir.view { "ch_input_indir: $it" }
-//        ch_input.view { "input: $it" }
-//        println ch_input_indir.getClass()
-//        error "Stopping execution: custom reason here"
 
         CREATE_INPUT_CHANNELS (
             ch_input_indir, ch_input, true
@@ -256,42 +178,54 @@ workflow RUN_CENTAR {
                         .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])
                         .map{ meta, summary_line, dir -> [ meta, summary_line, dir, summary_line.readLines().first().contains('BUSCO') ]}
 
-        // collect centar output and summary lines to make the griphin report, note that groupTuple will force waiting until all samples are complete before proceeding
-        griphin_input_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
-            .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{     meta, centar_file  -> [[project_id:meta.project_id], centar_file]}.groupTuple(by: [0]), by: [0])\
-            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{         meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])\
-            .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> determine_entry(meta, tsv)}, by: [0])
-
-            // Combining sample summaries into final report
+        // Combining sample summaries into final report
         CENTAR_GATHER_SUMMARY_LINES (
             summaries_ch.map{ meta, summary_line, dir, busco_boolean -> meta},
             summaries_ch.map{ meta, summary_line, dir, busco_boolean -> summary_line},
             summaries_ch.map{ meta, summary_line, dir, busco_boolean -> dir}, 
-            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean},
-            workflow.manifest.version
+            summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean}
         )
         ch_versions = ch_versions.mix(CENTAR_GATHER_SUMMARY_LINES.out.versions)
 
+        // collect centar output and summary lines to make the griphin report, note that groupTuple will force waiting until all samples are complete before proceeding
+        griphin_input_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
+            .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{     meta, centar_file  -> [[project_id:meta.project_id], centar_file]}.groupTuple(by: [0]), by: [0])\
+            .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{         meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])\
+            .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> [[project_id:meta.project_id], !tsv.readLines().first().contains('BUSCO')]}, by: [0])
+
+
+        //CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.view()
+        //[[project_id:/scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/NCBI_HAISeq/Phoenix/haiseq_20250425], /scicomp/scratch/qpk9/3c/e3b17d1a66aa86c81360f6357325b8/haiseq_20250425_old_GRiPHin.tsv]
+        /*griphin_input_ch.view() // for debugging purposes
+        [[project_id:/scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/NCBI_HAISeq/Phoenix/haiseq_20250425], 
+        [/scicomp/scratch/qpk9/f7/d9b37b73d2b3082ee4fc7fbf6eb860/2025EL-00073/2025EL-00073_summaryline.tsv, 
+        /scicomp/scratch/qpk9/2e/0fa99a6367fda163ccf47c3914c4ad/2025EL-00074/2025EL-00074_summaryline.tsv, 
+        /scicomp/scratch/qpk9/04/776b0390373bca119c9bd63487aacf/2025EL-00075/2025EL-00075_summaryline.tsv, 
+        /scicomp/scratch/qpk9/c3/1d41896210088b9e7880a02e9848dd/2025EL-00072/2025EL-00072_summaryline.tsv], 
+        [/scicomp/scratch/qpk9/78/b75991fae1dc482595ed370a680286/2025EL-00074_centar_output.tsv, 
+        /scicomp/scratch/qpk9/97/9738f7596617b9c9d854f29d15b12a/2025EL-00075_centar_output.tsv, 
+        /scicomp/scratch/qpk9/46/5da030c72a8c3f07d3005bf1e37101/2025EL-00072_centar_output.tsv, 
+        /scicomp/scratch/qpk9/5f/048037c0e6670cb0b4c4e5d9793876/2025EL-00073_centar_output.tsv], /scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/NCBI_HAISeq/Phoenix/haiseq_20250425, true]*/
 
         //define var to be used globally
         def griphin_report
         def griphin_out_path
         // For cases where the user is running isolates from multiple directories and wants the summary files output to their original project_id folders. 
         multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
-        //griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> is_multiple.toBoolean() == true}
+        //griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
         // channel for isolates from the same dir, but we still need to check if we are running all the samples in the dir or not
-        //griphin_input_single_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> is_multiple.toBoolean() == false}
+        //griphin_input_single_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == false}
         //griphin_input_single_dir_ch.view()
 
         if (params.indir != null) { // --indir is passed then samples are from the same dir, thus all samples are run together and output in --indir unless --outdir or --griphin_out is passed
 
             //create GRiPHin report
             CENTAR_GRIPHIN_INDIR (
-                griphin_input_ch.map{meta, summary_line, centar_files, dir, No_Busco_Bool -> [summary_line, centar_files].flatten()}, 
+                griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> [summary_line, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, 
-                griphin_input_ch.map{meta, summary_line, centar_files, dir, No_Busco_Bool -> [dir, []]}, 
+                griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> [dir, []]}, 
                 workflow.manifest.version, params.coverage, 
-                griphin_input_ch.map{meta, summary_line, centar_files, dir, No_Busco_Bool -> No_Busco_Bool}, 
+                griphin_input_ch.map{meta, summary_line, centar_files, dir, busco_var -> busco_var}, 
                 false, true, params.bldb, false
             )
             ch_versions = ch_versions.mix(CENTAR_GRIPHIN_INDIR.out.versions)
@@ -322,42 +256,23 @@ workflow RUN_CENTAR {
 
             ///////////////////////////////// single dirs all samples in dir /////////////////////////////////////////////////
             // channel for isolates from the same dir, but we still need to check if we are running all the samples in the dir or not
-//            griphin_input_single_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> is_multiple.toBoolean() == false}
-//            griphin_input_single_dir_ch.view { "griphin_input_single_dir_ch: $it" }
-//            filtering_samples_ch = griphin_input_single_dir_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> check_isolate_count(meta, dir, centar_files, summary_lines) }
-//            filtering_samples_ch.view { "filtering_samples_ch: $it" }
-//            griphin_input_single_all_isolates_ch = griphin_input_single_dir_ch.combine(filtering_samples_ch).map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> filtering_samples.toBoolean() == false}
+            griphin_input_single_dir_to_split_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == false}
+            filtering_samples_ch = griphin_input_single_dir_to_split_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> check_isolate_count(dir, centar_files) }
 
-//            griphin_input_single_all_isolates_ch.view { "griphin_input_single_all_isolates_ch: $it" }
-
-            // 1. Keep only single-directory inputs
-            griphin_input_single_dir_ch = griphin_input_ch
-                .combine(multiple_directories_ch)
-                .filter { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple ->
-                    is_multiple.toBoolean() == false
-                }
-
-            // 2. Append filtering boolean to each tuple
-            griphin_input_with_filter_flag_ch = griphin_input_single_dir_ch.map { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple ->
-                def filtering_needed = check_isolate_count(meta, dir, centar_files, summary_lines)
-                tuple(meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_needed)
-            }
-
-            // 3. Filter down to entries that *do not* need sample filtering (i.e., want full directory)
-            griphin_input_single_all_isolates_ch = griphin_input_with_filter_flag_ch
-                .filter { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples ->
-                    filtering_samples.toBoolean() == false
-                }
+            // now we will split the channel into its true and false elements for if we are running all samples in the dir or only some 
+            griphin_input_single_dir_ch = griphin_input_single_dir_to_split_ch.combine(filtering_samples_ch).branch{
+                        single_some_isolates: it[6] == true 
+                        single_all_isolates: it[6] == false}
 
             //Run this process if there is only a single dir in the --input samples (via griphin_input_single_dir_ch) 
             //if no --outdir is not passed then isolates should go back to their project_ID folders (coded in modules.conf) and we want all samples in samplesheet to be included in the griphin report.
             //run CENTAR and use --filter_samples in griphin module (last var in channel input so only things in input are run) to make sure only samples in the --input are run
             CENTAR_GRIPHIN_INPUT (
-                griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> [summary_line, centar_files].flatten()}, 
+                griphin_input_single_dir_ch.single_all_isolates.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> [summary_line, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, 
-                griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> [dir, []]}, 
+                griphin_input_single_dir_ch.single_all_isolates.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir, []]}, 
                 workflow.manifest.version, params.coverage, 
-                griphin_input_single_all_isolates_ch.map{meta, summary_line, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> No_Busco_Bool}, 
+                griphin_input_single_dir_ch.single_all_isolates.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> busco_var}, 
                 false, true, params.bldb, false
             )
             ch_versions = ch_versions.mix(CENTAR_GRIPHIN_INPUT.out.versions)
@@ -366,22 +281,15 @@ workflow RUN_CENTAR {
 
             ///////////////////////////////// single dirs some samples in dir /////////////////////////////////////////////////
 
-//            griphin_input_single_some_isolates_ch = griphin_input_single_dir_ch.combine(filtering_samples_ch).map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> filtering_samples.toBoolean() == true}
-            //griphin_input_single_some_isolates_ch.view()
-            griphin_input_single_some_isolates_ch = griphin_input_with_filter_flag_ch
-                .filter { meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples ->
-                filtering_samples.toBoolean() == true
-    }
-
             //Run this process if there is only a single dir in the --input samples (via griphin_input_single_some_isolates_ch)
             // if multiple_directories is true, then --input must have been used with samples from different directories. 
             // Also, if no --outdir is not passed then isolates should go back to their project_ID folders and we want all samples in that dir to be included in the griphin report. thus, we first make the griphin file with only the samples in --input
             NO_PUB_CENTAR_GRIPHIN (
-                griphin_input_single_some_isolates_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> [summary_lines, centar_files].flatten()}, 
+                griphin_input_single_dir_ch.single_some_isolates.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple, filtering_samples -> [summary_lines, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb,
-                griphin_input_single_some_isolates_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> [dir, []]}, 
+                griphin_input_single_dir_ch.single_some_isolates.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple, filtering_samples -> [dir, []]}, 
                 workflow.manifest.version, params.coverage,
-                griphin_input_single_some_isolates_ch.map{meta, summary_line, centar_files, dir, No_Busco_Bool, is_multiple, filtering_samples -> No_Busco_Bool}, 
+                griphin_input_single_dir_ch.single_some_isolates.map{meta, summary_line, centar_files, dir, busco_var, is_multiple, filtering_samples -> busco_var}, 
                 false, true, params.bldb, true
             )
             ch_versions = ch_versions.mix(NO_PUB_CENTAR_GRIPHIN.out.versions)
@@ -408,24 +316,22 @@ workflow RUN_CENTAR {
             ///////////////////////////////// multiple dirs //////////////////////////////////////////////////////////////////
             // For cases where the user is running isolates from multiple directories and wants the summary files output to their original project_id folders. 
             multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
-            griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> is_multiple.toBoolean() == true}
-
-            griphin_input_multi_dir_ch.view { "griphin_input_multi_dir_ch: $it" }
+            griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
 
             //Run this process if there is only a single dir in the --input samples (via griphin_input_multi_dir_ch)
             // if multiple_directories is true, then --input must have been used with samples from different directories. 
-            // Also, if --outdir is not passed then isolates should go back to their project_ID folders and we want all samples in that dir to be included in the griphin report. thus, we first make the griphin file with only the samples in --input
+            // Also, if no --outdir is not passed then isolates should go back to their project_ID folders and we want all samples in that dir to be included in the griphin report. thus, we first make the griphin file with only the samples in --input
             NO_PUB_CENTAR_GRIPHIN_MULTI_DIR (
-                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> [summary_lines, centar_files].flatten()}, 
+                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> [summary_lines, centar_files].flatten()}, 
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb,
-                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> [dir, []]}, 
+                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> [dir, []]}, 
                 workflow.manifest.version, params.coverage,
-                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, No_Busco_Bool, is_multiple -> No_Busco_Bool}, 
+                griphin_input_multi_dir_ch.map{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> busco_var}, 
                 false, true, params.bldb, true
             )
             ch_versions = ch_versions.mix(NO_PUB_CENTAR_GRIPHIN_MULTI_DIR.out.versions)
 
-                        // collect centar output and summary lines to make the griphin report
+            // collect centar output and summary lines to make the griphin report
             update_griphin_multi_dir_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, old_griphin_excel          -> [[project_id:meta.project_id], old_griphin_excel]}\
                 .join(NO_PUB_CENTAR_GRIPHIN_MULTI_DIR.out.griphin_report.map{            path_file, no_pub_griphin_report -> create_meta(path_file, no_pub_griphin_report)}, by: [0])\
                 .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{                        meta, dir                        -> [[project_id:meta.project_id], dir]}, by: [0])

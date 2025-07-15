@@ -480,6 +480,8 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
             skipfooter=footer_lines1,engine='openpyxl')
         if 'Parent_Folder' not in df_1.columns:
             df_1 = backwards_compatibility(df_1, parent_folder, file_path1)
+        #rename columns for backwards compatibility
+        df_1 = df_1.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
         # Use vectorized operations for speed to creating UNI column
         # Pre-compute the parent folder replacement
         df_1['Parent_Folder'] = df_1['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
@@ -496,6 +498,8 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
             #check if parent folder is present
         if 'Parent_Folder' not in df_2.columns:
             df_2 = backwards_compatibility(df_2, parent_folder, file_path2)
+        #rename columns for backwards compatibility
+        df_2 = df_2.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
         # Pre-compute the parent folder replacement
         df_2['Parent_Folder'] = df_2['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
         # Then create UNI using string formatting which is more memory efficient and Use vectorized operations for speed to creating UNI column

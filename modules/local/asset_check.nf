@@ -27,17 +27,20 @@ process ASSET_CHECK {
     """
     if [[ ${zipped_sketch} = *.gz ]]
     then
+        echo "Unzipping gz file ${zipped_sketch}"
         pigz -vdf ${zipped_sketch}
         #for bz2 files
         #pigz -dc -L ${zipped_sketch} > ${unzipped_sketch}
     elif [[ ${zipped_sketch} = *.xz ]]
     then 
+        echo "Unzipping xz file ${zipped_sketch}"
         xz -kfd --no-warn ${zipped_sketch}
     else
         :
     fi
     if [[ ${mlst_db_path} = *.tar.gz ]]
     then
+        echo "Decompressing tar file ${mlst_db_path}"
         tar --use-compress-program="pigz -vdf" -xf ${mlst_db_path}
     else
         :
