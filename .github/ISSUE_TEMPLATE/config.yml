@@ -1,0 +1,7 @@
+contact_links:
+  - name: "Email HAISeq for Support"
+    url: mailto:Haiseq@cdc.gov?subject=Phoenix%20Pipeline%20Support
+    about: Send an email for quick support or questions about the Phoenix pipeline
+  - name: "Slack #phoenix-dev channel"
+    url: https://staph-b-dev.slack.com/channels/phoenix-dev
+    about: Discussion about the staph-b-dev.slack.com/phoenix-dev pipeline
