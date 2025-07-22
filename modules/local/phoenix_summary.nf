@@ -4,7 +4,7 @@ process GATHER_SUMMARY_LINES {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    val(meta) // need for meta.project_id in -profile update_phoenix
+    val(meta) // need for meta.full_project_id in -profile update_phoenix for publishing
     path(summary_line_files)
     path(outdir_path)
     val(busco_val)
@@ -21,11 +21,10 @@ process GATHER_SUMMARY_LINES {
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     //def output = (params.pipeline_upper == "UPDATE_PHOENIX") ? "${meta.project_id}_Phoenix_Summary.tsv" : "Phoenix_Summary.tsv" 
+    def updater = (params.pipeline_upper == "UPDATE_PHOENIX" ) ? "--updater" : ""
     def output = "Phoenix_Summary.tsv" 
     """
-    ${ica}Create_phoenix_summary_tsv.py \\
-        --out ${output} \\
-        $busco_parameter
+    ${ica}Create_phoenix_summary_tsv.py --out ${output} ${updater} $busco_parameter
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -10,6 +10,7 @@ process SAMPLESHEET_CHECK {
     val(reads_entry)
     val(scaffolds_entry)
     val(directory_entry)
+    val(meta) // used for -profile update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
 
     output:
     path('samplesheet.valid.csv'),                   emit: csv

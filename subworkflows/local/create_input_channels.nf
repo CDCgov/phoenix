@@ -171,6 +171,13 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, gamma_ar, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, gamma_ar, all_passed_id_channel -> [meta, gamma_ar]} //remove all_passed_id_channel from output
+                .combine(Channel.fromPath(params.ardb)).map{ meta, gamma_ar, ardb -> 
+                    def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
+                    // Filter to keep only gamma files that contain the extracted date
+                    def matchingFiles = !gamma_ar.findAll { file -> file.getName().contains(ardbDate[0][1]) }
+                    def filteredFiles = gamma_ar.findAll { file -> file.getName().contains(ardbDate[0][1]) }
+                    println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${filteredFiles}.${reset}")
+                    return [meta, matchingFiles] }
 
             // get .gamma files for MLST updating
             def armfinder_glob = append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
@@ -291,9 +298,7 @@ workflow CREATE_INPUT_CHANNELS {
             all_griphin_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(griphin_tsv_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} 
                 //.map{ it -> modifiedFileChannel(it, "_GRiPHin_Summary","_old_GRiPHin") }
             def phoenix_tsv_glob = append_to_path(params.indir.toString(),'Phoenix_Summary.tsv')
-            //Channel.fromPath(phoenix_tsv_glob).view()
             all_phoenix_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(phoenix_tsv_glob)).map{ it -> create_groups_id_and_busco(it, params.indir.toString())}
-            //all_phoenix_tsv_ch.view()
                 //.map{ it -> modifiedFileChannel(it, "_Summary","_Summary_Old") }
             def pipeline_info_glob = append_to_path(params.indir.toString(),'pipeline_info/software_versions.yml')
             all_pipeline_info_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(pipeline_info_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
@@ -338,30 +343,34 @@ workflow CREATE_INPUT_CHANNELS {
 
         } else if (samplesheet != null) {
 
+
+            meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ create_samplesheet_meta(it) }.unique()
+            meta_ch.view()
+
             if (centar == true) { // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
                 // if a samplesheet was passed then use that to create the channel
                 CENTAR_SAMPLESHEET_CHECK (
-                    samplesheet, false, false, true
+                    samplesheet, false, false, true, []
                 )
                 ch_versions = ch_versions.mix(CENTAR_SAMPLESHEET_CHECK.out.versions)
 
-                samplesheet = CENTAR_SAMPLESHEET_CHECK.out.csv
+                samplesheet = CENTAR_SAMPLESHEET_CHECK.out.csv.first()  
 
                 samplesheet_meta_ch = Channel.empty().ifEmpty([]) //only needed for --pipeline update_phoenix
 
             } else {
                 // if a samplesheet was passed then use that to create the channel
                 SAMPLESHEET_CHECK (
-                    samplesheet, false, false, true
+                    samplesheet, false, false, true, meta_ch
                 )
                 ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
 
-                samplesheet = SAMPLESHEET_CHECK.out.csv
+                //if there are multiple dirs in --input samplesheet then several sheets come out here and it increases downstream processes... so only unique go forward
+                samplesheet = SAMPLESHEET_CHECK.out.csv.first() 
 
                 //only needed for --pipeline update_phoenix
                 samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
             }
-
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }
@@ -396,8 +405,10 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_taxonomy_ch = COLLECT_SAMPLE_FILES.out.tax
             filtered_gamma_pf_ch = COLLECT_SAMPLE_FILES.out.gamma_pf
             filtered_gamma_hv_ch = COLLECT_SAMPLE_FILES.out.gamma_hv
-            filtered_gamma_ar_ch = COLLECT_SAMPLE_FILES.out.gamma_ar
-            filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report
+            filtered_gamma_ar_ch = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
+                                    .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
+            filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
+                                        .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
             filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio
             filtered_kraken_bh_ch = COLLECT_SAMPLE_FILES.out.kraken_bh
             filtered_trimmed_stats_ch = COLLECT_SAMPLE_FILES.out.trimmed_stats
@@ -479,6 +490,42 @@ workflow CREATE_INPUT_CHANNELS {
     GROOVY FUNCTIONS
 ========================================================================================
 */
+
+def previous_updater_check(meta, ar_file, ardb, type) {
+    //if you run updater with the same AR db as was run before you will get a file name collision in the CREATE_AND_UPDATE_README step
+    // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
+    def orange = '\033[38;5;208m'
+    def reset = '\033[0m'
+    //making global variables to use in the function
+    def matchingFiles = ""
+    if (type == "gamma") {
+        def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
+        // Filter to keep only gamma files that contain the extracted date
+        matchingFiles = ar_file.findAll { file -> !file.getName().contains(ardbDate[0][1]) }
+        def filteredFiles = ar_file.findAll{ file -> file.getName().contains(ardbDate[0][1]) }
+        if (filteredFiles && !filteredFiles.isEmpty()) {
+            def cleanedFilename = filteredFiles[0].toString().split('/').last().replace(".gamma", "").replace(meta.id.toString()+"_", "")
+            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
+        }
+    } else if (type == "amrfinder") {
+        def ardbDate = ardb.getName() =~ /amrfinderdb_v\d{1}.\d{1}_(\d{8}).\d{1}\.tar.gz/
+        // Filter to keep only gamma files that contain the extracted date
+        matchingFiles = ar_file.findAll { file -> !file.getName().contains(ardbDate[0][1]) }
+        def filteredFiles = ar_file.findAll{ file -> file.getName().contains(ardbDate[0][1]) }
+        if (filteredFiles && !filteredFiles.isEmpty()) {
+            def cleanedFilename = filteredFiles[0].toString().split('/').last().replace("amrfinderdb_", "").replace(".tar.gz", "")
+            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
+        }
+    }
+    return [meta, matchingFiles] } //filter to keep only matching files
+
+// Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
+def create_samplesheet_meta(LinkedHashMap row) {
+    def meta = [:]
+    meta.project_id      = row.directory.toString().split('/')[-2]
+    meta.full_project_id = new File(row.directory).getParent().replace("[", "")
+    return meta 
+}
 
 def transformSamplesheets(input_ch) {
     def meta = [:] // create meta array
@@ -570,7 +617,7 @@ def create_dir_channels(LinkedHashMap row) {
 def add_entry_meta(input_ch){
     """samples needed to be grouped by their project directory for editing summary files."""
     def meta = [:] // create meta array
-    meta.id = input_ch[0].id
+    //meta.id = input_ch[0].id
     meta.project_id = input_ch[0].project_id
     // Use file object to read the first line of the file
     def file = input_ch[1]
@@ -582,10 +629,10 @@ def add_entry_meta(input_ch){
 def create_groups_id_and_busco(input_ch, project_folder){
     """samples needed to be grouped by their project directory for editing summary files."""
     def meta = [:] // create meta array
-    meta.id = input_ch[0]
+    //meta.id = input_ch[0]
     meta.project_id = project_folder.toString().split('/')[-1]
-    def firstLine = input_ch[1].text.split('\n')[0]
-    meta.entry = firstLine.contains('BUSCO')
+    //def firstLine = input_ch[1].text.split('\n')[0]
+    meta.entry = input_ch[1].head().text.contains('BUSCO')
     return [meta, input_ch[1]]
 }
 

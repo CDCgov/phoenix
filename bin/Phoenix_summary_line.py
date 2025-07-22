@@ -375,7 +375,7 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
         Contigs = 'Unknown'
     try:
         busco_line, lineage, busco_file = Get_BUSCO_Gene_Count(stats)
-    except:
+    except IndexError:
         busco_file = None
         busco_line = 'Unknown'
         lineage = 'Unknown'
@@ -454,7 +454,7 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
         read_match = Get_Kraken_reads(stats, trimd_kraken)
     except:
         read_match = "Unknown"
-    if busco_file is None and extended_qc == False:
+    if busco_file == None and extended_qc == False:
         Line = ID  + '\t' + phx_version + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + final_taxa + '\t' + taxa_source + '\t' + fastani_organism + '\t' + fastani_percent_match + '\t' + fastani_coverage + '\t' + shigapass_organism + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
         busco = False
     elif busco_file is not None or extended_qc == True:

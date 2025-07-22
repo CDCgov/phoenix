@@ -1,5 +1,5 @@
 process UPDATE_GRIPHIN {
-    tag "${project_id}"
+    tag "${meta.project_id}"
     label 'process_low'
     stageInMode 'copy' // you need this or openpyxl complains that excel files aren't excel files. 
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
@@ -7,16 +7,15 @@ process UPDATE_GRIPHIN {
     input:
     path(griphins_excel)
     //path(griphins_tsv)
-    path(outdir) // output directory used as prefix for the summary file
-    val(project_id)
+    val(meta) // output directory used as prefix for the summary file
     path(valid_samplesheet_file)
     val(coverage)
     path(bldb)
     val(remove_dups_var)
 
     output:
-    path("${project_id}_GRiPHin_Summary.xlsx"), emit: griphin_report
-    path("${project_id}_GRiPHin_Summary.tsv"),  emit: griphin_tsv_report
+    path("${meta.project_id}_GRiPHin_Summary.xlsx"), emit: griphin_report
+    path("${meta.project_id}_GRiPHin_Summary.tsv"),  emit: griphin_tsv_report
     path("versions.yml"),                       emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
@@ -37,11 +36,10 @@ process UPDATE_GRIPHIN {
     def valid_samplesheet = valid_samplesheet_file ? "--samplesheet ${valid_samplesheet_file}" : ""
     def remove_dups = remove_dups_var ? "--remove_dups" : "" // When we are running species specific and updater pipelines we need to remove duplications from the original griphin reports so we can update with new data
     """
-
     ${ica}combine_GRiPHins.py ${griphin_input} \
-        --output ${project_id}_GRiPHin_Summary \
+        --output ${meta.project_id}_GRiPHin_Summary \
         --coverage ${coverage} \
-        --parent_folder ${project_id} \
+        --parent_folder ${meta.project_id} \
         --bldb ${bldb} \
         ${remove_dups} \
         ${valid_samplesheet}
