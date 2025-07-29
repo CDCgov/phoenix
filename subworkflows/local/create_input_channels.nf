@@ -166,20 +166,23 @@ workflow CREATE_INPUT_CHANNELS {
 
             // get .gamma files for MLST updating
             def gamma_ar_glob = append_to_path(params.indir.toString(),'*/gamma_ar/*.gamma')
-            //create .gamma file channel with meta information 
+
+            //create .gamma file channel with meta information, filter at the end is to handle the case where updater has already been run on the sample
             filtered_gamma_ar_ch = Channel.fromPath(gamma_ar_glob) // use created regrex to get samples
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, gamma_ar, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, gamma_ar, all_passed_id_channel -> [meta, gamma_ar]} //remove all_passed_id_channel from output
                 .combine(Channel.fromPath(params.ardb)).map{ meta, gamma_ar, ardb -> 
                     def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
-                    // Filter to keep only gamma files that contain the extracted date
-                    def matchingFiles = !gamma_ar.findAll { file -> file.getName().contains(ardbDate[0][1]) }
-                    def filteredFiles = gamma_ar.findAll { file -> file.getName().contains(ardbDate[0][1]) }
-                    println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${filteredFiles}.${reset}")
-                    return [meta, matchingFiles] }
+                    // Check if the single gamma file contains the extracted date
+                    def matchingFile = !gamma_ar.getName().contains(ardbDate[0][1]) ?  gamma_ar : null
+                    if (gamma_ar.getName().contains(ardbDate[0][1])) {
+                        def cleanedFilename = gamma_ar.toString().split('/').last().replace(".gamma", "").replace(meta.id.toString()+"_", "")
+                        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
+                    }
+                    return [meta, matchingFile] }.filter{ meta, gamma_ar -> gamma_ar != null } // filter out the null values
 
-            // get .gamma files for MLST updating
+            // get amrfinder files for MLST updating
             def armfinder_glob = append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
 
             //create .gamma file channel with meta information 
@@ -187,8 +190,17 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, ncbi_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, ncbi_report, all_passed_id_channel -> [meta, ncbi_report]} //remove all_passed_id_channel from output
+                    .combine(Channel.fromPath(params.amrfinder_db)).map{ meta, ncbi_report, ardb -> 
+                    def ardbDate = ardb.getName() =~ /amrfinderdb_v\d{1}.\d{1}_(\d{8}).\d{1}\.tar.gz/
+                    // Check if the single gamma file contains the extracted date
+                    def matchingFile = !ncbi_report.getName().contains(ardbDate[0][1]) ?  ncbi_report : null
+                    if (ncbi_report.getName().contains(ardbDate[0][1])) {
+                        def cleanedFilename = ncbi_report.toString().split('/').last().replace("amrfinderdb_", "").replace(".tar.gz", "")
+                        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
+                    }
+                    return [meta, matchingFile] }.filter{ meta, ncbi_report -> ncbi_report != null } // filter out the null values
 
-            // get .tax files for MLST updating
+            // get quast files for MLST updating
             def quast_glob = append_to_path(params.indir.toString(),'*/quast/*_summary.tsv')
             //create .tax file channel with meta information 
             filtered_quast_ch = Channel.fromPath(quast_glob) // use created regrex to get samples
@@ -345,7 +357,6 @@ workflow CREATE_INPUT_CHANNELS {
 
 
             meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ create_samplesheet_meta(it) }.unique()
-            meta_ch.view()
 
             if (centar == true) { // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
                 // if a samplesheet was passed then use that to create the channel
@@ -406,7 +417,7 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_gamma_pf_ch = COLLECT_SAMPLE_FILES.out.gamma_pf
             filtered_gamma_hv_ch = COLLECT_SAMPLE_FILES.out.gamma_hv
             filtered_gamma_ar_ch = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
-                                    .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
+                                        .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
             filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
                                         .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
             filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio
@@ -496,28 +507,23 @@ def previous_updater_check(meta, ar_file, ardb, type) {
     // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
     def orange = '\033[38;5;208m'
     def reset = '\033[0m'
-    //making global variables to use in the function
-    def matchingFiles = ""
-    if (type == "gamma") {
-        def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
-        // Filter to keep only gamma files that contain the extracted date
-        matchingFiles = ar_file.findAll { file -> !file.getName().contains(ardbDate[0][1]) }
-        def filteredFiles = ar_file.findAll{ file -> file.getName().contains(ardbDate[0][1]) }
-        if (filteredFiles && !filteredFiles.isEmpty()) {
-            def cleanedFilename = filteredFiles[0].toString().split('/').last().replace(".gamma", "").replace(meta.id.toString()+"_", "")
-            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
-        }
-    } else if (type == "amrfinder") {
-        def ardbDate = ardb.getName() =~ /amrfinderdb_v\d{1}.\d{1}_(\d{8}).\d{1}\.tar.gz/
-        // Filter to keep only gamma files that contain the extracted date
-        matchingFiles = ar_file.findAll { file -> !file.getName().contains(ardbDate[0][1]) }
-        def filteredFiles = ar_file.findAll{ file -> file.getName().contains(ardbDate[0][1]) }
-        if (filteredFiles && !filteredFiles.isEmpty()) {
-            def cleanedFilename = filteredFiles[0].toString().split('/').last().replace("amrfinderdb_", "").replace(".tar.gz", "")
-            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
-        }
+    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/ ]
+    def ardbDate = (ardb.getName() =~ patterns[type])[0][1] // get ar date
+    def isList = ar_file instanceof List // check if the input is a list or a single file
+    // Filter to keep only gamma/amrfinder files that do not contain the extracted date
+    def matchingFiles = isList ? ar_file.findAll { !it.getName().contains(ardbDate) } : (!ar_file.getName().contains(ardbDate) ? ar_file : null)
+    def filteredFiles = isList ? ar_file.findAll { it.getName().contains(ardbDate) } : (ar_file.getName().contains(ardbDate) ? ar_file : null)
+    //print warning if the file has already been processed with the same AR db date
+    if (filteredFiles) {
+        def cleanedFilename = filteredFiles[0].toString().split('/').last()
+        def replacements = [ gamma: [".gamma", "${meta.id}_"], amrfinder: ["amrfinderdb_", ".tar.gz"] ]
+        replacements[type].each { cleanedFilename = cleanedFilename.replace(it, "") }
+        def outputFiles = [ gamma: "${meta.id}_ResGANNCBI_${ardbDate}_srst2.gamma", amrfinder: "${meta.id}_all_genes_${ardbDate}.tsv" ]
+        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${outputFiles[type]} will be overwritten.${reset}")
     }
-    return [meta, matchingFiles] } //filter to keep only matching files
+    // Return a single file when input was single
+    return [meta, isList && matchingFiles.size() == 1 ? matchingFiles[0] : matchingFiles]
+}
 
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
 def create_samplesheet_meta(LinkedHashMap row) {
@@ -632,7 +638,7 @@ def create_groups_id_and_busco(input_ch, project_folder){
     //meta.id = input_ch[0]
     meta.project_id = project_folder.toString().split('/')[-1]
     //def firstLine = input_ch[1].text.split('\n')[0]
-    meta.entry = input_ch[1].head().text.contains('BUSCO')
+    meta.entry = input_ch[1].text.contains('BUSCO')
     return [meta, input_ch[1]]
 }
 

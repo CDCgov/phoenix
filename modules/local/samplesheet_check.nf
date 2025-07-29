@@ -14,7 +14,7 @@ process SAMPLESHEET_CHECK {
 
     output:
     path('samplesheet.valid.csv'),                   emit: csv
-    path('samplesheet.valid_*.csv'),  optional:true, emit: csv_by_dir // only need if multiple dirs in --input for -profile update_phoenix
+    path('samplesheet.valid_*.csv'),  optional:true, emit: csv_by_dir // only need if multiple dirs in --input for --pipeline update_phoenix
     path("versions.yml"),                            emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/

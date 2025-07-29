@@ -60,7 +60,6 @@ include { ABRITAMR_REPORT                } from '../modules/local/abritamr_repor
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
-include { GATHER_SUMMARY_LINES           } from '../modules/local/phoenix_summary'
 include { CLIA_GRIPHIN                   } from '../modules/local/clia_griphin'
 include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/create_ncbi_upload_sheet'
 include { CREATE_CLIA_PDF                } from '../modules/local/clia_pdf'

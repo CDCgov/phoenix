@@ -9,7 +9,7 @@ workflow INPUT_CHECK {
     samplesheet // file: /path/to/samplesheet.csv
 
     main:
-    SAMPLESHEET_CHECK ( samplesheet, true, false, false )
+    SAMPLESHEET_CHECK ( samplesheet, true, false, false, [] )
         .csv
         .splitCsv ( header:true, sep:',' )
         .map { create_fastq_channels(it) }

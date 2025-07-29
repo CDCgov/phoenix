@@ -8,6 +8,7 @@ process GATHER_SUMMARY_LINES {
     path(summary_line_files)
     path(outdir_path)
     val(busco_val)
+    val(pipeline_info) //needed for --pipeline update_phoenix
 
     output:
     path('*hoenix_Summary.tsv'), emit: summary_report
@@ -18,13 +19,14 @@ process GATHER_SUMMARY_LINES {
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def busco_parameter = busco_val ? "--busco" : ""
+    def software_versions = pipeline_info ? "--software_versions ${pipeline_info}" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     //def output = (params.pipeline_upper == "UPDATE_PHOENIX") ? "${meta.project_id}_Phoenix_Summary.tsv" : "Phoenix_Summary.tsv" 
     def updater = (params.pipeline_upper == "UPDATE_PHOENIX" ) ? "--updater" : ""
     def output = "Phoenix_Summary.tsv" 
     """
-    ${ica}Create_phoenix_summary_tsv.py --out ${output} ${updater} $busco_parameter
+    ${ica}Create_phoenix_summary_tsv.py --out ${output} ${updater} ${software_versions} $busco_parameter
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

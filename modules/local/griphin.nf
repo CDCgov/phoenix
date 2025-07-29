@@ -27,7 +27,7 @@ process GRIPHIN {
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
-    def phoenix = entry ? "--phoenix" : ""
+    def phoenix = entry ? "" : "--phoenix"
     def scaffolds = (params.pipeline_upper == "SCAFFOLDS" || params.pipeline_upper == "CDC_SCAFFOLDS") ? "--scaffolds" : "" 
     def shigapass = shigapass_detected ? "--shigapass" : ""
     def centar = centar_detected ? "--centar" : ""

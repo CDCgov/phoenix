@@ -564,7 +564,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            [], all_summaries_ch, outdir_path, false
+            [], all_summaries_ch, outdir_path, false, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
@@ -581,7 +581,7 @@ workflow PHOENIX_EXTERNAL {
         //create GRiPHin report
         GRIPHIN (
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path.map{outdir -> [outdir, []]}, workflow.manifest.version, 
-            params.coverage, true, shigapass_var, centar_var, params.bldb, true
+            params.coverage, false, shigapass_var, centar_var, params.bldb, true
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
