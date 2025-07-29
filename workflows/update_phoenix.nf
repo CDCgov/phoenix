@@ -317,8 +317,6 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
-        CREATE_INPUT_CHANNELS.out.gamma_ar.view()
-
         files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id.split('/').last(), meta, file] }
                                 .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
                                 .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
@@ -328,7 +326,6 @@ workflow UPDATE_PHOENIX_WF {
                                 .join(GAMMA_AR.out.gamma.map{                    meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
                                 .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{ meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
                                 .join(AMRFINDERPLUS_RUN.out.report.map{          meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
-        //files_to_update_ch.view()
 
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
@@ -444,7 +441,6 @@ workflow UPDATE_PHOENIX_WF {
                 return [meta, summary_lines, full_project_id, busco_boolean]}
         //add in the pipeline info to get the version
         gathered_summaries_ch = summaries_ch.join(CREATE_INPUT_CHANNELS.out.pipeline_info.map{meta, pipeline_info -> [[project_id:meta.project_id.split('/')[-1], full_project_id:meta.project_id], pipeline_info]}, by: [0])
-        gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> pipeline_info}.map { file -> (file.text =~ /cdcgov\/phoenix: (.+)/)[0][1].trim() }.view()
 
         //  Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
@@ -482,7 +478,6 @@ workflow UPDATE_PHOENIX_WF {
                 summaries_ch = summaries_ch.combine(ch_input_indir)
 
                 // run griphin and publish the results
-                //[meta, summary_lines, full_project_id, busco_boolean]
                 GRIPHIN_PUBLISH (
                     summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean, indir -> summary_lines}, \
                     CREATE_INPUT_CHANNELS.out.valid_samplesheet, params.ardb, \
@@ -499,7 +494,6 @@ workflow UPDATE_PHOENIX_WF {
             } else { // params.outdir != "${launchDir}/phx_output"
                 // add in indir
                 summaries_with_outdir_ch = summaries_with_outdir_ch.combine(ch_input_indir)
-                //[meta, summary_lines, outdir, busco_boolean, indir]
 
                 // run griphin and publish the results
                 GRIPHIN_PUBLISH (

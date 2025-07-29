@@ -46,7 +46,6 @@ workflow CREATE_INPUT_CHANNELS {
             // find the samples that do not have a fairy file and create them
             no_fairy_file_id_ch = passed_id_ch.toList().combine(dir_names_ch.toList()).combine(failed_fairy_ids_ch.toList()).map{ passed_ids, dir_names, failed_ids -> dir_names - failed_ids - passed_ids}.ifEmpty([])
 
-
             // print out the samples that did not have a fairy file yet - we will also add in files that have the v2.1.1 style of fairy file
             old_style_fairy_file_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_old_fairy_samples(it)}.filter{ it != null }.ifEmpty([])
             no_fairy_file_id_ch.combine(old_style_fairy_file_ch.toList()).subscribe { result -> if (!result.isEmpty()) { def flat_results = result.flatten().unique().collect() // Check if the channel is empty and print warning for user as this is required for the pipeline

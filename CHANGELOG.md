@@ -280,6 +280,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - For spades failures, lack of reads after trimming or corruption we simplifed the warnings produced in `GRiPHin.py` by supressing other warnings as the root cause is the aforementioned failures. Similarly, if the reason for the Auto QC Failure is "Assembly file not found" then only that is reported rather than listing files with unknowns.  
 - New columns added to GRiPHin summary files: `PHX_Version`, `Final_Taxa_ID` and `ShigaPass_Organism`
 - For alignment across GRiPHin summary files and `Phoenix_Summary.tsv` in the latter the columns `Final_Taxa_ID` and `ShigaPass_Organism` were added. Additionally, the `Species` column was changed to `FastANI_Organism`, `Taxa_Confidence` to `FastANI_%ID`, and `Taxa_Coverage` to `FastANI_%Coverage`.  
+- AMRFinder files 
 
 **Terra.bio Output Updates:**
 - Columns are now reported based on `*_GRiPHin_Summary.tsv` except for the columns `BETA_LACTAM_RESISTANCE_GENES`, `OTHER_AR_GENES`, `AMRFINDER_POINT_MUTATIONS`, `HYPERVIRULENCE_GENES` and `PLASMID_INCOMPATIBILITY_REPLICONS` still come from the `Phoenix_Summary.tsv` file. 
@@ -304,6 +305,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [Beta-Lactamase DataBase (BLDB)](http://bldb.eu/) is now used as an input to determine which genes to highlight rather than hard coding. The big-5 genes that have their function labelled as ESBL/IR/IR ESBL were removed from being highlighted as part of the `big 5` genes as are not thought to have carbapenemase acvitity.  
    - Full details on highlighing methods found in the [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes)
 - The column `Kraken_ID_Raw_Reads_%` in the GRiPHin summary files (xlsx and tsv) was changed to `Kraken_ID_Trimmed_Reads_%` to accurately reflect what that column has been reporting... whoopsie.  
+- Fixed bug where passing samples were not entering BBDuk step due to forward/reverse being in the file name rather than R1/R2.  
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
