@@ -1827,7 +1827,7 @@ def main():
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
         csv_rows = list(csv_reader)  # Convert the iterator to a list to reuse it
-        if args.centar == True or args.updater == True and args.samplesheet != None and args.filter_samples == True:
+        if (args.centar or args.updater) and args.samplesheet is not None and args.filter_samples:
             filtered_out_samples = [row[0] for row in csv_rows if any(sample not in row[0] for sample in samples_to_run)]
             csv_rows = [row for row in csv_rows if row[0] in samples_to_run]
             print("\n\033[93m Warning: The following sample(s) are not in samplesheet and were filtered out of reporting in griphin: {}\033[0m\n".format(list(set(filtered_out_samples) - set(samples_to_run))))

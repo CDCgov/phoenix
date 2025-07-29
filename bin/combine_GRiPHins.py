@@ -253,7 +253,6 @@ def combine_qc_dataframes(df1_qc, df2_qc):
     df1.update(df2)
     # Append non-matching rows from df2_qc to df1_qc using pd.concat
     combined_df = pd.concat([df1, df2[~df2.index.isin(df1.index)]], copy=False)
-    
     #df_has_other_dupes(combined_df, 'WGS_ID', 'combined df IN CQD')
     # Reset the index to restore the 'UNI' column
     combined_df.reset_index(inplace=True)
@@ -283,6 +282,7 @@ def combine_qc_dataframes(df1_qc, df2_qc):
     removed_unis = []
 
     def resolve_group(group):
+        wgs_id_value = group.name
         #print(f"\nResolving group for WGS_ID: {group['WGS_ID'].iloc[0]}")
         #print(f"Group shape: {group.shape}")
         check_cols = [ 'Raw_Q30_R1_[%]', 'Raw_Q30_R2_[%]', 'Total_Raw_[reads]', 'Paired_Trimmed_[reads]', 'Total_Trimmed_[reads]', 'Estimated_Trimmed_Coverage', 'GC[%]']
@@ -294,16 +294,28 @@ def combine_qc_dataframes(df1_qc, df2_qc):
             kept = sorted_group.head(1)
             removed = sorted_group.iloc[1:]
             removed_unis.extend(removed['UNI'].tolist())
-            return kept
+            result = kept
         else:
-            return group
+            result = group
+    
+        if 'WGS_ID' not in result.columns:
+            result = result.copy()
+            result['WGS_ID'] = wgs_id_value
+            # Reorder: UNI, WGS_ID, then everything else
+            cols = ['UNI', 'WGS_ID'] + [col for col in result.columns if col not in ['UNI', 'WGS_ID']]
+            result = result[cols]
+
+        return result
+
 
     deduped_df = (
         combined_ordered_df.groupby('WGS_ID', group_keys=False)
-                .apply(resolve_group)
+#                .apply(resolve_group)
+                .apply(resolve_group, include_groups=False)
                 .drop(columns='PHX_Version_Clean', errors='ignore')
                 .reset_index(drop=True)
     )
+
 
     # Logging as before
     if removed_unis:
@@ -589,6 +601,9 @@ def main():
         if args.griphin_list == True:
             # old_GRiPHin extension is for species specific pipeline(s)
             griphin_files = [f for pattern in ("*_GRiPHin.xlsx", "*_old_GRiPHin.xlsx") for f in glob.glob(pattern)]
+#            if not griphin_files:
+#                print("Hittin different filename format.., do we need to make the check all in one? Testing *_GRiPHin_Summary.xlsx")
+#                griphin_files = [f for pattern in ("*_GRiPHin_Summary.xlsx", )for f in glob.glob(pattern)]
             if len(griphin_files) < 2:
                 raise ValueError(f"{CRED}Need at least two GRiPHin files for combination when using --griphin_list.{CEND}")
         else:
@@ -607,8 +622,7 @@ def main():
         base_file = griphin_files.pop(0)
         #combine first two files
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(base_file, griphin_files[0], args.samplesheet, False, args.parent_folder)
-        #print_df(combined_df_qc_final, "G ------- Combined QC DataFrame -------", False)
-        #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'G Combined QC DataFrame')
+        #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'G Combined QC Data Frame')
         combined_dataframes_final = [ combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, ordered_centar_df_final ]
         # Iterate over remaining files, progressively combining them with the base
         for count, next_file in enumerate(griphin_files[1:], start=1):
@@ -628,20 +642,18 @@ def main():
             # Unpack the tuple into individual DataFrames
             combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, ordered_centar_df_final = combined_dataframes_final
     # add centar_df to the almost_final_ar_df
+            
     if centar_final == True:
         # Reset the indices of both DataFrames during concat so they are aligned and we don't get NaNs in the final row of the dataframe
         ordered_centar_df_final = sort_columns_to_primary_ungrouped(ordered_centar_df_final)
         #combined_df_qc = pd.concat([combined_df_qc, ordered_centar_df], axis=1)
-        #print_df(combined_df_qc_final, "H ------- Combined QC DataFrame with Centar -------", False)
         #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'H Combined QC DataFrame with Centar')
         combined_df_qc_final = pd.merge(combined_df_qc_final, ordered_centar_df_final, how="left", on = ['UNI', 'UNI'])
-        #print_df(combined_df_qc_final, "I ------- Combined QC DataFrame with Centar -------", False)
         #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'I Combined QC DataFrame with Centar --- Post merge')
         combined_df_qc_final = sort_columns_to_primary_ungrouped(combined_df_qc_final)
     
     # call function from griphin script to combine all dfs
     final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), phoenix_final, args.scaffolds, True, args.bldb)
-
 
     #print(list(final_df.index))
     #print(final_df['WGS_ID'].tolist())
@@ -658,6 +670,7 @@ def main():
     #df_has_index_dupes(final_df, "Final DataFrame after dropping UNI")
     #df_has_other_dupes(final_df, 'UNI', 'Final_Dataframe after dropping UNI')
     #df_has_other_dupes(final_df, 'WGS_ID', 'Final Dataframe after dropping UNI')
+    print(output_file)
     write_to_excel(args.set_coverage, output_file, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db, phoenix_final, shiga_final, centar_final, centar_df_lens_final)
     #write tsv from excel
     convert_excel_to_tsv(output_file)

@@ -102,6 +102,7 @@ def create_centar_combined_df(directory1, sample_name, directory2):
     try: # handling for samples that failed and didn't get centar files created
         centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
         centar_df["WGS_ID"] = sample_name
+        print_df(centar_df, "Centar DF for " + sample_name, False)
     except FileNotFoundError:
         try: #retry looking at a different location
             centar_summary = "./" + sample_name + "_centar_output.tsv"
@@ -113,7 +114,11 @@ def create_centar_combined_df(directory1, sample_name, directory2):
             centar_df = pd.DataFrame({"WGS_ID": [sample_name]})
     # make NOT_FOUND and - to blank to keep inline with the AR/PF/HV calls.
     centar_df.replace("NOT_FOUND", "", inplace=True)
+    # Want to keep the dashes in the ML_Notes section so, temporarily replace them with double dashes
+    centar_df.loc[centar_df['ML Note'] == '-', 'ML Note'] = '--'
     centar_df.replace("-", "", inplace=True)
+    # Changiong back the double dashes to single dashes in the ML_Notes section
+    centar_df.loc[centar_df['ML Note'] == '--', 'ML Note'] = '-'
     return centar_df
 
 ######################################## ShigaPass functions ##############################################

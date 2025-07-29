@@ -75,6 +75,14 @@ workflow COMBINE_GRIPHINS_WF {
         ch_versions
 
     main:
+        def update_griph_out_dir
+        if (params.outdir == "${launchDir}/phx_output" && params.griphin_out != "${launchDir}") {
+            update_griph_out_path = params.griphin_out
+        } else {
+            update_griph_out_path = params.outdir
+        }
+        update_griph_out_dir = update_griph_out_path.split('/')[-1]
+
         if (input_griphins_excel_ch != null) { // for running at the end of another entry 
             // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
             //update_griphin_ch = input_griphins_excel_ch.collect().combine(input_griphins_tsv_ch.collect()).combine(outdir_path)
@@ -88,7 +96,10 @@ workflow COMBINE_GRIPHINS_WF {
                 outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
                 valid_samplesheet,
                 params.coverage,
-                params.bldb
+                params.bldb,
+                true,
+                // Some boolean to indicate if this is a species specific entry point
+                update_griph_out_dir // pass the outdir to the update_griphin process
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
@@ -118,7 +129,9 @@ workflow COMBINE_GRIPHINS_WF {
                 outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
                 valid_samplesheet, //fix me
                 params.coverage,
-                params.bldb
+                params.bldb,
+                false, // Some boolean to indicate if this is a species specific entry point
+                update_griph_out_dir // pass the outdir to the update_griphin process
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
             
