@@ -1372,6 +1372,11 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
     common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
     ignore_cols = ['AR_Database', 'UNI','No_AR_Genes_Found', 'WGS_ID'] # These columns should not be included in gene processing
     gene_common_cols = [x for x in common_cols if x not in ignore_cols] # Get gene columns that are common to both but not in the ignore list
+    
+    # If there are no common gene columns, skip the comparison logic
+    if not gene_common_cols:
+        return ar_df
+    
     # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
     for col in gene_common_cols:
         ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
@@ -1379,7 +1384,7 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
         ar_combined_df = ar_combined_df.copy() #defragment to correct "PerformanceWarning: DataFrame is highly fragmented."
     # check if you missed any rows, if there is a sample in ar_db, that is not in the srst2 then you will have it have NA in rows when joined
     # Subset SRST2 to just the overlapping gene columns
-    srst2_common = srst2_ar_df[gene_common_cols] 
+    srst2_common = srst2_ar_df[gene_common_cols]
     # Create a mask to keep values in ar_combined_df that are different from srst2_common
     mask = srst2_common.notna() & ((ar_combined_df.isna()) | (srst2_common != ar_combined_df)) 
     # Keep only those differing values from ar_combined_df (rest filled with ''), meaning they don't have a solo SRST2 hit as these would be identical between the two dfs
@@ -1390,7 +1395,9 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
     srst2_ar_df_only = srst2_common.where(srst2_has_value & ~gamma_has_value).fillna('')
     
     # Drop overlapping gene columns from original DataFrames to avoid duplication
+    print(f"DEBUG: Dropping gene common columns from ar_df: {gene_common_cols}")
     ar_df.drop(gene_common_cols, axis = 1, inplace=True) #this one will be how we carry through WGS_ID and UNI
+    print(f"DEBUG: Dropping all common columns from srst2_ar_df: {list(common_cols)}")
     srst2_ar_df.drop(common_cols, axis = 1, inplace=True) # This will leave GAMMA- samples
     ############### DEDUPING FOR SRST2 ###############
     #srst2_ar_df = srst2_dedup(srst2_ar_df, ar_df.join(ar_combined_df))

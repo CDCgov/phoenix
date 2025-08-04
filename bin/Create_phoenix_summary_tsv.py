@@ -30,7 +30,7 @@ def get_version():
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet')
     parser.add_argument('-o', '--out', dest='output_file', required=True, help='output file name')
-    parser.add_argument('--updater', dest='updater', action='store_true', help='Pass if running updater pipeline.')
+    parser.add_argument('--all_samples', dest='all_samples', action='store_true', help='Pass if running updater pipeline.')
     parser.add_argument('-b', '--busco', action='store_true', help='parameter to know if busco was run')
     parser.add_argument('--software_versions', dest='software_versions', help='This will update old files with correct PHX_Version')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
@@ -121,12 +121,12 @@ def List_TSV(output_file, input_list, busco, updater, phx_version):
                 for line in f2:
                     f.write(line.strip('\n') + '\n')
 
-def collect_files(updater):
+def collect_files(all_samples):
     summary_files = glob.glob('*.tsv')
     files_to_remove = ['empty_summaryline.tsv', '*_centar_output.tsv', '*Phoenix_Summary.tsv']
     summary_files = [file for file in summary_files
                         if not any(fnmatch.fnmatch(file, pattern) for pattern in files_to_remove)]
-    if updater is True:
+    if all_samples is True:
         old_summary_files = glob.glob('*/*/*_summaryline.tsv')
         # Filter out items containing any of the substrings
         filtered_list = [file for file in old_summary_files if not any(substring in file for substring in summary_files)]
@@ -159,10 +159,10 @@ def get_old_version(yaml_file_path):
 
 def main():
     args = parseArgs()
-    summary_files = collect_files(args.updater)
-    #if args.updater:
+    summary_files = collect_files(args.all_samples)
+    #if args.all_samples:
     #    phx_version = get_old_version(args.software_versions)
-    List_TSV(args.output_file, summary_files, args.busco, args.updater, args.software_versions)
+    List_TSV(args.output_file, summary_files, args.busco, args.all_samples, args.software_versions)
 
 if __name__ == '__main__':
     main()

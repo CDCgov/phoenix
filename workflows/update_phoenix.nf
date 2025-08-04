@@ -43,7 +43,6 @@ include { GATHER_SUMMARY_LINES                 } from '../modules/local/phoenix_
 include { GRIPHIN as GRIPHIN_NO_PUBLISH        } from '../modules/local/griphin'
 include { GRIPHIN as GRIPHIN_PUBLISH           } from '../modules/local/griphin'
 include { UPDATE_GRIPHIN                       } from '../modules/local/updater/update_griphin'
-include { UPDATE_GRIPHIN as UPDATE_CDC_GRIPHIN } from '../modules/local/updater/update_griphin'
 include { SRST2_AR                             } from '../modules/local/srst2_ar'
 
 /*
@@ -66,7 +65,7 @@ include { DO_MLST                        } from '../subworkflows/local/do_mlst'
 //
 
 //include { CUSTOM_DUMPSOFTWAREVERSIONS as UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS  } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
-include { CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS as UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_centar'
+include { CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS as UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_species_specific'
 
 /*
 ========================================================================================
@@ -444,7 +443,7 @@ workflow UPDATE_PHOENIX_WF {
 
         //  Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> meta}, 
+            gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> meta},
             gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> summary_lines},
             gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> full_project_id},
             gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> busco_boolean},
@@ -579,12 +578,13 @@ workflow UPDATE_PHOENIX_WF {
             // combine griphin files, the new one just created and the old one that was found in the project dir. 
             UPDATE_GRIPHIN (
                 griphins_ch.map{ meta, old_excel, new_excel -> [ old_excel, new_excel ] }, 
-                griphins_ch.map{ meta, old_excel, new_excel -> meta },
+                griphins_ch.map{ meta, old_excel, new_excel -> meta.full_project_id },
                 //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
                 [],
                 params.coverage,
                 params.bldb,
-                true
+                true,
+                []
             )
             ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
@@ -607,7 +607,7 @@ workflow UPDATE_PHOENIX_WF {
         //output for phylophoenix
         griphin_tsv      = griphin_tsv_report
         griphin_excel    = griphin_report
-        //dir_samplesheet  = UPDATE_CDC_GRIPHIN.out.converted_samplesheet
+        dir_samplesheet  = UPDATE_GRIPHIN.out.converted_samplesheet
 }
 
 /*

@@ -353,22 +353,18 @@ workflow CREATE_INPUT_CHANNELS {
             samplesheet_meta_ch = Channel.empty().ifEmpty([]) // No multiple samplesheets meta channel for indir
 
         } else if (samplesheet != null) {
-
-
             meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ create_samplesheet_meta(it) }.unique()
 
             if (centar == true) { // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
-                // if a samplesheet was passed then use that to create the channel
                 CENTAR_SAMPLESHEET_CHECK (
                     samplesheet, false, false, true, meta_ch
                 )
                 ch_versions = ch_versions.mix(CENTAR_SAMPLESHEET_CHECK.out.versions)
 
                 samplesheet = CENTAR_SAMPLESHEET_CHECK.out.csv.first()  
-
                 samplesheet_meta_ch = Channel.empty().ifEmpty([]) //only needed for --pipeline update_phoenix
-
             } else {
+                // get meta to be project_id:Project_id, full_project_id:$FULL_PATH/Project_id in meta_ch
                 // if a samplesheet was passed then use that to create the channel
                 SAMPLESHEET_CHECK (
                     samplesheet, false, false, true, meta_ch
@@ -377,7 +373,6 @@ workflow CREATE_INPUT_CHANNELS {
 
                 //if there are multiple dirs in --input samplesheet then several sheets come out here and it increases downstream processes... so only unique go forward
                 samplesheet = SAMPLESHEET_CHECK.out.csv.first() 
-
                 //only needed for --pipeline update_phoenix
                 samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
             }
@@ -524,11 +519,18 @@ def previous_updater_check(meta, ar_file, ardb, type) {
     return [meta, isList && matchingFiles.size() == 1 ? matchingFiles[0] : matchingFiles]
 }
 
-// Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
+// Function to get list of [sample:, directory: ] or [ meta, [ fastq_1, fastq_2 ] ] to [ project_id: full_project_id:]
 def create_samplesheet_meta(LinkedHashMap row) {
     def meta = [:]
-    meta.project_id      = row.directory.toString().split('/')[-2]
-    meta.full_project_id = new File(row.directory).getParent().replace("[", "")
+    if (row.directory) { //[sample:, directory: ] 
+        // Use directory-based logic
+        meta.project_id      = row.directory.toString().split('/')[-2]
+        meta.full_project_id = new File(row.directory).getParent().replace("[", "")
+    } else if (row.fastq_1) {  //[ meta, [ fastq_1, fastq_2 ] ] 
+        // Use fastq_1-based logic
+        meta.full_project_id = new File(row.fastq_1).parent
+        meta.project_id      = new File(row.fastq_1).parentFile.name
+    }
     return meta 
 }
 

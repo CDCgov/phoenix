@@ -113,12 +113,16 @@ def create_centar_combined_df(directory1, sample_name, directory2):
             # Add a row to the DataFrame with the WGS_ID column set to sample_name
             centar_df = pd.DataFrame({"WGS_ID": [sample_name]})
     # make NOT_FOUND and - to blank to keep inline with the AR/PF/HV calls.
-    centar_df.replace("NOT_FOUND", "", inplace=True)
-    # Want to keep the dashes in the ML_Notes section so, temporarily replace them with double dashes
-    centar_df.loc[centar_df['ML Note'] == '-', 'ML Note'] = '--'
-    centar_df.replace("-", "", inplace=True)
-    # Changiong back the double dashes to single dashes in the ML_Notes section
-    centar_df.loc[centar_df['ML Note'] == '--', 'ML Note'] = '-'
+    #if 'ML Note' in centar_df.columns:
+    #    centar_df.replace("NOT_FOUND", "", inplace=True)
+        #centar_df['column_name'] = centar_df['column_name'].str.replace("NOT_FOUND", "")
+        #print(centar_df.columns)
+        #print(centar_df)
+        # Want to keep the dashes in the ML_Notes section so, temporarily replace them with double dashes
+    #    centar_df.loc[centar_df['ML Note'] == '-', 'ML Note'] = '--'
+    #    centar_df.replace("-", "", inplace=True)
+        # Changiong back the double dashes to single dashes in the ML_Notes section
+    #    centar_df.loc[centar_df['ML Note'] == '--', 'ML Note'] = '-'
     return centar_df
 
 ######################################## ShigaPass functions ##############################################

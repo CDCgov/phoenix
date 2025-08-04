@@ -420,7 +420,7 @@ workflow CLIA_INTERNAL {
         all_summaries_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ it -> remove_meta(it) }.collect().ifEmpty( [] )
         all_spades_outcomes_ch = SPADES_WF.out.spades_outcome.map{ it -> remove_meta(it) }.collect().ifEmpty( [] )
 
-        //create GRiPHin report
+        // create GRiPHin report
         CLIA_GRIPHIN (
             all_summaries_ch, fairy_summary_ch, INPUT_CHECK.out.valid_samplesheet, params.amrfinder_db, outdir_path.combine([]), params.coverage, all_spades_outcomes_ch
         )

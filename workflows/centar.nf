@@ -51,7 +51,7 @@ include { CENTAR_SUBWORKFLOW             } from '../subworkflows/local/centar_st
 // MODULE: Installed directly from nf-core/modules
 //
 
-include { CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_centar'
+include { CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main_species_specific'
 include { CUSTOM_DUMPSOFTWAREVERSIONS        } from '../modules/nf-core/modules/custom/dumpsoftwareversions/main'
 
 /*
@@ -186,55 +186,59 @@ workflow RUN_CENTAR {
             return [new_meta, summary_line, dir, busco_boolean]
         }
 
-        // Group by project and collect files within each project
-        collected_summaries_ch = transformed_summaries_ch
-            .groupTuple(by: 0)  // group by meta (project_id)
-            .map{ meta, summary_lines, dirs, busco_booleans -> 
-                [meta, summary_lines, dirs[0], busco_booleans[0]]  // take first dir/busco since they should be the same within a project
-            }       
+        // For cases where the user is running isolates from multiple directories and wants the summary files output to their original project_id folders. 
+        multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
+        // Conditionally group by project based on if there are multiple directories
+        branched_collected_summaries_ch = transformed_summaries_ch
+            .combine(multiple_directories_ch)
+            .branch { meta, summary_line, dir, busco_boolean, is_multiple ->
+                ungrouped: is_multiple == true
+                    return [meta, summary_line, dir, busco_boolean]
+                grouped: is_multiple == false
+                    return [meta, summary_line, dir, busco_boolean] }
 
-        collected_summaries_ch.view { "collated_summaries_ch: $it" }
+        if (params.outdir != "${launchDir}/phx_output") {
+            //if there are multiple dirs and and --outdir given then the will need to all be combined into one Phoenix_Summary.tsv file in the outdir 
+            collected_summaries_ch = branched_collected_summaries_ch.ungrouped.collect().map{ items ->
+                                def grouped_items = items.collate(4)
+                                def summary_lines = []
+                                def dirs = []
+                                def busco_booleans = []
+                            grouped_items.each{ item ->
+                                summary_lines.add(item[1])
+                                dirs.add(item[2])
+                                busco_booleans.add(item[3])}
+                            return [[], summary_lines, dirs.unique(), busco_booleans.any{ it == true }]}
+        } else { 
+            // Group by project and collect files within each project
+            collected_summaries_ch = branched_collected_summaries_ch.ungrouped.mix(branched_collected_summaries_ch.grouped)
+                .groupTuple(by: 0)  // group by meta (project_id)
+                .map{ meta, summary_lines, dirs, busco_booleans -> 
+                    [meta, summary_lines, dirs[0], busco_booleans[0]]}  // take first dir/busco since they should be the same within a project
+        }
 
         // Combining sample summaries into final report
         CENTAR_GATHER_SUMMARY_LINES (
             collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> meta},
             collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> summary_line},
             collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> dir}, 
-            collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean}
+            collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean},
+            workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CENTAR_GATHER_SUMMARY_LINES.out.versions)
-
-        
 
         // collect centar output and summary lines to make the griphin report, note that groupTuple will force waiting until all samples are complete before proceeding
         griphin_input_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
             .join(CENTAR_SUBWORKFLOW.out.consolidated_centar.map{     meta, centar_file  -> [[project_id:meta.project_id], centar_file]}.groupTuple(by: [0]), by: [0])\
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{         meta, dir          -> [[project_id:meta.project_id], dir]}, by: [0])\
-            .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> [[project_id:meta.project_id], !tsv.readLines().first().contains('BUSCO')]}, by: [0])
-
-
-        //CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.view()
-        //[[project_id:/scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/NCBI_HAISeq/Phoenix/haiseq_20250425], /scicomp/scratch/qpk9/3c/e3b17d1a66aa86c81360f6357325b8/haiseq_20250425_old_GRiPHin.tsv]
-        /*griphin_input_ch.view() // for debugging purposes
-        [[project_id:/scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/NCBI_HAISeq/Phoenix/haiseq_20250425], 
-        [/scicomp/scratch/qpk9/f7/d9b37b73d2b3082ee4fc7fbf6eb860/2025EL-00073/2025EL-00073_summaryline.tsv, 
-        /scicomp/scratch/qpk9/2e/0fa99a6367fda163ccf47c3914c4ad/2025EL-00074/2025EL-00074_summaryline.tsv, 
-        /scicomp/scratch/qpk9/04/776b0390373bca119c9bd63487aacf/2025EL-00075/2025EL-00075_summaryline.tsv, 
-        /scicomp/scratch/qpk9/c3/1d41896210088b9e7880a02e9848dd/2025EL-00072/2025EL-00072_summaryline.tsv], 
-        [/scicomp/scratch/qpk9/78/b75991fae1dc482595ed370a680286/2025EL-00074_centar_output.tsv, 
-        /scicomp/scratch/qpk9/97/9738f7596617b9c9d854f29d15b12a/2025EL-00075_centar_output.tsv, 
-        /scicomp/scratch/qpk9/46/5da030c72a8c3f07d3005bf1e37101/2025EL-00072_centar_output.tsv, 
-        /scicomp/scratch/qpk9/5f/048037c0e6670cb0b4c4e5d9793876/2025EL-00073_centar_output.tsv], /scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/NCBI_HAISeq/Phoenix/haiseq_20250425, true]*/
+            .join(CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{       meta, tsv          -> [[project_id:meta.project_id], tsv.readLines().first().contains('BUSCO')]}, by: [0])
 
         //define var to be used globally
         def griphin_report
         def griphin_out_path
-        // For cases where the user is running isolates from multiple directories and wants the summary files output to their original project_id folders. 
-        multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
         //griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
         // channel for isolates from the same dir, but we still need to check if we are running all the samples in the dir or not
         //griphin_input_single_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == false}
-        //griphin_input_single_dir_ch.view()
 
         if (params.indir != null) { // --indir is passed then samples are from the same dir, thus all samples are run together and output in --indir unless --outdir or --griphin_out is passed
 
@@ -254,22 +258,6 @@ workflow RUN_CENTAR {
             // to be able to create software_versions.yml 
             software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
 
-            griphin_report.view { "griphin_report: $it" }
-
-            //// Combine with griphin_report to delay execution
-            // software_versions_ch
-            //     .combine(griphin_report)
-            //     .map { version, path_file, excel_file ->  // <-- Fixed: 3 parameters now
-            //         def project_dir = path_file.text.trim()  // <-- Read contents of path file
-            //         tuple(version, file(project_dir), project_dir.toString())
-            //     }
-            //     .set { software_versions_triplets }
-            
-            // CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS(
-            //     software_versions_triplets.map { v, p, s -> v },
-            //     software_versions_triplets.map { v, p, s -> p },
-            //     software_versions_triplets.map { v, p, s -> s }
-            //)
             CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS(
                 software_versions_ch
             )
@@ -301,12 +289,16 @@ workflow RUN_CENTAR {
             griphin_report = CENTAR_GRIPHIN_INPUT.out.griphin_report
 
             def update_griph_out_dir
-            if (params.outdir == "${launchDir}/phx_output" && params.griphin_out != "${launchDir}") {
-                update_griph_out_path = params.griphin_out
-            } else {
-                update_griph_out_path = params.outdir
+            //if there is an outdir or griphin_out then we will use that as the prefix for the griphin summary
+            if (params.outdir == "${launchDir}/phx_output" && params.griphin_out != "${launchDir}") { // only --griphin_out passed
+                // Allow outdir to be relative
+                griphin_out_path = Channel.fromPath(params.griphin_out, relative: true)
+                update_griph_out_dir = griphin_out_path.map{ it -> it.toString().split('/')[-1] }
+            } else { // if no --griphin_out then we will use the outdir as the prefix for the griphin summary
+                // Allow outdir to be relative
+                outdir_path = Channel.fromPath(params.outdir, relative: true)
+                update_griph_out_dir = outdir_path.map{ it -> it.toString().split('/')[-1] }
             }
-            update_griph_out_dir = update_griph_out_path.split('/')[-1]
 
             ///////////////////////////////// single dirs some samples in dir /////////////////////////////////////////////////
 
@@ -345,13 +337,8 @@ workflow RUN_CENTAR {
 
             ///////////////////////////////// multiple dirs //////////////////////////////////////////////////////////////////
             // For cases where the user is running isolates from multiple directories and wants the summary files output to their original project_id folders. 
-            //multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
-            multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch
-                .map{meta, dir -> dir}
-                .collect()
-                .map{ dirs -> dirs.unique().size() > 1 }
-            //griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
-            griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple}
+            multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
+            griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
 
             //Run this process if there is only a single dir in the --input samples (via griphin_input_multi_dir_ch)
             // if multiple_directories is true, then --input must have been used with samples from different directories. 
@@ -377,33 +364,25 @@ workflow RUN_CENTAR {
                 // combine original griphin file with the one that was just made, the new one just created and the old one that was found in the project dir. 
                 UPDATE_CENTAR_GRIPHIN_MULTI_DIR (
                     update_griphin_multi_dir_ch.map{meta, old_griphin_excel, griphin_excel, directory -> [old_griphin_excel, griphin_excel]},
-                    update_griphin_multi_dir_ch.map{meta, old_griphin_excel, griphin_excel, directory -> meta },
+                    update_griphin_multi_dir_ch.map{meta, old_griphin_excel, griphin_excel, directory -> meta.full_project_id },
                     CREATE_INPUT_CHANNELS.out.valid_samplesheet,
                     params.coverage,
                     params.bldb,
                     true,
-                    update_griph_out_dir
+                    []
                 )
                 ch_versions = ch_versions.mix(UPDATE_CENTAR_GRIPHIN_MULTI_DIR.out.versions)
 
             } else {
                 // Allow outdir to be relative
                 griphin_out_path = Channel.fromPath(params.griphin_out.replace("./",""), relative: true)
-                flattened_update_griphin_multi_dir_ch = update_griphin_multi_dir_ch.map{meta, old_griphin_excel, griphin_excel, directory -> [griphin_excel]}.flatten().collect()
-                flattened_meta = update_griphin_multi_dir_ch
-                    .map{meta, old_griphin_excel, griphin_excel, directory -> meta}
-                    .first()
-
-                update_griphin_multi_dir_ch.view { "update_griphin_multi_dir_ch: $it" }
-
-
 
                 // combine original griphin file with the one that was just made, the new one just created and the old one that was found in the project dir. 
                 UPDATE_CENTAR_GRIPHIN_MULTI_DIR (
-                    //update_griphin_multi_dir_ch.map{meta, old_griphin_excel, griphin_excel, directory -> [griphin_excel]}.flatten().collect(),
-                    flattened_update_griphin_multi_dir_ch,
+                    update_griphin_multi_dir_ch.map{meta, old_griphin_excel, griphin_excel, directory -> [griphin_excel]}.flatten().collect(),
+                    //[],
                     //This will need to be updated, but right now it just grabs ONE of the meta's to pull info from.
-                    flattened_meta,
+                    griphin_out_path,
                     CREATE_INPUT_CHANNELS.out.valid_samplesheet,
                     params.coverage,
                     params.bldb,
@@ -417,48 +396,9 @@ workflow RUN_CENTAR {
             software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()
                                 .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-            // if (params.outdir != "${launchDir}/phx_output") {
-            //     // Single outdir: just emit to that one
-            //     software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
-
-            //     software_versions_ch
-            //         .combine(outdir_path)
-            //         .map { version_file, dir_path ->
-            //             def path_obj = file(dir_path)
-            //             def val_obj = dir_path.toString()
-            //             tuple(version_file, path_obj, val_obj)
-            //         }
-            //         .set { software_versions_per_dir }
-
-            //     CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS(
-            //         software_versions_per_dir.map { v, p, s -> v },
-            //         software_versions_per_dir.map { v, p, s -> p },
-            //         software_versions_per_dir.map { v, p, s -> s }
-            //     )
-
-            // } else {
-            //     // Multiple project output dirs
-            //     software_versions_ch = ch_versions.unique().collectFile(name: 'collated_versions.yml')
-            //     project_dirs_ch = update_griphin_ch
-            //         .map{meta, old_griphin_excel, griphin_excel, dir -> dir}
-            //         .mix(update_griphin_multi_dir_ch
-            //             .map{meta, old_griphin_excel, griphin_excel, dir -> dir})
-            //         .distinct()
-            //     software_versions_ch
-            //         .combine(project_dirs_ch)
-            //         .map { version_file, dir_path ->
-            //             def path_obj = file(dir_path)
-            //             def val_obj = dir_path.toString()
-            //             tuple(version_file, path_obj, val_obj)
-            //         }
-            //         .set { software_versions_per_dir }
                 CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS(
                     software_versions_ch
-//                    software_versions_per_dir.map { v, p, s -> v },
-//                    software_versions_per_dir.map { v, p, s -> p },
-//                    software_versions_per_dir.map { v, p, s -> s }
                 )
-//            }
         } else {
             exit 1, "You shouldn't be here, please open a github issue to report."
         }
