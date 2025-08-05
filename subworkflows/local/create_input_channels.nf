@@ -56,8 +56,8 @@ workflow CREATE_INPUT_CHANNELS {
             passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().flatten().unique().collect().toList()
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
-            // Collect all ids and combine with indir
-            isolates_that_need_file_integrity_ch = indir.map{ it -> get_ids(it) }.flatten().combine(indir).combine(no_fairy_file_id_ch).map{ tuple -> def (old_meta, indir, no_fairy_file_id) = tuple  // Safely destructure the combined tuple
+            // Collect all ids and combine with indir -- issue here!!
+            isolates_that_need_file_integrity_ch = indir.map{ it -> get_ids(it) }.flatten().combine(indir).combine(no_fairy_file_id_ch.toList()).map{ tuple -> def (old_meta, indir, no_fairy_file_id) = tuple  // Safely destructure the combined tuple
                 def meta = [:]
                 meta.id = old_meta
                 def cleanPath = indir.toString().startsWith('./') ? indir.toString()[2..-1] : indir.toString()
@@ -66,7 +66,6 @@ workflow CREATE_INPUT_CHANNELS {
                 //def cleaned_path = new File(cleanerPath).getAbsolutePath()
                 def cleaned_path = new File(indir.toString()).getAbsolutePath()
                 def file_integrity_exists = !(no_fairy_file_id ?: []).contains(meta.id) // Check if the sample is in has no fairy file
-                //def file_integrity_exists = no_fairy_file_id.contains(meta.id)
                 return [ meta, cleaned_path, file_integrity_exists ]}.filter{ meta, dir, file_integrity_exists -> file_integrity_exists == false } // Filter out samples that already have a fairy file
 
             // Now that we have list of samples that need fairy files created make them

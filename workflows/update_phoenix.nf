@@ -143,7 +143,6 @@ def get_only_taxa(input_ch){
             species = parts.size() > 1 ? parts[1] : parts[0]
         }
     }
-    //return [ "$genus $species" ]
     return [ "$genus" ]
 }
 
@@ -565,21 +564,29 @@ workflow UPDATE_PHOENIX_WF {
 
             //define var to be used globally
             def griphin_reports_ch
+            def griphins_ch
 
             if (params.outdir == "${launchDir}/phx_output") {
                 // If the output directory is not the default, we need to update the path in the channel
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).flatten().collate(2)
                                     .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
+
+                // join old and new griphins for combining
+                griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.unique()\
+                    .join(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]}, by: [0])\
+                    .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.unique(), by: [0])
+                    .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
+
             } else {
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphins.collect().ifEmpty([]).flatten().collate(3)
                                     .combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).map{path_txt, griphin_excel, griphin_tsv, samplesheet -> add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet)}
-            }
 
-            // join old and new griphins for combining
-            griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.unique()\
-                .join(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]}, by: [0])\
-                .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.unique(), by: [0])
-                .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
+                // join old and new griphins for combining
+                griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.collect()\
+                    .combine(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]})\
+                    .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.collect().unique())
+                    .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory[0]], old_excel, new_excel]}
+            }
 
             // combine griphin files, the new one just created and the old one that was found in the project dir. 
             UPDATE_GRIPHIN (
