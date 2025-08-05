@@ -682,7 +682,7 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     'FastANI_%Coverage'          : fastani_coverage_L,
     'Species_Support_ANI'        : Species_Support_L}
     busco_data = {'WGS_ID'       : Sample_Names,
-                  'BUSCO'        : full_busco_line_L}
+                'BUSCO'          : full_busco_line_L}
     df = pd.DataFrame(data)
     busco_df = pd.DataFrame(busco_data)
     return df, busco_df

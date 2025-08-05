@@ -136,9 +136,11 @@ def get_only_taxa(input_ch){
     def species = ""
     input_ch[1].eachLine { line ->
         if (line.startsWith("G:")) {
-            genus = line.split(":")[1].trim().split('\t')[1]
+            def parts = line.split(":")[1].trim().split('\t')
+            genus = parts.size() > 1 ? parts[1] : parts[0]
         } else if (line.startsWith("s:")) {
-            species = line.split(":")[1].trim().split('\t')[1]
+            def parts = line.split(":")[1].trim().split('\t')
+            species = parts.size() > 1 ? parts[1] : parts[0]
         }
     }
     //return [ "$genus $species" ]
@@ -150,9 +152,11 @@ def get_taxa_and_project_ID(input_ch){
     def species = ""
     input_ch[1].eachLine { line ->
         if (line.startsWith("G:")) {
-            genus = line.split(":")[1].trim().split('\t')[1]
+            def parts = line.split(":")[1].trim().split('\t')
+            genus = parts.size() > 1 ? parts[1] : parts[0]
         } else if (line.startsWith("s:")) {
-            species = line.split(":")[1].trim().split('\t')[1]
+            def parts = line.split(":")[1].trim().split('\t')
+            species = parts.size() > 1 ? parts[1] : parts[0]
         }
     }
     //def clean_project_id = in_meta.project_id.replaceAll(/^['"]/, '').replaceAll(/['"]$/, '')
@@ -164,9 +168,11 @@ def get_taxa(input_ch){
         def species = ""
         input_ch[1].eachLine { line ->
             if (line.startsWith("G:")) {
-                genus = line.split(":")[1].trim().split('\t')[1]
+                def parts = line.split(":")[1].trim().split('\t')
+                genus = parts.size() > 1 ? parts[1] : parts[0]
             } else if (line.startsWith("s:")) {
-                species = line.split(":")[1].trim().split('\t')[1]
+                def parts = line.split(":")[1].trim().split('\t')
+                species = parts.size() > 1 ? parts[1] : parts[0]
             }
         }
         //return ["$genus $species", input_ch[0], input_ch[1]]
@@ -607,7 +613,7 @@ workflow UPDATE_PHOENIX_WF {
         //output for phylophoenix
         griphin_tsv      = griphin_tsv_report
         griphin_excel    = griphin_report
-        dir_samplesheet  = UPDATE_GRIPHIN.out.converted_samplesheet
+        //dir_samplesheet  = UPDATE_GRIPHIN.out.converted_samplesheet
 }
 
 /*

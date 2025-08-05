@@ -498,7 +498,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
         # Pre-compute the parent folder replacement
         df_1['Parent_Folder'] = df_1['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
         # Then create UNI using string formatting which is more memory efficient
-        df_1['UNI'] = df_1['Parent_Folder'] + '/' + df_1['Data_Location'] + '/' + df_1['WGS_ID']
+        df_1['UNI'] = df_1['Parent_Folder'] + '/' + df_1['Data_Location'] + '/' + df_1['WGS_ID'].astype(str)
         df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
@@ -515,7 +515,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
         # Pre-compute the parent folder replacement
         df_2['Parent_Folder'] = df_2['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
         # Then create UNI using string formatting which is more memory efficient and Use vectorized operations for speed to creating UNI column
-        df_2['UNI'] = df_2['Parent_Folder'] + '/' + df_2['Data_Location'] + '/' + df_2['WGS_ID']
+        df_2['UNI'] = df_2['Parent_Folder'] + '/' + df_2['Data_Location'] + '/' + df_2['WGS_ID'].astype(str)
         df_2 = df_2[['UNI'] + [col for col in df_2.columns if col != 'UNI']]
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path2}")
