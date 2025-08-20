@@ -480,7 +480,8 @@ workflow UPDATE_PHOENIX_WF {
             if (params.outdir == "${launchDir}/phx_output") {
                 // add in indir
                 summaries_ch = summaries_ch.combine(ch_input_indir)
-
+                summaries_ch.view { meta, summary_lines, outdir, busco_boolean, indir -> "Meta: ${meta}, File: ${summary_lines}, Outdir: ${outdir}, Indir: ${indir}" }
+                
                 // run griphin and publish the results
                 GRIPHIN_PUBLISH (
                     summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean, indir -> summary_lines}, \
@@ -498,7 +499,7 @@ workflow UPDATE_PHOENIX_WF {
             } else { // params.outdir != "${launchDir}/phx_output"
                 // add in indir
                 summaries_with_outdir_ch = summaries_with_outdir_ch.combine(ch_input_indir)
-
+                summaries_with_outdir_ch.view { meta, summary_lines, outdir, busco_boolean, indir -> "Meta: ${meta}, File: ${summary_lines}, Outdir: ${outdir}, Indir: ${indir}" }
                 // run griphin and publish the results
                 GRIPHIN_PUBLISH (
                     summaries_with_outdir_ch.map{meta, summary_lines, outdir, busco_boolean, indir -> summary_lines}, \
@@ -528,6 +529,9 @@ workflow UPDATE_PHOENIX_WF {
                                     .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
                                     .map{meta, full_project_id, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], summary_lines, busco_boolean, samplesheet, shigapass_var]}
 
+                all_summaries_ch.view { meta, summary_lines, busco_boolean, samplesheet, shigapass_var -> "Meta: ${meta}, File: ${summary_lines}, Busco: ${busco_boolean}, Samplesheet: ${samplesheet}, Shigapass_var: ${shigapass_var}" }
+                
+
                 // run griphin and don't publish the results
                 GRIPHIN_NO_PUBLISH (
                     all_summaries_ch.map{meta, summary_lines, busco_boolean, samplesheet, shigapass_var -> summary_lines}, \
@@ -547,6 +551,8 @@ workflow UPDATE_PHOENIX_WF {
                 all_summaries_ch = summaries_with_outdir_ch.map{meta, summary_lines, outdir, busco_boolean -> [[project_id:meta.project_id], meta.full_project_id, outdir, summary_lines, busco_boolean]}
                                     .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
                                     .map{meta, full_project_id, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], outdir, summary_lines, busco_boolean, samplesheet, shigapass_var]}
+
+                all_summaries_ch.view { meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> "Meta: ${meta}, Outdir: ${outdir}, File: ${summary_lines}, Busco: ${busco_boolean}, Samplesheet: ${samplesheet}, Shigapass_var: ${shigapass_var}" }
 
                 // run griphin and don't publish the results
                 GRIPHIN_NO_PUBLISH (
@@ -571,27 +577,82 @@ workflow UPDATE_PHOENIX_WF {
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).flatten().collate(2)
                                     .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
 
+                CREATE_INPUT_CHANNELS.out.directory_ch.view { "CREATE_INPUT_CHANNELS.out.directory_ch: ${it}" }
+
                 // join old and new griphins for combining
-                griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.unique()\
-                    .join(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]}, by: [0])\
+                CREATE_INPUT_CHANNELS.out.griphin_excel_ch.view { "CREATE_INPUT_CHANNELS.out.griphin_excel_ch: ${it}" }
+                griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch
+                    .map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.unique()
+                    .view { "Meta-if: ${it[0]}, File: ${it[1]}" }
+                    .join(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]}, by: [0])
                     .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.unique(), by: [0])
                     .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
+
+                // griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch
+                //     .view { "STEP 1 - Original griphin_excel_ch: Meta: ${it[0]}, File: ${it[1]}" }
+                //     .map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}
+                //     .view { "STEP 2 - After first map: Meta: ${it[0]}, File: ${it[1]}" }
+                //     .unique()
+                //     .view { "STEP 3 - After unique: Meta: ${it[0]}, File: ${it[1]}" }
+                //     .join(
+                //         griphin_reports_ch
+                //             .view { "STEP 4a - Original griphin_reports_ch: Meta: ${it[0]}, Report: ${it[1]}" }
+                //             .map{ meta, griphin_report -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]}
+                //             .view { "STEP 4b - Mapped griphin_reports_ch: Meta: ${it[0]}, Report: ${it[1]}" }, 
+                //         by: [0]
+                //     )
+                //     .view { "STEP 5 - After first join: Meta: ${it[0]}, Old Excel: ${it[1]}, New Excel: ${it[2]}" }
+                //     .join(
+                //         CREATE_INPUT_CHANNELS.out.directory_ch
+                //             .view { "STEP 6a - Original directory_ch: Meta: ${it[0]}, Directory: ${it[1]}" }
+                //             .map{ meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}
+                //             .view { "STEP 6b - Mapped directory_ch: Meta: ${it[0]}, Directory: ${it[1]}" }
+                //             .unique()
+                //             .view { "STEP 6c - Unique directory_ch: Meta: ${it[0]}, Directory: ${it[1]}" }, 
+                //         by: [0]
+                //     )
+                //     .view { "STEP 7 - After second join: Meta: ${it[0]}, Old Excel: ${it[1]}, New Excel: ${it[2]}, Directory: ${it[3]}" }
+                //     .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
+                //     .view { "STEP 8 - Final output: Meta: ${it[0]}, Old Excel: ${it[1]}, New Excel: ${it[2]}" }
+
 
             } else {
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphins.collect().ifEmpty([]).flatten().collate(3)
                                     .combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).map{path_txt, griphin_excel, griphin_tsv, samplesheet -> add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet)}
 
                 // join old and new griphins for combining
-                griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.collect()\
-                    .combine(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]})\
+                griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch
+                    .map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}
+                    .view { "Meta-else: ${it[0]}, File: ${it[1]}" }
+                    .collect()
+                    .combine(griphin_reports_ch.map{                            meta, griphin_report   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_report]})
                     .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.collect().unique())
                     .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory[0]], old_excel, new_excel]}
             }
 
+//            griphins_ch.view { "GRIPHINS CHANNEL BEFORE UPDATE_GRIPHIN: $it" }
+
+            griphins_ch.view { meta, old_excel, new_excel -> 
+                "DEBUG FULL: meta=${meta}, full_project_id='${meta.full_project_id}', length=${meta.full_project_id?.length()}"
+            }
+
+            // Split the channel into components once
+            griphins_split = griphins_ch.map{ meta, old_excel, new_excel -> 
+                [
+                    [old_excel, new_excel],           // files
+                    meta.full_project_id,             // directory
+                    meta                              // keep meta for debugging
+                ]
+            }
+
             // combine griphin files, the new one just created and the old one that was found in the project dir. 
             UPDATE_GRIPHIN (
-                griphins_ch.map{ meta, old_excel, new_excel -> [ old_excel, new_excel ] }, 
-                griphins_ch.map{ meta, old_excel, new_excel -> meta.full_project_id },
+                griphins_ch.map{ meta, old_excel, new_excel -> [ old_excel, new_excel ] }
+                .view { "FILES going to process: ${it}" }, 
+                griphins_ch.map{ meta, old_excel, new_excel -> meta.full_project_id }
+                .view { "DIRECTORY going to process: ${it}" },
+                //griphins_split.map{ files, directory, meta -> files },
+                //griphins_split.map{ files, directory, meta -> directory },
                 //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
                 [],
                 params.coverage,

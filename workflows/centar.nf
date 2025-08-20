@@ -319,7 +319,11 @@ workflow RUN_CENTAR {
             update_griphin_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch.map{meta, old_griphin_excel          -> [[project_id:meta.project_id], old_griphin_excel]}\
                 .join(NO_PUB_CENTAR_GRIPHIN.out.griphin_report.map{            path_file, no_pub_griphin_report -> create_meta(path_file, no_pub_griphin_report)}, by: [0])\
                 .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{              meta, dir                        -> [[project_id:meta.project_id], dir]}, by: [0])
-                .map{meta, old_griphin_excel, no_pub_griphin_report, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
+                .map{meta, old_griphin_excel, no_pub_griphin_report, directory -> 
+                    [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), 
+                    full_project_id:directory], 
+                    old_griphin_excel, no_pub_griphin_report]}
+            }
 
             // combine original griphin file with the one that was just made, the new one just created and the old one that was found in the project dir. 
             UPDATE_CENTAR_GRIPHIN (

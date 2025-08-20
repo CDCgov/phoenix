@@ -7,7 +7,7 @@ process UPDATE_GRIPHIN {
     input:
     path(griphins_excel)
     //path(griphins_tsv)
-    path(full_project_id) // output directory used as prefix for the summary file
+    val(full_project_id) // output directory used as prefix for the summary file
     path(valid_samplesheet_file)
     val(coverage)
     path(bldb)
