@@ -323,7 +323,6 @@ workflow RUN_CENTAR {
                     [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), 
                     full_project_id:directory], 
                     old_griphin_excel, no_pub_griphin_report]}
-            }
 
             // combine original griphin file with the one that was just made, the new one just created and the old one that was found in the project dir. 
             UPDATE_CENTAR_GRIPHIN (
