@@ -38,6 +38,10 @@ def transform_value(value):
         return ""
     return value
 
+# Custom function to handle nulls better
+def safe_str_convert(x):
+    return str(x) if pd.notna(x) and x != '' else x
+
 def print_df(df_toprint, label, all):
     pd.set_option('display.max_rows', 200)
     pd.set_option('display.max_columns', 500)
@@ -63,6 +67,9 @@ def clean_and_format_centar_dfs(centar_df):
     clean_centar_df.rename(columns=lambda x: re.sub(r'\[%Nuc_Identity \| %AA_Identity \| %Coverage\]', '', x).strip(), inplace=True)
     clean_centar_df.rename(columns=lambda x: re.sub(r'\[%Nuc_Identity \| %Coverage\]', '', x).strip(), inplace=True)
     clean_centar_df.rename(columns=lambda x: re.sub(r'Diffbase_', '', x).strip(), inplace=True)
+    clean_centar_df['CEMB RT Crosswalk'] = clean_centar_df['CEMB RT Crosswalk'].astype(str).replace('NaN', '') # Ensure leading zeroes are kept before it makes it to writing excel file
+#    print_df(clean_centar_df, "Cleaned Centar DF", True)
+#    print(clean_centar_df['CEMB RT Crosswalk'].values)
     #Replace empty strings with NaN and drop columns that are completely blank. ## .infer_objects(copy=False) ensures pandas infers correct types without creating a copy (retains legacy behavior)
     clean_centar_df = clean_centar_df.replace('', np.nan).infer_objects(copy=False).dropna(axis=1, how='all')
     #separate dataframes
@@ -100,13 +107,17 @@ def create_centar_combined_df(directory1, sample_name, directory2):
     centar_summary = try_paths( directory1 + "/CENTAR/" + sample_name + "_centar_output.tsv", directory2 + "/" + sample_name + "/CENTAR/" + sample_name + "_centar_output.tsv" )
     #clean up the dataframe
     try: # handling for samples that failed and didn't get centar files created
-        centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
+#        centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
+        centar_df = pd.read_csv(centar_summary, sep='\t', header=0,
+                converters={'CEMB RT Crosswalk': safe_str_convert})
         centar_df["WGS_ID"] = sample_name
-        print_df(centar_df, "Centar DF for " + sample_name, False)
+#        print_df(centar_df, "Centar DF for " + sample_name, True)
     except FileNotFoundError:
         try: #retry looking at a different location
             centar_summary = "./" + sample_name + "_centar_output.tsv"
-            centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
+#            centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
+            centar_df = pd.read_csv(centar_summary, sep='\t', header=0,
+                converters={'CEMB RT Crosswalk': safe_str_convert})
             centar_df["WGS_ID"] = sample_name
         except FileNotFoundError: 
             print("Warning: " + sample_name + "_centar_output.tsv file not found")

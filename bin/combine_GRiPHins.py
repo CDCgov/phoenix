@@ -136,6 +136,7 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
     # Read the Excel file, skipping the first row and using the second row as the header
     try: #check that this is an excel file
         df = pd.read_excel(file_path,
+            converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines,engine='openpyxl')
@@ -377,10 +378,12 @@ def split_centar_df(centar, excel, sample_names):
     footer_lines1 = detect_footer_lines(excel)
     #first open the excel sheet using the merged headers, this will give us the columns that all go with that header in the centar_df_lens and centar_df_column_names below
     df = pd.read_excel(excel,
+        converters={'CEMB RT Crosswalk': str},
         header=[0, 1],    # Use the 2nd row as the header
         skipfooter=footer_lines1,engine='openpyxl')
     if centar == True:
         df_1 = pd.read_excel(excel,
+            converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1 ,engine='openpyxl', dtype={'WGS_ID': str,'Parent_Folder': str,'Data_Location': str}) # Specifying dtypes prevents pandas from using more memory than necessary for each column.
@@ -487,6 +490,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
     # Read the Excel file, skipping the first row and using the second row as the header
     try: #check that this is an excel file
         df_1 = pd.read_excel(file_path1,
+            converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1,engine='openpyxl')
@@ -504,6 +508,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
         raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
     try: #check that this is an excel file
         df_2 = pd.read_excel(file_path2,
+            converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines2,engine='openpyxl')
