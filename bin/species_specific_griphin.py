@@ -79,7 +79,7 @@ def clean_and_format_centar_dfs(centar_df):
     A_B_Tox = [ "Toxinotype", "Toxin-A_sub-type", "tcdA", "Toxin-B_sub-type", "tcdB"]
     A_B_Tox_col = [col for col in clean_centar_df.columns if any(substring in col for substring in A_B_Tox) ]
     A_B_Tox_len = len(A_B_Tox_col)
-    other_Tox = [ "tcdC", "tcdR", "tcdE", "cdtA", "cdtB", "cdtR", "cdtAB1", "cdtAB2", "non-tox", "PaLoc" ]
+    other_Tox = [ "tcdC", "tcdR", "tcdE", "cdtA", "cdtB", "cdtR", "cdtAB1", "cdtAB2", "cdt_NonTox", "PaLoc" ]
     other_Tox_col = [col for col in clean_centar_df.columns if any(substring in col for substring in other_Tox) ]
     other_Tox_len = len(other_Tox_col)
     mutants = [ 'gyr','dac','feo','fur','gdp','gly','hem','hsm','Isc','mur', 'mur','nifJ','PNim','rpo','sda','thi','Van','mutations' ]
