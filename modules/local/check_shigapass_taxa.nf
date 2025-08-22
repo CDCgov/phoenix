@@ -5,12 +5,13 @@ process CHECK_SHIGAPASS_TAXA {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    tuple val(meta), path(fastani_file), path(ani_file), path(shigapass_file)
+    tuple val(meta), path(fastani_file), path(ani_file), path(shigapass_file), path(tax_file)
 
     output:
-    tuple val(meta), path('edited/*.fastANI.txt'), emit: ani_best_hit
-    //tuple val(meta), path("${meta.id}.tax"), emit: tax_file
-    path("versions.yml"),                          emit: versions
+    tuple val(meta), path('edited/*.fastANI.txt'),              emit: ani_best_hit
+    tuple val(meta), path("edited/${meta.id}.tax"),             emit: tax_file
+    tuple val(meta), path("${meta.id}_updater_log.tax"), emit: edited_tax_file
+    path("versions.yml"),                                       emit: versions
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -24,10 +25,12 @@ process CHECK_SHIGAPASS_TAXA {
     #get string to rename file --> Remove "to_check_" from the filename
     new_name=\$(echo "${fastani_file}" | sed 's/to_check_//')
 
-    ${ica}check_taxa.py --format_ani_file ${fastani_file} --shigapass_file ${shigapass_file} --ani_file ${ani_file} --output \${new_name}
+    ${ica}check_taxa.py --format_ani_file ${fastani_file} --shigapass_file ${shigapass_file} --ani_file ${ani_file} --format_ani_output \${new_name} --tax_file ${tax_file}
 
     #move output to folder for publishing
     mv \${new_name} edited/\${new_name}
+    mv ${meta.id}.tax edited/${meta.id}.tax 
+    cp edited/${meta.id}.tax ${meta.id}_updater_log.tax # renaming so there isn't a file name conflict when we create the updater log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

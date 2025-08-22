@@ -139,10 +139,18 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ meta, trimmed_stats, all_passed_id_channel -> [meta, trimmed_stats]} //remove all_passed_id_channel from output
 
             // get *.top_kraken_hit.txt files for MLST updating
-            def kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.top_kraken_hit.txt')
+            def trimd_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.top_kraken_hit.txt')
             //create *.top_kraken_hit.txt file channel with meta information 
-            filtered_kraken_bh_ch = Channel.fromPath(kraken_bh_glob) // use created regrex to get samples
+            c = Channel.fromPath(trimd_kraken_bh_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, ".kraken2_trimd.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
+
+            // get *.top_kraken_hit.txt 
+            def wtasmbld_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.top_kraken_hit.txt')
+            //create *.top_kraken_hit.txt file channel with meta information 
+            filtered_wtasmbld_kraken_bh_ch = Channel.fromPath(wtasmbld_kraken_bh_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, ".kraken2_wtasmbld.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
 
@@ -402,24 +410,25 @@ workflow CREATE_INPUT_CHANNELS {
             combined_reads_ch = COLLECT_SAMPLE_FILES.out.read1.join(COLLECT_SAMPLE_FILES.out.read2, by: [0]).map{ meta, read1, read2 -> [meta, [read1, read2]]}
             // get other files
             filtered_scaffolds_ch = COLLECT_SAMPLE_FILES.out.scaffolds
-            filtered_gff_ch = COLLECT_SAMPLE_FILES.out.gff
-            filtered_faa_ch = COLLECT_SAMPLE_FILES.out.faa
-            line_summary_ch = COLLECT_SAMPLE_FILES.out.summary_line
-            filtered_synopsis_ch = COLLECT_SAMPLE_FILES.out.synopsis
-            filtered_taxonomy_ch = COLLECT_SAMPLE_FILES.out.tax
-            filtered_gamma_pf_ch = COLLECT_SAMPLE_FILES.out.gamma_pf
-            filtered_gamma_hv_ch = COLLECT_SAMPLE_FILES.out.gamma_hv
-            filtered_gamma_ar_ch = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
+            filtered_gff_ch       = COLLECT_SAMPLE_FILES.out.gff
+            filtered_faa_ch       = COLLECT_SAMPLE_FILES.out.faa
+            line_summary_ch       = COLLECT_SAMPLE_FILES.out.summary_line
+            filtered_synopsis_ch  = COLLECT_SAMPLE_FILES.out.synopsis
+            filtered_taxonomy_ch  = COLLECT_SAMPLE_FILES.out.tax
+            filtered_gamma_pf_ch  = COLLECT_SAMPLE_FILES.out.gamma_pf
+            filtered_gamma_hv_ch  = COLLECT_SAMPLE_FILES.out.gamma_hv
+            filtered_gamma_ar_ch  = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
                                         .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
             filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
                                         .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
-            filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio
-            filtered_kraken_bh_ch = COLLECT_SAMPLE_FILES.out.kraken_bh
-            filtered_trimmed_stats_ch = COLLECT_SAMPLE_FILES.out.trimmed_stats
-            filtered_quast_ch = COLLECT_SAMPLE_FILES.out.quast_report
-            filtered_ani_ch = COLLECT_SAMPLE_FILES.out.ani
-            filtered_ani_best_hit_ch = COLLECT_SAMPLE_FILES.out.ani_best_hit
-            filtered_combined_mlst_ch = COLLECT_SAMPLE_FILES.out.combined_mlst
+            filtered_assembly_ratio_ch     = COLLECT_SAMPLE_FILES.out.assembly_ratio
+            filtered_trimd_kraken_bh_ch    = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
+            filtered_wtasmbld_kraken_bh_ch = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_bh
+            filtered_trimmed_stats_ch      = COLLECT_SAMPLE_FILES.out.trimmed_stats
+            filtered_quast_ch              = COLLECT_SAMPLE_FILES.out.quast_report
+            filtered_ani_ch                = COLLECT_SAMPLE_FILES.out.ani
+            filtered_ani_best_hit_ch       = COLLECT_SAMPLE_FILES.out.ani_best_hit
+            filtered_combined_mlst_ch      = COLLECT_SAMPLE_FILES.out.combined_mlst
 
             //species specific files
             shigapass_files_ch = COLLECT_SAMPLE_FILES.out.shigapass_output
@@ -468,25 +477,26 @@ workflow CREATE_INPUT_CHANNELS {
         samplesheet_meta_ch = samplesheet_meta_ch
 
         // sample specific files
-        filtered_scaffolds = filtered_scaffolds_ch      // channel: [ meta, [ scaffolds_file ] ]
-        reads              = combined_reads_ch
-        taxonomy           = filtered_taxonomy_ch
-        prokka_gff         = filtered_gff_ch
-        prokka_faa         = filtered_faa_ch
-        fairy_outcome      = file_integrity_ch
-        line_summary       = line_summary_ch // need non-filtered to make summary files will all samples in project folder
-        synopsis           = filtered_synopsis_ch
-        ani                = filtered_ani_ch
-        ani_best_hit       = filtered_ani_best_hit_ch
-        ncbi_report        = filtered_amrfinder_ch
-        gamma_ar           = filtered_gamma_ar_ch
-        gamma_pf           = filtered_gamma_pf_ch
-        gamma_hv           = filtered_gamma_hv_ch
-        assembly_ratio     = filtered_assembly_ratio_ch
-        k2_bh_summary      = filtered_kraken_bh_ch
-        fastp_total_qc     = filtered_trimmed_stats_ch
-        quast_report       = filtered_quast_ch
-        combined_mlst      = filtered_combined_mlst_ch // for centar entry
+        filtered_scaffolds     = filtered_scaffolds_ch      // channel: [ meta, [ scaffolds_file ] ]
+        reads                  = combined_reads_ch
+        taxonomy               = filtered_taxonomy_ch
+        prokka_gff             = filtered_gff_ch
+        prokka_faa             = filtered_faa_ch
+        fairy_outcome          = file_integrity_ch
+        line_summary           = line_summary_ch // need non-filtered to make summary files will all samples in project folder
+        synopsis               = filtered_synopsis_ch
+        ani                    = filtered_ani_ch
+        ani_best_hit           = filtered_ani_best_hit_ch
+        ncbi_report            = filtered_amrfinder_ch
+        gamma_ar               = filtered_gamma_ar_ch
+        gamma_pf               = filtered_gamma_pf_ch
+        gamma_hv               = filtered_gamma_hv_ch
+        assembly_ratio         = filtered_assembly_ratio_ch
+        k2_trimd_bh_summary    = filtered_trimd_kraken_bh_ch
+        k2_wtasmbld_bh_summary = filtered_wtasmbld_kraken_bh_ch
+        fastp_total_qc         = filtered_trimmed_stats_ch
+        quast_report           = filtered_quast_ch
+        combined_mlst          = filtered_combined_mlst_ch // for centar entry
 
 }
 

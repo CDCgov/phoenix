@@ -75,8 +75,8 @@ def List_TSV(output_file, input_list, busco, updater, phx_version):
         except: #if no numbers then use only alphabetically
             input_list_sorted=sorted(input_list)
         for file in input_list_sorted:
-            print(CRED + file + CEND)
             with open(file, "r") as f2:
+                print(f"Processing file: {file}")
                 header = next(f2) # skip the first line of the samplesheet
                 if "Final_Taxa_ID" not in header: # FOR BACKWARDS COMPATIBILITY
                     #print(f"Older file format detected in {file}, updating")
@@ -139,11 +139,10 @@ def get_old_version(yaml_file_path):
     try:
         with open(yaml_file_path, 'r') as file:
             data = yaml.safe_load(file)
-            
         # Navigate through the YAML structure to find cdcgov/phoenix version
         if 'Workflow' in data and 'cdcgov/phoenix' in data['Workflow']:
             return data['Workflow']['cdcgov/phoenix']
-        
+
         # Alternative: search through all keys in case structure varies
         for key, value in data.items():
             if isinstance(value, dict) and 'cdcgov/phoenix' in value:

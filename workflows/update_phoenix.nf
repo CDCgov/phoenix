@@ -33,6 +33,7 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 include { ASSET_CHECK                          } from '../modules/local/asset_check'
 include { SHIGAPASS                            } from '../modules/local/shigapass'
 include { CHECK_SHIGAPASS_TAXA                 } from '../modules/local/check_shigapass_taxa'
+include { CALCULATE_ASSEMBLY_RATIO             } from '../modules/local/assembly_ratio'
 include { GAMMA as GAMMA_AR                    } from '../modules/local/gamma'
 include { GET_TAXA_FOR_AMRFINDER               } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN                    } from '../modules/local/run_amrfinder'
@@ -119,7 +120,7 @@ def add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet) {
             def columns = line.split(',')
             if (columns[0].trim() == sample_name.trim()) {
                 matchingLine = line
-                print("Matching line found in samplesheet: ${matchingLine}\n")
+                //print("Matching line found in samplesheet: ${matchingLine}\n")
                 def meta = [:] // create meta array
                 // Step 3: Extract the project_id from the matching line
                 def cleanline = matchingLine.split(',')[1].trim()
@@ -199,7 +200,7 @@ workflow UPDATE_PHOENIX_WF {
 
     main:
         // Allow outdir to be relative
-        outdir_path = Channel.fromPath(params.outdir, relative: true)
+        outdir_path = Channel.fromPath(params.outdir, relative: true, type: 'dir')
 
         CREATE_INPUT_CHANNELS (
             // False is to say if centar is to be included when creating input channels
@@ -347,7 +348,6 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
-        //
         files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id.split('/').last(), meta, file] }
                                 .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
                                 .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
@@ -394,28 +394,60 @@ workflow UPDATE_PHOENIX_WF {
                 }
             }.filter { it != null } // Now ch_ani_combined contains the combined channel with prioritized files
 
+        /*/ for samples that had shigapass run, we will update it the 
+            // gather all outputs from shigapass and format_ani to get the best hit for each sample - we will flatten it to go into the pipeline stats
+        ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
+
+        GENERATE_PIPELINE_STATS_WF (
+            -GET_RAW_STATS.out.combined_raw_stats, \
+            CREATE_INPUT_CHANNELS.out.fastp_total_qc, \
+            [], \
+            -KRAKEN2_TRIMD.out.report, \
+            -KRAKEN2_TRIMD.out.krona_html, \
+            -KRAKEN2_TRIMD.out.k2_bh_summary, \
+            CREATE_INPUT_CHANNELS.out.renamed_scaffolds, \
+            CREATE_INPUT_CHANNELS.out.filtered_scaffolds, \
+            DO_MLST.out.checked_MLSTs, \
+            CREATE_INPUT_CHANNELS.out.gamma_hv, \
+            GAMMA_AR.out.gamma, \
+            CREATE_INPUT_CHANNELS.out.gamma_pf, \
+            CREATE_INPUT_CHANNELS.out.quast_report, \
+            [], [], [], [], \
+            -KRAKEN2_WTASMBLD.out.report, \
+            -KRAKEN2_WTASMBLD.out.krona_html, \
+            -KRAKEN2_WTASMBLD.out.k2_bh_summary, \
+            -->DETERMINE_TAXA_ID.out.taxonomy, \
+            ani_best_hit_ch, \
+            CALCULATE_ASSEMBLY_RATIO.out.ratio.mix(CREATE_INPUT_CHANNELS.out.ratio), \
+            AMRFINDERPLUS_RUN.out.mutation_report, \
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content.mix(CREATE_INPUT_CHANNELS.out.gc_content), \
+            false
+        )
+        ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)*/
+
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        line_summary_ch = CREATE_INPUT_CHANNELS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id, project_id:meta.project_id], fastp_total_qc]}\
-        .join(DO_MLST.out.checked_MLSTs.map{                           meta, checked_MLSTs   -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]},  by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{                  meta, gamma_hv        -> [[id:meta.id, project_id:meta.project_id], gamma_hv]},       by: [[0][0],[0][1]])\
-        .join(GAMMA_AR.out.gamma.map{                                  meta, gamma           -> [[id:meta.id, project_id:meta.project_id], gamma]},          by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{                  meta, gamma_pf        -> [[id:meta.id, project_id:meta.project_id], gamma_pf]},       by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.quast_report.map{              meta, quast_report    -> [[id:meta.id, project_id:meta.project_id], quast_report]},   by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.assembly_ratio.map{            meta, assembly_ratio  -> [[id:meta.id, project_id:meta.project_id], assembly_ratio]}, by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.synopsis.map{                  meta, synopsis        -> [[id:meta.id, project_id:meta.project_id], synopsis]},       by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{                  meta, taxonomy        -> [[id:meta.id, project_id:meta.project_id], taxonomy]},       by: [[0][0],[0][1]])\
-        .join(CREATE_INPUT_CHANNELS.out.k2_bh_summary.map{             meta, k2_bh_summary   -> [[id:meta.id, project_id:meta.project_id], k2_bh_summary]},  by: [[0][0],[0][1]])\
-        .join(AMRFINDERPLUS_RUN.out.report.map{                        meta, report          -> [[id:meta.id, project_id:meta.project_id], report]},         by: [[0][0],[0][1]])\
-        .join(ch_ani_combined.map{                                     meta, ani_best_hit    -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},   by: [[0][0],[0][1]])
+        line_summary_ch = CREATE_INPUT_CHANNELS.out.fastp_total_qc.map{meta, fastp_total_qc         -> [[id:meta.id, project_id:meta.project_id], fastp_total_qc]}\
+        .join(DO_MLST.out.checked_MLSTs.map{                           meta, checked_MLSTs          -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]},          by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{                  meta, gamma_hv               -> [[id:meta.id, project_id:meta.project_id], gamma_hv]},               by: [[0][0],[0][1]])\
+        .join(GAMMA_AR.out.gamma.map{                                  meta, gamma                  -> [[id:meta.id, project_id:meta.project_id], gamma]},                  by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{                  meta, gamma_pf               -> [[id:meta.id, project_id:meta.project_id], gamma_pf]},               by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.quast_report.map{              meta, quast_report           -> [[id:meta.id, project_id:meta.project_id], quast_report]},           by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.assembly_ratio.map{            meta, assembly_ratio         -> [[id:meta.id, project_id:meta.project_id], assembly_ratio]},         by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.synopsis.map{                  meta, synopsis               -> [[id:meta.id, project_id:meta.project_id], synopsis]},               by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{                  meta, taxonomy               -> [[id:meta.id, project_id:meta.project_id], taxonomy]},               by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary.map{       meta, k2_trimd_bh_summary    -> [[id:meta.id, project_id:meta.project_id], k2_trimd_bh_summary]},    by: [[0][0],[0][1]])\
+        .join(CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary.map{    meta, k2_wtasmbld_bh_summary -> [[id:meta.id, project_id:meta.project_id], k2_wtasmbld_bh_summary]}, by: [[0][0],[0][1]])\
+        .join(AMRFINDERPLUS_RUN.out.report.map{                        meta, report                 -> [[id:meta.id, project_id:meta.project_id], report]},                 by: [[0][0],[0][1]])\
+        .join(ch_ani_combined.map{                                     meta, ani_best_hit           -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},           by: [[0][0],[0][1]])
 
         // First, check if SHIGAPASS.out.summary is empty and create appropriate channel - for cases where isolate set has no e.coli or shigella
         shigapass_ch = SHIGAPASS.out.summary.mix(CREATE_INPUT_CHANNELS.out.shigapass)
 
         // Extract [id, project_id] pairs for all isolates in line_summary_ch channel for joining // If shigapass_files is null (no match), replace with empty list
         all_id_pairs_ch = line_summary_ch.join(shigapass_ch, by: [[0][0],[0][1]], remainder: true).filter{ it[1] != null }
-                .map{ meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, shigapass_file ->
-                if (shigapass_file == null) { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, []]
-                } else { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_bh_summary,report,ani_best_hit, shigapass_file]}}
+                .map{ meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_trimd_bh_summary,k2_wtasmbld_bh_summary,report,ani_best_hit, shigapass_file ->
+                if (shigapass_file == null) { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_trimd_bh_summary,k2_wtasmbld_bh_summary,report,ani_best_hit, []]
+                } else { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_trimd_bh_summary,k2_wtasmbld_bh_summary,report,ani_best_hit,shigapass_file]}}
 
         // rename to line_summary_ch --> just to keep the naming consistent with the original workflow
         line_summary_ch = all_id_pairs_ch
@@ -430,9 +462,6 @@ workflow UPDATE_PHOENIX_WF {
         project_ids = CREATE_INPUT_CHANNELS.out.directory_ch.map{ it[1] }.unique().collect()
             .map { dirs -> dirs.collectEntries { dir -> def dirName = dir.tokenize('/').last()
             return [dirName, dir]}}
-
-        // Creating empty channel that has the form [ meta.id, [] ] that can be passed as a blank below
-        empty_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{ it -> create_empty_ch(it) }
 
         // Mix the real gene results with the dummy channel. This way, if SRST2_AR.out.gene_results doesn't exist, the empty channel is used
         // Create channels to handle whether SRST2_AR ran or not
@@ -450,7 +479,7 @@ workflow UPDATE_PHOENIX_WF {
         
         // First, join CREATE_SUMMARY_LINE with gene_results and identify entries with null summaryline
         primary_summaries_ch = CREATE_SUMMARY_LINE.out.line_summary
-            .join(SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true)
+            .join(SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true) // add in SRST2 results if they exist to make the pipeline wait for it to finish
             .map{meta, summaryline, gene_results -> [meta, summaryline, gene_results]}
         
         // Split into successful and failed summaries based on whether summaryline is null
@@ -473,25 +502,63 @@ workflow UPDATE_PHOENIX_WF {
                 def full_project_id = project_ids.value[id2]  // Retrieve the matching directory path
                 def busco_boolean = summary_lines.first().text.contains('BUSCO') //is busco not present in the summary line?
                 return [meta, summary_lines, full_project_id, busco_boolean]}
+
         //add in the pipeline info to get the version
         gathered_summaries_ch = summaries_ch.join(CREATE_INPUT_CHANNELS.out.pipeline_info.map{meta, pipeline_info -> [[project_id:meta.project_id.split('/')[-1], full_project_id:meta.project_id], pipeline_info]}, by: [0])
 
-        //  Combining sample summaries into final report
+        // For cases where the user is running isolates from multiple directories and wants the summary files output to their original project_id folders. 
+        multiple_directories_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, dir -> [dir]}.collect().map{ files -> files.unique().size() > 1 }
+        // Conditionally group by project based on if there are multiple directories
+        branched_collected_summaries_ch = gathered_summaries_ch
+            .combine(multiple_directories_ch)
+            .branch { meta, summary_line, dir, busco_boolean, pipeline_info, is_multiple ->
+                ungrouped: is_multiple == true
+                    return [meta, summary_line, dir, busco_boolean, pipeline_info]
+                grouped: is_multiple == false
+                    return [meta, summary_line, dir, busco_boolean, pipeline_info] }
+
+        def collected_summaries_ch
+        if (params.outdir != "${launchDir}/phx_output") {
+            //if there are multiple dirs and an --outdir given then the will need to all be combined into one Phoenix_Summary.tsv file in the outdir 
+            collected_summaries_ch = branched_collected_summaries_ch.ungrouped.collect().map{ items ->
+                                def grouped_items = items.collate(5)
+                                def summary_lines = []
+                                def dirs = []
+                                def busco_booleans = []
+                                def pipeline_infos = []
+                            grouped_items.each{ item ->
+                                summary_lines.addAll(item[1])  // Use addAll to flatten the list
+                                dirs.add(item[2])
+                                busco_booleans.add(item[3])
+                                pipeline_infos.add(item[4])}
+                            return [[], summary_lines, dirs.unique(), busco_booleans.any{ it == true }, pipeline_infos]}
+            //for single dirs
+            collected_summaries_ch = branched_collected_summaries_ch.grouped
+                    .map{ meta, summary_lines, dirs, busco_booleans, pipeline_info -> [meta, summary_lines, dirs, busco_booleans, pipeline_info]}  // take first dir/busco since they should be the same within a project
+        } else { 
+
+            // Group by project and collect files within each project
+            collected_summaries_ch = branched_collected_summaries_ch.ungrouped.mix(branched_collected_summaries_ch.grouped)
+                .groupTuple(by: 0)  // group by meta (project_id)
+                .map{ meta, summary_lines, dirs, busco_booleans, pipeline_info -> 
+                    [meta, summary_lines, dirs[0], busco_booleans, pipeline_info[0]]}  // take first dir/busco since they should be the same within a project
+
+        }
+
+        // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
-            gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> meta},
-            gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> summary_lines},
-            gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> full_project_id},
-            gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> busco_boolean},
-            gathered_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> pipeline_info}.map { file -> (file.text =~ /cdcgov\/phoenix: (.+)/)[0][1].trim() } // Extract the version from the pipeline_info file
+            collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> meta},
+            collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> summary_lines},
+            collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> full_project_id},
+            collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> busco_boolean},
+            collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> pipeline_info}.map { file -> (file.text =~ /cdcgov\/phoenix: (.+)/)[0][1].trim() } // Extract the version from the pipeline_info file
         )
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
-        // If the input directory is not null, we need to check if the input directory is the same as the output directory
-        if (params.outdir != "${launchDir}/phx_output") {
-            outdir_full_path = Channel.fromPath(params.outdir)
-            //this means that files need to be directed to the --outdir so we need to update the dir in the channel 
-            summaries_with_outdir_ch = summaries_ch.combine(outdir_full_path).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
-        }
+        outdir_full_path = Channel.fromPath(params.outdir, type: 'dir')
+        //summaries_ch.combine(outdir_full_path).view()
+        //this means that files need to be directed to the --outdir so we need to update the dir in the channel 
+        summaries_with_outdir_ch = summaries_ch.combine(outdir_full_path).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
 
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
@@ -571,34 +638,8 @@ workflow UPDATE_PHOENIX_WF {
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
-            } else { // params.outdir != "${launchDir}/phx_output"
-
-                //add in the samplesheet specific to each project dir
-                all_summaries_ch = summaries_with_outdir_ch.map{meta, summary_lines, outdir, busco_boolean -> [[project_id:meta.project_id], meta.full_project_id, outdir, summary_lines, busco_boolean]}
-                                    .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
-                                    .map{meta, full_project_id, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], outdir, summary_lines, busco_boolean, samplesheet, shigapass_var]}
-
-                // run griphin and don't publish the results
-                GRIPHIN_NO_PUBLISH (
-                    all_summaries_ch.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> summary_lines}, \
-                    all_summaries_ch.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> samplesheet}, \
-                    params.ardb, \
-                    all_summaries_ch.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [outdir.toString(), meta.full_project_id]}, \
-                    workflow.manifest.version, params.coverage, \
-                    all_summaries_ch.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> busco_boolean}, \
-                    all_summaries_ch.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> shigapass_var}, \
-                    false, params.bldb, true
-                )
-                ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
-            }
-
-            //define var to be used globally
-            def griphin_reports_ch
-            def griphins_ch
-
-            if (params.outdir == "${launchDir}/phx_output") {
-                // If the output directory is not the default, we need to update the path in the channel
-                griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([]).flatten().collate(2)
+                                // If the output directory is not the default, we need to update the path in the channel
+                griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([[],[]]).flatten().collate(2)
                                     .map{path_txt, griphin_report -> add_meta(path_txt, griphin_report)}
 
                 // join old and new griphins for combining
@@ -608,7 +649,67 @@ workflow UPDATE_PHOENIX_WF {
                     .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch     -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.unique(), by: [0])
                     .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
 
-            } else {
+                // combine griphin files, the new one just created and the old one that was found in the project dir. 
+                UPDATE_GRIPHIN (
+                    griphins_ch.map{ meta, old_excel, new_excel -> [ old_excel, new_excel ] }, 
+                    griphins_ch.map{ meta, old_excel, new_excel -> meta.full_project_id },
+                    //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
+                    [],
+                    params.coverage,
+                    params.bldb,
+                    true,
+                    []
+                )
+                ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
+
+            } else { // params.outdir != "${launchDir}/phx_output"
+
+                //add in the samplesheet specific to each project dir
+                summaries_with_outdir_ch.view()
+                all_summaries_ch = summaries_with_outdir_ch.map{meta, summary_lines, outdir, busco_boolean -> [[project_id:meta.project_id], meta.full_project_id, outdir, summary_lines, busco_boolean]}
+                                    .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
+                                    .map{meta, full_project_id, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], outdir, summary_lines, busco_boolean, samplesheet, shigapass_var]}
+                
+                //all_summaries_ch.view { "all_summaries_ch: $it" }
+                //multiple_directories_ch.view { "multiple_directories_ch: $it" }
+                //all_summaries_ch.combine(multiple_directories_ch).view { "combined: $it" }
+
+                // Conditionally group by project based on if there are multiple directories
+                branched_all_summaries_ch = all_summaries_ch
+                    .combine(multiple_directories_ch)
+                    .branch { meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var, is_multiple ->
+                        multi_dir: is_multiple == true
+                            return [meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var]
+                        single_multi_dir: is_multiple == false
+                            return [meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var] }
+
+                //branched_all_summaries_ch.single_multi_dir.view()
+
+                // run griphin and publish the results
+                GRIPHIN_PUBLISH (
+                    branched_all_summaries_ch.single_multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> summary_lines}, \
+                    branched_all_summaries_ch.single_multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> samplesheet}, \
+                    params.ardb, \
+                    branched_all_summaries_ch.single_multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [meta.full_project_id, []]}, \
+                    workflow.manifest.version, params.coverage, \
+                    branched_all_summaries_ch.single_multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> busco_boolean}, \
+                    branched_all_summaries_ch.single_multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> shigapass_var}, \
+                    false, params.bldb, true
+                )
+                ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
+
+                // run griphin and don't publish the results
+                GRIPHIN_NO_PUBLISH (
+                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> summary_lines}, \
+                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> samplesheet}, \
+                    params.ardb, \
+                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [meta.full_project_id, []]}, \
+                    workflow.manifest.version, params.coverage, \
+                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> busco_boolean}, \
+                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> shigapass_var}, \
+                    false, params.bldb, true
+                )
+                ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphins.collect().ifEmpty([]).flatten().collate(3)
                                     .combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).map{path_txt, griphin_excel, griphin_tsv, samplesheet -> add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet)}
@@ -630,8 +731,10 @@ workflow UPDATE_PHOENIX_WF {
                 )
                 ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
-            griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report
-            griphin_report = UPDATE_GRIPHIN.out.griphin_report
+            }
+
+            griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report.mix(GRIPHIN_PUBLISH.out.griphin_tsv_report)
+            griphin_report = UPDATE_GRIPHIN.out.griphin_report.mix(GRIPHIN_PUBLISH.out.griphin_report)
         }
 
         software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()

@@ -32,6 +32,7 @@ def parseArgs(args=None):
     parser.add_argument('-v', '--vir', required=False, help='hypervirulence GAMMA file')
     parser.add_argument('-f', '--fastani', dest="fastani", required=False, default="", help='Fastani file or empty placeholder.')
     parser.add_argument('-k', '--kraken_trim', dest="trimd_kraken", required=False, help='trimd_summary.txt from kraken2')
+    parser.add_argument('--kraken_wtasmbld', dest="wtasmbld_kraken", required=False, help='wtasmbld_summary.txt from kraken2')
     parser.add_argument('-s', '--stats', dest="stats", required=False, help='Pipeline Stats file synopsis file')
     parser.add_argument('-e', '--extended_qc', dest="extended_qc", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
     parser.add_argument('-o', '--out', required=True, help='output file name')
@@ -213,12 +214,25 @@ def HV_Genes(input_gamma):
         HV=""
     return HV
 
-def WT_kraken_stats(stats):
-    with open(stats, 'r') as f:
+def WT_kraken_stats(wtasmbld_kraken):
+    with open(wtasmbld_kraken, "r") as f:
         for line in f:
-            if line.startswith("KRAKEN2_CLASSIFY_WEIGHTED"):
-                scaffold_match = re.findall(r': .*? with', line)[0]
-                scaffold_match = re.sub( ": SUCCESS  : | with", '', scaffold_match)
+            if line.startswith("G:"):
+                genus_match = line.split(": ")[1]
+                genus_percent = line.split(": ")[1]
+                genus_match = re.sub( r"\d+|\n|\s|\.", '', genus_match)
+                genus_percent = re.sub( r"[a-zA-Z]*|\n|\s", '', genus_percent)
+            if line.startswith("s:"):
+                species_match = line.split(": ")[1]
+                species_percent = line.split(": ")[1]
+                species_match = re.sub( r"\d+|\n|\.", '', species_match)
+                species_percent = re.sub( r"[a-zA-Z]*|\n|\s", '', species_percent)
+    scaffold_match = genus_match + "(" + genus_percent + "%)" + species_match + "(" + species_percent + "%)"
+    #with open(stats, 'r') as f:
+    #    for line in f:
+    #        if line.startswith("KRAKEN2_CLASSIFY_WEIGHTED"):
+    #            scaffold_match = re.findall(r': .*? with', line)[0]
+    #            scaffold_match = re.sub( ": SUCCESS  : | with", '', scaffold_match)
     return scaffold_match
 
 def QC_Pass(stats):
@@ -242,7 +256,7 @@ def QC_Pass(stats):
     warning_count = str(warning_count)
     return status_end, reason_end, warning_count
 
-def Get_Kraken_reads(stats, trimd_kraken):
+def Get_Kraken_reads(trimd_kraken):
     with open(trimd_kraken, "r") as f:
         for line in f:
             if line.startswith("G:"):
@@ -339,7 +353,7 @@ def Get_BUSCO_Gene_Count(stats):
     busco_file = True
     return busco_line, lineage, busco_file
 
-def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, amr_file, pf_file, extended_qc, shigapass, phx_version):
+def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, wtasmbld_kraken, amr_file, pf_file, extended_qc, shigapass, phx_version):
     try:
         plasmid_marker_list = Get_Plasmids(pf_file)
     except:
@@ -441,7 +455,7 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
     except:
         HV = 'Unknown'
     try:
-        scaffold_match = WT_kraken_stats(stats)
+        scaffold_match = WT_kraken_stats(wtasmbld_kraken)
     except:
         scaffold_match = "Unknown"
     try:
@@ -451,7 +465,7 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
         warning_count = 'Unknown'
         Reason = ""
     try:
-        read_match = Get_Kraken_reads(stats, trimd_kraken)
+        read_match = Get_Kraken_reads(trimd_kraken)
     except:
         read_match = "Unknown"
     if busco_file == None and extended_qc == False:
@@ -462,9 +476,9 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
         busco = True
     return Line, busco, fastani
 
-def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, mutations, pf_file, extended_qc, shigapass, phx_version):
+def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, wtasmbld_kraken, mutations, pf_file, extended_qc, shigapass, phx_version):
     with open(out_file, 'w') as f:
-        Line, busco, fastani = Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, mutations, pf_file, extended_qc, shigapass, phx_version)
+        Line, busco, fastani = Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, wtasmbld_kraken, mutations, pf_file, extended_qc, shigapass, phx_version)
         if busco == True:
             f.write('WGS_ID\tPHX_Version\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tBUSCO\tBUSCO_DB\tFinal_Taxa_ID\tTaxa_Source\tFastANI_Organism\tFastANI_%ID\tFastANI_%Coverage\tShigaPass_Organism\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
         else:
@@ -474,7 +488,7 @@ def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, 
 def main():
     args = parseArgs()
     # if the output file already exists remove it
-    Isolate_Line_File(args.taxa, args.fastani, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.mutations, args.pf, args.extended_qc, args.shigapass, args.phx_version)
+    Isolate_Line_File(args.taxa, args.fastani, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.wtasmbld_kraken, args.mutations, args.pf, args.extended_qc, args.shigapass, args.phx_version)
 
 if __name__ == '__main__':
     main()

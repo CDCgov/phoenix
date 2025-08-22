@@ -27,6 +27,8 @@ def parseArgs(args=None):
     parser.add_argument('--new_gamma', dest="new_gamma",required=True, help='New <sample_id>_ResGANNCBI_<date>_srst2.gamma file.')
     parser.add_argument('--old_ncbi', dest="old_ncbi",required=True, help='Old <sample_id>_<date>_all_genes.tsv file.')
     parser.add_argument('--new_ncbi', dest="new_ncbi",required=True, help='New <sample_id>_<date>_all_genes.tsv file.')
+    parser.add_argument('--old_tax', dest="old_tax",required=False, help='Old <sample_id>.tax file.')
+    parser.add_argument('--new_tax', dest="new_tax",required=False, help='New <sample_id>_updater_log.tax file.')
     parser.add_argument('-p', '--pipeline_info', dest="pipeline_info", default=True, help='software_versions.yml file') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
     parser.add_argument('-o', '--out', dest="output", required=True, help='output file name')
     parser.add_argument('-v', dest="current_phx_version", required=True, help='current phx version.')
@@ -168,23 +170,51 @@ def compare_ar_files(old_file, new_file, file_type):
 
     return added_ar_genes, dropped_ar_genes
 
-def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new_amrfinderplus_db, output, phoenix_ver, sample_directory, current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes):
+def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new_amrfinderplus_db, output, phoenix_ver, sample_directory, current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes, new_tax, old_tax):
     Gamma_db_updated = old_gamma + " --> " + new_ar_db.strip()
     amrfinder_db_updated = old_amrfinder + " --> " + new_amrfinderplus_db.strip()
     MLST_db_updated = old_mlst + " --> " + new_mlst_db.strip()
     phx_versions = phoenix_ver + " --> " + current_phx_version.strip()
+    # If both old_tax and new_tax are empty strings, set tax_updated to empty string
+    if old_tax == "" and new_tax == "":
+        tax_updated = ""
+    else:
+        tax_updated = old_tax + " --> " + new_tax
     # Convert date to string format
     date_string = date.today().strftime('%Y-%m-%d')
     # Check if the file exists
     if os.path.exists(sample_directory + "/"+ output):
         # File exists, append a new line
         with open(output, 'a') as f:
-            f.write(date_string + "\t" + phx_versions + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\n')
+            f.write(date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\n')
     else:
         # File doesn't exist, write header and new line
         with open(output, 'w') as f:
-            f.write('Date\tPhoenix_Version\tMLST_DB\tGAMMA_DB\tAMRFINDERPLUS_DB\tAdded_GAMMA_AR_genes\tDropped/Changed_GAMMA_AR_genes\tAdded_NCBI_AR_genes\tDropped/Changed_NCBI_AR_genes\n')
-            f.write(date_string + "\t" + phx_versions + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\n')
+            f.write('Date\tPhoenix_Version\tTaxa\tMLST_DB\tGAMMA_DB\tAMRFinderPlus_DB\tAdded_GAMMA_AR_genes\tDropped/Changed_GAMMA_AR_genes\tAdded_NCBI_AR_genes\tDropped/Changed_NCBI_AR_genes\n')
+            f.write(date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\n')
+
+def compare_tax_files(old_tax_file, new_tax_file):
+    # If tax files aren't provided, return empty strings
+    if not old_tax_file or not new_tax_file:
+        return "", ""
+    # if the files are passed then get the taxa info
+    with open(new_tax_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith("G:"):
+                new_genus = line.split("\t")[1]
+            elif line.startswith("s:"):
+                new_species = line.split("\t")[1]
+    with open(old_tax_file, 'r') as f2:
+        lines = f2.readlines()
+        for line in lines:
+            if line.startswith("G:"):
+                old_genus = line.split("\t")[1]
+            elif line.startswith("s:"):
+                old_species = line.split("\t")[1]
+    old_tax = old_genus.strip() + " " + old_species.strip()
+    new_tax = new_genus.strip() + " " + new_species.strip()
+    return new_tax, old_tax
 
 def main():
     args = parseArgs()
@@ -192,7 +222,8 @@ def main():
     new_mlst_db, new_amrfinderplus_db = get_new_database_IDs(args.mlst_db, args.amrfinder_db)
     added_gamma_ar_genes, dropped_gamma_ar_genes = compare_ar_files(args.old_gamma, args.new_gamma, file_type="gamma")
     added_ncbi_ar_genes, dropped_ncbi_ar_genes = compare_ar_files(args.old_ncbi, args.new_ncbi, file_type="ncbi")
-    write_readme(old_gamma, old_mlst, old_amrfinder, args.ar_db, new_mlst_db, new_amrfinderplus_db, args.output, phoenix_ver, args.sample_directory, args.current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes)
+    new_tax, old_tax = compare_tax_files(args.old_tax, args.new_tax)
+    write_readme(old_gamma, old_mlst, old_amrfinder, args.ar_db, new_mlst_db, new_amrfinderplus_db, args.output, phoenix_ver, args.sample_directory, args.current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes, new_tax, old_tax)
 
 
 if __name__ == '__main__':

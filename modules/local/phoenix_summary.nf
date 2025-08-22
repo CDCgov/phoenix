@@ -22,7 +22,7 @@ process GATHER_SUMMARY_LINES {
     def software_versions = pipeline_info ? "--software_versions ${pipeline_info}" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
-    def updater = (params.pipeline_upper == "UPDATE_PHOENIX" || params.pipeline_upper == "CENTAR") ? "--all_samples" : ""
+    def updater = ((params.pipeline_upper == "UPDATE_PHOENIX" && params.outdir == "${launchDir}/phx_output") || params.pipeline_upper == "CENTAR") ? "--all_samples" : ""
     def output = "Phoenix_Summary.tsv" 
     """
     ${ica}Create_phoenix_summary_tsv.py --out ${output} ${updater} ${software_versions} $busco_parameter

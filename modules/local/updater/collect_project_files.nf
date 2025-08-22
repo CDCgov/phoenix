@@ -13,7 +13,7 @@ process COLLECT_PROJECT_FILES {
     tuple val(meta), path("*_old_GRiPHin.tsv"),       emit: griphin_tsv
     tuple val(meta), path("*_old_GRiPHin.xlsx"),      emit: griphin_excel
     tuple val(meta), path("Phoenix_Summary_Old.tsv"), emit: phoenix_tsv
-    tuple val(meta), path("software_versions.yml"),   emit: software_versions_file
+    tuple val(meta), path("*_software_versions.yml"), emit: software_versions_file
     path("versions.yml"),                             emit: versions
 
     script: 
@@ -25,7 +25,7 @@ process COLLECT_PROJECT_FILES {
     """
 
     if [ ! -e "software_versions.yml" ]; then
-        mv ./pipeline_info/software_versions.yml .
+        mv ./pipeline_info/software_versions.yml ${project_dir}_software_versions.yml
     fi
     #remove the "summary" part of the name so that the output can be picked up correctly in the UPDATE_GRIPHIN process
     mv *_GRiPHin_Summary.xlsx ${project_dir}_old_GRiPHin.xlsx

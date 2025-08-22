@@ -15,6 +15,7 @@ process CREATE_SUMMARY_LINE {
     path(synopsis), \
     path(taxonomy_file), \
     path(trimd_ksummary), \
+    path(wtasmbld_ksummary), \
     path(amr_report), \
     path(fastani), \
     path(shigapass)
@@ -50,6 +51,7 @@ process CREATE_SUMMARY_LINE {
         -s $synopsis \\
         -x $taxonomy_file \\
         $fastani_file \\
+        --kraken_wtasmbld ${wtasmbld_ksummary} \\
         $trim_ksummary \\
         $shigapass_file \\
         --phx_version $phx_version \\

@@ -34,10 +34,12 @@ process UPDATE_GRIPHIN {
         // Case where only two files are passed
         griphin_input = "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}"
         out_name = "${project_id}_GRiPHin_Summary"
-    } else {
+    } else if (griphins_excel.size() > 2) {
         // Case where griphins_excel contains many
         griphin_input = "--griphin_list"
         out_name = "${outdir_location}_GRiPHin_Summary"
+    } else {
+        error "The input griphins_excel must contain at least two files to combine."
     }
     def valid_samplesheet = valid_samplesheet_file ? "--samplesheet ${valid_samplesheet_file}" : ""
     def remove_dups = remove_dups_var ? "--remove_dups" : "" // When we are running species specific and updater pipelines we need to remove duplications from the original griphin reports so we can update with new data
