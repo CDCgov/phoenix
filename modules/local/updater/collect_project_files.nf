@@ -26,6 +26,8 @@ process COLLECT_PROJECT_FILES {
 
     if [ ! -e "software_versions.yml" ]; then
         mv ./pipeline_info/software_versions.yml ${project_dir}_software_versions.yml
+    else
+        mv software_versions.yml ${project_dir}_software_versions.yml
     fi
     #remove the "summary" part of the name so that the output can be picked up correctly in the UPDATE_GRIPHIN process
     mv *_GRiPHin_Summary.xlsx ${project_dir}_old_GRiPHin.xlsx

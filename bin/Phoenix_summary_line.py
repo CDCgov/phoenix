@@ -300,9 +300,12 @@ def Get_Taxa_Source(taxa_file, fastani, shigapass):
         with open(shigapass, 'r' ) as shiga_file:
             for line in shiga_file.readlines()[1:]:  # Skip the first line
                 if line.split(";")[9] == 'Not Shigella/EIEC\n':
-                    shigapass_organism = "Not Shigella/EIEC"
+                    shigapass_organism = line.split(";")[9].strip()
+                elif line.split(";")[7] == 'EIEC':
+                    shigapass_organism = line.split(";")[7].strip()
                 else:
-                    shigapass_organism = line.split(";")[7]
+                    shigapass_dict = dict([("SS", "Shigella sonnei"), ("SF1-5", "Shigella flexneri"), ("SB", "Shigella boydii"), ("SD", "Shigella dysenteriae")])
+                    shigapass_organism = shigapass_dict.get(line.split(";")[7].strip())
     else:
         shigapass_organism = ""
     return final_taxa, taxa_source, fastani_percent_match, fastani_organism, fastani_coverage, shigapass_organism

@@ -141,7 +141,7 @@ workflow CREATE_INPUT_CHANNELS {
             // get *.top_kraken_hit.txt files for MLST updating
             def trimd_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.top_kraken_hit.txt')
             //create *.top_kraken_hit.txt file channel with meta information 
-            c = Channel.fromPath(trimd_kraken_bh_glob) // use created regrex to get samples
+            filtered_trimd_kraken_bh_ch = Channel.fromPath(trimd_kraken_bh_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, ".kraken2_trimd.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
