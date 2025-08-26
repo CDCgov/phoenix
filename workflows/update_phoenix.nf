@@ -238,15 +238,41 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        checking_taxa_ch = CREATE_INPUT_CHANNELS.out.ani_best_hit.map{meta, ani_best_hit -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]} \
-            .join(CREATE_INPUT_CHANNELS.out.ani.map{                  meta, ani          -> [[id:meta.id, project_id:meta.project_id], ani ]},     by: [[0][0],[0][1]])\
-            .join(SHIGAPASS.out.summary.map{                          meta, summary      -> [[id:meta.id, project_id:meta.project_id], summary ]}, by: [[0][0],[0][1]])
+        checking_taxa_ch = CREATE_INPUT_CHANNELS.out.ani_best_hit.map{meta, ani_best_hit -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]}
+            .join(CREATE_INPUT_CHANNELS.out.ani.map{                  meta, ani          -> [[id:meta.id, project_id:meta.project_id], ani ]},      by: [[0][0],[0][1]])
+            .join(SHIGAPASS.out.summary.map{                          meta, summary      -> [[id:meta.id, project_id:meta.project_id], summary ]},  by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{             meta, taxonomy     -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}, by: [[0][0],[0][1]])
+            .filter { meta, ani_best_hit, ani, summary, taxonomy ->
+                // Apply filtering logic
+                if (taxonomy.text.contains("Shigella")) {
+                    // Extract species from s: line and check if it's in ani_best_hit second line --> confirm the species are the same
+                    def species = taxonomy.text.find(/(?m)^s:\t([^\t\n]+)/) { match, group -> group }
+                    def secondLine = ani_best_hit.text.split("\n")[1]
+                    return species ? !secondLine.contains(species) : true
+                } else if (taxonomy.text.contains("Escherichia") && !summary.text.contains("EIEC")) {
+                    // If taxonomy contains "Escherichia", keep only if summary does NOT contain "Not Shigella/EIEC" or "EIEC"
+                    return false
+                } else {
+                    // For any other taxonomy, filter out (return false)
+                    return false
+                }
+            }
 
         // check shigapass and correct fastani taxa if its wrong
         CHECK_SHIGAPASS_TAXA (
             checking_taxa_ch
         )
         ch_versions = ch_versions.mix(CHECK_SHIGAPASS_TAXA.out.versions)
+
+        // If there was a change because of  assembly stats based on meta.id
+        assembly_ratios_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.map{meta, tax_file     -> [[id:meta.id], tax_file]}\
+            .join(CREATE_INPUT_CHANNELS.out.quast_report.map{      meta, quast_report -> [[id:meta.id], quast_report]}, by: [0])
+
+        // Calculating the assembly ratio and gather GC% stats
+        CALCULATE_ASSEMBLY_RATIO (
+            assembly_ratios_ch, params.ncbi_assembly_stats
+        )
+        ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
         ///////////////////////////////////// RUNNING AR CALLING //////////////////////////////////////
 
@@ -321,15 +347,19 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
+        //
         files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id.split('/').last(), meta, file] }
                                 .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
                                 .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
                                 .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
-                                .filter{ it -> it.size() == 4 }.map{ meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
-                                .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{    meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
-                                .join(GAMMA_AR.out.gamma.map{                    meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
-                                .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{ meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
-                                .join(AMRFINDERPLUS_RUN.out.report.map{          meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
+                                .filter{ it -> it.size() == 4 }.map{               meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
+                                .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{      meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
+                                .join(GAMMA_AR.out.gamma.map{                      meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
+                                .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{   meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
+                                .join(AMRFINDERPLUS_RUN.out.report.map{            meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
+                                .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{      meta, taxonomy    -> [[id:meta.id, project_id:meta.project_id], taxonomy]},    by: [[0][0],[0][1]])
+                                .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{meta, tax_file    -> [[id:meta.id, project_id:meta.project_id], tax_file]},    by: [[0][0],[0][1]], remainder: true) 
+                                    .map{ meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file -> [meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file ?: []] }
 
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
