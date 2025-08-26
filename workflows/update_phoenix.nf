@@ -674,7 +674,7 @@ workflow UPDATE_PHOENIX_WF {
 
                 all_summaries_ch = summaries_with_outdir_ch.map{meta, summary_lines, outdir, busco_boolean -> [[project_id:meta.project_id], meta.full_project_id, outdir, summary_lines, busco_boolean]}
                                     .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
-                                    .map{meta, full_project_id, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], outdir, summary_lines, busco_boolean, samplesheet, shigapass_var]}
+                                    .map{meta, full_project_id, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], outdir.toString(), summary_lines, busco_boolean, samplesheet, shigapass_var]}
                 ////all_summaries_ch.view { "all_summaries_ch: $it" }
                 //all_summaries_ch: [[project_id:phx_output, full_project_id:/scicomp/groups/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/shigapass/phx_output], /scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/shigapass/shiga_testing2, [/scicomp/scratch/qpk9/78/f23634f09ca6f7ae4d6ffbb3151103/2025JQ-00099_summaryline.tsv], false, /scicomp/scratch/qpk9/32/cc35ba85bc81d4df7b366c451a366e/samplesheet.valid_phx_output.csv, true]
                 
@@ -689,15 +689,16 @@ workflow UPDATE_PHOENIX_WF {
                 branched_all_summaries_ch = all_summaries_ch
                     .combine(multiple_directories_ch)
                     .branch { meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var, is_multiple -> 
-                            /*multi_dir: is_multiple == true
-                            single_dir: is_multiple == false}*/
-                        multi_dir: is_multiple == true
+                            multi_dir: is_multiple == true
+                            single_dir: is_multiple == false}
+                        /*multi_dir: is_multiple == true
                             return [meta, outdir.toString(), summary_lines, busco_boolean, samplesheet, shigapass_var]
                         single_dir: is_multiple == false
-                            return [meta, outdir.toString(), summary_lines, busco_boolean, samplesheet, shigapass_var] }
-                ////branched_all_summaries_ch.single_dir.view { "branched_all_summaries_ch.single_dir: $it" }
+                            return [meta, outdir.toString(), summary_lines, busco_boolean, samplesheet, shigapass_var] }*/
+                branched_all_summaries_ch.single_dir.view { "branched_all_summaries_ch.single_dir: $it" }
                 // branched_all_summaries_ch.single_dir: [[project_id:phx_output, full_project_id:/scicomp/groups/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/shigapass/phx_output], /scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/shigapass/shiga_testing2, [/scicomp/scratch/qpk9/23/9966df7eb9049de8b7091a38b74ede/2025JQ-00099_summaryline.tsv], false, /scicomp/scratch/qpk9/72/afa53e8e0da551be13e64d9b0a9b29/samplesheet.valid_phx_output.csv, true]
-                branched_all_summaries_ch.single_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [outdir, []]}.view { "branched_all_summaries_ch.single_dir outdir: $it" }
+                ///branched_all_summaries_ch.single_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [outdir, []]}.view { "branched_all_summaries_ch.single_dir outdir: $it" }
+                //branched_all_summaries_ch.single_dir outdir: [/scicomp/groups-pure/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/shigapass/shiga_test2, []]
 
 
                 // run griphin and publish the results
