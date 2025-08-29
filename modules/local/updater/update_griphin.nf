@@ -12,7 +12,7 @@ process UPDATE_GRIPHIN {
     val(coverage)
     path(bldb)
     val(remove_dups_var)
-    // This may need edited as all situations may not have been accounted for but if a list is used then a 'final project' name needs to be used. Typically the outdir or griphin_out folder location.
+    // This may need edited as all situations may not have been accounted for but if a list is used then a 'final project' name needs to be used. Typically, the outdir or griphin_out folder location, for species specific pipelines.
     // If only 2 are given then the name will just stay as the original name of the file.
     val(outdir_location) // Is just the name of where the file will go, different from the meta.project_id
 
@@ -29,18 +29,22 @@ process UPDATE_GRIPHIN {
     // define variables
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
-    def project_id = full_project_id.toString().split('/')[-1].replace("]","")
-    if (griphins_excel.size() == 2) {
+    def project_id = file(full_project_id).parent // only removed the last dir, but gives the full path otherwise 
+    // passing in either two files or a list of files
+    griphin_input = griphins_excel.size() == 2 ? "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}" : "--griphin_list"
+    // file name handling
+    out_name = (params.pipeline_upper == "UPDATE_PHOENIX" || griphins_excel.size() > 2) ? "${outdir_location}_GRiPHin_Summary" : "${project_id}_GRiPHin_Summary"
+    /*if (griphins_excel.size() == 2) { // if there are only two files then we aren't dealing with multi_dir situation 
         // Case where only two files are passed
         griphin_input = "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}"
-        out_name = "${project_id}_GRiPHin_Summary"
+        out_name = "${project_id}_GRiPHin_Summary" //--> not working for updater, --input with 2 dirs, gives full path name, which I ends up published wrong
     } else if (griphins_excel.size() > 2) {
         // Case where griphins_excel contains many
         griphin_input = "--griphin_list"
         out_name = "${outdir_location}_GRiPHin_Summary"
     } else {
         error "The input griphins_excel must contain at least two files to combine."
-    }
+    }*/
     def valid_samplesheet = valid_samplesheet_file ? "--samplesheet ${valid_samplesheet_file}" : ""
     def remove_dups = remove_dups_var ? "--remove_dups" : "" // When we are running species specific and updater pipelines we need to remove duplications from the original griphin reports so we can update with new data
     """

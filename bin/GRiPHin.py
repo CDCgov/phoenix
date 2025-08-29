@@ -839,7 +839,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     try:
         gc_metrics = get_gc_metrics(gc_file)
     except FileNotFoundError:
-        print("Warning: " + sample_name + "_GC_content_20230504.txt not found.")
+        print("Warning: " + sample_name + "_GC_content_*.txt not found.")
         gc_stdev = sample_gc = out_of_range_stdev = species_gc_mean = 'Unknown'
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
@@ -981,7 +981,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2
     
 
-def Get_Files(directory1, sample_name, directory2):
+def Get_Files(directory1, sample_name, directory2, updater):
     '''Create file paths to collect files from sample folder.'''
     # if there is a trailing / remove it
     directory1 = directory1.rstrip('/')
@@ -1027,15 +1027,26 @@ def Get_Files(directory1, sample_name, directory2):
     except IndexError:
         asmbld_ratio = directory1 + "/" + sample_name + "_Assembly_ratio_blank.txt"
     try:
-        gc_1 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
-        if gc_1:
-            gc = gc_1[0]
-        else:
-            gc_2 = glob.glob(directory2 + "/" + sample_name + "/" + sample_name + "_GC_content_*.txt")
-            if gc_2:
-                gc = gc_2[0]
+        if updater == False:
+            gc_1 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
+            if gc_1:
+                gc = gc_1[0]
             else:
-                gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
+                gc_2 = glob.glob(directory2 + "/" + sample_name + "/" + sample_name + "_GC_content_*.txt")
+                if gc_2:
+                    gc = gc_2[0]
+                else:
+                    gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
+        else: # if running updater then only look in directory1 since directory2 is the old run folder
+            gc_1 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
+            if gc_1:
+                gc = gc_1[0]
+            else:
+                gc_2 = glob.glob(directory1 + "/" + sample_name + "/" + sample_name + "_GC_content_*.txt")
+                if gc_2:
+                    gc = gc_2[0]
+                else:
+                    gc = directory2 + "/" + sample_name + "_GC_content_blank.txt"
     except IndexError:
         gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
     # Continue with similar pattern for remaining glob patterns
@@ -1853,7 +1864,7 @@ def main():
             directory = row[1]
             # check if species specific information is present
             data_location, parent_folder = Get_Parent_Folder(directory)
-            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2)
+            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2, args.updater)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
             QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, args.ar_db)

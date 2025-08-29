@@ -15,6 +15,7 @@ process GRIPHIN {
     val(centar_detected)
     path(bldb)
     val(filter_var) // needed for species specific entry points
+    val(dont_publish)
 
     output:
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"),                         emit: griphin_report
@@ -34,7 +35,7 @@ process GRIPHIN {
     def updater = (params.pipeline_upper == "UPDATE_PHOENIX") ? "--updater" : "" 
     //def samplesheet_command = (centar_detected && original_samplesheet) ? "--samplesheet ${original_samplesheet}" : ""
     def filter = filter_var ? "--filter_samples" : ""
-    def output_prefix = ((params.pipeline_upper == "UPDATE_PHOENIX" && params.indir == null) || (params.pipeline_upper == "CENTAR" && params.indir == null)) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
+    def output_prefix = ((dont_publish == true) || (params.pipeline_upper == "CENTAR" && params.indir == null)) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     """

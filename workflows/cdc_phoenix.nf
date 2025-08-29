@@ -616,7 +616,7 @@ workflow PHOENIX_EXQC {
         GRIPHIN (
             all_summaries_ch, 
             INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path.map{outdir -> [outdir, []]}, workflow.manifest.version, 
-            params.coverage, true, shigapass_var, centar_var, params.bldb, true
+            params.coverage, true, shigapass_var, centar_var, params.bldb, true, []
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

@@ -143,7 +143,7 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
         if parent_folder is not None:
             # Add a suffix number for each duplicate WGS_ID (starting from 1)
             df['UNI'] = df.groupby('WGS_ID').cumcount() + 1
-        if 'Parent_Folder' not in df.columns:
+        if 'Parent_Folder' not in df.columns or 'PHX_Version' not in df.columns:
             df = backwards_compatibility(df, parent_folder, file_path)
         # Use vectorized operations for speed to get UNI column
         df['UNI'] = df['Parent_Folder'] + '/' + df['Data_Location'] + '/' + df['WGS_ID']
@@ -222,7 +222,6 @@ def combine_centar(ordered_centar_df_1, centar_df_lens_1, centar_df_column_names
     centar_column_packages.append(RB_type_col)
     # Combine the centar_df_column_names lists
     return ordered_centar_df, centar_df_lens, centar_column_packages
-
 
 
 def combine_gene_dataframes(old_df, new_df):
@@ -308,7 +307,6 @@ def combine_qc_dataframes(df1_qc, df2_qc):
 
         return result
 
-
     deduped_df = (
         combined_ordered_df.groupby('WGS_ID', group_keys=False)
 #                .apply(resolve_group)
@@ -316,7 +314,6 @@ def combine_qc_dataframes(df1_qc, df2_qc):
                 .drop(columns='PHX_Version_Clean', errors='ignore')
                 .reset_index(drop=True)
     )
-
 
     # Logging as before
     if removed_unis:
@@ -488,6 +485,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
     footer_lines1 = detect_footer_lines(file_path1)
     footer_lines2 = detect_footer_lines(file_path2)
     # Read the Excel file, skipping the first row and using the second row as the header
+<<<<<<< HEAD
     try: #check that this is an excel file
         df_1 = pd.read_excel(file_path1,
             converters={'CEMB RT Crosswalk': str},
@@ -506,6 +504,25 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
         df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
+=======
+    #try: #check that this is an excel file
+    df_1 = pd.read_excel(file_path1,
+        skiprows=1,  # Skip the first header row
+        header=0,    # Use the second row as the header
+        skipfooter=footer_lines1,engine='openpyxl')
+    if 'Parent_Folder' not in df_1.columns or 'PHX_Version' not in df_1.columns:
+        df_1 = backwards_compatibility(df_1, parent_folder, file_path1)
+    #rename columns for backwards compatibility
+    df_1 = df_1.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
+    # Use vectorized operations for speed to creating UNI column
+    # Pre-compute the parent folder replacement
+    df_1['Parent_Folder'] = df_1['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
+    # Then create UNI using string formatting which is more memory efficient
+    df_1['UNI'] = df_1['Parent_Folder'] + '/' + df_1['Data_Location'] + '/' + df_1['WGS_ID'].astype(str)
+    df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
+    #except Exception as e:
+    #    raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
+>>>>>>> fd2f191 (updating updater)
     try: #check that this is an excel file
         df_2 = pd.read_excel(file_path2,
             converters={'CEMB RT Crosswalk': str},
@@ -513,7 +530,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
             header=0,    # Use the second row as the header
             skipfooter=footer_lines2,engine='openpyxl')
             #check if parent folder is present
-        if 'Parent_Folder' not in df_2.columns:
+        if 'Parent_Folder' not in df_2.columns or 'PHX_Version' not in df_2.columns:
             df_2 = backwards_compatibility(df_2, parent_folder, file_path2)
         #rename columns for backwards compatibility
         df_2 = df_2.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
@@ -660,9 +677,6 @@ def main():
     # call function from griphin script to combine all dfs
     final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), phoenix_final, args.scaffolds, True, args.bldb)
 
-    #print(list(final_df.index))
-    #print(final_df['WGS_ID'].tolist())
-    #print(final_df['UNI'].tolist())
     #check if we need to add shiga pass information
     #get other information for excel writing
     combined_df_qc_final = combined_df_qc_final.drop('UNI', axis = 1)
@@ -675,7 +689,6 @@ def main():
     #df_has_index_dupes(final_df, "Final DataFrame after dropping UNI")
     #df_has_other_dupes(final_df, 'UNI', 'Final_Dataframe after dropping UNI')
     #df_has_other_dupes(final_df, 'WGS_ID', 'Final Dataframe after dropping UNI')
-    print(output_file)
     write_to_excel(args.set_coverage, output_file, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db, phoenix_final, shiga_final, centar_final, centar_df_lens_final)
     #write tsv from excel
     convert_excel_to_tsv(output_file)

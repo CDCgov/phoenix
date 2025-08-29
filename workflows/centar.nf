@@ -199,7 +199,7 @@ workflow RUN_CENTAR {
 
         if (params.outdir != "${launchDir}/phx_output") {
             //if there are multiple dirs and and --outdir given then the will need to all be combined into one Phoenix_Summary.tsv file in the outdir 
-            collected_summaries_ch = branched_collected_summaries_ch.ungrouped.collect().map{ items ->
+            collected_summaries_grouped_ch = branched_collected_summaries_ch.ungrouped.collect().map{ items ->
                                 def grouped_items = items.collate(4)
                                 def summary_lines = []
                                 def dirs = []
@@ -209,6 +209,8 @@ workflow RUN_CENTAR {
                                 dirs.add(item[2])
                                 busco_booleans.add(item[3])}
                             return [[], summary_lines, dirs.unique(), busco_booleans.any{ it == true }]}
+
+            collected_summaries_ch = collected_summaries_ch.mix(branched_collected_summaries_ch.grouped)
         } else { 
             // Group by project and collect files within each project
             collected_summaries_ch = branched_collected_summaries_ch.ungrouped.mix(branched_collected_summaries_ch.grouped)
