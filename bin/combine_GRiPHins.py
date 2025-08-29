@@ -485,14 +485,12 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
     footer_lines1 = detect_footer_lines(file_path1)
     footer_lines2 = detect_footer_lines(file_path2)
     # Read the Excel file, skipping the first row and using the second row as the header
-<<<<<<< HEAD
     try: #check that this is an excel file
         df_1 = pd.read_excel(file_path1,
-            converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1,engine='openpyxl')
-        if 'Parent_Folder' not in df_1.columns:
+        if 'Parent_Folder' not in df_1.columns or 'PHX_Version' not in df_1.columns:
             df_1 = backwards_compatibility(df_1, parent_folder, file_path1)
         #rename columns for backwards compatibility
         df_1 = df_1.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
@@ -504,25 +502,6 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
         df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
-=======
-    #try: #check that this is an excel file
-    df_1 = pd.read_excel(file_path1,
-        skiprows=1,  # Skip the first header row
-        header=0,    # Use the second row as the header
-        skipfooter=footer_lines1,engine='openpyxl')
-    if 'Parent_Folder' not in df_1.columns or 'PHX_Version' not in df_1.columns:
-        df_1 = backwards_compatibility(df_1, parent_folder, file_path1)
-    #rename columns for backwards compatibility
-    df_1 = df_1.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
-    # Use vectorized operations for speed to creating UNI column
-    # Pre-compute the parent folder replacement
-    df_1['Parent_Folder'] = df_1['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
-    # Then create UNI using string formatting which is more memory efficient
-    df_1['UNI'] = df_1['Parent_Folder'] + '/' + df_1['Data_Location'] + '/' + df_1['WGS_ID'].astype(str)
-    df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
-    #except Exception as e:
-    #    raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
->>>>>>> fd2f191 (updating updater)
     try: #check that this is an excel file
         df_2 = pd.read_excel(file_path2,
             converters={'CEMB RT Crosswalk': str},
