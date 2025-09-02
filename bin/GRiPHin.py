@@ -58,14 +58,11 @@ CYELLOW = '\033[93m'
 CEND = '\033[0m'
 
 def print_df(df_toprint, label, all):
-    pd.set_option('display.max_rows', 200)
-    pd.set_option('display.max_columns', 500)
-    pd.set_option('display.width', 1000)
     print(label+"  ------------------------------------------------------")
     for col in df_toprint.columns.tolist():
         print(col)
     if all == True:
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000, 'display.colheader_justify', 'center', 'display.precision', 2, 'display.max_colwidth', 100):  # more options can be specified also
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.max_colwidth', None, 'display.width', 1000, 'display.colheader_justify', 'center', 'display.precision', 2):  # more options can be specified also
             print(df_toprint)
 
 def Get_Parent_Folder(directory):
