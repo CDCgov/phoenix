@@ -7,7 +7,7 @@ task phoenix {
     File?    input_assembly
     String   samplename
     String   kraken2db = "null"
-    String   pipeline = "PHOENIX"
+    String   mode = "PHOENIX"
     String   scaffold_ext = ".scaffolds.fa.gz"
     Boolean? create_ncbi_sheet = false
     Boolean? centar = false
@@ -27,9 +27,9 @@ task phoenix {
     env
 
     # Convert to lowercase using bash
-    pipeline_upper=$(echo ~{pipeline} | tr '[:lower:]' '[:upper:]')
+    mode_upper=$(echo ~{mode} | tr '[:lower:]' '[:upper:]')
 
-    if [ ${pipeline_upper} == "SRA" ] || [ ${pipeline_upper} == "CDC_SRA" ]; then
+    if [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "CDC_SRA" ]; then
       # Make sample form
       echo "~{samplename}" > sample.csv
       # Run PHoeNIx
@@ -40,7 +40,7 @@ task phoenix {
       input_file="--input_sra ../sample.csv --use_sra"
       #set scaffold as blank variable
       scaffold_ext=""
-    elif [ ${pipeline_upper} == "SCAFFOLDS" ] || [ ${pipeline_upper} == "CDC_SCAFFOLDS" ]; then
+    elif [ ${mode_upper} == "SCAFFOLDS" ] || [ ${mode_upper} == "CDC_SCAFFOLDS" ]; then
       # Make sample form
       echo "sample,assembly" > sample.csv
       echo "~{samplename},~{input_assembly}" >> sample.csv
@@ -74,7 +74,7 @@ task phoenix {
     echo $create_ncbi_sheet
     echo $centar
 
-    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --pipeline ${pipeline_upper} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
+    if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --pipeline ${mode_upper} --outdir ./phx_output --terra true $input_file --kraken2db ~{kraken2db} --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' ~{true='--centar' false='' centar} $scaffold_ext ~{true='--create_ncbi_sheet' false='' create_ncbi_sheet} --shigapass_database $shigapass_db; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
@@ -121,7 +121,7 @@ task phoenix {
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee NUM_SCAFFOLDS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee GC_PERCENT
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
-    if [ ${pipeline_upper} == "PHOENIX" ] || [ ${pipeline_upper} == "SRA" ] || [ ${pipeline_upper} == "SCAFFOLDS" ]; then
+    if [ ${mode_upper} == "PHOENIX" ] || [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee FINAL_TAXA_ID
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee TAXA_SOURCE
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_CONFIDENCE
@@ -157,7 +157,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       echo "Only run in CDC_PHOENIX pipeline" | tee BUSCO_DB
       echo "Only run in CDC_PHOENIX pipeline" | tee BUSCO
-    elif [ ${pipeline_upper} == "CDC_PHOENIX" ] || [ ${pipeline_upper} == "CDC_SRA" ] || [ ${pipeline_upper} == "CDC_SCAFFOLDS" ]; then
+    elif [ ${mode_upper} == "CDC_PHOENIX" ] || [ ${mode_upper} == "CDC_SRA" ] || [ ${mode_upper} == "CDC_SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee BUSCO
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO_DB
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee FINAL_TAXA_ID

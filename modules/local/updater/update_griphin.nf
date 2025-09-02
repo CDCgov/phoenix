@@ -33,7 +33,7 @@ process UPDATE_GRIPHIN {
     // passing in either two files or a list of files
     griphin_input = griphins_excel.size() == 2 ? "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}" : "--griphin_list"
     // file name handling
-    out_name = (params.pipeline_upper == "UPDATE_PHOENIX" || griphins_excel.size() > 2) ? "${outdir_location}_GRiPHin_Summary" : "${project_id}_GRiPHin_Summary"
+    out_name = (params.mode_upper == "UPDATE_PHOENIX" || griphins_excel.size() > 2) ? "${outdir_location}_GRiPHin_Summary" : "${project_id}_GRiPHin_Summary"
     /*if (griphins_excel.size() == 2) { // if there are only two files then we aren't dealing with multi_dir situation 
         // Case where only two files are passed
         griphin_input = "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}"

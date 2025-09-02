@@ -553,7 +553,8 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         //this means that files need to be directed to the --outdir so we need to update the dir in the channel 
-        summaries_with_outdir_ch = summaries_ch.combine(outdir_path.toList()).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
+        outdir_full_path = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
+        summaries_with_outdir_ch = summaries_ch.combine(outdir_full_path.toList()).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
 
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
