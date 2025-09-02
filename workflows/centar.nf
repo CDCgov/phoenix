@@ -199,7 +199,7 @@ workflow RUN_CENTAR {
 
         if (params.outdir != "${launchDir}/phx_output") {
             //if there are multiple dirs and and --outdir given then the will need to all be combined into one Phoenix_Summary.tsv file in the outdir 
-            collected_summaries_grouped_ch = branched_collected_summaries_ch.ungrouped.collect().map{ items ->
+            collected_summaries_ungrouped_ch = branched_collected_summaries_ch.ungrouped.collect().map{ items ->
                                 def grouped_items = items.collate(4)
                                 def summary_lines = []
                                 def dirs = []
@@ -209,8 +209,8 @@ workflow RUN_CENTAR {
                                 dirs.add(item[2])
                                 busco_booleans.add(item[3])}
                             return [[], summary_lines, dirs.unique(), busco_booleans.any{ it == true }]}
-
-            collected_summaries_ch = collected_summaries_ch.mix(branched_collected_summaries_ch.grouped)
+            //for single dirs
+            collected_summaries_ch = branched_collected_summaries_ch.grouped.mix(collected_summaries_ungrouped_ch)
         } else { 
             // Group by project and collect files within each project
             collected_summaries_ch = branched_collected_summaries_ch.ungrouped.mix(branched_collected_summaries_ch.grouped)
@@ -328,8 +328,10 @@ workflow RUN_CENTAR {
 
             // combine original griphin file with the one that was just made, the new one just created and the old one that was found in the project dir. 
             UPDATE_CENTAR_GRIPHIN (
-                update_griphin_ch.map{meta, old_griphin_excel, griphin_excel, dir -> [old_griphin_excel, griphin_excel]},
-                update_griphin_ch.map{ meta, old_excel, new_excel, directory -> meta },
+                update_griphin_ch.map{meta, old_griphin_excel, griphin_excel -> [old_griphin_excel, griphin_excel]},
+                update_griphin_ch.map{ meta, old_excel, new_excel -> meta.full_project_id },
+                //update_griphin_ch.map{meta, old_griphin_excel, griphin_excel, dir -> [old_griphin_excel, griphin_excel]},
+                //update_griphin_ch.map{ meta, old_excel, new_excel, directory -> meta.full_project_id },
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet,
                 params.coverage,
                 params.bldb,
