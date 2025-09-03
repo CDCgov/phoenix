@@ -1029,21 +1029,24 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if gc_1:
                 gc = gc_1[0]
             else:
-                gc_2 = glob.glob(directory2 + "/" + sample_name + "/" + sample_name + "_GC_content_*.txt")
+                gc_2 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
                 if gc_2:
                     gc = gc_2[0]
                 else:
                     gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
         else: # if running updater then only look in directory1 since directory2 is the old run folder
             gc_1 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
+            print(gc_1)
             if gc_1:
                 gc = gc_1[0]
             else:
-                gc_2 = glob.glob(directory1 + "/" + sample_name + "/" + sample_name + "_GC_content_*.txt")
+                gc_2 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
+                print(gc_2)
                 if gc_2:
                     gc = gc_2[0]
                 else:
                     gc = directory2 + "/" + sample_name + "_GC_content_blank.txt"
+        #print(gc)
     except IndexError:
         gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
     # Continue with similar pattern for remaining glob patterns

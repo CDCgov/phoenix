@@ -184,7 +184,7 @@ workflow CREATE_INPUT_CHANNELS {
                     def matchingFile = !gamma_ar.getName().contains(ardbDate[0][1]) ?  gamma_ar : null
                     if (gamma_ar.getName().contains(ardbDate[0][1])) {
                         def cleanedFilename = gamma_ar.toString().split('/').last().replace(".gamma", "").replace(meta.id.toString()+"_", "")
-                        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
+                        //println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
                     }
                     return [meta, matchingFile] }.filter{ meta, gamma_ar -> gamma_ar != null } // filter out the null values
 
@@ -202,7 +202,7 @@ workflow CREATE_INPUT_CHANNELS {
                     def matchingFile = !ncbi_report.getName().contains(ardbDate[0][1]) ?  ncbi_report : null
                     if (ncbi_report.getName().contains(ardbDate[0][1])) {
                         def cleanedFilename = ncbi_report.toString().split('/').last().replace("amrfinderdb_", "").replace(".tar.gz", "")
-                        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
+                        //println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
                     }
                     return [meta, matchingFile] }.filter{ meta, ncbi_report -> ncbi_report != null } // filter out the null values
 
@@ -235,7 +235,17 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob) // use created regrex to get samples
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, assembly_ratio, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, assembly_ratio, all_passed_id_channel -> [meta, assembly_ratio]} //remove all_passed_id_channel from output
+                .map{ meta, assembly_ratio, all_passed_id_channel -> [meta, assembly_ratio]} 
+                .combine(Channel.fromPath(params.zipped_sketch)).map{ meta, assembly_ratio, refdb -> 
+                def refdbdate = refdb.getName() =~ /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/
+                // Check if the single gamma file contains the extracted date
+                def matchingFile = !assembly_ratio.getName().contains(refdbdate[0][1]) ?  assembly_ratio : null
+                if (assembly_ratio.getName().contains(refdbdate[0][1])) {
+                    def cleanedFilename = assembly_ratio.toString().split('/').last().replace("_Assembly_ratio_", "").replace(".msh.xz", "")
+                    println("${orange}WARNING: ${meta.id} already had updater run with REFSEQ db date ${cleanedFilename}, ${meta.id}_Assembly_ratio_${refdbdate[0][1]}.txt will be overwritten.${reset}")
+                }
+                return [meta, matchingFile] }.filter{ meta, assembly_ratio -> assembly_ratio != null } // filter out the null values
+
 
             // get prokka files
             def prokka_gff_glob = append_to_path(params.indir.toString(),'*/annotation/*.gff')
@@ -421,7 +431,8 @@ workflow CREATE_INPUT_CHANNELS {
                                         .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
             filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
                                         .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
-            filtered_assembly_ratio_ch     = COLLECT_SAMPLE_FILES.out.assembly_ratio
+            filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.zipped_sketch))
+                                        .map{ meta, assembly_ratio, zipped_sketch -> previous_updater_check(meta, assembly_ratio, zipped_sketch, "refseq_sketch") }
             filtered_trimd_kraken_bh_ch    = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
             filtered_wtasmbld_kraken_bh_ch = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_bh
             filtered_trimmed_stats_ch      = COLLECT_SAMPLE_FILES.out.trimmed_stats
@@ -510,7 +521,7 @@ def previous_updater_check(meta, ar_file, ardb, type) {
     // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
     def orange = '\033[38;5;208m'
     def reset = '\033[0m'
-    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/ ]
+    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/, refseq_sketch: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/ ]
     def ardbDate = (ardb.getName() =~ patterns[type])[0][1] // get ar date
     def isList = ar_file instanceof List // check if the input is a list or a single file
     // Filter to keep only gamma/amrfinder files that do not contain the extracted date

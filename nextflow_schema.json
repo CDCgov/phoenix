@@ -12,10 +12,10 @@
             "description": "Define where the pipeline should find input data and save output data.",
             "required": [],
             "properties": {
-                "pipeline": {
+                "mode": {
                     "type": "string",
-                    "description": "The pipeline to run. Can be upper or lower case.",
-                    "help_text": "The pipeline to run. Can be upper or lower case. Pick one of the following pipelines: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, or UPDATE_PHOENIX.",
+                    "description": "Which entry point (aka 'mode') to run. Can be upper or lower case.",
+                    "help_text": "Which entry point to run. Can be upper or lower case. Pick one of the following modes: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, or UPDATE_PHOENIX.",
                     "fa_icon": "fas fa-keyboard",
                     "default": "PHOENIX"
                 },

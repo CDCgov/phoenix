@@ -6,7 +6,7 @@ process GATHER_SUMMARY_LINES {
     input:
     val(meta) // need for meta.full_project_id in -profile update_phoenix /species specific pipeliens for publishing
     path(summary_line_files)
-    path(outdir_path)
+    path(full_project_id) // for --mode update_phoenix and species specific pipelines for publishing location
     val(busco_val)
     val(pipeline_info) //needed for --pipeline update_phoenix
 

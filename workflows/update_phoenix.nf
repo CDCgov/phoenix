@@ -525,7 +525,7 @@ workflow UPDATE_PHOENIX_WF {
                                 dirs.add(item[2])
                                 busco_booleans.add(item[3])
                                 pipeline_infos.add(item[4])}
-                            return [[], summary_lines, dirs.unique(), busco_booleans.any{ it == true }, pipeline_infos]}
+                            return [[], summary_lines, dirs, busco_booleans.any{ it == true }, pipeline_infos]}
 
             //for single dirs
             collected_summaries_ch = branched_collected_summaries_ch.single_dir.mix(collected_summaries_multi_ch)  // take first dir/busco since they should be the same within a project
@@ -536,6 +536,7 @@ workflow UPDATE_PHOENIX_WF {
             collected_summaries_multi_ch = branched_collected_summaries_ch.multi_dir
                 .groupTuple(by: 0)  // group by meta (project_id)
                 .map{ meta, summary_lines, dirs, busco_booleans, pipeline_info -> 
+                    //def selected_summary_lines = summary_lines.size() > 1 ? summary_lines[0] : summary_lines
                     [meta, summary_lines, dirs.first().toString(), busco_booleans.any{ it == true }, pipeline_info]}  // take first dir/busco since they should be the same within a project
 
             // Group by project and collect files within each project -- single dir
@@ -545,7 +546,7 @@ workflow UPDATE_PHOENIX_WF {
         // Combining sample summaries into final report
         GATHER_SUMMARY_LINES (
             collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> meta},
-            collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> summary_lines},
+            collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> summary_lines.flatten()},
             collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> full_project_id},
             collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> busco_boolean},
             collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> pipeline_info}.map { file -> (file.text =~ /cdcgov\/phoenix: (.+)/)[0][1].trim() } // Extract the version from the pipeline_info file
@@ -654,7 +655,7 @@ workflow UPDATE_PHOENIX_WF {
                     params.coverage,
                     params.bldb,
                     true,
-                    []
+                    griphins_ch.map{ meta, old_excel, new_excel -> meta.project_id },
                 )
                 ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
@@ -708,13 +709,9 @@ workflow UPDATE_PHOENIX_WF {
                 griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphins.collect().flatten().collate(3).combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).filter{it -> it.size() >2 }
                                     .map{path_txt, griphin_excel, griphin_tsv, samplesheet -> add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet)}
 
-                griphin_reports_ch.view()
-
                 // join old and new griphins for combining
                 griphins_ch = griphin_reports_ch.map{  meta, griphin_report -> [ griphin_report ]}.collect().unique().toList().combine(outdir_full_path.toList())
                     .map{new_excel, directory -> [[project_id:directory.toString().split('/').last().replace("]", ""), full_project_id:directory.toString()], new_excel]}
-
-                griphins_ch.view()
 
                 // combine griphin files, the new one just created and the old one that was found in the project dir. 
                 UPDATE_GRIPHIN (

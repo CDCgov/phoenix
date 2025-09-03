@@ -474,7 +474,7 @@ workflow CLIA_INTERNAL {
 // Adding if/else for running on ICA
 if (params.ica==false) {
     workflow.onComplete {
-        if (params.pipeline == "CLIA") {
+        if (params.mode_upper == "CLIA") {
             println("${red}WARNING: While this pipeline is undergoing CLIA validation at CDC, other users MUST conduct their own validation of this workflow and obtain explicit approval from THEIR CLIA director before considering it CLIA certified. Using this pipeline and reporting it's results to the patient, their care provider, or placed in the patient's medical record without proper validation may violate regulatory requirements.${reset}")
         }
         if (count == 0) {
