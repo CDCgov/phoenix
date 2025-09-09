@@ -181,7 +181,7 @@ workflow SCAFFOLDS_EXQC {
         // Allow outdir to be relative
         outdir_path = Channel.fromPath(params.outdir, relative: true)
         // Allow relative paths for krakendb argument
-        kraken2_db_path  = Channel.fromPath(params.kraken2db, relative: true)
+        kraken2_db_path = Channel.fromPath(params.kraken2db, relative: true)
 
         CREATE_SCAFFOLDS_INPUT_CHANNEL (
             ch_input_indir, ch_input, ch_versions
@@ -256,7 +256,7 @@ workflow SCAFFOLDS_EXQC {
         } else {
             // passing empty channel for busco db to align with expected inputs for the module
             busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, scaffolds -> [ [id:meta.id, single_end:meta.single_end], scaffolds, []]}\
-            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
             .filter { meta, filtered_scaffolds, busco_db_path, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
             .map{ meta, filtered_scaffolds, busco_db_path, fairy_outcome -> return [meta, filtered_scaffolds, busco_db_path] }
         }

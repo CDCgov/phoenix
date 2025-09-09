@@ -191,25 +191,25 @@ workflow PHOENIX_EXTERNAL {
 
         //Combining reads with output of corruption check. By=2 is for getting R1 and R2 results
         //The mapping here is just to get things in the right bracket so we can call var[0]
-        read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0]) 
+        passed_read_stats_ch = INPUT_CHECK.out.reads.join(CORRUPTION_CHECK.out.outcome_to_edit, by: [0,0]) 
                 .join(CORRUPTION_CHECK.out.outcome_to_edit.splitCsv(strip:true, by:2).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0]]]}, by: [0,0])
                 .filter { meta, reads, fairy_outcome_to_edit, fairy_outcome -> fairy_outcome.every { it.startsWith("PASSED:") } } //if the files are not corrupt then get the read stats
                 .map{ meta, reads, fairy_outcome_to_edit, fairy_outcome -> return [meta, reads, fairy_outcome_to_edit] }
 
         //Get stats on raw reads if the reads aren't corrupted
         GET_RAW_STATS (
-            read_stats_ch, false // false says no busco is being run
+            passed_read_stats_ch, false // false says no busco is being run
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
 
         // Combining reads with output of corruption check
-        bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome_to_edit.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
+        passed_bbduk_ch = INPUT_CHECK.out.reads.join(GET_RAW_STATS.out.outcome_to_edit.splitCsv(strip:true, by:3).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0]]]}, by: [0,0])
                 .filter { meta, reads, fairy_outcome -> fairy_outcome.every { it.startsWith("PASSED:") } }
                 .map{ meta, reads, fairy_outcome -> return [meta, reads] }
 
         // Remove PhiX reads
         BBDUK (
-            bbduk_ch, params.bbdukdb
+            passed_bbduk_ch, params.bbdukdb
         )
         ch_versions = ch_versions.mix(BBDUK.out.versions)
 
@@ -237,13 +237,13 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(GET_TRIMD_STATS.out.versions)
 
         // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
-        trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome_to_edit.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
+        passed_trimd_reads_file_integrity_ch = FASTP_TRIMD.out.reads.join(GET_TRIMD_STATS.out.outcome_to_edit.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
                 .filter { meta, reads, fairy_outcome -> fairy_outcome[3] == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."} 
                 .map{ meta, reads, fairy_outcome -> return [meta, reads] }
 
         // Running Fastqc on trimmed reads
         FASTQCTRIMD (
-            trimd_reads_file_integrity_ch
+            passed_trimd_reads_file_integrity_ch
         )
         ch_versions = ch_versions.mix(FASTQCTRIMD.out.versions.first())
 
@@ -390,9 +390,25 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]} \
-            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: [0])\
+        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]}
+            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: [0])
             .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: [0])
+            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy              -> [[id:meta.id], taxonomy]}, by: [0])
+                        .filter { meta, ani_best_hit, ani, summary, taxonomy ->
+                // Apply filtering logic
+                if (taxonomy.text.contains("Shigella")) {
+                    // Extract species from s: line and check if it's in ani_best_hit second line --> confirm the species are the same
+                    def species = taxonomy.text.find(/(?m)^s:\t([^\t\n]+)/) { match, group -> group }
+                    def secondLine = ani_best_hit.text.split("\n")[1]
+                    return species ? !secondLine.contains(species) : true
+                } else if (taxonomy.text.contains("Escherichia") && !summary.text.contains("EIEC")) {
+                    // If taxonomy contains "Escherichia", keep only if summary does NOT contain "Not Shigella/EIEC" or "EIEC"
+                    return false
+                } else {
+                    // For any other taxonomy, filter out (return false)
+                    return false
+                }
+            }
 
         // check shigapass and correct fastani taxa if its wrong
         CHECK_SHIGAPASS_TAXA (
@@ -497,18 +513,19 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        line_summary_ch = GET_TRIMD_STATS.out.fastp_total_qc.map{   meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-            .join(DO_MLST.out.checked_MLSTs.map{                    meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},  by: [0])\
-            .join(GAMMA_HV.out.gamma.map{                           meta, gamma           -> [[id:meta.id], gamma]},          by: [0])\
-            .join(GAMMA_AR.out.gamma.map{                           meta, gamma           -> [[id:meta.id], gamma]},          by: [0])\
-            .join(GAMMA_PF.out.gamma.map{                           meta, gamma           -> [[id:meta.id], gamma]},          by: [0])\
-            .join(QUAST.out.report_tsv.map{                         meta, report_tsv      -> [[id:meta.id], report_tsv]},     by: [0])\
-            .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{           meta, ratio           -> [[id:meta.id], ratio]},          by: [0])\
-            .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]}, by: [0])\
-            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy        -> [[id:meta.id], taxonomy]},       by: [0])\
-            .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{              meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},  by: [0])\
-            .join(AMRFINDERPLUS_RUN.out.report.map{                 meta, report          -> [[id:meta.id], report]},         by: [0])\
-            .join(ani_best_hit_ch.map{                              meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
+        line_summary_ch = GET_TRIMD_STATS.out.fastp_total_qc.map{   meta, fastp_total_qc         -> [[id:meta.id], fastp_total_qc]}
+            .join(DO_MLST.out.checked_MLSTs.map{                    meta, checked_MLSTs          -> [[id:meta.id], checked_MLSTs]},          by: [0])
+            .join(GAMMA_HV.out.gamma.map{                           meta, gamma                  -> [[id:meta.id], gamma]},                  by: [0])
+            .join(GAMMA_AR.out.gamma.map{                           meta, gamma                  -> [[id:meta.id], gamma]},                  by: [0])
+            .join(GAMMA_PF.out.gamma.map{                           meta, gamma                  -> [[id:meta.id], gamma]},                  by: [0])
+            .join(QUAST.out.report_tsv.map{                         meta, report_tsv             -> [[id:meta.id], report_tsv]},             by: [0])
+            .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{           meta, ratio                  -> [[id:meta.id], ratio]},                  by: [0])
+            .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{meta, pipeline_stats         -> [[id:meta.id], pipeline_stats]},         by: [0])
+            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy               -> [[id:meta.id], taxonomy]},               by: [0])
+            .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{              meta, k2_trimd_bh_summary    -> [[id:meta.id], k2_trimd_bh_summary]},    by: [0])
+            .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{           meta, k2_wtasmbld_bh_summary -> [[id:meta.id], k2_wtasmbld_bh_summary]}, by: [0])
+            .join(AMRFINDERPLUS_RUN.out.report.map{                 meta, report                 -> [[id:meta.id], report]},                 by: [0])
+            .join(ani_best_hit_ch.map{                              meta, ani_best_hit           -> [[id:meta.id], ani_best_hit]},           by: [0])
             //.join(FASTANI.out.ani.map{                              meta, ani             -> [[id:meta.id], ani]},            by: [0])  // Not needed for the process, but adding to force completion of these steps before advancing.
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
@@ -578,12 +595,56 @@ workflow PHOENIX_EXTERNAL {
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
 
+        fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
+
+        //create GRiPHin report channel
+        griphin_inputs_ch = Channel.empty()
+            .mix(
+                GET_TRIMD_STATS.out.fastp_total_qc,
+                GET_RAW_STATS.out.combined_raw_stats,
+                KRAKEN2_TRIMD.out.k2_bh_summary,
+                KRAKEN2_TRIMD.out.report,
+                KRAKEN2_WTASMBLD.out.k2_bh_summary,
+                KRAKEN2_WTASMBLD.out.report,
+                QUAST.out.report_tsv,
+                fairy_files_ch,
+                DO_MLST.out.checked_MLSTs,
+                CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta -> [meta[0]] },
+                CALCULATE_ASSEMBLY_RATIO.out.ratio,
+                CALCULATE_ASSEMBLY_RATIO.out.gc_content,
+                GAMMA_AR.out.gamma,
+                GAMMA_PF.out.gamma,
+                GAMMA_HV.out.gamma,
+                CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta -> [meta[0]] },
+                GENERATE_PIPELINE_STATS_WF.out.pipeline_stats,
+                SHIGAPASS.out.summary
+            )
+            .groupTuple()
+            .map { meta, files ->
+                [
+                    meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
+                    files: files
+                ]
+            }
+
         //create GRiPHin report
+        GRIPHIN (
+            params.ardb,
+            INPUT_CHECK.out.valid_samplesheet,
+            griphin_inputs_ch.map { it.meta }.collect(),
+            griphin_inputs_ch.map { it.files }.collect(),
+            outdir_path,
+            workflow.manifest.version,
+            params.coverage, false, shigapass_var, centar_var, params.bldb, false, false
+        )
+        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
+
+        /*/create GRiPHin report
         GRIPHIN (
             all_summaries_ch, INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path.map{outdir -> [outdir, []]}, workflow.manifest.version, 
             params.coverage, false, shigapass_var, centar_var, params.bldb, true, []
         )
-        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
+        ch_versions = ch_versions.mix(GRIPHIN.out.versions)*/
 
         if (ncbi_excel_creation == true && params.create_ncbi_sheet == true) {
             // requiring files so that this process doesn't start until needed files are made. 

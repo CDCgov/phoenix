@@ -4,10 +4,11 @@ process GRIPHIN {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    path(summary_line_files)
-    path(original_samplesheet)
     path(db)
-    tuple path(outdir), path(dir2) // output directory used as prefix for the summary file, dir2 is the location of original input folder (need for update_phoenix when multi dirs are given in --input )
+    path(original_samplesheet)
+    val(metas)
+    path(griphin_files) // path to the GRiPHin files, which includes the staged directory
+    path(outdir) //output directory used as prefix for the summary file
     val(phx_version)
     val(coverage)
     val(entry)
@@ -21,7 +22,7 @@ process GRIPHIN {
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"),                         emit: griphin_report
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), path("*_GRiPHin*.tsv"), emit: griphins
     path("*_GRiPHin*.tsv"),                                                            emit: griphin_tsv_report
-    path("Directory_samplesheet.csv"),          optional:true,                         emit: converted_samplesheet //the only time this isn't made is with --centar with --samplesheet
+    path("Directory_samplesheet.csv"), optional:true,                                  emit: converted_samplesheet //the only time this isn't made is with --centar with --samplesheet
     path("versions.yml"),                                                              emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
@@ -38,7 +39,15 @@ process GRIPHIN {
     def output_prefix = ((dont_publish == true) || (params.mode_upper == "CENTAR" && params.indir == null)) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def prefix = task.ext.prefix ?: "GRiPHin"
+    def stage_files = [
+        metas.collect { "mkdir -p ${prefix}/${it.id}" },
+        metas.collect { "mv ${it.filenames.join(' ')} ${prefix}/${it.id}" }
+    ].flatten().join(" && ")
     """
+    ${stage_files}
+
+    # Get full path to outdir for parent folder and data location columns in griphin
     full_path=\$(readlink -f ${outdir})
 
     # Save the full_path to a file (this file will be captured in the output block)

@@ -825,7 +825,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     except FileNotFoundError:
         if phoenix_entry == False: # suppress warning when busco is not run
             print("Warning: short_summary.specific." + sample_name + ".filtered.scaffolds.fa.txt not found.")
-        lineage = percent_busco = 'Unknown'
+        lineage = percent_busco = "File not found"
         busco_metrics = [lineage, percent_busco]
     try:
         assembly_ratio_metrics = get_assembly_ratio(asmbld_ratio, tax_file)
@@ -986,21 +986,21 @@ def Get_Files(directory1, sample_name, directory2, updater):
     directory2 = directory2.rstrip('/')
     #print("Directory 2: " + directory2)
     # create file names
-    trim_stats = try_paths( directory1 + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt", directory2 + "/" + sample_name + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt" )
-    raw_stats = try_paths( directory1 + "/raw_stats/" + sample_name + "_raw_read_counts.txt", directory2 + "/" + sample_name + "/raw_stats/" + sample_name + "_raw_read_counts.txt" )
-    kraken_trim = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt" )
-    kraken_trim_report = try_paths( directory1 + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt" )
-    kraken_wtasmbld = try_paths( directory1 + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt" )
-    kraken_wtasmbld_report = try_paths( directory1 + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt" )
-    quast_report = try_paths( directory1 + "/quast/" + sample_name + "_summary.tsv", directory2 + "/" + sample_name + "/quast/" + sample_name + "_summary.tsv" )
-    mlst_file = try_paths( directory1 + "/mlst/" + sample_name + "_combined.tsv", directory2 + "/" + sample_name + "/mlst/" + sample_name + "_combined.tsv" )
+    trim_stats = try_paths( directory1 + "/" + sample_name + "_trimmed_read_counts.txt", directory2 + "/" + sample_name + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt" )
+    raw_stats = try_paths( directory1 + "/" + sample_name + "_raw_read_counts.txt", directory2 + "/" + sample_name + "/raw_stats/" + sample_name + "_raw_read_counts.txt" )
+    kraken_trim = try_paths( directory1 + "/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt" )
+    kraken_trim_report = try_paths( directory1 + "/" + sample_name + ".kraken2_trimd.summary.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt" )
+    kraken_wtasmbld = try_paths( directory1 + "/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt" )
+    kraken_wtasmbld_report = try_paths( directory1 + "/" + sample_name + ".kraken2_wtasmbld.summary.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt" )
+    quast_report = try_paths( directory1 + "/" + sample_name + "_summary.tsv", directory2 + "/" + sample_name + "/quast/" + sample_name + "_summary.tsv" )
+    mlst_file = try_paths( directory1 + "/" + sample_name + "_combined.tsv", directory2 + "/" + sample_name + "/mlst/" + sample_name + "_combined.tsv" )
     # For glob patterns, try both directories
-    fairy_file_1 = glob.glob(directory1 + "/file_integrity/" + sample_name + "_*_summary.txt")
+    fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "_*_summary.txt")
     fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "_*_summary.txt")
     fairy_file = fairy_file_1 if fairy_file_1 else fairy_file_2
     # For the remaining glob patterns, handle with try-except but attempt both directories
     try:
-        busco_short_summary_1 = glob.glob(directory1 + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
+        busco_short_summary_1 = glob.glob(directory1 + "short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
         if busco_short_summary_1:
             busco_short_summary = busco_short_summary_1[0]
         else:
@@ -1008,9 +1008,9 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if busco_short_summary_2:
                 busco_short_summary = busco_short_summary_2[0]
             else:
-                busco_short_summary = directory1 + "/BUSCO/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+                busco_short_summary = directory1 + "short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     except IndexError:
-        busco_short_summary = directory1 + "/BUSCO/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+        busco_short_summary = directory1 + "short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     try:
         asmbld_ratio_1 = glob.glob(directory1 + "/" + sample_name + "_Assembly_ratio_*.txt")
         if asmbld_ratio_1:
@@ -1036,22 +1036,19 @@ def Get_Files(directory1, sample_name, directory2, updater):
                     gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
         else: # if running updater then only look in directory1 since directory2 is the old run folder
             gc_1 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
-            print(gc_1)
             if gc_1:
                 gc = gc_1[0]
             else:
                 gc_2 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
-                print(gc_2)
                 if gc_2:
                     gc = gc_2[0]
                 else:
                     gc = directory2 + "/" + sample_name + "_GC_content_blank.txt"
-        #print(gc)
     except IndexError:
         gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
     # Continue with similar pattern for remaining glob patterns
     try:
-        gamma_ar_file_1 = glob.glob(directory1 + "/gamma_ar/" + sample_name + "_*.gamma")
+        gamma_ar_file_1 = glob.glob(directory1 + "/" + sample_name + "_ResGANNCBI_*.gamma")
         if gamma_ar_file_1:
             gamma_ar_file = gamma_ar_file_1[0]
         else:
@@ -1059,12 +1056,12 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if gamma_ar_file_2:
                 gamma_ar_file = gamma_ar_file_2[0]
             else:
-                gamma_ar_file = directory1 + "/gamma_ar/" + sample_name + "_blank.gamma"
+                gamma_ar_file = directory1 + "/" + sample_name + "_ResGANNCBI_blank.gamma"
     except IndexError:
-        gamma_ar_file = directory1 + "/gamma_ar/" + sample_name + "_blank.gamma"
+        gamma_ar_file = directory1 + "/" + sample_name + "_ResGANNCBI_blank.gamma"
     # Apply the same pattern for the remaining files
     try:
-        gamma_pf_file_1 = glob.glob(directory1 + "/gamma_pf/" + sample_name + "_*.gamma")
+        gamma_pf_file_1 = glob.glob(directory1 + "/" + sample_name + "*_PF-Replicons_*.gamma")
         if gamma_pf_file_1:
             gamma_pf_file = gamma_pf_file_1[0]
         else:
@@ -1072,11 +1069,11 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if gamma_pf_file_2:
                 gamma_pf_file = gamma_pf_file_2[0]
             else:
-                gamma_pf_file = directory1 + "/gamma_pf/" + sample_name + "_blank.gamma"
+                gamma_pf_file = directory1  + sample_name + "_PF-Replicons_blank.gamma"
     except IndexError:
-        gamma_pf_file = directory1 + "/gamma_pf/" + sample_name + "_blank.gamma"
+        gamma_pf_file = directory1 + "/" + sample_name + "_PF-Replicons_blank.gamma"
     try: 
-        gamma_hv_file_1 = glob.glob(directory1 + "/gamma_hv/" + sample_name + "_*.gamma")
+        gamma_hv_file_1 = glob.glob(directory1 + "/" + sample_name + "_HyperVirulence_*.gamma")
         if gamma_hv_file_1:
             gamma_hv_file = gamma_hv_file_1[0]
         else:
@@ -1084,11 +1081,11 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if gamma_hv_file_2:
                 gamma_hv_file = gamma_hv_file_2[0]
             else:
-                gamma_hv_file = directory1 + "/gamma_hv/" + sample_name + "_blank.gamma"
+                gamma_hv_file = directory1 + "/" + sample_name + "_HyperVirulence_blank.gamma"
     except IndexError:
-        gamma_hv_file = directory1 + "/gamma_hv/" + sample_name + "_blank.gamma"
+        gamma_hv_file = directory1 + "/" + sample_name + "_HyperVirulence_blank.gamma"
     try:
-        fast_ani_file_1 = glob.glob(directory1 + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")
+        fast_ani_file_1 = glob.glob(directory1 + "/" + sample_name + "_REFSEQ_*.fastANI.txt")
         if fast_ani_file_1:
             fast_ani_file = fast_ani_file_1[0]
         else:
@@ -1096,13 +1093,13 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if fast_ani_file_2:
                 fast_ani_file = fast_ani_file_2[0]
             else:
-                fast_ani_file = directory1  + "/ANI/" + sample_name + ".fastANI.txt"
+                fast_ani_file = directory1 + "/" + sample_name + ".fastANI.txt"
     except IndexError:
-        fast_ani_file = directory1 + "/ANI/" + sample_name + ".fastANI.txt"
+        fast_ani_file = directory1 + "/" + sample_name + ".fastANI.txt"
     # For regular paths, use the try_paths function
-    tax_file = try_paths(  directory1 + "/" + sample_name + ".tax", directory2 + "/" + sample_name + "/" + sample_name + ".tax")
+    tax_file = try_paths( directory1 + "/" + sample_name + ".tax", directory2 + "/" + sample_name + "/" + sample_name + ".tax")
     try:
-        srst2_file_1 = glob.glob(directory1 + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")
+        srst2_file_1 = glob.glob(directory1 + "/" + sample_name + "__fullgenes__*_srst2__results.txt")
         if srst2_file_1:
             srst2_file = srst2_file_1[0]
         else:
@@ -1110,9 +1107,9 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if srst2_file_2:
                 srst2_file = srst2_file_2[0]
             else:
-                srst2_file = directory1 + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
+                srst2_file = directory1 + "/" + sample_name + "__fullgenes__blank_srst2__results.txt"
     except IndexError:
-        srst2_file = directory1 + "/srst2/" + sample_name + "__fullgenes__blank_srst2__results.txt"
+        srst2_file = directory1 + "/" + sample_name + "__fullgenes__blank_srst2__results.txt"
 
     return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
@@ -1731,13 +1728,13 @@ def create_samplesheet(input_directory, scaffolds_entry):
     directory = os.path.abspath(input_directory) # make sure we have an absolute path to start with
     with open("Directory_samplesheet.csv", "w") as samplesheet:
         samplesheet.write('sample,directory\n')
-    dirs = sorted(os.listdir(input_directory))
-    # Filter directories based on the presence of *_1.trim.fastq.gz files
-    valid_directories = [ directory for directory in dirs if glob.glob(os.path.join(input_directory, directory, "*_summaryline.tsv")) ]
-    files_glob = "*_summaryline.tsv"
+    dirs = sorted(os.listdir("GRiPHin"))
+    # Filter directories based on the presence of required files
+    valid_directories = [ directory for directory in dirs if (glob.glob(os.path.join("GRiPHin", directory, "*_summary.txt")))]
+    #files_glob = "*_summaryline.tsv"
     # Identify and warn about excluded directories
     excluded_dirs = [excluded_dir for excluded_dir in dirs if excluded_dir not in valid_directories]
-    print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no '{files_glob}' files weren't found in these locations.\033[0m\n")
+    print(f"\n\033[93m Warning: The following directories '{excluded_dirs}' were excluded from analysis because no fairy files were found in these locations.\033[0m\n")
     try: #if there are numbers in the name then use that to sort
         dirs_sorted=sorted(valid_directories, key=lambda x: int("".join([i for i in x if i.isdigit()])))
     except: #if no numbers then use only alphabetically
@@ -1856,14 +1853,14 @@ def main():
             print("\n\033[93m Warning: The following sample(s) are not in samplesheet and were filtered out of reporting in griphin: {}\033[0m\n".format(list(set(filtered_out_samples) - set(samples_to_run))))
         for row in csv_rows:
             sample_name = row[0]
-            if args.updater == True:
+            #if args.updater == True:
                 # If updater is true then we need to get the second directory for updater
-                directory2 = get_second_dir(args.samplesheet, sample_name)
-            else:
-                directory2 = ""
-            directory = row[1]
+            #    directory2 = get_second_dir(args.samplesheet, sample_name)
+            #else:
+            directory2 = row[1]
+            directory = "./GRiPHin/" + sample_name + "/" # all samples should be in this directory
             # check if species specific information is present
-            data_location, parent_folder = Get_Parent_Folder(directory)
+            data_location, parent_folder = Get_Parent_Folder(directory2)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2, args.updater)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \

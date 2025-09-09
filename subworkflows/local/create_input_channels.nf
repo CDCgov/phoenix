@@ -122,6 +122,15 @@ workflow CREATE_INPUT_CHANNELS {
                 .combine(all_passed_id_channel).filter{ meta, scaffolds, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} // Filter other channels based on meta.id
                 .map{ meta, scaffolds, all_passed_id_channel -> [meta, scaffolds]} //remove all_passed_id_channel from output
 
+            // Get renamed scaffolds
+            def renamed_scaffolds_glob = append_to_path(params.indir.toString(),'*/assembly/*.renamed.scaffolds.fa.gz')
+            //create scaffolds channel with meta information -- annoying, but you have to keep this in the brackets instead of having it once outside.
+            renamed_scaffolds_ch = Channel.fromPath(renamed_scaffolds_glob).map{ it -> create_meta(it, ".renamed.scaffolds.fa.gz", params.indir.toString(),false)} // use created regrex to get samples
+            // Checking regrex has correct extension
+            filtered_renamed_scaffolds_ch = renamed_scaffolds_ch.map{ it -> check_scaffolds(it) } // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, renamed_scaffolds, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} // Filter other channels based on meta.id
+                .map{ meta, renamed_scaffolds, all_passed_id_channel -> [meta, renamed_scaffolds]} //remove all_passed_id_channel from output
+
             // get .tax files for MLST updating
             def taxa_glob = append_to_path(params.indir.toString(),'*/*.tax')
             //create .tax file channel with meta information 
@@ -129,6 +138,14 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta(it, ".tax", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, taxa, all_passed_id_channel-> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, taxa, all_passed_id_channel -> [meta, taxa]} //remove all_passed_id_channel from output
+
+            // get _raw_read_counts.txt files
+            def raw_stats_glob = append_to_path(params.indir.toString(),'*/raw_stats/*_raw_read_counts.txt')
+            //create .tax file channel with meta information 
+            filtered_raw_stats_ch = Channel.fromPath(raw_stats_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_raw_read_counts.txt", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, raw_stats, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, raw_stats, all_passed_id_channel -> [meta, raw_stats]} //remove all_passed_id_channel from output
 
             // get .tax files for MLST updating
             def trimmed_stats_glob = append_to_path(params.indir.toString(),'*/qc_stats/*_trimmed_read_counts.txt')
@@ -146,6 +163,22 @@ workflow CREATE_INPUT_CHANNELS {
                 .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
 
+            // get *.summary.txt files
+            def trimd_kraken_report_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.summary.txt')
+            //create *.summary.txt file channel with meta information 
+            filtered_trimd_kraken_report_ch = Channel.fromPath(trimd_kraken_report_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, ".kraken2_trimd.summary.txt", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, kraken_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, kraken_report, all_passed_id_channel -> [meta, kraken_report]} //remove all_passed_id_channel from output
+
+            // get *_trimd.html files
+            def trimd_kraken_krona_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/krona/*_trimd.html')
+            //create *_trimd.html file channel with meta information 
+            filtered_trimd_krona_ch = Channel.fromPath(trimd_kraken_krona_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_trimd.html", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, krona, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, krona, all_passed_id_channel -> [meta, krona]} //remove all_passed_id_channel from output
+
             // get *.top_kraken_hit.txt 
             def wtasmbld_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.top_kraken_hit.txt')
             //create *.top_kraken_hit.txt file channel with meta information 
@@ -153,6 +186,22 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta(it, ".kraken2_wtasmbld.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
+
+            // get *.summary.txt files
+            def wtasmbld_kraken_report_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.summary.txt')
+            //create *.summary.txt file channel with meta information 
+            filtered_wtasmbld_kraken_report_ch = Channel.fromPath(wtasmbld_kraken_report_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, ".kraken2_wtasmbld.summary.txt", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, kraken_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, kraken_report, all_passed_id_channel -> [meta, kraken_report]} //remove all_passed_id_channel from output
+        
+            // get *_wtasmbld.html files
+            def wtasmbld_kraken_krona_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/krona/*_wtasmbld.html')
+            //create *_wtasmbld.html file channel with meta information 
+            filtered_wtasmbld_krona_ch = Channel.fromPath(wtasmbld_kraken_krona_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_wtasmbld.html", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, krona, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, krona, all_passed_id_channel -> [meta, krona]} //remove all_passed_id_channel from output
 
             // get .gamma files for gamma HV updating
             def gamma_hv_glob = append_to_path(params.indir.toString(),'*/gamma_hv/*.gamma')
@@ -231,7 +280,7 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ meta, ani_best_hit, all_passed_id_channel -> [meta, ani_best_hit]} //remove all_passed_id_channel from output
 
             def assembly_ratio_glob = append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
-            //create .tax file channel with meta information 
+            //create _Assembly_ratio_*.txt file channel with meta information 
             filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob) // use created regrex to get samples
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, assembly_ratio, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
@@ -246,6 +295,21 @@ workflow CREATE_INPUT_CHANNELS {
                 }
                 return [meta, matchingFile] }.filter{ meta, assembly_ratio -> assembly_ratio != null } // filter out the null values
 
+            def gc_content_glob = append_to_path(params.indir.toString(),'*/*_GC_content_*.txt')
+            //create _GC_content_*.txt file channel with meta information 
+            filtered_gc_content_ch = Channel.fromPath(gc_content_glob) // use created regrex to get samples
+                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, gc_content, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, gc_content, all_passed_id_channel -> [meta, gc_content]} 
+                .combine(Channel.fromPath(params.zipped_sketch)).map{ meta, gc_content, refdb -> 
+                def refdbdate = refdb.getName() =~ /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/
+                // Check if the single gamma file contains the extracted date
+                def matchingFile = !gc_content.getName().contains(refdbdate[0][1]) ?  gc_content : null
+                if (gc_content.getName().contains(refdbdate[0][1])) {
+                    def cleanedFilename = gc_content.toString().split('/').last().replace("_GC_content_", "").replace(".msh.xz", "")
+                    println("${orange}WARNING: ${meta.id} already had updater run with REFSEQ db date ${cleanedFilename}, ${meta.id}_GC_content_${refdbdate[0][1]}.txt will be overwritten.${reset}")
+                }
+                return [meta, matchingFile] }.filter{ meta, gc_content -> gc_content != null } // filter out the null values
 
             // get prokka files
             def prokka_gff_glob = append_to_path(params.indir.toString(),'*/annotation/*.gff')
@@ -419,27 +483,35 @@ workflow CREATE_INPUT_CHANNELS {
             //combine reads to get into one channel
             combined_reads_ch = COLLECT_SAMPLE_FILES.out.read1.join(COLLECT_SAMPLE_FILES.out.read2, by: [0]).map{ meta, read1, read2 -> [meta, [read1, read2]]}
             // get other files
-            filtered_scaffolds_ch = COLLECT_SAMPLE_FILES.out.scaffolds
-            filtered_gff_ch       = COLLECT_SAMPLE_FILES.out.gff
-            filtered_faa_ch       = COLLECT_SAMPLE_FILES.out.faa
-            line_summary_ch       = COLLECT_SAMPLE_FILES.out.summary_line
-            filtered_synopsis_ch  = COLLECT_SAMPLE_FILES.out.synopsis
-            filtered_taxonomy_ch  = COLLECT_SAMPLE_FILES.out.tax
-            filtered_gamma_pf_ch  = COLLECT_SAMPLE_FILES.out.gamma_pf
-            filtered_gamma_hv_ch  = COLLECT_SAMPLE_FILES.out.gamma_hv
+            filtered_renamed_scaffolds_ch = COLLECT_SAMPLE_FILES.out.renamed_scaffolds
+            filtered_scaffolds_ch         = COLLECT_SAMPLE_FILES.out.scaffolds
+            filtered_gff_ch               = COLLECT_SAMPLE_FILES.out.gff
+            filtered_faa_ch               = COLLECT_SAMPLE_FILES.out.faa
+            line_summary_ch               = COLLECT_SAMPLE_FILES.out.summary_line
+            filtered_synopsis_ch          = COLLECT_SAMPLE_FILES.out.synopsis
+            filtered_taxonomy_ch          = COLLECT_SAMPLE_FILES.out.tax
+            filtered_gamma_pf_ch          = COLLECT_SAMPLE_FILES.out.gamma_pf
+            filtered_gamma_hv_ch          = COLLECT_SAMPLE_FILES.out.gamma_hv
             filtered_gamma_ar_ch  = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
                                         .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
             filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
                                         .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
             filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.zipped_sketch))
                                         .map{ meta, assembly_ratio, zipped_sketch -> previous_updater_check(meta, assembly_ratio, zipped_sketch, "refseq_sketch") }
-            filtered_trimd_kraken_bh_ch    = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
-            filtered_wtasmbld_kraken_bh_ch = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_bh
-            filtered_trimmed_stats_ch      = COLLECT_SAMPLE_FILES.out.trimmed_stats
-            filtered_quast_ch              = COLLECT_SAMPLE_FILES.out.quast_report
-            filtered_ani_ch                = COLLECT_SAMPLE_FILES.out.ani
-            filtered_ani_best_hit_ch       = COLLECT_SAMPLE_FILES.out.ani_best_hit
-            filtered_combined_mlst_ch      = COLLECT_SAMPLE_FILES.out.combined_mlst
+            filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.zipped_sketch))
+                                        .map{ meta, gc_content, zipped_sketch -> previous_updater_check(meta, gc_content, zipped_sketch, "refseq_sketch") }
+            filtered_trimd_kraken_bh_ch        = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
+            filtered_trimd_krona_ch         = COLLECT_SAMPLE_FILES.out.trimd_kraken_krona
+            filtered_trimd_kraken_report_ch    = COLLECT_SAMPLE_FILES.out.trimd_kraken_report
+            filtered_wtasmbld_kraken_bh_ch     = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_bh
+            filtered_wtasmbld_krona_ch         = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_krona
+            filtered_wtasmbld_kraken_report_ch = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_report
+            filtered_trimmed_stats_ch          = COLLECT_SAMPLE_FILES.out.trimmed_stats
+            filtered_raw_stats_ch              = COLLECT_SAMPLE_FILES.out.raw_stats
+            filtered_quast_ch                  = COLLECT_SAMPLE_FILES.out.quast_report
+            filtered_ani_ch                    = COLLECT_SAMPLE_FILES.out.ani
+            filtered_ani_best_hit_ch           = COLLECT_SAMPLE_FILES.out.ani_best_hit
+            filtered_combined_mlst_ch          = COLLECT_SAMPLE_FILES.out.combined_mlst
 
             //species specific files
             shigapass_files_ch = COLLECT_SAMPLE_FILES.out.shigapass_output
@@ -488,6 +560,7 @@ workflow CREATE_INPUT_CHANNELS {
         samplesheet_meta_ch = samplesheet_meta_ch
 
         // sample specific files
+        renamed_scaffolds      = filtered_renamed_scaffolds_ch
         filtered_scaffolds     = filtered_scaffolds_ch      // channel: [ meta, [ scaffolds_file ] ]
         reads                  = combined_reads_ch
         taxonomy               = filtered_taxonomy_ch
@@ -503,9 +576,15 @@ workflow CREATE_INPUT_CHANNELS {
         gamma_pf               = filtered_gamma_pf_ch
         gamma_hv               = filtered_gamma_hv_ch
         assembly_ratio         = filtered_assembly_ratio_ch
+        gc_content             = filtered_gc_content_ch
         k2_trimd_bh_summary    = filtered_trimd_kraken_bh_ch
+        k2_trimd_krona         = filtered_trimd_krona_ch
+        k2_trimd_report        = filtered_trimd_kraken_report_ch
         k2_wtasmbld_bh_summary = filtered_wtasmbld_kraken_bh_ch
+        k2_wtasmbld_krona      = filtered_wtasmbld_krona_ch
+        k2_wtasmbld_report     = filtered_wtasmbld_kraken_report_ch
         fastp_total_qc         = filtered_trimmed_stats_ch
+        raw_stats              = filtered_raw_stats_ch
         quast_report           = filtered_quast_ch
         combined_mlst          = filtered_combined_mlst_ch // for centar entry
 

@@ -104,7 +104,7 @@ def create_centar_combined_df(directory1, sample_name, directory2):
     # if there is a trailing / remove it
     directory1 = directory1.rstrip('/')
     # create file names
-    centar_summary = try_paths( directory1 + "/CENTAR/" + sample_name + "_centar_output.tsv", directory2 + "/" + sample_name + "/CENTAR/" + sample_name + "_centar_output.tsv" )
+    centar_summary = try_paths( directory1 + "/" + sample_name + "_centar_output.tsv", directory2 + "/" + sample_name + "/CENTAR/" + sample_name + "_centar_output.tsv" )
     #clean up the dataframe
     try: # handling for samples that failed and didn't get centar files created
 #        centar_df = pd.read_csv(centar_summary, sep='\t', header=0)
@@ -143,7 +143,7 @@ def create_shiga_df(directory1, sample_name, shiga_df, taxa, directory2):
     directory1   = directory1.rstrip('/')
     if "Escherichia" in taxa or "Shigella" in taxa:
         # create file names
-        shiga_summary = try_paths( directory1 + "/ANI/" + sample_name + "_ShigaPass_summary.csv", directory2 + "/" + sample_name + "/ANI/" + sample_name + "_ShigaPass_summary.csv" )
+        shiga_summary = try_paths( directory1 + "/" + sample_name + "_ShigaPass_summary.csv", directory2 + "/" + sample_name + "/ANI/" + sample_name + "_ShigaPass_summary.csv" )
         # Create a dictionary to store row information
         row_data = { "WGS_ID": sample_name, "ShigaPass_Organism": ""}
         try:

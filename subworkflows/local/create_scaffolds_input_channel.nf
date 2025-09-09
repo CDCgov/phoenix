@@ -28,7 +28,7 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
                     .filter( it -> !(it =~ 'renamed') ) // remove samples that are *.renamed.scaffolds.fa.gz
                     .filter( it -> !(it =~ 'contig') ) // remove samples that are *.contigs.fa.gz
                     .map{ it -> create_meta(it, params.scaffolds_ext.toString())} // create meta for sample
-                scaffolds_ch.view()
+
                 // Checking regrex has correct extension
                 scaffolds_ch.collect().map{ it -> check_scaffolds(it) }
             } else {
