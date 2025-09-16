@@ -340,9 +340,34 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]} \
+/*        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]} \
             .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: [0])\
             .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: [0])
+*/
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]}
+            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: 0)
+            .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: 0)
+            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy              -> [[id:meta.id], taxonomy]}, by: 0)
+                        .filter { meta, ani_best_hit, ani, summary, taxonomy ->
+                // Apply filtering logic
+                if (taxonomy.text.contains("Shigella")) {
+                    // Extract species from s: line and check if it's in ani_best_hit second line --> confirm the species are the same
+                    def species = taxonomy.text.find(/(?m)^s:\t([^\t\n]+)/) { match, group -> group }
+                    def secondLine = ani_best_hit.text.split("\n")[1]
+                    return species ? !secondLine.contains(species) : true
+                } else if (taxonomy.text.contains("Escherichia")) {
+                    if (!summary.text.contains("EIEC")) {
+                        // If taxonomy contains "Escherichia", keep only if summary does NOT contain "Not Shigella/EIEC" or "EIEC"
+                        return true
+                    } else {
+                        return false
+                    }
+                } else {
+                    // For any other taxonomy, filter out (return false)
+                    return false
+                }
+            }
 
         // check shigapass and correct fastani taxa if its wrong
         CHECK_SHIGAPASS_TAXA (
@@ -421,8 +446,45 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
+        // Find the best taxa and ani sources depending on if shigapass was run and if it changed the taxa
+        def tax_preferred = CHECK_SHIGAPASS_TAXA.out.tax_file.map { m, f -> tuple(m, 0, f) }
+        def tax_fallback  = DETERMINE_TAXA_ID.out.taxonomy.map  { m, f -> tuple(m, 1, f) }
+
+        def ani_preferred = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.map { m, f -> tuple(m, 0, f) }
+        def ani_fallback  = FORMAT_ANI.out.ani_best_hit.map  { m, f -> tuple(m, 1, f) }
+
+        CHECK_SHIGAPASS_TAXA.out.tax_file.view      { m, f -> "TAX_PREF >>> ${m.id ?: m} | ${f?.name ?: f}" }
+        DETERMINE_TAXA_ID.out.taxonomy.view         { m, f -> "TAX_FALL >>> ${m.id ?: m} | ${f?.name ?: f}" }
+
+        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.view  { m, f -> "ANI_PREF >>> ${m.id ?: m} | ${f?.name ?: f}" }
+        FORMAT_ANI.out.ani_best_hit.view            { m, f -> "ANI_FALL >>> ${m.id ?: m} | ${f?.name ?: f}" }
+
+        // Group by sample, pick the lowest rank
+        tax_src_ch = tax_preferred
+        .mix(tax_fallback)
+        .map { m, rank, f -> tuple(m, tuple(rank, f)) }  // (key, value)
+        .groupTuple()                                     // (meta, [ (rank,f), (rank,f), ... ])
+        .map { m, values ->
+            def best = values.min { it[0] }               // 0 beats 1
+            tuple(m, best[1])                             // (meta, chosen_file)
+        }
+
+        // Group by sample, pick the lowest rank
+        ani_src_ch = ani_preferred
+        .mix(ani_fallback)
+        .map { m, rank, f -> tuple(m, tuple(rank, f)) }  // (key, value)
+        .groupTuple()                                     // (meta, [ (rank,f), (rank,f), ... ])
+        .map { m, values ->
+            def best = values.min { it[0] }               // 0 beats 1
+            tuple(m, best[1])                             // (meta, chosen_file)
+        }
+
+        tax_src_ch.view { m, f -> "tax_src_ch: ${m instanceof Map ? m.id : m} -> ${f?.name}" }
+        ani_src_ch.view { m, f -> "ani_src_ch: ${m instanceof Map ? m.id : m} -> ${f?.name}" }
+
+
         // gather all outputs from shigapass and format_ani to get the best hit for each sample - we will flatten it to go into the pipeline stats
-        ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
+        //ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
 
         GENERATE_PIPELINE_STATS_WF (
             [], \
@@ -445,8 +507,10 @@ workflow SCAFFOLDS_EXQC {
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
-            DETERMINE_TAXA_ID.out.taxonomy, \
-            ani_best_hit_ch, \
+            //DETERMINE_TAXA_ID.out.taxonomy, \
+            tax_src_ch, \
+            //ani_best_hit_ch, \
+            ani_src_ch, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
@@ -466,15 +530,31 @@ workflow SCAFFOLDS_EXQC {
         .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},     by: [0])\
         .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},          by: [0])\
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]}, by: [0])\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},       by: [0])\
+        //.join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy        -> [[id:meta.id], taxonomy]},       by: [0])\
+        .join(tax_src_ch.map{                                            meta, taxonomy        -> [[id:meta.id], taxonomy]},       by: [0])\
         .join(empty_ch.map{                                              meta, list            -> [[id:meta.id], list]},           by: [0])\
+        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                    meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},         by: [0])\
-        .join(ani_best_hit_ch.map{                                       meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
+        //.join(ani_best_hit_ch.map{                                       meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
+        .join(ani_src_ch.map{                                            meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
 
-        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
+/*        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
         shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
                     .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
                     .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: []]}  // If shigapass_file is null, use empty list
+*/
+        shigapass_combined_ch = filtered_scaffolds_ch
+            .map { meta, scaffolds ->
+                // Keep meta.id as the isolate name
+                [[id: meta.id], meta.id]  
+            }
+            .join(SHIGAPASS.out.summary, by: 0, remainder: true)
+            .map { id_tuple, original_id, shigapass_file ->
+                // Always keep meta.id clean; attach the shigapass file (or empty list)
+                def clean_meta = [id: original_id]   // <- isolate name only
+                def files = shigapass_file ?: []     // <- attach file if it exists
+                [ clean_meta, files ]
+            }
 
         // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
         line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0]) 
@@ -511,20 +591,81 @@ workflow SCAFFOLDS_EXQC {
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
         //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
-        centar_boolean = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
+        centar_boolean = tax_src_ch.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
         // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
         centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
 
+        // Helper to coerce the first tuple value to a stable sample id
+        def sampleId = { k ->
+            if( k instanceof Map && k.id )             return k.id as String
+            if( k instanceof Tuple && k[0] instanceof Map && k[0].id )
+                                                    return k[0].id as String
+            if( k instanceof Path )                    return k.baseName         // fallback if a path slipped in
+            return k.toString()
+        }
+
+        CHECK_SHIGAPASS_TAXA.out.tax_file.view { it -> log.info "TAXA FILE >>> $it" }
+        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.view { it -> log.info "ANI BEST HIT >>> $it" }
+
+        griphin_inputs_ch = Channel.empty()
+            .mix(
+                //GET_TRIMD_STATS.out.fastp_total_qc,
+                //GET_RAW_STATS.out.combined_raw_stats,
+                //KRAKEN2_TRIMD.out.k2_bh_summary,
+                //KRAKEN2_TRIMD.out.report,
+                KRAKEN2_WTASMBLD.out.k2_bh_summary,
+                KRAKEN2_WTASMBLD.out.report,
+                QUAST.out.report_tsv,
+                SCAFFOLD_COUNT_CHECK.out.outcome,
+                DO_MLST.out.checked_MLSTs,
+                BUSCO.out.short_summaries_specific_txt,
+                //CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ x -> [ x[0] ] },
+                tax_src_ch,
+                CALCULATE_ASSEMBLY_RATIO.out.ratio,
+                CALCULATE_ASSEMBLY_RATIO.out.gc_content,
+                GAMMA_AR.out.gamma,
+                GAMMA_PF.out.gamma,
+                GAMMA_HV.out.gamma,
+                //CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ x -> [ x[0] ] },
+                ani_src_ch,
+                GENERATE_PIPELINE_STATS_WF.out.pipeline_stats,
+                SHIGAPASS.out.summary
+            )
+            // Force a uniform (id, file) shape regardless of upstream quirks
+            .map { k, v -> tuple( sampleId(k), v ) }
+            .groupTuple()                                        // key now is just the String id
+            .map { id, files ->
+                def clean = files.findAll { it != null }         // drop nulls from optional inputs
+                [
+                    meta : [ id: id, filenames: clean*.name ],
+                    files: clean
+                ]
+            }
+
+        griphin_inputs_ch.view { "GRiPHIN INPUT >>> ${it.meta.id} :: ${it.files}" }
+
         //create GRiPHin report
         GRIPHIN (
+            params.ardb,
+            CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet,
+            griphin_inputs_ch.map { it.meta }.collect(),
+            griphin_inputs_ch.map { it.files }.collect(),
+            outdir_path,
+            workflow.manifest.version,
+            params.coverage, true, shigapass_var, centar_var, params.bldb, false, false
+        )
+        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
+
+        //create GRiPHin report
+/*        GRIPHIN (
             all_summaries_ch, CREATE_SCAFFOLDS_INPUT_CHANNEL.out.valid_samplesheet, params.ardb, outdir_path.map{outdir -> [outdir, []]}, workflow.manifest.version, 
             params.coverage, true, shigapass_var, centar_var, params.bldb, false, []
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
-
+*/
         // Collecting the software versions
         CUSTOM_DUMPSOFTWAREVERSIONS (
             ch_versions.unique().collectFile(name: 'collated_versions.yml')

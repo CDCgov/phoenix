@@ -5,6 +5,21 @@
 include { SAMPLESHEET_CHECK  } from '../../modules/local/samplesheet_check'
 include { CREATE_SAMPLESHEET } from '../../modules/local/create_samplesheet'
 
+// Function to get list of [sample:, directory: ] or [ meta, [ fastq_1, fastq_2 ] ] to [ project_id: full_project_id:]
+def create_samplesheet_meta(LinkedHashMap row) {
+    def meta = [:]
+    if (row.directory) { //[sample:, directory: ] 
+        // Use directory-based logic
+        meta.project_id      = row.directory.toString().split('/')[-2]
+        meta.full_project_id = new File(row.directory).getParent().replace("[", "")
+    } else if (row.fastq_1) {  //[ meta, [ fastq_1, fastq_2 ] ] 
+        // Use fastq_1-based logic
+        meta.full_project_id = new File(row.fastq_1).parent
+        meta.project_id      = new File(row.fastq_1).parentFile.name
+    }
+    return meta 
+}
+
 workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
     take:
         indir        // params.indir
@@ -53,7 +68,8 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
             valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
         } else if (samplesheet != null) {
             // if a samplesheet was passed then use that to create the channel
-            scaffolds_ch = SAMPLESHEET_CHECK( samplesheet, false, true, false ) 
+            meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ create_samplesheet_meta(it) }.unique()
+            scaffolds_ch = SAMPLESHEET_CHECK( samplesheet, false, true, false, meta_ch ) 
                 .csv
                 .splitCsv( header:true, sep:',' )
                 .map { create_assembly_channel(it) }

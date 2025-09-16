@@ -1,24 +1,24 @@
 process CREATE_SUMMARY_LINE {
-    tag "${meta.id}"
+    tag { meta.id }   // <-- closure for tag
     label 'process_single'
-    // base_v2.2.0 - MUST manually change below (line 36)!!!
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    tuple val(meta), path(trimmed_qc_data_file), \
-    path(mlst_file), \
-    path(hypervirulence_gamma_file), \
-    path(ar_gamma_file), \
-    path(pf_gamma_file), \
-    path(quast_report), \
-    path(ratio_file), \
-    path(synopsis), \
-    path(taxonomy_file), \
-    path(trimd_ksummary), \
-    path(wtasmbld_ksummary), \
-    path(amr_report), \
-    path(fastani), \
-    path(shigapass)
+    tuple val(meta),
+        path(trimmed_qc_data_file),
+        path(mlst_file),
+        path(hypervirulence_gamma_file),
+        path(ar_gamma_file),
+        path(pf_gamma_file),
+        path(quast_report),
+        path(ratio_file),
+        path(synopsis),
+        path(taxonomy_file),
+        path(trimd_ksummary),
+        path(wtasmbld_ksummary),
+        path(amr_report),
+        path(fastani),
+        path(shigapass)
     val(phx_version)
 
     output:
@@ -34,7 +34,8 @@ process CREATE_SUMMARY_LINE {
     def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
     def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
     def fastani_file    = fastani ? "-f $fastani" : ""
-    def shigapass_file    = shigapass ? "--shigapass $shigapass" : ""
+    //def shigapass_file = shigapass ? "--shigapass $shigapass" : ""
+    def shigapass_file = (shigapass && shigapass.size() > 0) ? "--shigapass ${shigapass.join(' ')}" : ''
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """

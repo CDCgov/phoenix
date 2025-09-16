@@ -1000,7 +1000,7 @@ def Get_Files(directory1, sample_name, directory2, updater):
     fairy_file = fairy_file_1 if fairy_file_1 else fairy_file_2
     # For the remaining glob patterns, handle with try-except but attempt both directories
     try:
-        busco_short_summary_1 = glob.glob(directory1 + "short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
+        busco_short_summary_1 = glob.glob(directory1 + "/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
         if busco_short_summary_1:
             busco_short_summary = busco_short_summary_1[0]
         else:
@@ -1861,6 +1861,7 @@ def main():
             directory = "./GRiPHin/" + sample_name + "/" # all samples should be in this directory
             # check if species specific information is present
             data_location, parent_folder = Get_Parent_Folder(directory2)
+            print("D:", directory, "D2:", directory2, "Sample:", sample_name, "Data_location:", data_location, "Parent_folder:", parent_folder)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2, args.updater)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \

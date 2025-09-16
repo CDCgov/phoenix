@@ -38,7 +38,9 @@ process FORMAT_ANI {
 
         # since we need to check any files that have Escherichia or Shigella in them we will rename files
         if grep -qE "Escherichia|Shigella" "${prefix}_\${db_version}.fastANI_initial.txt"; then
-            mv ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.to_check_fastANI.txt
+            # Checking to see if we can get by with both files in cases where ecoli exists but doesnt go through shiga_check_taxa
+            cp ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.to_check_fastANI.txt
+            mv ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.fastANI.txt
         else
             cp ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.to_check_fastANI.txt
             mv ${prefix}_\${db_version}.fastANI_initial.txt ${prefix}_\${db_version}.fastANI.txt

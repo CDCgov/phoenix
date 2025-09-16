@@ -29,7 +29,8 @@ process UPDATE_GRIPHIN {
     // define variables
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
-    def project_id = file(full_project_id).parent // only removed the last dir, but gives the full path otherwise 
+    def project_path = file(full_project_id).parent // only removed the last dir, but gives the full path otherwise
+    def project_id = full_project_id.split('/')[-1] // just the last dir name 
     // passing in either two files or a list of files
     def griphin_input = griphins_excel.size() == 2 ? "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}" : "--griphin_list"
     // file name handling
@@ -51,7 +52,7 @@ process UPDATE_GRIPHIN {
     ${ica}combine_GRiPHins.py ${griphin_input} \
         --output ${out_name} \
         --coverage ${coverage} \
-        --parent_folder ${project_id} \
+        --parent_folder ${project_path} \
         --bldb ${bldb} \
         ${remove_dups} \
         ${valid_samplesheet}
