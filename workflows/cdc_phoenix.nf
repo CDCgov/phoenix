@@ -338,6 +338,8 @@ workflow PHOENIX_EXQC {
             // Allow relative paths for busco_db_path argument
             busco_db_path = Channel.fromPath(params.busco_db_path, relative: true) 
             // Add in busco_db into the scaffolds channel so each scaffolds ch has a busco_db to go with it.
+            BBMAP_REFORMAT.out.filtered_scaffolds.view { it -> log.info "SCAFFOLDS FOR BUSCO >>> $it" }
+            SCAFFOLD_COUNT_CHECK.out.outcome.view { it -> log.info "SCAFFOLD CHECK FOR BUSCO >>> $it" }
             busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}.combine(busco_db_path)\
                 .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome  -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0]) 
                 .filter { meta, filtered_scaffolds, busco_db_path, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
@@ -349,6 +351,8 @@ workflow PHOENIX_EXQC {
                 .filter { meta, filtered_scaffolds, busco_db_path, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
                 .map{ meta, filtered_scaffolds, busco_db_path, fairy_outcome -> return [meta, filtered_scaffolds, busco_db_path] }
         }
+
+        busco_ch.view { it -> log.info "BUSCO CH >>> $it" }
 
         // Checking single copy genes for assembly completeness
         BUSCO (
@@ -451,39 +455,7 @@ workflow PHOENIX_EXQC {
                     // For any other taxonomy, filter out (return false)
                     return false
                 }
-            }/*
-
-        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check
-            .map { meta, x -> [[id: meta.id], x] }
-            .join( FASTANI.out.ani      .map { meta, x -> [[id: meta.id], x] }, by: 0 )
-            .join( SHIGAPASS.out.summary.map { meta, x -> [[id: meta.id], x] }, by: 0 )
-            .join( DETERMINE_TAXA_ID.out.taxonomy
-                            .map { meta, x -> [[id: meta.id], x] },          by: 0 )
-            .filter { key, ani_best_hit, ani, summary, taxonomy ->
-                // safe text extraction
-                def taxTxt = taxonomy?.text ?: ""
-                def sumTxt = summary ?.text ?: ""
-                def abhTxt = ani_best_hit?.text ?: ""
-                def lines  = abhTxt.split("\n")
-                def second = lines.size() > 1 ? lines[1] : ""
-
-                if (taxTxt.contains("Shigella")) {
-                    // species from 's:' line (beginning-of-line, tab-separated)
-                    def species = taxTxt.find(/(?m)^s:\t([^\t\n]+)/) { m, g -> g }
-                    // keep only if species is missing OR second line does NOT contain it
-                    return species ? !second.contains(species) : true
-                }
-                else if (taxTxt.contains("Escherichia")) {
-                    // CURRENT BEHAVIOR: keep when NOT EIEC
-                    return !sumTxt.contains("EIEC")
-
-                    // If instead you wanted to drop “Not Shigella/EIEC” and any EIEC:
-                    // return !(sumTxt.contains("Not Shigella/EIEC") || sumTxt.contains("EIEC"))
-                }
-                else {
-                    return false
-                }
-            } */
+            }
 
         // check shigapass and correct fastani taxa if its wrong
         CHECK_SHIGAPASS_TAXA (
@@ -557,45 +529,9 @@ workflow PHOENIX_EXQC {
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
-
-        // Find the best taxa and ani sources depending on if shigapass was run and if it changed the taxa
-        def tax_preferred = CHECK_SHIGAPASS_TAXA.out.tax_file.map { m, f -> tuple(m, 0, f) }
-        def tax_fallback  = DETERMINE_TAXA_ID.out.taxonomy.map  { m, f -> tuple(m, 1, f) }
-
-        def ani_preferred = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.map { m, f -> tuple(m, 0, f) }
-        def ani_fallback  = FORMAT_ANI.out.ani_best_hit.map  { m, f -> tuple(m, 1, f) }
-
-        CHECK_SHIGAPASS_TAXA.out.tax_file.view      { m, f -> "TAX_PREF >>> ${m.id ?: m} | ${f?.name ?: f}" }
-        DETERMINE_TAXA_ID.out.taxonomy.view         { m, f -> "TAX_FALL >>> ${m.id ?: m} | ${f?.name ?: f}" }
-
-        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.view  { m, f -> "ANI_PREF >>> ${m.id ?: m} | ${f?.name ?: f}" }
-        FORMAT_ANI.out.ani_best_hit.view            { m, f -> "ANI_FALL >>> ${m.id ?: m} | ${f?.name ?: f}" }
-
-        // Group by sample, pick the lowest rank
-        tax_src_ch = tax_preferred
-        .mix(tax_fallback)
-        .map { m, rank, f -> tuple(m, tuple(rank, f)) }  // (key, value)
-        .groupTuple()                                     // (meta, [ (rank,f), (rank,f), ... ])
-        .map { m, values ->
-            def best = values.min { it[0] }               // 0 beats 1
-            tuple(m, best[1])                             // (meta, chosen_file)
-        }
-
-        // Group by sample, pick the lowest rank
-        ani_src_ch = ani_preferred
-        .mix(ani_fallback)
-        .map { m, rank, f -> tuple(m, tuple(rank, f)) }  // (key, value)
-        .groupTuple()                                     // (meta, [ (rank,f), (rank,f), ... ])
-        .map { m, values ->
-            def best = values.min { it[0] }               // 0 beats 1
-            tuple(m, best[1])                             // (meta, chosen_file)
-        }
-
-        tax_src_ch.view { m, f -> "tax_src_ch: ${m instanceof Map ? m.id : m} -> ${f?.name}" }
-        ani_src_ch.view { m, f -> "ani_src_ch: ${m instanceof Map ? m.id : m} -> ${f?.name}" }
-
         // gather all outputs from shigapass and format_ani to get the best hit for each sample - we will flatten it to go into the pipeline stats
-        //ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
+        final_tax_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.collect().concat(DETERMINE_TAXA_ID.out.taxonomy.collect()).flatten().collate(2)
+        ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
 
         GENERATE_PIPELINE_STATS_WF (
             GET_RAW_STATS.out.combined_raw_stats, \
@@ -618,8 +554,8 @@ workflow PHOENIX_EXQC {
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
-            tax_src_ch, \
-            ani_src_ch, \
+            final_tax_ch, \
+            ani_best_hit_ch, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
@@ -637,12 +573,11 @@ workflow PHOENIX_EXQC {
         .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
         .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
-        .join(tax_src_ch.map{                                            meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
+        .join(final_tax_ch.map{                                          meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
         .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
         .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                    meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])\
-        //.join(ani_best_hit_ch.map{                                     meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
-        .join(ani_src_ch.map{                                            meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
+        .join(ani_best_hit_ch.map{                                       meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
 
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
@@ -721,15 +656,13 @@ workflow PHOENIX_EXQC {
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
         //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
-        centar_boolean = tax_src_ch.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
+        centar_boolean = final_tax_ch.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
         // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
         centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
 
-
-        // Helper to coerce the first tuple value to a stable sample id
         def sampleId = { k ->
             if( k instanceof Map && k.id )             return k.id as String
             if( k instanceof Tuple && k[0] instanceof Map && k[0].id )
@@ -737,9 +670,6 @@ workflow PHOENIX_EXQC {
             if( k instanceof Path )                    return k.baseName         // fallback if a path slipped in
             return k.toString()
         }
-
-        CHECK_SHIGAPASS_TAXA.out.tax_file.view { it -> log.info "TAXA FILE >>> $it" }
-        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.view { it -> log.info "ANI BEST HIT >>> $it" }
 
         griphin_inputs_ch = Channel.empty()
             .mix(
@@ -752,8 +682,8 @@ workflow PHOENIX_EXQC {
                 QUAST.out.report_tsv,
                 SCAFFOLD_COUNT_CHECK.out.outcome,
                 DO_MLST.out.checked_MLSTs,
-                //CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ x -> [ x[0] ] },
-                tax_src_ch,
+                //CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ x -> [ x[0] ] }, // Still used to make final_tax_ch, just only called once upstream instead of at every place its needed
+                final_tax_ch,
                 BUSCO.out.short_summaries_specific_txt,
                 CALCULATE_ASSEMBLY_RATIO.out.ratio,
                 CALCULATE_ASSEMBLY_RATIO.out.gc_content,
@@ -761,8 +691,8 @@ workflow PHOENIX_EXQC {
                 GAMMA_PF.out.gamma,
                 GAMMA_HV.out.gamma,
                 SRST2_AR.out.fullgene_results,
-                //CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ x -> [ x[0] ] },
-                ani_src_ch,
+                //CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ x -> [ x[0] ] }, // Still used to make ani_best_hit_ch, just only called once upstream instead of at every place its needed
+                ani_best_hit_ch,
                 GENERATE_PIPELINE_STATS_WF.out.pipeline_stats,
                 SHIGAPASS.out.summary
             )
@@ -777,8 +707,6 @@ workflow PHOENIX_EXQC {
                 ]
             }
 
-        griphin_inputs_ch.view { "GRiPHIN INPUT >>> ${it.meta.id} :: ${it.files}" }
-
         //create GRiPHin report
         GRIPHIN (
             params.ardb,
@@ -790,15 +718,6 @@ workflow PHOENIX_EXQC {
             params.coverage, true, shigapass_var, centar_var, params.bldb, false, false
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
-
-
-        //create GRiPHin report
-//        GRIPHIN (
-//            all_summaries_ch, 
-//            INPUT_CHECK.out.valid_samplesheet, params.ardb, outdir_path.map{outdir -> [outdir, []]}, workflow.manifest.version, 
-//            params.coverage, true, shigapass_var, centar_var, params.bldb, true, []
-//        )
-//        ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 
         if (ncbi_excel_creation == true && params.create_ncbi_sheet == true) {
             // requiring files so that this process doesn't start until needed files are made. 
