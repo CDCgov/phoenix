@@ -372,8 +372,8 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     if FastANI_ID != "Unknown":
         if float(FastANI_ID) < float(95.00):
             warnings.append("FastANI match is <95%")
-        if float(FastANI_coverage) < float(90.00):
-            warnings.append("FastANI coverage is <90%")
+        if float(FastANI_coverage) < float(70.00):
+            warnings.append("FastANI coverage is <70%")
     if busco_id != "Unknown":
         if float(busco_id) < float(97.00):
             warnings.append("BUSCO match is <97%")

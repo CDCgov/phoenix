@@ -193,7 +193,7 @@ workflow UPDATE_PHOENIX_WF {
 
     main:
         // Allow outdir to be relative
-        outdir_path = Channel.fromPath(params.outdir, relative: true, type: 'dir')
+        outdir_path = Channel.fromPath(params.outdir, relative: true, type: 'dir')\
 
         CREATE_INPUT_CHANNELS (
             // False is to say if centar is to be included when creating input channels
@@ -236,21 +236,6 @@ workflow UPDATE_PHOENIX_WF {
             .join(CREATE_INPUT_CHANNELS.out.ani.map{                  meta, ani          -> [[id:meta.id, project_id:meta.project_id], ani ]},      by: [[0][0],[0][1]])
             .join(SHIGAPASS.out.summary.map{                          meta, summary      -> [[id:meta.id, project_id:meta.project_id], summary ]},  by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{             meta, taxonomy     -> [[id:meta.id, project_id:meta.project_id], taxonomy ]}, by: [[0][0],[0][1]])
-            .filter { meta, ani_best_hit, ani, summary, taxonomy ->
-                // Apply filtering logic
-                if (taxonomy.text.contains("Shigella")) {
-                    // Extract species from s: line and check if it's in ani_best_hit second line --> confirm the species are the same
-                    def species = taxonomy.text.find(/(?m)^s:\t([^\t\n]+)/) { match, group -> group }
-                    def secondLine = ani_best_hit.text.split("\n")[1]
-                    return species ? !secondLine.contains(species) : true
-                } else if (taxonomy.text.contains("Escherichia") && !summary.text.contains("EIEC")) {
-                    // If taxonomy contains "Escherichia", keep only if summary does NOT contain "Not Shigella/EIEC" or "EIEC"
-                    return false
-                } else {
-                    // For any other taxonomy, filter out (return false)
-                    return false
-                }
-            }
 
         // check shigapass and correct fastani taxa if its wrong
         CHECK_SHIGAPASS_TAXA (
@@ -300,13 +285,11 @@ workflow UPDATE_PHOENIX_WF {
                                 .map { meta_reads, reads, meta_tsv, tsv_file -> [meta_reads, reads, meta_tsv.entry]}.unique()
 
         // now we will split the channel into its true (busco present) and false (busco wasn't run with this dataset) elements
-        busco_boolean_1ch = trimd_reads_file_integrity_ch.branch{ 
-                    buscoTrue: it[2] == true
-                    buscoFalse: it[2] == false}
+        busco_true_1ch = trimd_reads_file_integrity_ch.filter{ it[2] == true }
 
         // Idenitifying AR genes in trimmed reads - using only datasets that were previously run with CDC_PHOENIX entry
         SRST2_AR (
-            busco_boolean_1ch.buscoTrue.map{meta, reads, busco_boolean -> [meta, reads]}, "gene", params.ardb
+            busco_true_1ch.map{meta, reads, busco_boolean -> [meta, reads]}, "gene", params.ardb
         )
         ch_versions = ch_versions.mix(SRST2_AR.out.versions)
 
@@ -368,7 +351,7 @@ workflow UPDATE_PHOENIX_WF {
         ch_ani_input_tagged = CREATE_INPUT_CHANNELS.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'input']] }
         ch_ani_shigapass_tagged = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'shigapass']] }
 
-        // For samples that were run through Shigapass we need to compare that to the list of previous ani_best_hit files, then only keep the shigapass files as that has the most up-to-date info
+        /*/ For samples that were run through Shigapass we need to compare that to the list of previous ani_best_hit files, then only keep the shigapass files as that has the most up-to-date info
         // Mix and group by ID
         ch_ani_combined = ch_ani_input_tagged.mix(ch_ani_shigapass_tagged).groupTuple().map { id, values ->
                 // First check if we have both input and shigapass files
@@ -386,14 +369,14 @@ workflow UPDATE_PHOENIX_WF {
                     // This shouldn't happen 
                     return null
                 }
-            }.filter { it != null } // Now ch_ani_combined contains the combined channel with prioritized files
+            }.filter { it != null } // Now ch_ani_combined contains the combined channel with prioritized files*/
 
         // for samples that had shigapass run, we will update it the synopsis file
-
         GENERATE_PIPELINE_STATS_WF (
             CREATE_INPUT_CHANNELS.out.raw_stats,
             CREATE_INPUT_CHANNELS.out.fastp_total_qc,
-            [],
+            //[],
+            SRST2_AR.out.gene_results,
             CREATE_INPUT_CHANNELS.out.k2_trimd_report,
             CREATE_INPUT_CHANNELS.out.k2_trimd_krona,
             CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary,
@@ -404,12 +387,11 @@ workflow UPDATE_PHOENIX_WF {
             GAMMA_AR.out.gamma,
             CREATE_INPUT_CHANNELS.out.gamma_pf,
             CREATE_INPUT_CHANNELS.out.quast_report,
-            [], [], [], [],
-            /*BUSCO.out.short_summaries_specific_txt, \
-            KRAKEN2_ASMBLD.out.report, \
-            KRAKEN2_ASMBLD.out.krona_html, \
-            KRAKEN2_ASMBLD.out.k2_bh_summary, \
-            KRAKEN2_WTASMBLD.out.report, */
+            //[], [], [], [],
+            CREATE_INPUT_CHANNELS.out.busco_short_summary, 
+            CREATE_INPUT_CHANNELS.out.k2_asmbld_report, 
+            CREATE_INPUT_CHANNELS.out.k2_asmbld_krona, 
+            CREATE_INPUT_CHANNELS.out.k2_asmbld_bh_summary,
             CREATE_INPUT_CHANNELS.out.k2_wtasmbld_report,
             CREATE_INPUT_CHANNELS.out.k2_wtasmbld_krona,
             CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary,
@@ -417,10 +399,13 @@ workflow UPDATE_PHOENIX_WF {
             CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta -> [meta[0], meta[1]] },
             CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta -> [meta[0], meta[1]] },
             AMRFINDERPLUS_RUN.out.mutation_report,
-            CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta -> [meta[0], meta[1]] },
-            false
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta -> [meta[0], meta[1]] }
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
+
+        //get back project_id info
+        pipeline_stats_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta -> [meta[0], meta[1]] }
+                                    .join(GAMMA_AR.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma, meta.project_id]}, by: [0]).map{ meta, pipeline_stats, gamma, project_id -> [[id:meta.id, project_id:project_id], pipeline_stats]}
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = CREATE_INPUT_CHANNELS.out.fastp_total_qc.map{meta, fastp_total_qc         -> [[id:meta.id, project_id:meta.project_id], fastp_total_qc]}\
@@ -429,13 +414,17 @@ workflow UPDATE_PHOENIX_WF {
             .join(GAMMA_AR.out.gamma.map{                                  meta, gamma                  -> [[id:meta.id, project_id:meta.project_id], gamma]},                  by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{                  meta, gamma_pf               -> [[id:meta.id, project_id:meta.project_id], gamma_pf]},               by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.quast_report.map{              meta, quast_report           -> [[id:meta.id, project_id:meta.project_id], quast_report]},           by: [[0][0],[0][1]])
-            .join(CREATE_INPUT_CHANNELS.out.assembly_ratio.map{            meta, assembly_ratio         -> [[id:meta.id, project_id:meta.project_id], assembly_ratio]},         by: [[0][0],[0][1]])
-            .join(CREATE_INPUT_CHANNELS.out.synopsis.map{                  meta, synopsis               -> [[id:meta.id, project_id:meta.project_id], synopsis]},               by: [[0][0],[0][1]])
-            .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{                  meta, taxonomy               -> [[id:meta.id, project_id:meta.project_id], taxonomy]},               by: [[0][0],[0][1]])
+            .join( CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta -> [meta[0], meta[1]] }
+                                                    .map{                  meta, assembly_ratio         -> [[id:meta.id, project_id:meta.project_id], assembly_ratio]},         by: [[0][0],[0][1]])
+            .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta -> [meta[0], meta[1]] }
+                                                    .map{                  meta, synopsis               -> [[id:meta.id, project_id:meta.project_id], synopsis]},               by: [[0][0],[0][1]])
+            .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta -> [meta[0], meta[1]] }
+                                                    .map{                  meta, taxonomy               -> [[id:meta.id, project_id:meta.project_id], taxonomy]},               by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary.map{       meta, k2_trimd_bh_summary    -> [[id:meta.id, project_id:meta.project_id], k2_trimd_bh_summary]},    by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary.map{    meta, k2_wtasmbld_bh_summary -> [[id:meta.id, project_id:meta.project_id], k2_wtasmbld_bh_summary]}, by: [[0][0],[0][1]])
             .join(AMRFINDERPLUS_RUN.out.report.map{                        meta, report                 -> [[id:meta.id, project_id:meta.project_id], report]},                 by: [[0][0],[0][1]])
-            .join(ch_ani_combined.map{                                     meta, ani_best_hit           -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},           by: [[0][0],[0][1]])
+            .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta -> [meta[0], meta[1]] }
+                                                .map{                      meta, ani_best_hit           -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},           by: [[0][0],[0][1]])
 
         // First, check if SHIGAPASS.out.summary is empty and create appropriate channel - for cases where isolate set has no e.coli or shigella
         shigapass_ch = SHIGAPASS.out.summary.mix(CREATE_INPUT_CHANNELS.out.shigapass)
@@ -444,7 +433,7 @@ workflow UPDATE_PHOENIX_WF {
         all_id_pairs_ch = line_summary_ch.join(shigapass_ch, by: [[0][0],[0][1]], remainder: true).filter{ it[1] != null }
                 .map{ meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_trimd_bh_summary,k2_wtasmbld_bh_summary,report,ani_best_hit, shigapass_file ->
                 if (shigapass_file == null) { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_trimd_bh_summary,k2_wtasmbld_bh_summary,report,ani_best_hit, []]
-                } else { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_trimd_bh_summary,k2_wtasmbld_bh_summary,report,ani_best_hit,shigapass_file]}}
+                } else { return [meta, fastp_total_qc,checked_MLSTs,gamma_hv,gamma,gamma_pf,quast_report,assembly_ratio,synopsis,taxonomy,k2_trimd_bh_summary,k2_wtasmbld_bh_summary,report,ani_best_hit, shigapass_file]}}
 
         // rename to line_summary_ch --> just to keep the naming consistent with the original workflow
         line_summary_ch = all_id_pairs_ch
@@ -568,9 +557,10 @@ workflow UPDATE_PHOENIX_WF {
         centar_var = CREATE_INPUT_CHANNELS.out.centar.filter{ meta, file -> file.toString().endsWith("_centar_output.tsv") }
                         .ifEmpty { Channel.of(false)}.map { file -> return true}.first()  // If we get here with a file, it means we found a match and Take just the first result (true or false)
 
+        def software_versions_ch
         if (params.indir != null) { // If the input directory is not null, we need to check if the input directory is the same as the output directory
             //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
-            shigapass_var = CREATE_INPUT_CHANNELS.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
+            shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] }.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
                             .collect().sum().map{ it -> it[0] > 0 }
 
             busco_boolean = collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> busco_boolean}
@@ -593,23 +583,23 @@ workflow UPDATE_PHOENIX_WF {
                     CREATE_INPUT_CHANNELS.out.quast_report,
                     CREATE_INPUT_CHANNELS.out.fairy_outcome,
                     DO_MLST.out.checked_MLSTs,
-                    CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta -> [meta[0], meta[1]] },
-                    CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta -> [meta[0], meta[1]] },
-                    CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta -> [meta[0], meta[1]] },
+                    CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] },
+                    CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ it -> [it[0]] },
+                    CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ it -> [it[0]] },
                     GAMMA_AR.out.gamma,
                     CREATE_INPUT_CHANNELS.out.gamma_pf,
                     CREATE_INPUT_CHANNELS.out.gamma_hv,
-                    CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta -> [meta[0], meta[1]] },
-                    GENERATE_PIPELINE_STATS_WF.out.pipeline_stats,
-                    SHIGAPASS.out.summary
-                )
-                .groupTuple()
+                    CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ it -> [it[0]] },
+                    pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ it -> [it[0]] },
+                    SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ it -> [it[0]] },
+                    CREATE_INPUT_CHANNELS.out.busco_short_summary,
+                    SRST2_AR.out.gene_results
+                ).groupTuple()
                 .map { meta, files ->
                     [
                         meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
-                        files: files
-                    ]
-                }
+                        files: files 
+                    ] }
 
                 //create GRiPHin report
                 GRIPHIN_PUBLISH (
@@ -628,30 +618,101 @@ workflow UPDATE_PHOENIX_WF {
                 griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
                 griphin_report = GRIPHIN_PUBLISH.out.griphin_report
 
-        } else { // for --input
+                software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()
+                                .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-            // check for shigapass
-            shigapass_var_ch = CREATE_INPUT_CHANNELS.out.taxonomy.map{ meta, tax -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], tax, meta.project_id]}
-                                .map{it -> get_taxa_and_project_ID(it)}.groupTuple().map{meta, shiga_var, project_id -> [ meta, shiga_var, project_id.unique() ]}
-                                .map{ meta, genus_list, project_id ->  [meta, genus_list.any{ genus -> genus == "Escherichia" || genus == "Shigella" }] }
+                UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
+                    software_versions_ch
+                )
+
+        } else { // for --input
 
             // to avoid file name collisions with indir (this is when you are passing --indir and NOT --outdir so the end location of the files is the indir)
             if (params.outdir == "${launchDir}/phx_output") {
+                // check for shigapass
+                shigapass_var_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] }
+                                .map{ meta, tax -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], tax, meta.project_id]}
+                                .map{it -> get_taxa_and_project_ID(it)}.groupTuple().map{meta, shiga_var, project_id -> [ meta, shiga_var, project_id.unique() ]}
+                                .map{ meta, genus_list, project_id ->  [meta, genus_list.any{ genus -> genus == "Escherichia" || genus == "Shigella" }] }
                 //add in the samplesheet specific to each project dir
-                all_summaries_ch = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> [[project_id:meta.project_id], full_project_id, summary_lines, busco_boolean]}
+                boolean_ch = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> [[project_id:meta.project_id], full_project_id, busco_boolean]}
                                     .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
-                                    .map{meta, full_project_id, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], summary_lines, busco_boolean, samplesheet, shigapass_var]}
+                                    .map{meta, full_project_id, busco_boolean, samplesheet, shigapass_var -> [[project_id:full_project_id], busco_boolean, samplesheet, shigapass_var]}
 
-                // run griphin and don't publish the results
+                //create GRiPHin report channel
+                griphin_inputs_ch = Channel.empty()
+                    .mix(
+                        CREATE_INPUT_CHANNELS.out.fastp_total_qc,
+                        CREATE_INPUT_CHANNELS.out.raw_stats,
+                        CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary,
+                        CREATE_INPUT_CHANNELS.out.k2_trimd_report,
+                        CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary,
+                        CREATE_INPUT_CHANNELS.out.k2_wtasmbld_report,
+                        CREATE_INPUT_CHANNELS.out.quast_report,
+                        CREATE_INPUT_CHANNELS.out.fairy_outcome,
+                        DO_MLST.out.checked_MLSTs,
+                        CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] },
+                        CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ it -> [it[0]] },
+                        CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ it -> [it[0]] },
+                        GAMMA_AR.out.gamma,
+                        CREATE_INPUT_CHANNELS.out.gamma_pf,
+                        CREATE_INPUT_CHANNELS.out.gamma_hv,
+                        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ it -> [it[0]] },
+                        pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ it -> [it[0]] },
+                        SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ it -> [it[0]] },
+                        CREATE_INPUT_CHANNELS.out.busco_short_summary,
+                        SRST2_AR.out.gene_results
+                    ).map { meta, file -> [meta.project_id, meta, file] }  // Restructure for grouping
+                    // group all items by project_id
+                    .groupTuple()
+                    // build per-sample bundles inside each project
+                    .map { String project_id, metas, files ->
+                            def sample_ids = metas.unique{ it.id }*.id as List<String>
+
+                            def per_sample = sample_ids.collect { sid ->
+                                def sfiles = files.findAll { it.getName().startsWith(sid) }
+                                [
+                                    meta : [ id: sid, filenames: sfiles.collect { it.getName() } ],
+                                    files: sfiles
+                                ]
+                            }
+                            def meta_list  = per_sample.collect { it.meta }
+                            def files_flat = per_sample.collectMany { it.files }
+
+                        // emit a tuple keyed by project for joining, plus the two payloads we need
+                        [ [project_id: project_id], meta_list, files_flat ]
+
+                    }
+
+                // Join griphin_inputs_ch with boolean_ch
+                combined_ch = griphin_inputs_ch.join(boolean_ch, by: [0])
+                    .map { project_key, meta_list, files_flat, busco_boolean, samplesheet, shigapass_var ->
+                        // Order for the final call (we’ll unpack by index when invoking the module)
+                        [
+                            meta_list,              // 0 -> val(metas)
+                            files_flat,             // 1 -> path(griphin_files)
+                            project_key.project_id, // 2 -> path(outdir)
+                            samplesheet,            // 3 -> path(original_samplesheet)
+                            busco_boolean,          // 4 -> val(entry)
+                            shigapass_var           // 5 -> val(shigapass_detected)
+                        ]
+                    }
+
+                //create GRiPHin report
                 GRIPHIN_NO_PUBLISH (
-                    all_summaries_ch.map{meta, summary_lines, busco_boolean, samplesheet, shigapass_var -> summary_lines},
-                    all_summaries_ch.map{meta, summary_lines, busco_boolean, samplesheet, shigapass_var -> samplesheet},
-                    params.ardb,
-                    all_summaries_ch.map{meta, summary_lines, busco_boolean, samplesheet, shigapass_var -> [meta.full_project_id, []]},
-                    workflow.manifest.version, params.coverage,
-                    all_summaries_ch.map{meta, summary_lines, busco_boolean, samplesheet, shigapass_var -> busco_boolean},
-                    all_summaries_ch.map{meta, summary_lines, busco_boolean, samplesheet, shigapass_var -> shigapass_var},
-                    false, params.bldb, true, true
+                    params.ardb,                                   // path(db)
+                    combined_ch.map { it[3] },                     // path(original_samplesheet)
+                    combined_ch.map { it[0] },  // val(metas): list of [id:<sid>, filenames:[...]]
+                    combined_ch.map { it[1] }, // path(griphin_files): flattened file list
+                    combined_ch.map { it[2] },                     // path(outdir): full_project_id
+                    workflow.manifest.version,                     // val(phx_version)
+                    params.coverage,                               // val(coverage)
+                    combined_ch.map { it[4] },                     // val(entry): busco_boolean
+                    combined_ch.map { it[5] },                     // val(shigapass_detected)
+                    false,                                         // val(centar_detected)
+                    params.bldb,                                   // path(bldb)
+                    true,                                          // val(filter_var)
+                    true                                           // val(dont_publish)
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
@@ -675,89 +736,90 @@ workflow UPDATE_PHOENIX_WF {
                     params.coverage,
                     params.bldb,
                     true,
-                    griphins_ch.map{ meta, old_excel, new_excel -> meta.project_id },
+                    griphins_ch.map{ meta, old_excel, new_excel -> meta.project_id }
                 )
                 ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
+
+                software_versions_ch = griphins_ch.map{meta, old_excel, new_excel -> [[project_id:meta.project_id, full_project_id:meta.full_project_id]]}
+                                .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
+
+                UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
+                    software_versions_ch
+                )
 
                 griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report
                 griphin_report = UPDATE_GRIPHIN.out.griphin_report
 
-            } else { // params.outdir != "${launchDir}/phx_output"
+            } else { // params.outdir != "${launchDir}/phx_output" --> regardless of how many input dirs, all files go to the outdir
 
+                // check if shigapass was run
+                shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] }.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
+                            .collect().sum().map{ it -> it[0] > 0 }
                 outdir_full_path = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
                 //add in the samplesheet specific to each project dir -- put outdir to toList() to avoid closure error in branching section below
                 summaries_with_outdir_ch = summaries_ch.combine(outdir_full_path.toList()).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
-                all_summaries_ch = summaries_with_outdir_ch.map{meta, summary_lines, outdir, busco_boolean -> [[project_id:meta.project_id], meta.full_project_id, outdir, summary_lines, busco_boolean]}
-                                    .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0]).join(shigapass_var_ch, by: [0])
-                                    .map{meta, full_project_id, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [[project_id:meta.project_id, full_project_id:full_project_id], outdir.toString(), summary_lines, busco_boolean, samplesheet, shigapass_var]}
+                // was busco run on any samples
+                busco_boolean = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> busco_boolean}.collect().map{ busco_booleans -> busco_booleans.any{ it == true }}
 
-                // Conditionally group by project based on if there are multiple directories
-                branched_all_summaries_ch = all_summaries_ch
-                    .combine(multiple_directories_ch)
-                    .branch { meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var, is_multiple -> 
-                        multi_dir: is_multiple == true
-                            return [meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var]
-                        single_dir: is_multiple == false
-                            return [meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var] }
+                //create GRiPHin report channel
+                griphin_inputs_ch = Channel.empty()
+                    .mix(
+                        CREATE_INPUT_CHANNELS.out.fastp_total_qc,
+                        CREATE_INPUT_CHANNELS.out.raw_stats,
+                        CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary,
+                        CREATE_INPUT_CHANNELS.out.k2_trimd_report,
+                        CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary,
+                        CREATE_INPUT_CHANNELS.out.k2_wtasmbld_report,
+                        CREATE_INPUT_CHANNELS.out.quast_report,
+                        CREATE_INPUT_CHANNELS.out.fairy_outcome,
+                        DO_MLST.out.checked_MLSTs,
+                        CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] },
+                        CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ it -> [it[0]] },
+                        CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ it -> [it[0]] },
+                        GAMMA_AR.out.gamma,
+                        CREATE_INPUT_CHANNELS.out.gamma_pf,
+                        CREATE_INPUT_CHANNELS.out.gamma_hv,
+                        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ it -> [it[0]] },
+                        pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ it -> [it[0]] },
+                        SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ it -> [it[0]] },
+                        CREATE_INPUT_CHANNELS.out.busco_short_summary,
+                        SRST2_AR.out.gene_results
+                    ).groupTuple()
+                    .map { meta, files ->
+                        [
+                            meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
+                            files: files 
+                        ] }
 
-                // run griphin and publish the results
-                GRIPHIN_PUBLISH (
-                    branched_all_summaries_ch.single_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> summary_lines},
-                    branched_all_summaries_ch.single_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> samplesheet},
-                    params.ardb,
-                    branched_all_summaries_ch.single_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [outdir, meta.full_project_id]},
-                    workflow.manifest.version, params.coverage,
-                    branched_all_summaries_ch.single_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> busco_boolean},
-                    branched_all_summaries_ch.single_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> shigapass_var},
-                    false, params.bldb, true, false
-                )
-                ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
+                    //create GRiPHin report
+                    GRIPHIN_PUBLISH (
+                        params.ardb,
+                        CREATE_INPUT_CHANNELS.out.valid_samplesheet,
+                        griphin_inputs_ch.map { it.meta }.collect(),
+                        griphin_inputs_ch.map { it.files }.collect(),
+                        outdir_full_path,
+                        workflow.manifest.version,
+                        params.coverage,
+                        busco_boolean,
+                        shigapass_var, false, params.bldb, true, false
+                    )
+                    ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
-                // run griphin and don't publish the results
-                GRIPHIN_NO_PUBLISH (
-                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> summary_lines},
-                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> samplesheet},
-                    params.ardb,
-                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> [meta.full_project_id, []]},
-                    workflow.manifest.version, params.coverage,
-                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> busco_boolean},
-                    branched_all_summaries_ch.multi_dir.map{meta, outdir, summary_lines, busco_boolean, samplesheet, shigapass_var -> shigapass_var},
-                    false, params.bldb, true, true
-                )
-                ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
+                griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
+                griphin_report = GRIPHIN_PUBLISH.out.griphin_report
 
-                griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphins.collect().flatten().collate(3).combine(CREATE_INPUT_CHANNELS.out.valid_samplesheet).filter{it -> it.size() >2 }
-                                    .map{path_txt, griphin_excel, griphin_tsv, samplesheet -> add_meta_outdir(path_txt, griphin_excel, griphin_tsv, samplesheet)}
-
-                // join old and new griphins for combining
-                griphins_ch = griphin_reports_ch.map{  meta, griphin_report -> [ griphin_report ]}.collect().unique().toList().combine(outdir_full_path.toList())
-                    .map{new_excel, directory -> [[project_id:directory.toString().split('/').last().replace("]", ""), full_project_id:directory.toString()], new_excel]}
-
-                // combine griphin files, the new one just created and the old one that was found in the project dir. 
-                UPDATE_GRIPHIN (
-                    griphins_ch.map{ meta, new_excels -> new_excels }, 
-                    griphins_ch.map{ meta, new_excels -> meta.full_project_id },
-                    [],
-                    params.coverage,
-                    params.bldb,
-                    true,
-                    params.outdir.toString().split('/').last().replace("]", "")
-                )
-                ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
-
-                griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report.mix(GRIPHIN_PUBLISH.out.griphin_tsv_report)
-                griphin_report = UPDATE_GRIPHIN.out.griphin_report.mix(GRIPHIN_PUBLISH.out.griphin_report)
-
-            }
-
-        }
-
-        software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()
+                software_versions_ch = outdir_full_path.toList().map{dir -> [[project_id:dir.toString().split('/')[-1].replace("]", ""), full_project_id:dir]]}.unique()
                                 .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-        UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
+                UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
+                    software_versions_ch
+                )
+            }
+        }
+
+        /*UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
             software_versions_ch
-        )
+        )*/
 
     emit:
         mlst             = DO_MLST.out.checked_MLSTs

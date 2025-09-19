@@ -180,6 +180,40 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ meta, krona, all_passed_id_channel -> [meta, krona]} //remove all_passed_id_channel from output
 
             // get *.top_kraken_hit.txt 
+            def asmbld_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld/*.kraken2_asmbld.top_kraken_hit.txt')
+            //create *.top_kraken_hit.txt file channel with meta information 
+            filtered_asmbld_kraken_bh_ch = Channel.fromPath(asmbld_kraken_bh_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, ".kraken2_asmbld.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
+
+            // get *.summary.txt files
+            def asmbld_kraken_report_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld/*.kraken2_asmbld.summary.txt')
+            //create *.summary.txt file channel with meta information 
+            filtered_asmbld_kraken_report_ch = Channel.fromPath(asmbld_kraken_report_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, ".kraken2_asmbld.summary.txt", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, kraken_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, kraken_report, all_passed_id_channel -> [meta, kraken_report]} //remove all_passed_id_channel from output
+        
+            // get *_asmbld.html files
+            def asmbld_kraken_krona_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld/krona/*_asmbld.html')
+            //create *_asmbld.html file channel with meta information 
+            filtered_asmbld_krona_ch = Channel.fromPath(asmbld_kraken_krona_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, "_asmbld.html", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, krona, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, krona, all_passed_id_channel -> [meta, krona]} //remove all_passed_id_channel from output
+
+            // get short_summary.specific.*.<sample_id>.filtered.scaffolds.fa.txt
+            def busco_glob = append_to_path(params.indir.toString(),'*/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt')
+            Channel.fromPath(busco_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, ".filtered.scaffolds.fa.txt", params.indir.toString(),false)}
+            //create short_summary.specific.*.<sample_id>.filtered.scaffolds.fa.txt file channel with meta information 
+            filtered_busco_short_summary_ch = Channel.fromPath(busco_glob) // use created regrex to get samples
+                .map{ it -> create_meta(it, ".filtered.scaffolds.fa.txt", params.indir.toString(),false)} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, short_summary, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, short_summary, all_passed_id_channel -> [meta, short_summary]}//remove all_passed_id_channel from output
+
+            // get *.top_kraken_hit.txt 
             def wtasmbld_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.top_kraken_hit.txt')
             //create *.top_kraken_hit.txt file channel with meta information 
             filtered_wtasmbld_kraken_bh_ch = Channel.fromPath(wtasmbld_kraken_bh_glob) // use created regrex to get samples
@@ -239,7 +273,6 @@ workflow CREATE_INPUT_CHANNELS {
 
             // get amrfinder files for MLST updating
             def armfinder_glob = append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
-
             //create .gamma file channel with meta information 
             filtered_amrfinder_ch = Channel.fromPath(armfinder_glob) // use created regrex to get samples
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
@@ -285,8 +318,8 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, assembly_ratio, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, assembly_ratio, all_passed_id_channel -> [meta, assembly_ratio]} 
-                .combine(Channel.fromPath(params.zipped_sketch)).map{ meta, assembly_ratio, refdb -> 
-                def refdbdate = refdb.getName() =~ /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/
+                .combine(Channel.fromPath(params.ncbi_assembly_stats)).map{ meta, assembly_ratio, refdb -> 
+                def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
                 // Check if the single gamma file contains the extracted date
                 def matchingFile = !assembly_ratio.getName().contains(refdbdate[0][1]) ?  assembly_ratio : null
                 if (assembly_ratio.getName().contains(refdbdate[0][1])) {
@@ -301,8 +334,8 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, gc_content, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, gc_content, all_passed_id_channel -> [meta, gc_content]} 
-                .combine(Channel.fromPath(params.zipped_sketch)).map{ meta, gc_content, refdb -> 
-                def refdbdate = refdb.getName() =~ /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/
+                .combine(Channel.fromPath(params.ncbi_assembly_stats)).map{ meta, gc_content, refdb -> 
+                def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
                 // Check if the single gamma file contains the extracted date
                 def matchingFile = !gc_content.getName().contains(refdbdate[0][1]) ?  gc_content : null
                 if (gc_content.getName().contains(refdbdate[0][1])) {
@@ -496,16 +529,20 @@ workflow CREATE_INPUT_CHANNELS {
                                         .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
             filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
                                         .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
-            filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.zipped_sketch))
-                                        .map{ meta, assembly_ratio, zipped_sketch -> previous_updater_check(meta, assembly_ratio, zipped_sketch, "refseq_sketch") }
-            filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.zipped_sketch))
-                                        .map{ meta, gc_content, zipped_sketch -> previous_updater_check(meta, gc_content, zipped_sketch, "refseq_sketch") }
+            filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.ncbi_assembly_stats))
+                                        .map{ meta, assembly_ratio, ncbi_assembly_stats -> previous_updater_check(meta, assembly_ratio, zipped_sketch, "refseq_sketch_as") }
+            filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.ncbi_assembly_stats))
+                                        .map{ meta, gc_content, ncbi_assembly_stats -> previous_updater_check(meta, gc_content, zipped_sketch, "refseq_sketch_gc") }
             filtered_trimd_kraken_bh_ch        = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
-            filtered_trimd_krona_ch         = COLLECT_SAMPLE_FILES.out.trimd_kraken_krona
+            filtered_trimd_krona_ch            = COLLECT_SAMPLE_FILES.out.trimd_kraken_krona
             filtered_trimd_kraken_report_ch    = COLLECT_SAMPLE_FILES.out.trimd_kraken_report
             filtered_wtasmbld_kraken_bh_ch     = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_bh
             filtered_wtasmbld_krona_ch         = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_krona
             filtered_wtasmbld_kraken_report_ch = COLLECT_SAMPLE_FILES.out.wtasmbld_kraken_report
+            filtered_asmbld_kraken_bh_ch       = COLLECT_SAMPLE_FILES.out.asmbld_kraken_bh
+            filtered_asmbld_krona_ch           = COLLECT_SAMPLE_FILES.out.asmbld_kraken_krona
+            filtered_asmbld_kraken_report_ch   = COLLECT_SAMPLE_FILES.out.asmbld_kraken_report
+            filtered_busco_short_summary_ch    = COLLECT_SAMPLE_FILES.out.busco_short_summary
             filtered_trimmed_stats_ch          = COLLECT_SAMPLE_FILES.out.trimmed_stats
             filtered_raw_stats_ch              = COLLECT_SAMPLE_FILES.out.raw_stats
             filtered_quast_ch                  = COLLECT_SAMPLE_FILES.out.quast_report
@@ -583,6 +620,10 @@ workflow CREATE_INPUT_CHANNELS {
         k2_wtasmbld_bh_summary = filtered_wtasmbld_kraken_bh_ch
         k2_wtasmbld_krona      = filtered_wtasmbld_krona_ch
         k2_wtasmbld_report     = filtered_wtasmbld_kraken_report_ch
+        k2_asmbld_bh_summary   = filtered_asmbld_kraken_bh_ch
+        k2_asmbld_krona        = filtered_asmbld_krona_ch
+        k2_asmbld_report       = filtered_asmbld_kraken_report_ch
+        busco_short_summary    = filtered_busco_short_summary_ch
         fastp_total_qc         = filtered_trimmed_stats_ch
         raw_stats              = filtered_raw_stats_ch
         quast_report           = filtered_quast_ch
@@ -600,7 +641,7 @@ def previous_updater_check(meta, ar_file, ardb, type) {
     // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
     def orange = '\033[38;5;208m'
     def reset = '\033[0m'
-    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/, refseq_sketch: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/ ]
+    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/, refseq_sketch_as: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/ , refseq_sketch_gc: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/]
     def ardbDate = (ardb.getName() =~ patterns[type])[0][1] // get ar date
     def isList = ar_file instanceof List // check if the input is a list or a single file
     // Filter to keep only gamma/amrfinder files that do not contain the extracted date
@@ -611,7 +652,7 @@ def previous_updater_check(meta, ar_file, ardb, type) {
         def cleanedFilename = filteredFiles[0].toString().split('/').last()
         def replacements = [ gamma: [".gamma", "${meta.id}_"], amrfinder: ["amrfinderdb_", ".tar.gz"] ]
         replacements[type].each { cleanedFilename = cleanedFilename.replace(it, "") }
-        def outputFiles = [ gamma: "${meta.id}_ResGANNCBI_${ardbDate}_srst2.gamma", amrfinder: "${meta.id}_all_genes_${ardbDate}.tsv" ]
+        def outputFiles = [ gamma: "${meta.id}_ResGANNCBI_${ardbDate}_srst2.gamma", amrfinder: "${meta.id}_all_genes_${ardbDate}.tsv", refseq_sketch_as: "${meta.id}_Assembly_ratio_${ardbDate}.txt", refseq_sketch_gc: "${meta.id}_GC_content_${ardbDate}.txt"]
         println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${outputFiles[type]} will be overwritten.${reset}")
     }
     // Return a single file when input was single
@@ -727,8 +768,8 @@ def add_entry_meta(input_ch){
     meta.project_id = input_ch[0].project_id
     // Use file object to read the first line of the file
     def file = input_ch[1]
-    def firstLine = file.text.split('\n')[0]
-    meta.entry = firstLine.contains('BUSCO')
+    //def firstLine = file.text.split('\n')[0]
+    meta.entry = file.text.contains('BUSCO')
     return [meta, input_ch[1]]
 }
 
@@ -862,6 +903,13 @@ def create_meta(sample, file_extension, indir, extra_check){
     } else {
         meta.id = sample.getName().replaceAll(file_extension, "") // get file name without extention
     }
+    //for busco ... extra clean up
+    if (meta.id.startsWith("short_summary.specific.")) {
+        def parts = meta.id.split('\\.')
+        if (parts.size() >= 4) {
+            meta.id = parts[3..-1].join('.')
+        }
+    }
     meta.project_id = indir.toString().split('/')[-1]
     return [ meta, sample ]
 }
@@ -874,13 +922,14 @@ def create_meta_non_extension(sample, indir){
     def hyperVirulencePattern = /_HyperVirulence_\d{8}/
     def pfRepliconsPattern = /_PF-Replicons_\d{8}/
     def assemblyratioPattern = /_Assembly_ratio_\d{8}/
+    def gcPattern = /_GC_content_\d{8}/
     def arPattern = /_ResGANNCBI_\d{8}_srst2/
     def amrfinderPattern = /_all_genes/
 
     // Check if the id contains either of the patterns
-    if (meta.id =~ hyperVirulencePattern || meta.id =~ pfRepliconsPattern || meta.id =~ assemblyratioPattern || meta.id =~ arPattern || meta.id =~ amrfinderPattern) {
+    if (meta.id =~ hyperVirulencePattern || meta.id =~ pfRepliconsPattern || meta.id =~ assemblyratioPattern || meta.id =~ gcPattern || meta.id =~ arPattern || meta.id =~ amrfinderPattern) {
         // Remove the pattern if it matches
-        meta.id = meta.id.replaceAll(hyperVirulencePattern, '').replaceAll(pfRepliconsPattern, '').replaceAll(assemblyratioPattern, '').replaceAll(arPattern, '').replaceAll(amrfinderPattern, '').trim()} // Trim any trailing or leading spaces
+        meta.id = meta.id.replaceAll(hyperVirulencePattern, '').replaceAll(pfRepliconsPattern, '').replaceAll(assemblyratioPattern, '').replaceAll(gcPattern, '').replaceAll(arPattern, '').replaceAll(amrfinderPattern, '').trim()} // Trim any trailing or leading spaces
 
     meta.project_id = indir.toString().split('/')[-1]
     return [ meta, sample ]

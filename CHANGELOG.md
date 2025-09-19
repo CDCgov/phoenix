@@ -268,13 +268,14 @@ Below are the list of changes to phx since is initial release. As fixes can take
 ## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (XX/XX/2025)
 
 **COMMAND CHANGE:** 
-- Due to deprecated of `-entry` since nextflow `v24.10.0` we switched to the use of `--pipeline` to run specific workflows `PHOENIX`, `CDC_PHOENIX` etc. this parameter is case insensitive. 
+- Due to deprecated of `-entry` since nextflow `v24.10.0` we switched to the use of `--mode` to run specific workflows `PHOENIX`, `CDC_PHOENIX` etc. this parameter is case insensitive. 
 
 **Implemented Enhancements:** 
-- Creation of `--pipeline UPDATE_CDC_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when.  
+- Creation of `--mode UPDATE_CDC_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when.  
 - `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
 - Updating the big 5 genes to be highlighed, particularly OXA genes has become too big of lift to hard code so the BLDB databased was added to reference and the process is described in [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes).  
 - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` were removed from phx output. If you need or want these files you can get them from the workdir for the process(es) `KRAKEN2_TRIMD` and `KRAKEN2_ASMBLD`. Alternatively, you can create your own [config file](https://www.nextflow.io/docs/latest/config.html) and add back in the publishing of the files like [this](https://github.com/CDCgov/phoenix/blob/717d19c19338373fc0f89eba30757fe5cfb3e18a/conf/modules.config#L457)  
+- Code base reduction by condensing GENERATE_PIPELINE_STATS modules and subworkflows. Additionally, GRiPHin module was rewritten to be nextflowly (i.e. module runs off input files rather than a directory)
 
 **Summary File Changes:**
 - For spades failures, lack of reads after trimming or corruption we simplifed the warnings produced in `GRiPHin.py` by supressing other warnings as the root cause is the aforementioned failures. Similarly, if the reason for the Auto QC Failure is "Assembly file not found" then only that is reported rather than listing files with unknowns.  
@@ -328,5 +329,5 @@ Below are the list of changes to phx since is initial release. As fixes can take
 ## [vx.x.x](https://github.com/CDCgov/phoenix/releases/tag/vx.x.x) (XX/XX/202X)
 
 **Implemented Enhancements:** 
-- Creation of `--pipeline CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
-- `--centar` parameter can be passed when running `--pipeline PHOENIX` or `--pipeline CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki]() for full documentation.   
+- Creation of `--mode CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
+- `--centar` parameter can be passed when running `--mode PHOENIX` or `--mode CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki]() for full documentation.   

@@ -416,9 +416,9 @@ def check_column_presence(df1, df1_path, df2, df2_path):
         phoenix = df1_has_column
     elif df1_has_column == True and df2_has_column == False:
         phoenix = False
-        raise ValueError(f"{CRED}The new griphin file was produced from -entry CDC_PHOENIX and the old griphin summary wasn't. These files aren't compatible.{CEND}")
+        raise ValueError(f"{CRED} {df1_path} was produced from -entry CDC_PHOENIX and {df2_path} wasn't. These files aren't compatible.{CEND}")
     else:
-        raise ValueError(f"{CRED}The old griphin file was produced from -entry CDC_PHOENIX and the new griphin summary wasn't. These files aren't compatible.{CEND}")
+        raise ValueError(f"{CRED} {df2_path} was produced from -entry CDC_PHOENIX and {df1_path} wasn't. These files aren't compatible.{CEND}")
     #check for centar
     if "Toxinotype" in df1.columns or "MLST Clade" in df1.columns or "Toxinotype" in df2.columns or "MLST Clade" in df2.columns:
         if "Toxinotype" not in df1.columns or "MLST Clade" not in df1.columns:

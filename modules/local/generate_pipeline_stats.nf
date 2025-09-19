@@ -7,6 +7,7 @@ process GENERATE_PIPELINE_STATS {
     input:
     tuple val(meta), path(raw_qc), \
     path(fastp_total_qc), \
+    path(srst_fullgenes_file), \
     path(kraken2_trimd_report), \
     path(krona_trimd), \
     path(kraken2_trimd_summary), \
@@ -17,6 +18,10 @@ process GENERATE_PIPELINE_STATS {
     path(gamma_AR), \
     path(gamma_replicon), \
     path(quast_report), \
+    path(busco_specific_short_summary), \
+    path(kraken2_asmbld_report), \
+    path(krona_asmbld), \
+    path(kraken2_asmbld_summary), \
     path(krona_weighted), \
     path(kraken2_weighted_report), \
     path(kraken2_weighted_summary), \
@@ -38,11 +43,17 @@ process GENERATE_PIPELINE_STATS {
     def ica = params.ica ? "bash ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def raw             = raw_qc ? "-a $raw_qc" : "" // if raw_qc is null return "-a $raw_qc" else return ""
-    def fastp_total     = fastp_total_qc ? "-b $fastp_total_qc" : ""
-    def k2_trim_report  = kraken2_trimd_report ? "-e $kraken2_trimd_report" : ""
-    def k2_trim_summary = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
-    def krona_trim      = krona_trimd ? "-g $krona_trimd" : ""
+    def raw               = raw_qc ? "-a $raw_qc" : "" // if raw_qc is null return "-a $raw_qc" else return ""
+    def fastp_total       = fastp_total_qc ? "-b $fastp_total_qc" : ""
+    def k2_trim_report    = kraken2_trimd_report ? "-e $kraken2_trimd_report" : ""
+    def k2_trim_summary   = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
+    def krona_trim        = krona_trimd ? "-g $krona_trimd" : ""
+    def k2_asmbld_report  = kraken2_asmbld_report ? "-j $kraken2_asmbld_report" : ""
+    def k2_asmbld_summary = kraken2_asmbld_summary ? "-k $kraken2_asmbld_summary" : ""
+    def krona_asmbld      = krona_asmbld ? "-l $krona_asmbld" : ""
+    def busco_summary     = busco_specific_short_summary ? "-s $busco_specific_short_summary" : ""
+    def srst_file         = srst_fullgenes_file ? "-x $srst_fullgenes_file" : ""
+    def extended_qc       = busco_specific_short_summary ? "-3" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
@@ -56,19 +67,25 @@ process GENERATE_PIPELINE_STATS {
         $krona_trim \\
         -h $assembly_scaffolds \\
         -i $filtered_assembly \\
+        $k2_asmbld_report \\
+        $k2_asmbld_summary \\
+        $krona_asmbld \\
         -m $kraken2_weighted_report \\
         -n $kraken2_weighted_summary \\
         -o $krona_weighted \\
         -p $quast_report \\
         -q $taxID \\
         -r $assembly_ratio_file \\
+        $busco_summary \\
         -t $fastANI_formatted_file \\
         -u $gamma_AR \\
         -v $gamma_replicon \\
         -w $gamma_HV \\
+        $srst_file \\
         -y $mlst_file \\
         -4 $amr_file \\
         -5 $coverage \\
+        $extended_qc \\
         $terra
 
     script_version=\$(${ica}pipeline_stats_writer.sh -V)

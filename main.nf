@@ -431,8 +431,8 @@ workflow UPDATE_PHOENIX {
         gamma_ar         = UPDATE_PHOENIX_WF.out.gamma_ar
         phx_summary      = UPDATE_PHOENIX_WF.out.phx_summary
         //output for phylophoenix
-        //griphin_tsv      = UPDATE_PHOENIX_WF.out.griphin_tsv
-        //griphin_excel    = UPDATE_PHOENIX_WF.out.griphin_excel
+        griphin_tsv      = UPDATE_PHOENIX_WF.out.griphin_tsv
+        griphin_excel    = UPDATE_PHOENIX_WF.out.griphin_excel
 }
 
 //

@@ -28,6 +28,10 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/kraken2_asmbld_weighted/${meta.id}.kraken2_wtasmbld.top_kraken_hit.txt"), optional: true, emit: wtasmbld_kraken_bh
     tuple val(meta), path("${meta.id}/kraken2_asmbld_weighted/krona/${meta.id}_wtasmbld.html"),                 optional: true, emit: wtasmbld_kraken_krona
     tuple val(meta), path("${meta.id}/kraken2_asmbld_weighted/${meta.id}.kraken2_wtasmbld.summary.txt"),        optional: true, emit: wtasmbld_kraken_report
+    tuple val(meta), path("${meta.id}/kraken2_asmbld/${meta.id}.kraken2_asmbld.top_kraken_hit.txt"),            optional: true, emit: asmbld_kraken_bh
+    tuple val(meta), path("${meta.id}/kraken2_asmbld/krona/${meta.id}_asmbld.html"),                            optional: true, emit: asmbld_kraken_krona
+    tuple val(meta), path("${meta.id}/kraken2_asmbld/${meta.id}.kraken2_asmbld.summary.txt"),                   optional: true, emit: asmbld_kraken_report
+    tuple val(meta), path("${meta.id}/BUSCO/short_summary.specific.*.${meta.id}.filtered.scaffolds.fa.txt"),    optional: true, emit: busco_short_summary
     tuple val(meta), path("${meta.id}/quast/${meta.id}_summary.tsv"),                                           optional: true, emit: quast_report
     tuple val(meta), path("${meta.id}/ANI/${meta.id}_REFSEQ_*.fastANI.txt"),                                    optional: true, emit: ani_best_hit
     tuple val(meta), path("${meta.id}/ANI/${meta.id}_REFSEQ_*.ani.txt"),                                        optional: true, emit: ani

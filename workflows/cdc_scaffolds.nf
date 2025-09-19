@@ -478,8 +478,7 @@ workflow SCAFFOLDS_EXQC {
             //ani_src_ch, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
-            CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
-            true
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 

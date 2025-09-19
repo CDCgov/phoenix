@@ -390,50 +390,10 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-/*        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]}
+        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]}
             .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: [0])
             .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: [0])
             .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy              -> [[id:meta.id], taxonomy]}, by: [0])
-                        .filter { meta, ani_best_hit, ani, summary, taxonomy ->
-                // Apply filtering logic
-                if (taxonomy.text.contains("Shigella")) {
-                    // Extract species from s: line and check if it's in ani_best_hit second line --> confirm the species are the same
-                    def species = taxonomy.text.find(/(?m)^s:\t([^\t\n]+)/) { match, group -> group }
-                    def secondLine = ani_best_hit.text.split("\n")[1]
-                    return species ? !secondLine.contains(species) : true
-                } else if (taxonomy.text.contains("Escherichia") && !summary.text.contains("EIEC")) {
-                    // If taxonomy contains "Escherichia", keep only if summary does NOT contain "Not Shigella/EIEC" or "EIEC"
-                    return false
-                } else {
-                    // For any other taxonomy, filter out (return false)
-                    return false
-                }
-            }*/
-
-                //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]}
-            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: 0)
-            .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: 0)
-            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy              -> [[id:meta.id], taxonomy]}, by: 0)
-                        .filter { meta, ani_best_hit, ani, summary, taxonomy ->
-                // Apply filtering logic
-                if (taxonomy.text.contains("Shigella")) {
-                    // Extract species from s: line and check if it's in ani_best_hit second line --> confirm the species are the same
-                    def species = taxonomy.text.find(/(?m)^s:\t([^\t\n]+)/) { match, group -> group }
-                    def secondLine = ani_best_hit.text.split("\n")[1]
-                    return species ? !secondLine.contains(species) : true
-                } else if (taxonomy.text.contains("Escherichia")) {
-                    if (!summary.text.contains("EIEC")) {
-                        // If taxonomy contains "Escherichia", keep only if summary does NOT contain "Not Shigella/EIEC" or "EIEC"
-                        return true
-                    } else {
-                        return false
-                    }
-                } else {
-                    // For any other taxonomy, filter out (return false)
-                    return false
-                }
-            }
 
         // check shigapass and correct fastani taxa if its wrong
         CHECK_SHIGAPASS_TAXA (
@@ -536,8 +496,7 @@ workflow PHOENIX_EXTERNAL {
             ani_best_hit_ch, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
-            CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
-            false
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
@@ -556,25 +515,11 @@ workflow PHOENIX_EXTERNAL {
             .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{           meta, k2_wtasmbld_bh_summary -> [[id:meta.id], k2_wtasmbld_bh_summary]}, by: [0])
             .join(AMRFINDERPLUS_RUN.out.report.map{                 meta, report                 -> [[id:meta.id], report]},                 by: [0])
             .join(ani_best_hit_ch.map{                              meta, ani_best_hit           -> [[id:meta.id], ani_best_hit]},           by: [0])
-            //.join(ani_src_ch.map{                              meta, ani_best_hit           -> [[id:meta.id], ani_best_hit]},           by: [0])
 
-/*        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
+        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
         shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
                     .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
                     .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: []]}  // If shigapass_file is null, use empty list
-*/
-        shigapass_combined_ch = filtered_scaffolds_ch
-            .map { meta, scaffolds ->
-                // Keep meta.id as the isolate name
-                [[id: meta.id], meta.id]  
-            }
-            .join(SHIGAPASS.out.summary, by: 0, remainder: true)
-            .map { id_tuple, original_id, shigapass_file ->
-                // Always keep meta.id clean; attach the shigapass file (or empty list)
-                def clean_meta = [id: original_id]   // <- isolate name only
-                def files = shigapass_file ?: []     // <- attach file if it exists
-                [ clean_meta, files ]
-            }
 
         // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
         line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0]) 
@@ -587,17 +532,6 @@ workflow PHOENIX_EXTERNAL {
 
         // If you only run one sample and it fails spades there is nothing in the create line summary so pass an empty list to keep it moving...
         summaries_ch = CREATE_SUMMARY_LINE.out.line_summary.map{ meta, line_summary -> [line_summary]}.collect().ifEmpty([])
-
-        /*/ get spades failure files
-        failed_summaries_ch = SPADES_WF.out.line_summary_failure.filter{ meta, file ->
-            def content = file.text
-            return content.contains("SPAdes_Failure")}
-
-        // This will check the output directory for an files ending in "_summaryline_failure.tsv" and add them to the output channel
-        FETCH_FAILED_SUMMARIES (
-            failed_summaries_ch
-        )
-        ch_versions = ch_versions.mix(FETCH_FAILED_SUMMARIES.out.versions)*/
 
         // combine all line summaries into one channel
         //spades_failure_summaries_ch = FETCH_FAILED_SUMMARIES.out.spades_failure_summary_line.collect().ifEmpty([])

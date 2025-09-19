@@ -433,29 +433,10 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
 
         //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]}
-            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: 0)
-            .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: 0)
-            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy              -> [[id:meta.id], taxonomy]}, by: 0)
-                        .filter { meta, ani_best_hit, ani, summary, taxonomy ->
-                // Apply filtering logic
-                if (taxonomy.text.contains("Shigella")) {
-                    // Extract species from s: line and check if it's in ani_best_hit second line --> confirm the species are the same
-                    def species = taxonomy.text.find(/(?m)^s:\t([^\t\n]+)/) { match, group -> group }
-                    def secondLine = ani_best_hit.text.split("\n")[1]
-                    return species ? !secondLine.contains(species) : true
-                } else if (taxonomy.text.contains("Escherichia")) {
-                    if (!summary.text.contains("EIEC")) {
-                        // If taxonomy contains "Escherichia", keep only if summary does NOT contain "Not Shigella/EIEC" or "EIEC"
-                        return true
-                    } else {
-                        return false
-                    }
-                } else {
-                    // For any other taxonomy, filter out (return false)
-                    return false
-                }
-            }
+        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]} 
+            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: [0])
+            .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: [0])
+            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy              -> [[id:meta.id], taxonomy]}, by: [0])
 
         // check shigapass and correct fastani taxa if its wrong
         CHECK_SHIGAPASS_TAXA (
@@ -558,48 +539,29 @@ workflow PHOENIX_EXQC {
             ani_best_hit_ch, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
-            CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
-            true
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GET_TRIMD_STATS.out.fastp_total_qc.map{meta, fastp_total_qc  -> [[id:meta.id], fastp_total_qc]}\
-        //.join(MLST.out.tsv.map{                                          meta, tsv             -> [[id:meta.id], tsv]},             by: [0])\
-        .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
-        .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        .join(QUAST.out.report_tsv.map{                                  meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
-        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
-        .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
-        .join(final_tax_ch.map{                                          meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
-        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
-        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                    meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])\
-        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},          by: [0])\
-        .join(ani_best_hit_ch.map{                                       meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
-
+        .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs          -> [[id:meta.id], checked_MLSTs]},          by: [0])\
+        .join(GAMMA_HV.out.gamma.map{                                    meta, gamma                  -> [[id:meta.id], gamma]},                  by: [0])\
+        .join(GAMMA_AR.out.gamma.map{                                    meta, gamma                  -> [[id:meta.id], gamma]},                  by: [0])\
+        .join(GAMMA_PF.out.gamma.map{                                    meta, gamma                  -> [[id:meta.id], gamma]},                  by: [0])\
+        .join(QUAST.out.report_tsv.map{                                  meta, report_tsv             -> [[id:meta.id], report_tsv]},             by: [0])\
+        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio                  -> [[id:meta.id], ratio]},                  by: [0])\
+        .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats         -> [[id:meta.id], pipeline_stats]},         by: [0])\
+        .join(DETERMINE_TAXA_ID.out.taxonomy.map{                        meta, taxonomy               -> [[id:meta.id], taxonomy]},               by: [0])\
+        .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary]},          by: [0])\
+        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                    meta, k2_wtasmbld_bh_summary -> [[id:meta.id], k2_wtasmbld_bh_summary]}, by: [0])
+        .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report                 -> [[id:meta.id], report]},                 by: [0])\
+        .join(ani_best_hit_ch.map{                                       meta, ani_best_hit           -> [[id:meta.id], ani_best_hit]},           by: [0])
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
-//        shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
-//                    .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
-//                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: []]}  // If shigapass_file is null, use empty list
-
-
-        shigapass_combined_ch = filtered_scaffolds_ch
-            .map { meta, scaffolds ->
-                // Keep meta.id as the isolate name
-                [[id: meta.id], meta.id]  
-            }
-            .join(SHIGAPASS.out.summary, by: 0, remainder: true)
-            .map { id_tuple, original_id, shigapass_file ->
-                // Always keep meta.id clean; attach the shigapass file (or empty list)
-                def clean_meta = [id: original_id]   // <- isolate name only
-                def files = shigapass_file ?: []     // <- attach file if it exists
-                [ clean_meta, files ]
-            }
-
-        shigapass_combined_ch.view { it -> log.info "SHIGAPASS >>> ${it}" }
+        shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
+                    .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
+                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: []]}  // If shigapass_file is null, use empty list
 
         // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
         line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0]) 
@@ -663,14 +625,9 @@ workflow PHOENIX_EXQC {
         shigapass_var = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
             .collect().sum().map{ it -> it[0] > 0 }
 
-        def sampleId = { k ->
-            if( k instanceof Map && k.id )             return k.id as String
-            if( k instanceof Tuple && k[0] instanceof Map && k[0].id )
-                                                    return k[0].id as String
-            if( k instanceof Path )                    return k.baseName         // fallback if a path slipped in
-            return k.toString()
-        }
+        fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
 
+        //create GRiPHin report channel
         griphin_inputs_ch = Channel.empty()
             .mix(
                 GET_TRIMD_STATS.out.fastp_total_qc,
@@ -680,30 +637,25 @@ workflow PHOENIX_EXQC {
                 KRAKEN2_WTASMBLD.out.k2_bh_summary,
                 KRAKEN2_WTASMBLD.out.report,
                 QUAST.out.report_tsv,
-                SCAFFOLD_COUNT_CHECK.out.outcome,
+                fairy_files_ch,
                 DO_MLST.out.checked_MLSTs,
-                //CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ x -> [ x[0] ] }, // Still used to make final_tax_ch, just only called once upstream instead of at every place its needed
-                final_tax_ch,
-                BUSCO.out.short_summaries_specific_txt,
+                CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta -> [meta[0]] },
                 CALCULATE_ASSEMBLY_RATIO.out.ratio,
                 CALCULATE_ASSEMBLY_RATIO.out.gc_content,
                 GAMMA_AR.out.gamma,
                 GAMMA_PF.out.gamma,
                 GAMMA_HV.out.gamma,
-                SRST2_AR.out.fullgene_results,
-                //CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ x -> [ x[0] ] }, // Still used to make ani_best_hit_ch, just only called once upstream instead of at every place its needed
-                ani_best_hit_ch,
+                CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta -> [meta[0]] },
                 GENERATE_PIPELINE_STATS_WF.out.pipeline_stats,
-                SHIGAPASS.out.summary
+                SHIGAPASS.out.summary,
+                BUSCO.out.short_summaries_specific_txt,
+                SRST2_AR.out.fullgene_results
             )
-            // Force a uniform (id, file) shape regardless of upstream quirks
-            .map { k, v -> tuple( sampleId(k), v ) }
-            .groupTuple()                                        // key now is just the String id
-            .map { id, files ->
-                def clean = files.findAll { it != null }         // drop nulls from optional inputs
+            .groupTuple()
+            .map { meta, files ->
                 [
-                    meta : [ id: id, filenames: clean*.name ],
-                    files: clean
+                    meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
+                    files: files
                 ]
             }
 

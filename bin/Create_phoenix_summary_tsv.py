@@ -25,7 +25,7 @@ CEND = '\033[0m'
 
 # Function to get the script version
 def get_version():
-    return "2.2.0"
+    return "2.3.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet')
