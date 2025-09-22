@@ -1008,9 +1008,9 @@ def Get_Files(directory1, sample_name, directory2, updater):
             if busco_short_summary_2:
                 busco_short_summary = busco_short_summary_2[0]
             else:
-                busco_short_summary = directory1 + "short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+                busco_short_summary = directory1 + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     except IndexError:
-        busco_short_summary = directory1 + "short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+        busco_short_summary = directory1 + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     try:
         asmbld_ratio_1 = glob.glob(directory1 + "/" + sample_name + "_Assembly_ratio_*.txt")
         if asmbld_ratio_1:
