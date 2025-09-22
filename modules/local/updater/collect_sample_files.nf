@@ -21,6 +21,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/gamma_ar/${meta.id}_ResGANNCBI_*_srst2.gamma"),                           optional: true, emit: gamma_ar
     tuple val(meta), path("${meta.id}/gamma_hv/${meta.id}_HyperVirulence_*.gamma"),                             optional: true, emit: gamma_hv
     tuple val(meta), path("${meta.id}/gamma_pf/${meta.id}_PF-Replicons_*.gamma"),                               optional: true, emit: gamma_pf
+    tuple val(meta), path("${meta.id}/srst2/${meta.id}__fullgenes__*_srst2__results.txt"),                      optional: true, emit: srst2_ar
     tuple val(meta), path("${meta.id}/AMRFinder/${meta.id}_all_genes{,_*}.tsv"),                                optional: true, emit: amrfinder_report
     tuple val(meta), path("${meta.id}/kraken2_trimd/${meta.id}.kraken2_trimd.top_kraken_hit.txt"),              optional: true, emit: trimd_kraken_bh
     tuple val(meta), path("${meta.id}/kraken2_trimd/krona/${meta.id}_trimd.html"),                              optional: true, emit: trimd_kraken_krona
