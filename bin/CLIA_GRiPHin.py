@@ -15,6 +15,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
 from Bio import SeqIO
 from itertools import chain
+from species_specific_griphin import try_paths
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
@@ -578,41 +579,105 @@ def Get_Metrics(scaffolds_entry, set_coverage, ar_df, trim_stats, raw_stats, kra
     return ar_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
     Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, full_busco_line
 
-def Get_Files(directory, sample_name):
+def Get_Files(directory1, sample_name, directory2, updater):
     '''Create file paths to collect files from sample folder.'''
     # if there is a trailing / remove it
-    directory = directory.rstrip('/')
+    directory1 = directory1.rstrip('/')
+    #print("Directory 1: " + directory1)
+    directory2 = directory2.rstrip('/')
+    #print("Directory 2: " + directory2)
     # create file names
-    trim_stats = directory + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt"
-    raw_stats = directory + "/raw_stats/" + sample_name + "_raw_read_counts.txt"
-    kraken_trim = directory + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt"
-    kraken_trim_report = directory + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt"
-    kraken_wtasmbld = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt"
-    kraken_wtasmbld_report = directory + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt"
-    quast_report = directory + "/quast/" + sample_name + "_summary.tsv"
-    fairy_file = directory + "/file_integrity/" + sample_name + "_summary.txt"
-    amrfinder_file = directory + "/AMRFinder/" + sample_name + "_all_genes.tsv"
-    spades_outcome_file = sample_name + "_spades_outcome.csv"
-    # This creates blank files for if no file exists. Varibles will be made into "Unknown" in the Get_Metrics function. Need to only do this for files determined by glob
-    # You only need this for glob because glob will throw an index error if not.
+    trim_stats = try_paths( directory1 + "/" + sample_name + "_trimmed_read_counts.txt", directory2 + "/" + sample_name + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt" )
+    raw_stats = try_paths( directory1 + "/" + sample_name + "_raw_read_counts.txt", directory2 + "/" + sample_name + "/raw_stats/" + sample_name + "_raw_read_counts.txt" )
+    kraken_trim = try_paths( directory1 + "/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt" )
+    kraken_trim_report = try_paths( directory1 + "/" + sample_name + ".kraken2_trimd.summary.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt" )
+    kraken_wtasmbld = try_paths( directory1 + "/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt" )
+    kraken_wtasmbld_report = try_paths( directory1 + "/" + sample_name + ".kraken2_wtasmbld.summary.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt" )
+    quast_report = try_paths( directory1 + "/" + sample_name + "_summary.tsv", directory2 + "/" + sample_name + "/quast/" + sample_name + "_summary.tsv" )
+    # For glob patterns, try both directories
+    fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "*_summary.txt")
+    spades_fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "*_spades_outcome.csv")
+    fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "*_summary.txt")
+    spades_fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "*_spades_outcome.csv")
+    fairy_file = fairy_file_1 if fairy_file_1 else fairy_file_2
+    spades_fairy_file = spades_fairy_file_1[0] if spades_fairy_file_1 else (spades_fairy_file_2[0] if spades_fairy_file_2 else "")
+    # For the remaining glob patterns, handle with try-except but attempt both directories
     try:
-        busco_short_summary =  glob.glob(directory + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")[0]
+        busco_short_summary_1 = glob.glob(directory1 + "/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
+        if busco_short_summary_1:
+            busco_short_summary = busco_short_summary_1[0]
+        else:
+            busco_short_summary_2 = glob.glob(directory2 + "/" + sample_name + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
+            if busco_short_summary_2:
+                busco_short_summary = busco_short_summary_2[0]
+            else:
+                busco_short_summary = directory1 + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     except IndexError:
-        busco_short_summary =  directory + "/BUSCO/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+        busco_short_summary = directory1 + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     try:
-        asmbld_ratio = glob.glob(directory + "/" + sample_name + "_Assembly_ratio_*.txt")[0]
+        asmbld_ratio_1 = glob.glob(directory1 + "/" + sample_name + "_Assembly_ratio_*.txt")
+        if asmbld_ratio_1:
+            asmbld_ratio = asmbld_ratio_1[0]
+        else:
+            asmbld_ratio_2 = glob.glob(directory2 + "/" + sample_name + "/" + sample_name + "_Assembly_ratio_*.txt")
+            if asmbld_ratio_2:
+                asmbld_ratio = asmbld_ratio_2[0]
+            else:
+                asmbld_ratio = directory1 + "/" + sample_name + "_Assembly_ratio_blank.txt"
     except IndexError:
-        asmbld_ratio = directory + "/" + sample_name + "_Assembly_ratio_blank.txt"
+        asmbld_ratio = directory1 + "/" + sample_name + "_Assembly_ratio_blank.txt"
     try:
-        gc = glob.glob(directory + "/" + sample_name + "_GC_content_*.txt")[0]
+        if updater == False:
+            gc_1 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
+            if gc_1:
+                gc = gc_1[0]
+            else:
+                gc_2 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
+                if gc_2:
+                    gc = gc_2[0]
+                else:
+                    gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
+        else: # if running updater then only look in directory1 since directory2 is the old run folder
+            gc_1 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
+            if gc_1:
+                gc = gc_1[0]
+            else:
+                gc_2 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
+                if gc_2:
+                    gc = gc_2[0]
+                else:
+                    gc = directory2 + "/" + sample_name + "_GC_content_blank.txt"
     except IndexError:
-        gc = directory + "/" + sample_name + "_GC_content_blank.txt"
+        gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
+    # Continue with similar pattern for remaining glob patterns
     try:
-        fast_ani_file = glob.glob(directory + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")[0]
+        gamma_ar_file_1 = glob.glob(directory1 + "/" + sample_name + "_ResGANNCBI_*.gamma")
+        if gamma_ar_file_1:
+            gamma_ar_file = gamma_ar_file_1[0]
+        else:
+            gamma_ar_file_2 = glob.glob(directory2 + "/" + sample_name + "/gamma_ar/" + sample_name + "_*.gamma")
+            if gamma_ar_file_2:
+                gamma_ar_file = gamma_ar_file_2[0]
+            else:
+                gamma_ar_file = directory1 + "/" + sample_name + "_ResGANNCBI_blank.gamma"
     except IndexError:
-        fast_ani_file = directory + "/ANI/" + sample_name + ".fastANI.txt"
-    tax_file = directory + "/" + sample_name + ".tax" # this file will tell you if kraken2 wtassembly, kraken2 trimmed (reads) or fastani determined the taxa
-    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_file, busco_short_summary, asmbld_ratio, gc, amrfinder_file, fast_ani_file, tax_file, spades_outcome_file
+        gamma_ar_file = directory1 + "/" + sample_name + "_ResGANNCBI_blank.gamma"
+    try:
+        fast_ani_file_1 = glob.glob(directory1 + "/" + sample_name + "_REFSEQ_*.fastANI.txt")
+        if fast_ani_file_1:
+            fast_ani_file = fast_ani_file_1[0]
+        else:
+            fast_ani_file_2 = glob.glob(directory2 + "/" + sample_name + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")
+            if fast_ani_file_2:
+                fast_ani_file = fast_ani_file_2[0]
+            else:
+                fast_ani_file = directory1 + "/" + sample_name + ".fastANI.txt"
+    except IndexError:
+        fast_ani_file = directory1 + "/" + sample_name + ".fastANI.txt"
+    # For regular paths, use the try_paths function
+    tax_file = try_paths( directory1 + "/" + sample_name + ".tax", directory2 + "/" + sample_name + "/" + sample_name + ".tax")
+    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_file, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, fast_ani_file, tax_file
+
 
 def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
             Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, full_busco_line,
