@@ -275,7 +275,10 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
 - Updating the big 5 genes to be highlighed, particularly OXA genes has become too big of lift to hard code so the BLDB databased was added to reference and the process is described in [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes).  
 - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` were removed from phx output. If you need or want these files you can get them from the workdir for the process(es) `KRAKEN2_TRIMD` and `KRAKEN2_ASMBLD`. Alternatively, you can create your own [config file](https://www.nextflow.io/docs/latest/config.html) and add back in the publishing of the files like [this](https://github.com/CDCgov/phoenix/blob/717d19c19338373fc0f89eba30757fe5cfb3e18a/conf/modules.config#L457)  
-- Code base reduction by condensing GENERATE_PIPELINE_STATS modules and subworkflows. Additionally, GRiPHin module was rewritten to be nextflowly (i.e. module runs off input files rather than a directory)
+- Code base reductions:
+   - Condensing GENERATE_PIPELINE_STATS modules and subworkflows. 
+   - GRiPHin module was rewritten to be nextflowly (i.e. module runs off input files rather than a directory). Thanks to Savannah Linen (@ztb2), Andreea Stoica (@astoicame) and Les Kallestad (@lekalle) for their help with this. 
+   - Removed DETERMINE_TAXA_ID_FAILURE, CREATE_SUMMARY_LINE_FAILURE and GENERATE_PIPELINE_STATS_FAILURE_EXQC modules, by condensing them into DETERMINE_TAXA_ID, CREATE_SUMMARY_LINE and GENERATE_PIPELINE_STATS_FAILURE respectively.
 
 **Summary File Changes:**
 - For spades failures, lack of reads after trimming or corruption we simplifed the warnings produced in `GRiPHin.py` by supressing other warnings as the root cause is the aforementioned failures. Similarly, if the reason for the Auto QC Failure is "Assembly file not found" then only that is reported rather than listing files with unknowns.  
@@ -292,7 +295,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - `WARNINGS_COUNT` was changed to `WARNINGS` and it is print out of the warnings, rather than just a count.
    - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.  
    - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` are no longer output from PHX. `*.kraken2_asmbld.classifiedreads.txt` was added as an output as taxids are in that file, which is different from the `*.kraken2_wtasmbld.classifiedreads.txt`. These files aren't really needed expect for edge cases such as questions about conflicting results or investigating suspected contamination.  
-- Due to [deprecation of "When" block](https://www.nextflow.io/docs/latest/process.html#when) in nextflow were removed and `.filter{}` is used throughout instead.  
+- Due to [deprecation of "When" block](https://www.nextflow.io/docs/latest/process.html#when) in nextflow `when` statements in modules were removed and `.filter{}` is used throughout instead. Thanks to Savannah Linen (@ztb2), Andreea Stoica (@astoicame) and Les Kallestad (@lekalle) for their help implimenting this.
 
 **Fixed Bugs:**  
 - Taxonomy Fixes:  

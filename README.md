@@ -35,15 +35,11 @@ The SHARE IT Act is a federal law that says government agencies like CDC must be
 
    There are several options for install if you do not already have it on your system:
 
-   * Install into conda environment, which will require a version of Anaconda to be installed on your system.
+   * Install into conda environment, which will require a version of Anaconda to be installed on your system. For example use the following command.
 
        ```console
-       mamba create -n nextflow -c bioconda nextflow=21.10.6  
+       mamba create -n nextflow -c bioconda nextflow
        ```
-
-      <!---```console
-       mamba create -n nextflow -c bioconda -c conda-forge nf-core=2.2 nextflow=21.10.6 git=2.35.0 openjdk=8.0.312 graphviz
-       ```--->
 
    * If you prefer a to use `curl` or `wget` for install see the [Nextflow Documentation](https://www.nextflow.io/docs/latest/getstarted.html) 
 
@@ -60,8 +56,10 @@ The SHARE IT Act is a federal law that says government agencies like CDC must be
 5. Run PHoeNIx on a test sample loaded with the package with a single command:
 
     ```console
-    nextflow run cdcgov/phoenix -r v2.0.0 -profile <singularity/docker/custom>,test -entry PHOENIX --kraken2db $PATH_TO_DB
+    nextflow run cdcgov/phoenix -profile <singularity/docker/custom>,test --mode PHOENIX --kraken2db $PATH_TO_DB
     ```
+
+    This command will pull the latest version of the pipeline by default. If you want to run a specific version add `-r <version>`
 
 Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcgov/phoenix`. See [wiki](https://github.com/CDCgov/phoenix/wiki/Dependencies-and-Install#run-phoenix) for how to clone and have the software downloaded to a different location. 
 
@@ -71,7 +69,7 @@ Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcg
 6. Start running your own analysis with a [samplesheet](https://github.com/cdcent/phoenix/wiki/Running-PHoeNIx#samplesheet-input)!
 
     ```console
-    nextflow run cdcgov/phoenix -r v2.0.0 -profile <singularity/docker/custom> -entry PHOENIX --input <path_to_samplesheet.csv> --kraken2db $PATH_TO_DB
+    nextflow run cdcgov/phoenix -profile <singularity/docker/custom> --mode PHOENIX --input <path_to_samplesheet.csv> --kraken2db $PATH_TO_DB
     ```
 
 # CDCgov GitHub Organization Open Source Project
