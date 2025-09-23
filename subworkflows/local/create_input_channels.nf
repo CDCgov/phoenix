@@ -704,37 +704,76 @@ workflow CREATE_INPUT_CHANNELS {
 */
 
 def previous_updater_check(meta, in_file, db, type) {
-    println("Checking previous updater run for ${meta.id} with ${in_file} and ${db} and ${type}")
-    //if you run updater with the same AR db as was run before you will get a file name collision in the CREATE_AND_UPDATE_README step
-    // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
+//    println("Checking previous updater run for ${meta.id} with ${in_file} and ${db} and ${type}")
+
     def orange = '\033[38;5;208m'
-    def reset = '\033[0m'
-    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/, refseq_sketch_as: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/ , refseq_sketch_gc: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/, ncbi_stats_ratio: /_Assembly_stats_(\d{8})\.txt/, ncbi_stats_gc: /_Assembly_stats_(\d{8})\.txt/, srst2: /__fullgenes__ResGANNCBI_(\d{8})__srst2__results\.txt/ ]
-//    def ardbDate = (ardb.getName() =~ patterns[type])[0][1] // get ar date
+    def reset  = '\033[0m'
+
+    // patterns used to extract the DB date from the *db* filename
+    def patterns = [
+        gamma           : /ResGANNCBI_(\d{8})_srst2\.fasta/,
+        amrfinder       : /amrfinderdb_v\d+\.\d+_(\d{8})\.\d+\.tar\.gz/,
+        refseq_sketch_as: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/,
+        refseq_sketch_gc: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/,
+        ncbi_stats_ratio: /_Assembly_stats_(\d{8})\.txt/,
+        ncbi_stats_gc   : /_Assembly_stats_(\d{8})\.txt/,
+        srst2           : /__fullgenes__ResGANNCBI_(\d{8})__srst2__results\.txt/
+    ]
+
+    // Decide list/single up front
+    def isList = (in_file instanceof List)
+
+    // Try to extract the DB date from the db filename
     def m = (db.getName() =~ patterns[type])
-    if (!m.find()) return [meta, isList ? in_file : in_file]  // or null/empty list — pick your policy
-        def dbDate = m.group(1)
-    def isList = in_file instanceof List // check if the input is a list or a single file
-    // Filter to keep only gamma/amrfinder files that do not contain the extracted date
-    def matchingFiles = isList ? in_file.findAll { !it.getName().contains(dbDate) } : (!in_file.getName().contains(dbDate) ? in_file : null)
-    //def filteredFiles = isList ? in_file.findAll { it.getName().contains(ardbDate) } : (in_file.getName().contains(ardbDate) ? in_file : null)
-    def filteredList = isList ? filteredFiles : (filteredFiles ? [filteredFiles] : [])
-    
-    //print warning if the file has already been processed with the same AR db date
-//    if (filteredFiles) {
+    if (!m.find()) {
+        // Can't extract a date → nothing to filter; just pass through
+        return [ meta, in_file ]
+    }
+    def dbDate = m.group(1)
+
+    // Filter out files that already contain the dbDate
+    def matchingFiles = isList
+        ? in_file.findAll { !it.getName().contains(dbDate) }
+        : (!in_file.getName().contains(dbDate) ? in_file : null)
+
+    // Build a list form for logging convenience
+    def filteredList = isList ? matchingFiles : (matchingFiles ? [matchingFiles] : [])
+
     if (filteredList) {
-        def cleanedFilename = filteredList[0].toString().split('/').last()
-//        def cleanedFilename = filteredFiles[0].toString().split('/').last()
-        def replacements = [ gamma: [".gamma", "${meta.id}_"], amrfinder: ["amrfinderdb_", ".tar.gz"], ncbi_stats_ratio: ["_Assembly_stats_", ".txt"], ncbi_stats_gc: ["_GC_content_", ".txt"], srst2: ["__fullgenes__ResGANNCBI_", "__srst2__results.txt"] , refseq_sketch_as: ["REFSEQ_", "_Bacteria_complete.msh.xz"], refseq_sketch_gc: ["REFSEQ_", "_Bacteria_complete.msh.xz"] ]
-        replacements[type].each { cleanedFilename = cleanedFilename.replace(it, "") }
-        def outputFiles = [ gamma: "${meta.id}_ResGANNCBI_${dbDate}_srst2.gamma", amrfinder: "${meta.id}_all_genes_${dbDate}.tsv", refseq_sketch_as: "${meta.id}_Assembly_ratio_${dbDate}.txt", refseq_sketch_gc: "${meta.id}_GC_content_${dbDate}.txt", ncbi_stats_ratio: "${meta.id}_Assembly_stats_${dbDate}.txt", ncbi_stats_gc: "${meta.id}_GC_content_${dbDate}.txt", srst2: "${meta.id}__fullgenes__ResGANNCBI_${ardbDate}__srst2__results.txt"]
+        def cleanedFilename = filteredList[0].toString().tokenize('/').last()
+
+        // Small helpers to remove known prefixes/suffixes when printing warnings
+        def replacements = [
+            gamma           : [".gamma", "${meta.id}_"],
+            amrfinder       : ["amrfinderdb_", ".tar.gz"],
+            ncbi_stats_ratio: ["_Assembly_stats_", ".txt"],
+            ncbi_stats_gc   : ["_GC_content_", ".txt"],
+            srst2           : ["__fullgenes__ResGANNCBI_", "__srst2__results.txt"],
+            refseq_sketch_as: ["REFSEQ_", "_Bacteria_complete.msh.xz"],
+            refseq_sketch_gc: ["REFSEQ_", "_Bacteria_complete.msh.xz"]
+        ]
+        replacements[type]?.each { cleanedFilename = cleanedFilename.replace(it, "") }
+
+        // Use dbDate (not undefined ardbDate)
+        def outputFiles = [
+            gamma           : "${meta.id}_ResGANNCBI_${dbDate}_srst2.gamma",
+            amrfinder       : "${meta.id}_all_genes_${dbDate}.tsv",
+            refseq_sketch_as: "${meta.id}_Assembly_ratio_${dbDate}.txt",
+            refseq_sketch_gc: "${meta.id}_GC_content_${dbDate}.txt",
+            ncbi_stats_ratio: "${meta.id}_Assembly_stats_${dbDate}.txt",
+            ncbi_stats_gc   : "${meta.id}_GC_content_${dbDate}.txt",
+            srst2           : "${meta.id}__fullgenes__ResGANNCBI_${dbDate}__srst2__results.txt"
+        ]
+
         println("${orange}WARNING: ${meta.id} already had updater run with DB date ${cleanedFilename}, ${outputFiles[type]} will be overwritten.${reset}")
     }
-    // Return a single file when input was single
+
+    // Return null when nothing remains after filtering
     if (!isList && matchingFiles == null) return null
-    if (isList && !matchingFiles) return null
-//    return [meta, isList ? matchingFiles : matchingFiles][0]
-    return [meta, isList && matchingFiles.size() == 1 ? matchingFiles[0] : matchingFiles]
+    if (isList  && (!matchingFiles || matchingFiles.isEmpty())) return null
+
+    // If list with exactly one file, return the file (not a list) for convenience
+    return [ meta, (isList && matchingFiles instanceof List && matchingFiles.size() == 1) ? matchingFiles[0] : matchingFiles ]
 }
 
 // Function to get list of [sample:, directory: ] or [ meta, [ fastq_1, fastq_2 ] ] to [ project_id: full_project_id:]
