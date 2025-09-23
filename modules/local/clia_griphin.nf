@@ -4,13 +4,12 @@ process CLIA_GRIPHIN {
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    path(pipeline_stats_files)
-    path(fairy_summaries)
-    path(original_samplesheet)
     path(db)
+    path(original_samplesheet)
+    val(metas)
+    path(griphin_files) // path to the GRiPHin files, which includes the staged directory
     path(outdir) // output directory used as prefix for the summary file
     val(coverage)
-    path(spades_outcome_files)
 
     output:
     path("*_GRiPHin_Summary.xlsx"),    emit: griphin_report
@@ -25,10 +24,17 @@ process CLIA_GRIPHIN {
     // define variables
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def shigapass = shigapass_detected ? "--shigapass" : ""
+    def prefix = task.ext.prefix ?: "GRiPHin"
+    def stage_files = [
+        metas.collect { "mkdir -p ${prefix}/${it.id}" },
+        metas.collect { "mv ${it.filenames.join(' ')} ${prefix}/${it.id}" }
+    ].flatten().join(" && ")
     """
     full_path=\$(readlink -f ${outdir})
 
-    ${ica}CLIA_GRiPHin.py -d \$full_path -a $db --output ${outdir} --coverage ${coverage}
+    ${ica}CLIA_GRiPHin.py -d \$full_path -a $db --output ${outdir} --coverage ${coverage} 
+            --phx_version ${phx_version} ${shigapass}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

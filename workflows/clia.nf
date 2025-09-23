@@ -419,9 +419,45 @@ workflow CLIA_INTERNAL {
         all_summaries_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ it -> remove_meta(it) }.collect().ifEmpty( [] )
         all_spades_outcomes_ch = SPADES_WF.out.spades_outcome.map{ it -> remove_meta(it) }.collect().ifEmpty( [] )
 
-        // create GRiPHin report
+        fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
+                            .concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
+
+        griphin_inputs_ch = Channel.empty()
+            .mix(
+                GET_TRIMD_STATS.out.fastp_total_qc,
+                GET_RAW_STATS.out.combined_raw_stats,
+                KRAKEN2_TRIMD.out.k2_bh_summary,
+                KRAKEN2_TRIMD.out.report,
+                KRAKEN2_WTASMBLD.out.k2_bh_summary,
+                KRAKEN2_WTASMBLD.out.report,
+                QUAST.out.report_tsv,
+                fairy_files_ch,
+                SCAFFOLD_COUNT_CHECK.out.outcome,
+                SPADES_WF.out.taxonomy,
+                CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
+                CALCULATE_ASSEMBLY_RATIO.out.ratio,
+                CALCULATE_ASSEMBLY_RATIO.out.gc_content,
+                GAMMA_AR.out.gamma,
+                CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] },
+                SHIGAPASS.out.summary
+            )
+            .groupTuple()
+            .map { meta, files ->
+                [
+                    meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
+                    files: files
+                ]
+            }
+
+        //create GRiPHin report
         CLIA_GRIPHIN (
-            all_summaries_ch, fairy_summary_ch, INPUT_CHECK.out.valid_samplesheet, params.amrfinder_db, outdir_path.combine([]), params.coverage, all_spades_outcomes_ch
+            params.amrfinder_db,
+            INPUT_CHECK.out.valid_samplesheet,
+            griphin_inputs_ch.map { it.meta }.collect(),
+            griphin_inputs_ch.map { it.files }.collect(),
+            outdir_path,
+            workflow.manifest.version,
+            params.coverage
         )
         ch_versions = ch_versions.mix(CLIA_GRIPHIN.out.versions)
 
