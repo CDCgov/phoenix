@@ -593,10 +593,10 @@ workflow CREATE_INPUT_CHANNELS {
                                         .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
             filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
                                         .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
-            filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(param.ncbi_assembly_stats))
-                                        .map{ meta, assembly_ratio, ncbi_stats -> previous_updater_check(meta, assembly_ratio, ncbi_stats_ratio, "ncbi_stats_ratio") }
+            filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.ncbi_assembly_stats))
+                                        .map{ meta, assembly_ratio, ncbi_stats_ratio -> previous_updater_check(meta, assembly_ratio, ncbi_stats_ratio, "ncbi_stats_ratio") }
             filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.ncbi_assembly_stats))
-                                        .map{ meta, gc_content, ncbi_stats -> previous_updater_check(meta, gc_content, ncbi_stats_gc, "ncbi_stats_gc") }
+                                        .map{ meta, gc_content, ncbi_stats_gc -> previous_updater_check(meta, gc_content, ncbi_stats_gc, "ncbi_stats_gc") }
             filtered_srst2_ar_ch = COLLECT_SAMPLE_FILES.out.srst2_ar.combine(Channel.fromPath(params.ardb))
                                         .map{ meta, srst2_ar, ardb -> previous_updater_check(meta, srst2_ar, ardb, "srst2") }
             filtered_trimd_kraken_bh_ch        = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
