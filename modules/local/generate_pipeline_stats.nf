@@ -51,7 +51,7 @@ process GENERATE_PIPELINE_STATS {
     def assembly_scaffolds_gz  = krona_trimd ? "-h $assembly_scaffolds" : ""
     def filtered_assembly_gz   = krona_trimd ? "-i $filtered_assembly" : ""
     def tax_file               = taxID ? "-q $taxID" : ""
-    def quast_file             = quast_file ? "-p $quast_report" : ""
+    def quast_file             = quast_report ? "-p $quast_report" : ""
     def mlst_file              = mlst ? "-y $mlst" : ""
     def assembly_ratio_file    = assembly_ratio ? "-r $assembly_ratio" : ""
     def gc_content_file        = gc_content ? "-c $gc_content" : ""

@@ -374,7 +374,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
             warnings.append("FastANI match is <95%")
         if float(FastANI_coverage) < float(70.00):
             warnings.append("FastANI coverage is <70%")
-    if busco_id != "Unknown":
+    if busco_id != "BUSCO summary file not found":
         if float(busco_id) < float(97.00):
             warnings.append("BUSCO match is <97%")
     #add in fastani warning
@@ -447,7 +447,7 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
         kraken_wtasmbld_report = 'Unknown'
     return kraken_trim_genus, kraken_wtasmbld_genus
 
-def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds, sample_name):
+def Checking_auto_pass_fail(fairy_files, spades_fairy_file, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds, sample_name):
     """Checking auto pass fail conditions"""
     #assembly_stdev = assembly_ratio_line.split("(")[1].split(")")[0].split(" ")[1] # parse to get standard dev, old method
     QC_reason = []
@@ -470,7 +470,19 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
                 if ('FAILED: No scaffolds in ' in line):
                     QC_result.append("FAIL")
                     QC_reason.append("No scaffolds were >500bp")
-        f.close()
+    # Check if spades_fairy_file exists and is not empty before trying to open it
+    if spades_fairy_file and spades_fairy_file != "":
+        try:
+            with open(spades_fairy_file, 'r') as sp:
+                for line in sp:
+                        if ('no_scaffolds,no_contigs' in line):
+                            QC_result.append("FAIL")
+                            QC_reason.append("No scaffolds created by SPAdes")
+                        elif ('no_scaffolds,contigs_created' in line):
+                            QC_result.append("FAIL")
+                            QC_reason.append("No scaffolds created by SPAdes only contigs")
+        except FileNotFoundError:
+            print(f"Warning: {spades_fairy_file} not found for sample {sample_name}")
     if scaffolds_entry == False: # if its not being used for scaffolds entry check estimated coverage otherwise don't
         if coverage == "Unknown" or int(coverage) < int(set_coverage):
             QC_result.append("FAIL")
@@ -497,6 +509,7 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
     QC_reason = ', '.join(QC_reason)
     # Simplify error for when Assembly file not found
     check_QC_reason = QC_reason
+    print(QC_reason)
     if "Assembly file not found" in check_QC_reason:
         QC_reason = "Assembly file not found"
         if "is corrupt and is unable to be unzipped" in check_QC_reason:
@@ -510,7 +523,10 @@ def Checking_auto_pass_fail(fairy_files, scaffolds_entry, coverage, length, asse
         elif "The # of reads in raw R1/R2 files are NOT equal" in check_QC_reason:
             new_QC_reason = [item for item in check_QC_reason.split(",") if "NOT equal" in item]
             QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
-        elif "No reads" in check_QC_reason or "No scaffolds" in check_QC_reason:
+        elif "No scaffolds created by SPAdes" in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "No scaffolds created by SPAdes" in item ]
+            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+        elif "No reads" in check_QC_reason or "No scaffolds" in check_QC_reason and "No scaffolds created by SPAdes" not in check_QC_reason:
             new_QC_reason = [item for item in check_QC_reason.split(",") if "No reads" in item or "No scaffolds" in item]
             QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
     #checking if it was a pass
@@ -795,7 +811,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name,ar_gene_thres
 
     return final_srst2_df
 
-def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, ar_db):
+def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, spades_fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, ar_db):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
         Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
@@ -825,7 +841,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     except FileNotFoundError:
         if phoenix_entry == False: # suppress warning when busco is not run
             print("Warning: short_summary.specific." + sample_name + ".filtered.scaffolds.fa.txt not found.")
-        lineage = percent_busco = "File not found"
+        lineage = percent_busco = "BUSCO summary file not found"
         busco_metrics = [lineage, percent_busco]
     try:
         assembly_ratio_metrics = get_assembly_ratio(asmbld_ratio, tax_file)
@@ -840,7 +856,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         gc_stdev = sample_gc = out_of_range_stdev = species_gc_mean = 'Unknown'
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
-        QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count, sample_name)
+        QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, spades_fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count, sample_name)
     except FileNotFoundError: 
         print("Warning: Possibly coverage and assembly length was not calculated and/or "+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
@@ -855,21 +871,21 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         ar_df = parse_gamma_ar(gamma_ar_file, sample_name, ar_df, ar_gene_thresholds, ar_db)
     except FileNotFoundError:
         print("Warning: Gamma file for ar database on " + sample_name + " not found")
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['GAMMA file not found'] })
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['AR GAMMA file not found'] })
         df.index = [sample_name]
         ar_df = pd.concat([ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         pf_df = parse_gamma_pf(gamma_pf_file, sample_name, pf_df)
     except FileNotFoundError: 
         print("Warning: Gamma file for pf database on " + sample_name + " not found")
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_Plasmid_Markers':['File not found'], 'Plasmid_Replicon_Database':['GAMMA file not found'] })
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_Plasmid_Markers':['File not found'], 'Plasmid_Replicon_Database':['PF GAMMA file not found'] })
         df.index = [sample_name]
         pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         hv_df = parse_gamma_hv(gamma_hv_file, sample_name, hv_df)
     except FileNotFoundError: 
         print("Warning: Gamma file for hv database on " + sample_name + " not found")
-        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_HVGs_Found':['File not found'], 'HV_Database':['GAMMA file not found'] })
+        df = pd.DataFrame({'WGS_ID':[sample_name], 'No_HVGs_Found':['File not found'], 'HV_Database':['HV GAMMA file not found'] })
         df.index = [sample_name]
         hv_df = pd.concat([hv_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
@@ -995,9 +1011,12 @@ def Get_Files(directory1, sample_name, directory2, updater):
     quast_report = try_paths( directory1 + "/" + sample_name + "_summary.tsv", directory2 + "/" + sample_name + "/quast/" + sample_name + "_summary.tsv" )
     mlst_file = try_paths( directory1 + "/" + sample_name + "_combined.tsv", directory2 + "/" + sample_name + "/mlst/" + sample_name + "_combined.tsv" )
     # For glob patterns, try both directories
-    fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "_*_summary.txt")
-    fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "_*_summary.txt")
+    fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "*_summary.txt")
+    spades_fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "*_spades_outcome.csv")
+    fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "*_summary.txt")
+    spades_fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "*_spades_outcome.csv")
     fairy_file = fairy_file_1 if fairy_file_1 else fairy_file_2
+    spades_fairy_file = spades_fairy_file_1[0] if spades_fairy_file_1 else (spades_fairy_file_2[0] if spades_fairy_file_2 else "")
     # For the remaining glob patterns, handle with try-except but attempt both directories
     try:
         busco_short_summary_1 = glob.glob(directory1 + "/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
@@ -1099,11 +1118,11 @@ def Get_Files(directory1, sample_name, directory2, updater):
     # For regular paths, use the try_paths function
     tax_file = try_paths( directory1 + "/" + sample_name + ".tax", directory2 + "/" + sample_name + "/" + sample_name + ".tax")
     try:
-        srst2_file_1 = glob.glob(directory1 + "/" + sample_name + "__fullgenes__*_srst2__results.txt")
+        srst2_file_1 = glob.glob(directory1 + "/" + sample_name + "__fullgenes__ResGANNCBI_*_srst2__results.txt")
         if srst2_file_1:
             srst2_file = srst2_file_1[0]
         else:
-            srst2_file_2 = glob.glob(directory2 + "/" + sample_name + "/srst2/" + sample_name + "__fullgenes__*_srst2__results.txt")
+            srst2_file_2 = glob.glob(directory2 + "/" + sample_name + "/srst2/" + sample_name + "__fullgenes__ResGANNCBI_*_srst2__results.txt")
             if srst2_file_2:
                 srst2_file = srst2_file_2[0]
             else:
@@ -1111,7 +1130,7 @@ def Get_Files(directory1, sample_name, directory2, updater):
     except IndexError:
         srst2_file = directory1 + "/" + sample_name + "__fullgenes__blank_srst2__results.txt"
 
-    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
+    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file
 
 def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
             Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2, \
@@ -1862,10 +1881,10 @@ def main():
             # check if species specific information is present
             data_location, parent_folder = Get_Parent_Folder(directory2)
             print("D:", directory, "D2:", directory2, "Sample:", sample_name, "Data_location:", data_location, "Parent_folder:", parent_folder)
-            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2, args.updater)
+            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2, args.updater)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
-            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, args.ar_db)
+            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, spades_fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, args.ar_db)
             #Collect this mess of variables into appeneded lists
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = Append_Lists(data_location, parent_folder, sample_name, \

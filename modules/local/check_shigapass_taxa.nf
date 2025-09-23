@@ -10,7 +10,7 @@ process CHECK_SHIGAPASS_TAXA {
     output:
     tuple val(meta), path('edited/*.fastANI.txt'),              emit: ani_best_hit
     tuple val(meta), path("edited/${meta.id}.tax"),             emit: tax_file
-    tuple val(meta), path("${meta.id}_updater_log.tax"), emit: edited_tax_file
+    tuple val(meta), path("${meta.id}_updater_log.tax"),        emit: edited_tax_file
     path("versions.yml"),                                       emit: versions
 
     script:

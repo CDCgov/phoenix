@@ -300,7 +300,7 @@ workflow UPDATE_PHOENIX_WF {
             CREATE_INPUT_CHANNELS.out.filtered_scaffolds,
             CREATE_INPUT_CHANNELS.out.fairy_outcome,
             CREATE_INPUT_CHANNELS.out.reads,
-            CREATE_INPUT_CHANNELS.out.taxonomy,
+            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] },
             ASSET_CHECK.out.mlst_db,
             true, "update"
         )
@@ -308,7 +308,7 @@ workflow UPDATE_PHOENIX_WF {
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            CREATE_INPUT_CHANNELS.out.taxonomy, false
+            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }, false
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
@@ -351,32 +351,11 @@ workflow UPDATE_PHOENIX_WF {
         ch_ani_input_tagged = CREATE_INPUT_CHANNELS.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'input']] }
         ch_ani_shigapass_tagged = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.map{ meta, file -> [meta.id, [meta, file, 'shigapass']] }
 
-        /*/ For samples that were run through Shigapass we need to compare that to the list of previous ani_best_hit files, then only keep the shigapass files as that has the most up-to-date info
-        // Mix and group by ID
-        ch_ani_combined = ch_ani_input_tagged.mix(ch_ani_shigapass_tagged).groupTuple().map { id, values ->
-                // First check if we have both input and shigapass files
-                def shigapass_data = values.find { it[2] == 'shigapass' }
-                def input_data = values.find { it[2] == 'input' }
-                if (shigapass_data) {
-                    // If shigapass data exists, use it
-                    def (meta, file, _) = shigapass_data
-                    return [meta, file]
-                } else if (input_data) {
-                    // Only use input data if no shigapass data
-                    def (meta, file, _) = input_data
-                    return [meta, file]
-                } else {
-                    // This shouldn't happen 
-                    return null
-                }
-            }.filter { it != null } // Now ch_ani_combined contains the combined channel with prioritized files*/
-
         // for samples that had shigapass run, we will update it the synopsis file
         GENERATE_PIPELINE_STATS_WF (
             CREATE_INPUT_CHANNELS.out.raw_stats,
             CREATE_INPUT_CHANNELS.out.fastp_total_qc,
-            //[],
-            SRST2_AR.out.gene_results,
+            SRST2_AR.out.fullgene_results,
             CREATE_INPUT_CHANNELS.out.k2_trimd_report,
             CREATE_INPUT_CHANNELS.out.k2_trimd_krona,
             CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary,
@@ -387,24 +366,23 @@ workflow UPDATE_PHOENIX_WF {
             GAMMA_AR.out.gamma,
             CREATE_INPUT_CHANNELS.out.gamma_pf,
             CREATE_INPUT_CHANNELS.out.quast_report,
-            //[], [], [], [],
-            CREATE_INPUT_CHANNELS.out.busco_short_summary, 
-            CREATE_INPUT_CHANNELS.out.k2_asmbld_report, 
-            CREATE_INPUT_CHANNELS.out.k2_asmbld_krona, 
+            CREATE_INPUT_CHANNELS.out.busco_short_summary,
+            CREATE_INPUT_CHANNELS.out.k2_asmbld_report,
+            CREATE_INPUT_CHANNELS.out.k2_asmbld_krona,
             CREATE_INPUT_CHANNELS.out.k2_asmbld_bh_summary,
             CREATE_INPUT_CHANNELS.out.k2_wtasmbld_report,
             CREATE_INPUT_CHANNELS.out.k2_wtasmbld_krona,
             CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary,
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta -> [meta[0], meta[1]] },
-            CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta -> [meta[0], meta[1]] },
-            CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta -> [meta[0], meta[1]] },
+            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] },
+            CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta, file -> [meta.id, meta.project_id] },
+            CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta, file -> [meta.id, meta.project_id] },
             AMRFINDERPLUS_RUN.out.mutation_report,
-            CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta -> [meta[0], meta[1]] }
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta, file -> [meta.id, meta.project_id] }
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
         //get back project_id info
-        pipeline_stats_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta -> [meta[0], meta[1]] }
+        pipeline_stats_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] }
                                     .join(GAMMA_AR.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma, meta.project_id]}, by: [0]).map{ meta, pipeline_stats, gamma, project_id -> [[id:meta.id, project_id:project_id], pipeline_stats]}
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
@@ -414,16 +392,16 @@ workflow UPDATE_PHOENIX_WF {
             .join(GAMMA_AR.out.gamma.map{                                  meta, gamma                  -> [[id:meta.id, project_id:meta.project_id], gamma]},                  by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{                  meta, gamma_pf               -> [[id:meta.id, project_id:meta.project_id], gamma_pf]},               by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.quast_report.map{              meta, quast_report           -> [[id:meta.id, project_id:meta.project_id], quast_report]},           by: [[0][0],[0][1]])
-            .join( CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta -> [meta[0], meta[1]] }
+            .join( CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta, file -> [meta.id, meta.project_id] }
                                                     .map{                  meta, assembly_ratio         -> [[id:meta.id, project_id:meta.project_id], assembly_ratio]},         by: [[0][0],[0][1]])
-            .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta -> [meta[0], meta[1]] }
+            .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] }
                                                     .map{                  meta, synopsis               -> [[id:meta.id, project_id:meta.project_id], synopsis]},               by: [[0][0],[0][1]])
-            .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta -> [meta[0], meta[1]] }
+            .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }
                                                     .map{                  meta, taxonomy               -> [[id:meta.id, project_id:meta.project_id], taxonomy]},               by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary.map{       meta, k2_trimd_bh_summary    -> [[id:meta.id, project_id:meta.project_id], k2_trimd_bh_summary]},    by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary.map{    meta, k2_wtasmbld_bh_summary -> [[id:meta.id, project_id:meta.project_id], k2_wtasmbld_bh_summary]}, by: [[0][0],[0][1]])
             .join(AMRFINDERPLUS_RUN.out.report.map{                        meta, report                 -> [[id:meta.id, project_id:meta.project_id], report]},                 by: [[0][0],[0][1]])
-            .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta -> [meta[0], meta[1]] }
+            .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta, file -> [meta.id, meta.project_id] }
                                                 .map{                      meta, ani_best_hit           -> [[id:meta.id, project_id:meta.project_id], ani_best_hit]},           by: [[0][0],[0][1]])
 
         // First, check if SHIGAPASS.out.summary is empty and create appropriate channel - for cases where isolate set has no e.coli or shigella
@@ -440,7 +418,7 @@ workflow UPDATE_PHOENIX_WF {
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
-            line_summary_ch, workflow.manifest.version
+            line_summary_ch, false, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
@@ -449,7 +427,7 @@ workflow UPDATE_PHOENIX_WF {
             .map { dirs -> dirs.collectEntries { dir -> def dirName = dir.tokenize('/').last()
             return [dirName, dir]}}
 
-        // Mix the real gene results with the dummy channel. This way, if SRST2_AR.out.gene_results doesn't exist, the empty channel is used
+        // Mix the real gene results with the dummy channel. This way, if SRST2_AR.out.fullgene_results doesn't exist, the empty channel is used
         // Create channels to handle whether SRST2_AR ran or not
         
         // Group the line_summaries by their project id and add in the full path for the project dir
@@ -465,17 +443,17 @@ workflow UPDATE_PHOENIX_WF {
         
         // First, join CREATE_SUMMARY_LINE with gene_results and identify entries with null summaryline
         primary_summaries_ch = CREATE_SUMMARY_LINE.out.line_summary
-            .join(SRST2_AR.out.gene_results.map{meta, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}, by: [[0][0],[0][1]], remainder: true) // add in SRST2 results if they exist to make the pipeline wait for it to finish
-            .map{meta, summaryline, gene_results -> [meta, summaryline, gene_results]}
+            .join(SRST2_AR.out.fullgene_results.map{meta, fullgene_results -> [[id:meta.id, project_id:meta.project_id], fullgene_results]}, by: [[0][0],[0][1]], remainder: true) // add in SRST2 results if they exist to make the pipeline wait for it to finish
+            .map{meta, summaryline, fullgene_results -> [meta, summaryline, fullgene_results]}
         
         // Split into successful and failed summaries based on whether summaryline is null
-        successful_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, gene_results -> summaryline != null }.map{meta, summaryline, gene_results -> [meta.project_id, summaryline]}
-        failed_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, gene_results -> summaryline == null }.map{meta, summaryline, gene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}
+        successful_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, fullgene_results -> summaryline != null }.map{meta, summaryline, fullgene_results -> [meta.project_id, summaryline]}
+        failed_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, fullgene_results -> summaryline == null }.map{meta, summaryline, fullgene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}
 
         // Implement fallback mechanism: if CREATE_SUMMARY_LINE produces null summaryline, use CREATE_INPUT_CHANNELS.out.line_summary
         // Join failed summaries with fallback line_summary
         fallback_summaries_ch = failed_summaries_ch.join(CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[id:meta.id, project_id:meta.project_id], line_summary]}, by: [[0][0],[0][1]])
-            .map{meta, gene_results, line_summary -> [meta.project_id, line_summary]}
+            .map{meta, fullgene_results, line_summary -> [meta.project_id, line_summary]}
 
         // Combine successful and fallback summaries
         summaries_ch = successful_summaries_ch.mix(fallback_summaries_ch).groupTuple(by: 0)
@@ -560,7 +538,7 @@ workflow UPDATE_PHOENIX_WF {
         def software_versions_ch
         if (params.indir != null) { // If the input directory is not null, we need to check if the input directory is the same as the output directory
             //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
-            shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] }.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
+            shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
                             .collect().sum().map{ it -> it[0] > 0 }
 
             busco_boolean = collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> busco_boolean}
@@ -583,15 +561,15 @@ workflow UPDATE_PHOENIX_WF {
                     CREATE_INPUT_CHANNELS.out.quast_report,
                     CREATE_INPUT_CHANNELS.out.fairy_outcome,
                     DO_MLST.out.checked_MLSTs,
-                    CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] },
-                    CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ it -> [it[0]] },
-                    CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ it -> [it[0]] },
+                    CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] },
+                    CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta, file -> [meta.id, meta.project_id] },
+                    CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta, file -> [meta.id, meta.project_id] },
                     GAMMA_AR.out.gamma,
                     CREATE_INPUT_CHANNELS.out.gamma_pf,
                     CREATE_INPUT_CHANNELS.out.gamma_hv,
-                    CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ it -> [it[0]] },
-                    pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ it -> [it[0]] },
-                    SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ it -> [it[0]] },
+                    CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta, file -> [meta.id, meta.project_id] },
+                    pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] },
+                    SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ meta, file -> [meta.id, meta.project_id] },
                     CREATE_INPUT_CHANNELS.out.busco_short_summary,
                     SRST2_AR.out.gene_results
                 ).groupTuple()
@@ -630,7 +608,7 @@ workflow UPDATE_PHOENIX_WF {
             // to avoid file name collisions with indir (this is when you are passing --indir and NOT --outdir so the end location of the files is the indir)
             if (params.outdir == "${launchDir}/phx_output") {
                 // check for shigapass
-                shigapass_var_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] }
+                shigapass_var_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }
                                 .map{ meta, tax -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], tax, meta.project_id]}
                                 .map{it -> get_taxa_and_project_ID(it)}.groupTuple().map{meta, shiga_var, project_id -> [ meta, shiga_var, project_id.unique() ]}
                                 .map{ meta, genus_list, project_id ->  [meta, genus_list.any{ genus -> genus == "Escherichia" || genus == "Shigella" }] }
@@ -651,15 +629,15 @@ workflow UPDATE_PHOENIX_WF {
                         CREATE_INPUT_CHANNELS.out.quast_report,
                         CREATE_INPUT_CHANNELS.out.fairy_outcome,
                         DO_MLST.out.checked_MLSTs,
-                        CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] },
-                        CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ it -> [it[0]] },
-                        CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ it -> [it[0]] },
+                        CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] },
+                        CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta, file -> [meta.id, meta.project_id] },
+                        CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta, file -> [meta.id, meta.project_id] },
                         GAMMA_AR.out.gamma,
                         CREATE_INPUT_CHANNELS.out.gamma_pf,
                         CREATE_INPUT_CHANNELS.out.gamma_hv,
-                        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ it -> [it[0]] },
-                        pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ it -> [it[0]] },
-                        SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ it -> [it[0]] },
+                        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta, file -> [meta.id, meta.project_id] },
+                        pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] },
+                        SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ meta, file -> [meta.id, meta.project_id] },
                         CREATE_INPUT_CHANNELS.out.busco_short_summary,
                         SRST2_AR.out.gene_results
                     ).map { meta, file -> [meta.project_id, meta, file] }  // Restructure for grouping
@@ -753,8 +731,8 @@ workflow UPDATE_PHOENIX_WF {
             } else { // params.outdir != "${launchDir}/phx_output" --> regardless of how many input dirs, all files go to the outdir
 
                 // check if shigapass was run
-                shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] }.map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}
-                            .collect().sum().map{ it -> it[0] > 0 }
+                shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }
+                            .map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.collect().sum().map{ it -> it[0] > 0 }
                 outdir_full_path = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
                 //add in the samplesheet specific to each project dir -- put outdir to toList() to avoid closure error in branching section below
                 summaries_with_outdir_ch = summaries_ch.combine(outdir_full_path.toList()).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
@@ -773,17 +751,17 @@ workflow UPDATE_PHOENIX_WF {
                         CREATE_INPUT_CHANNELS.out.quast_report,
                         CREATE_INPUT_CHANNELS.out.fairy_outcome,
                         DO_MLST.out.checked_MLSTs,
-                        CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ it -> [it[0]] },
-                        CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ it -> [it[0]] },
-                        CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ it -> [it[0]] },
+                        CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] },
+                        CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta, file -> [meta.id, meta.project_id] },
+                        CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta, file -> [meta.id, meta.project_id] },
                         GAMMA_AR.out.gamma,
                         CREATE_INPUT_CHANNELS.out.gamma_pf,
                         CREATE_INPUT_CHANNELS.out.gamma_hv,
-                        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ it -> [it[0]] },
-                        pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ it -> [it[0]] },
-                        SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ it -> [it[0]] },
+                        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta, file -> [meta.id, meta.project_id] },
+                        pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] },
+                        SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ meta, file -> [meta.id, meta.project_id] },
                         CREATE_INPUT_CHANNELS.out.busco_short_summary,
-                        SRST2_AR.out.gene_results
+                        SRST2_AR.out.fullgene_results
                     ).groupTuple()
                     .map { meta, files ->
                         [
@@ -816,10 +794,6 @@ workflow UPDATE_PHOENIX_WF {
                 )
             }
         }
-
-        /*UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
-            software_versions_ch
-        )*/
 
     emit:
         mlst             = DO_MLST.out.checked_MLSTs
