@@ -2,7 +2,7 @@
 // Subworkflow: Running SPAdes and checking if spades failed to create scaffolds
 //
 
-include { GENERATE_PIPELINE_STATS      } from '../../modules/local/generate_pipeline_stats'
+include { GENERATE_PIPELINE_STATS } from '../../modules/local/generate_pipeline_stats'
 
 // Groovy funtion to make [ meta.id, [] ] - just an empty channel
 def create_empty_ch(input_for_meta) { // We need meta.id associated with the empty list which is why .ifempty([]) won't work

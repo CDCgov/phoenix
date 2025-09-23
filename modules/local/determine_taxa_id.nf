@@ -1,11 +1,11 @@
 process DETERMINE_TAXA_ID {
-    tag "$meta.id"
+    tag "${meta.id}"
     label 'process_single'
     // base_v2.2.0 - MUST manually change below (line 25)!!!
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
-    tuple val(meta), path(kraken_weighted), path(formatted_ani_file), path(k2_bh_summary)
+    tuple val(meta), path(kraken_weighted), path(formatted_ani), path(k2_bh_summary)
     path(nodes_file)
     path(names_file)
 
@@ -19,11 +19,13 @@ process DETERMINE_TAXA_ID {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     // -r needs to be last as in -entry SCAFFOLDS/CDC_SCAFFOLDS k2_bh_summary is not passed so its a blank argument
-    def k2_bh_file = k2_bh_summary ? "-r $k2_bh_summary" : ""
+    def k2_bh_file         = k2_bh_summary ? "-r $k2_bh_summary" : ""
+    def k2_weighted_file   = kraken_weighted ? "-k $kraken_weighted" : ""
+    def formatted_ani_file = formatted_ani ? "-f $formatted_ani" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}determine_taxID.sh -k $kraken_weighted -s $meta.id -f $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
+    ${ica}determine_taxID.sh $k2_weighted_file -s ${meta.id} $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
 
     script_version=\$(${ica}determine_taxID.sh -V)
 

@@ -1,17 +1,17 @@
 process GENERATE_PIPELINE_STATS_FAILURE {
     tag "${meta.id}"
     label 'process_single'
-    // base_v2.2.0 - MUST manually change below (line 35)!!!
+    // base_v2.2.0 - MUST manually change below (line 56)!!!
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta), path(raw_qc), \
     path(fastp_total_qc), \
-    path(kraken2_trimd_report), \
+    path(srst_fullgenes), \
+    path(k2_trim_report), \
     path(krona_trimd), \
-    path(kraken2_trimd_summary), \
-    path(taxID), \
-    val(spades_outcome)
+    path(k2_trim_summary), \
+    path(taxID)
     val(coverage)
 
     output:
@@ -25,17 +25,20 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     def ica = params.ica ? "bash ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def srst_fullgenes_file = srst_fullgenes ? "-x $srst_fullgenes" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
+    # this runs with --mode CDC_PHEONIX or PHOENIX when SPAdes fails (creates contigs and not scaffolds)
     ${ica}pipeline_stats_writer.sh \\
         -a $raw_qc \\
         -b $fastp_total_qc \\
         -d ${prefix} \\
-        -e $kraken2_trimd_report \\
-        -f $kraken2_trimd_summary \\
+        -e $k2_trim_report \\
+        -f $k2_trim_summary \\
         -g $krona_trimd \\
         -q $taxID \\
+        $srst_fullgenes_file \\
         -5 $coverage \\
         $terra
 

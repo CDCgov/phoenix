@@ -1,17 +1,17 @@
 process CREATE_SUMMARY_LINE {
-    tag { meta.id }   // <-- closure for tag
+    tag "${meta.id}"   // <-- closure for tag
     label 'process_single'
     container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
 
     input:
     tuple val(meta),
-        path(trimmed_qc_data_file),
-        path(mlst_file),
-        path(hypervirulence_gamma_file),
-        path(ar_gamma_file),
-        path(pf_gamma_file),
+        path(fastp_total_qc),
+        path(mlst),
+        path(hv_gamma),
+        path(ar_gamma),
+        path(pf_gamma),
         path(quast_report),
-        path(ratio_file),
+        path(assembly_ratio),
         path(synopsis),
         path(taxonomy_file),
         path(trimd_ksummary),
@@ -19,6 +19,7 @@ process CREATE_SUMMARY_LINE {
         path(amr_report),
         path(fastani),
         path(shigapass)
+    val(extended_qc)
     val(phx_version)
 
     output:
@@ -29,34 +30,42 @@ process CREATE_SUMMARY_LINE {
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
-    def prefix = task.ext.prefix ?: "${meta.id}"
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
-    def trimmed_qc_data = trimmed_qc_data_file ? "-t $trimmed_qc_data_file" : ""
-    def trim_ksummary   = trimd_ksummary ? "-k $trimd_ksummary" : ""
-    def fastani_file    = fastani ? "-f $fastani" : ""
-    //def shigapass_file = shigapass ? "--shigapass $shigapass" : ""
+    def extended_qc_arg        = extended_qc ? "--extended_qc" : ""  // only for spades failures
+    def trim_ksummary_file     = trimd_ksummary ? "-k $trimd_ksummary" : ""
+    def wtasmbld_ksummary_file = wtasmbld_ksummary ? "--kraken_wtasmbld ${wtasmbld_ksummary}" : ""
+    def fastani_file           = fastani ? "-f $fastani" : ""
+    def quast_file             = quast_report ? "-q $quast_report" : ""
+    def ar_gamma_file          = ar_gamma ? "-a $ar_gamma" : ""
+    def amr_file               = amr_report ? "-u $amr_report" : ""
+    def pf_gamma_file          = pf_gamma ? "-p $pf_gamma" : ""
+    def hv_gamma_file          = hv_gamma ? "-v $hv_gamma" : ""
+    def ratio_file             = assembly_ratio ? "-r $assembly_ratio" : ""
+    def mlst_file              = mlst ? "-m $mlst" : ""
+    def fastp_file             = fastp_total_qc ? "-t $fastp_total_qc" : ""
     def shigapass_file = (shigapass && shigapass.size() > 0) ? "--shigapass ${shigapass.join(' ')}" : ''
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}Phoenix_summary_line.py \\
-        -q $quast_report \\
-        $trimmed_qc_data \\
-        -a $ar_gamma_file \\
-        -v $hypervirulence_gamma_file \\
-        -p $pf_gamma_file \\
-        -r $ratio_file \\
-        -m $mlst_file \\
-        -u $amr_report \\
-        -n ${prefix} \\
+        $quast_file \\
+        $fastp_file \\
+        $ar_gamma_file \\
+        $hv_gamma_file \\
+        $pf_gamma_file \\
+        $ratio_file \\
+        $mlst_file \\
+        $amr_file \\
+        -n ${meta.id} \\
         -s $synopsis \\
         -x $taxonomy_file \\
         $fastani_file \\
-        --kraken_wtasmbld ${wtasmbld_ksummary} \\
-        $trim_ksummary \\
+        $wtasmbld_ksummary_file \\
+        $trim_ksummary_file \\
         $shigapass_file \\
         --phx_version $phx_version \\
-        -o ${prefix}_summaryline.tsv
+        -o ${meta.id}_summaryline.tsv \\
+        $extended_qc_arg
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
