@@ -127,7 +127,7 @@ def create_meta(sample, file_extension){
     }
     def meta = [:] // create meta array
     meta.id = sample_name
-    meta.single_end = 'true'
+    meta.single_end = true.toBoolean()
     array = [ meta, sample ]  //file() portion provides full path
     return array
 }
