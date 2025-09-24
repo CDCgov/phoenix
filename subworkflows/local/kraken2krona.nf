@@ -44,11 +44,11 @@ workflow KRAKEN2_WF {
         //fairy_check.view()
         //[[id:Qiagen_239_A_assembly, single_end:true], /scicomp/scratch/qpk9/0c/5a9edf6f8b6f9e9537da71fa09be9a/Qiagen_239_A_assembly_scaffolds_summary.txt]
 
-        //fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: 0).view()
+        fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0]).view()
         //[[id:AR-555-JT_C_assembly, single_end:true], [PASSED: Using Scaffold entry no corruption check run on R1., PASSED: Using Scaffold entry no corruption check run on R2., PASSED: Using Scaffold entry no paired reads to check., PASSED: Using Scaffold entry no trimd reads to check., PASSED: More than 0 scaffolds in Qiagen_239_A_assembly after filtering.]]
 
-        //fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}
-        //    .filter{ meta, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering." }.view()
+        fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .map{ meta, fairy_outcome -> fairy_outcome[4] }.view()
 
         //fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
         //    .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering." || fairy_outcome[4] == "End_of_File" }.view()

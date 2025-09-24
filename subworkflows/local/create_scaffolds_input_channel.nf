@@ -44,6 +44,13 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
                     .filter( it -> !(it =~ 'contig') ) // remove samples that are *.contigs.fa.gz
                     .map{ it -> create_meta(it, params.scaffolds_ext.toString())} // create meta for sample
 
+                // Check if scaffolds_ch is empty and throw warning
+                scaffolds_ch.count().map{ count -> 
+                    if (count == 0) {
+                        exit 1, "ERROR: No scaffold files found with extension '${params.scaffolds_ext}' in directory '${params.indir}'. Please check your scaffolds_ext parameter or directory contents."
+                    }
+                }
+
                 // Checking regrex has correct extension
                 scaffolds_ch.collect().map{ it -> check_scaffolds(it) }
             } else {
@@ -57,6 +64,14 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
                     //.ifEmpty(exit 1, "ERROR: Looks like there isn't assemblies in the folder you passed. PHoeNIx doesn't search recursively!\n") // this doesn't work for some reason. 
                 // Checking regrex has correct extension
                 scaffolds_ch.collect().map{ it -> check_scaffolds(it) }
+                
+                // Check if scaffolds_ch is empty and throw warning
+                scaffolds_ch.count().map{ count -> 
+                    if (count == 0) {
+                        exit 1, "ERROR: No scaffold files found with extension '${params.scaffolds_ext}' in directory '${params.indir}'. Please check your scaffolds_ext parameter or directory contents."
+                    }
+                }
+
             }
 
             //get valid samplesheet for griphin step in cdc_scaffolds
@@ -104,7 +119,12 @@ def append_to_path(full_path, string) {
 def create_meta(sample, file_extension){
     '''Creating meta: [[id:sample1, single_end:true], $PATH/sample1.scaffolds.fa.gz]'''
     sample_name_minus_path = sample.toString().split('/')[-1] // get the last string after the last backslash
-    sample_name = sample_name_minus_path.replaceAll(file_extension, "") // remove file extention to get only sample name 
+    if (params.scaffolds_ext == '.scaffolds.fa.gz'){
+        sample_name = sample_name_minus_path.replaceAll(file_extension, "") // remove file extention to get only sample name
+    } else {
+        ext_to_remove = file_extension.tokenize('*')[-1]
+        sample_name = sample_name_minus_path.replaceAll(ext_to_remove, "")
+    }
     def meta = [:] // create meta array
     meta.id = sample_name
     meta.single_end = 'true'

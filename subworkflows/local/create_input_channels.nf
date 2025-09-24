@@ -372,7 +372,6 @@ workflow CREATE_INPUT_CHANNELS {
                 .map{ meta, gc_content, all_passed_id_channel -> [meta, gc_content]} 
                 .combine(Channel.fromPath(params.ncbi_assembly_stats))
                 .map{ meta, gc_content, refdb ->
-                    println("GC CONTENT FILE: ${gc_content}")
                     def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
                     def matchingFile //define to make global
                     if (params.mode_upper == "UPDATE_PHOENIX"){
@@ -738,7 +737,7 @@ def previous_updater_check(meta, ar_file, ardb, type) {
     // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
     def orange = '\033[38;5;208m'
     def reset = '\033[0m'
-    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/, ncbi_stats_ratio: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/ , ncbi_stats_gc: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/, srst2: /ResGANNCBI_(\d{8})_srst2_srst2\.fasta/ ]
+    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/, ncbi_stats_ratio: /_Assembly_stats_(\d{8})\.txt/ , ncbi_stats_gc: /_Assembly_stats_(\d{8})\.txt/, srst2: /ResGANNCBI_(\d{8})_srst2\.fasta/ ]
     def ardbDate = (ardb.getName() =~ patterns[type])[0][1] // get ar date
     def isList = ar_file instanceof List // check if the input is a list or a single file
     // Filter to keep only gamma/amrfinder files that do not contain the extracted date

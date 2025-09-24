@@ -55,11 +55,11 @@ workflow GENERATE_PIPELINE_STATS_WF {
             asmbld_k2_bh_summary = asmbld_k2_bh_summary.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
         } else if(fullgene_results == []) {
             // make this work for cdc versions as well as regular phoenix
-            fullgene_results = fastp_raw_qc.map{ it -> create_empty_ch(it) }
-            busco = fastp_raw_qc.map{ it -> create_empty_ch(it) }
-            asmbld_report = fastp_raw_qc.map{ it -> create_empty_ch(it) }
-            asmbld_krona_html = fastp_raw_qc.map{ it -> create_empty_ch(it) }
-            asmbld_k2_bh_summary = fastp_raw_qc.map{ it -> create_empty_ch(it) }
+            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            busco = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
         if (fastp_raw_qc == []) { // for --mode SCAFFOLDS and CDC_SCAFFOLDS

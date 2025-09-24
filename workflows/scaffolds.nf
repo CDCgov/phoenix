@@ -423,12 +423,8 @@ workflow SCAFFOLDS_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
-        // Creating empty channel that has the form [ meta.id, [] ] that can be passed as a blank below
-        empty_ch = RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ it -> create_empty_ch(it) }
-
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        line_summary_ch = empty_ch.map{                          meta, list  -> [[id:meta.id], list]}
-        .join(DO_MLST.out.checked_MLSTs.map{                     meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])
+        line_summary_ch = DO_MLST.out.checked_MLSTs.map{         meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]}
         .join(GAMMA_HV.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])
         .join(GAMMA_AR.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])
         .join(GAMMA_PF.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])
@@ -437,11 +433,11 @@ workflow SCAFFOLDS_EXTERNAL {
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])
         .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
                             .map{                                meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])
-        .join(empty_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])
         .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{            meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])
         .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])
         .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
                                 .map{                            meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
+        .map{meta, checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, k2_bh_summary, amrfinder_report, ani_best_hit -> [[meta], [], checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, [], k2_bh_summary, amrfinder_report, ani_best_hit] }
 
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty

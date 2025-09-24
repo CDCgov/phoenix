@@ -316,7 +316,8 @@ workflow SCAFFOLDS_EXQC {
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
         best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary]}\
-            .join(FORMAT_ANI.out.ani_best_hit_to_check.map{  meta, ani_best_hit_to_check  -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0]).map{ it -> add_empty_ch(it) }
+            .join(FORMAT_ANI.out.ani_best_hit_to_check.map{  meta, ani_best_hit_to_check  -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0])
+            .map{ meta, k2_bh_summary, ani_best_hit_to_check -> [[meta], k2_bh_summary, ani_best_hit_to_check, []] }
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
@@ -423,10 +424,6 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
-        // gather all outputs from shigapass and format_ani to get the best hit for each sample - we will flatten it to go into the pipeline stats
-        //final_tax_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.collect().concat(.unique{ meta, file-> [meta.id] }.collect()).flatten().collate(2)
-        //ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
-
         GENERATE_PIPELINE_STATS_WF (
             [], \
             [], \
@@ -456,12 +453,8 @@ workflow SCAFFOLDS_EXQC {
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
-        // Creating empty channel that has the form [ meta.id, [] ] that can be passed as a blank below
-        empty_ch = RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ it -> create_empty_ch(it) }
-
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        line_summary_ch = empty_ch.map{                                  meta, list            -> [[id:meta.id], list]}
-        .join(DO_MLST.out.checked_MLSTs.map{                             meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},  by: [0])
+        line_summary_ch = DO_MLST.out.checked_MLSTs.map{                 meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]}
         .join(GAMMA_HV.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},          by: [0])
         .join(GAMMA_AR.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},          by: [0])
         .join(GAMMA_PF.out.gamma.map{                                    meta, gamma           -> [[id:meta.id], gamma]},          by: [0])
@@ -470,12 +463,11 @@ workflow SCAFFOLDS_EXQC {
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]}, by: [0])
         .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
                                 .map{                                    meta, taxonomy        -> [[id:meta.id], taxonomy]},       by: [0])
-        .join(empty_ch.map{                                              meta, list            -> [[id:meta.id], list]},           by: [0])
         .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                    meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},  by: [0])
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},         by: [0])
         .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
                                 .map{                                    meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
-
+        .map{meta, checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, k2_bh_summary, amrfinder_report, ani_best_hit -> [[meta], [], checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, [], k2_bh_summary, amrfinder_report, ani_best_hit] }
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
         shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
@@ -517,7 +509,7 @@ workflow SCAFFOLDS_EXQC {
         // Check to see if the any isolates are Clostridioides difficile - set centar_var to true if it is, otherwise false
         // This is used to double check params.centar to ensure that griphin parameters are set correctly
         //collect all taxa and one by one count the number of c diff. then collect and get the sum to compare to 0
-        centar_boolean = final_tax_ch.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
+        centar_boolean = DETERMINE_TAXA_ID.out.taxonomy.map{ it -> get_only_taxa(it) }.collect().flatten().count{ it -> it == "Clostridioides"}.collect().sum().map{ it -> it[0] > 0 }
         // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
         centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
