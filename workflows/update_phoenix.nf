@@ -448,7 +448,7 @@ workflow UPDATE_PHOENIX_WF {
         
         // Split into successful and failed summaries based on whether summaryline is null
         successful_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, fullgene_results -> summaryline != null }.map{meta, summaryline, fullgene_results -> [meta.project_id, summaryline]}
-        failed_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, fullgene_results -> summaryline == null }.map{meta, summaryline, fullgene_results -> [[id:meta.id, project_id:meta.project_id], gene_results]}
+        failed_summaries_ch = primary_summaries_ch.filter{ meta, summaryline, fullgene_results -> summaryline == null }.map{meta, summaryline, fullgene_results -> [[id:meta.id, project_id:meta.project_id], fullgene_results]}
 
         // Implement fallback mechanism: if CREATE_SUMMARY_LINE produces null summaryline, use CREATE_INPUT_CHANNELS.out.line_summary
         // Join failed summaries with fallback line_summary
@@ -736,7 +736,7 @@ workflow UPDATE_PHOENIX_WF {
                 outdir_full_path = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
                 //add in the samplesheet specific to each project dir -- put outdir to toList() to avoid closure error in branching section below
                 summaries_with_outdir_ch = summaries_ch.combine(outdir_full_path.toList()).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
-                // was busco run on any samples
+                //was busco run on any samples
                 busco_boolean = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> busco_boolean}.collect().map{ busco_booleans -> busco_booleans.any{ it == true }}
 
                 //create GRiPHin report channel

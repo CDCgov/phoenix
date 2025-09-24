@@ -615,6 +615,8 @@ workflow PHOENIX_EXQC {
         fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
                             .concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
 
+        SPADES_WF.out.taxonomy.view()
+
         //create GRiPHin report channel
         griphin_inputs_ch = Channel.empty()
             .mix(
@@ -622,12 +624,12 @@ workflow PHOENIX_EXQC {
                 GET_RAW_STATS.out.combined_raw_stats,
                 KRAKEN2_TRIMD.out.k2_bh_summary,
                 KRAKEN2_TRIMD.out.report,
-                SPADES_WF.out.taxonomy,
                 KRAKEN2_WTASMBLD.out.k2_bh_summary,
                 KRAKEN2_WTASMBLD.out.report,
                 QUAST.out.report_tsv,
                 fairy_files_ch,
                 DO_MLST.out.checked_MLSTs,
+                SPADES_WF.out.taxonomy, 
                 CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
                 CALCULATE_ASSEMBLY_RATIO.out.ratio,
                 CALCULATE_ASSEMBLY_RATIO.out.gc_content,
