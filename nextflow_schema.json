@@ -38,7 +38,7 @@
             }
         },
         "Optional_scaffold_options": {
-            "title": "Options for -entry SCAFFOLDS and CDC_SCAFFOLDS",
+            "title": "Options for --mode SCAFFOLDS and CDC_SCAFFOLDS",
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input scaffolds.",
@@ -58,7 +58,7 @@
             }
         },
         "Required_sra_options": {
-            "title": "Options for -entry SRA and CDC_SRA",
+            "title": "Options for --mode SRA and CDC_SRA",
             "type": "object",
             "fa_icon": "fas fa-file-csv",
             "description": "Define where the pipeline should find input scaffolds.",
@@ -118,13 +118,13 @@
                 "busco_db_path": {
                     "type": "string",
                     "fa_icon": "fas fa-keyboard",
-                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
+                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with --mode CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
                     "default": "Doesn't run in offline mode and connects to the V5 BUSCO database at https://busco-data.ezlab.org/v5/data/lineages/ ."
                 },
                 "create_ncbi_sheet": {
                     "type": "boolean",
                     "fa_icon": "fas fa-keyboard",
-                    "description": "Pass this argument to generate partially filled out excel sheets required for NCBI upload. This should still be reviewed PRIOR to upload. Only use with -entry CDC_PHOENIX and -entry PHOENIX. As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov.",
+                    "description": "Pass this argument to generate partially filled out excel sheets required for NCBI upload. This should still be reviewed PRIOR to upload. Only use with --mode CDC_PHOENIX and --mode PHOENIX. As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov.",
                     "default": "False"
                 },
                 "email": {

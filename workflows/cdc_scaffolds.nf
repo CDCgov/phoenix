@@ -467,7 +467,7 @@ workflow SCAFFOLDS_EXQC {
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report          -> [[id:meta.id], report]},         by: [0])
         .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
                                 .map{                                    meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},   by: [0])
-        .map{meta, checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, k2_bh_summary, amrfinder_report, ani_best_hit -> [[meta], [], checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, [], k2_bh_summary, amrfinder_report, ani_best_hit] }
+        .map{meta, checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, k2_bh_summary, amrfinder_report, ani_best_hit -> [meta, [], checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, [], k2_bh_summary, amrfinder_report, ani_best_hit] }
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
         shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
