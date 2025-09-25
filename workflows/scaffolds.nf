@@ -287,8 +287,8 @@ workflow SCAFFOLDS_EXTERNAL {
         ch_versions = ch_versions.mix(FORMAT_ANI.out.versions)
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
-        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}\
-            .join(FORMAT_ANI.out.ani_best_hit_to_check.map{  meta, ani_best_hit_to_check  -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0]).map{ it -> add_empty_ch(it) }
+        best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary         -> [[id:meta.id], k2_bh_summary]}\
+            .join(FORMAT_ANI.out.ani_best_hit_to_check.map{  meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0]).map{ it -> add_empty_ch(it) }
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
@@ -423,6 +423,8 @@ workflow SCAFFOLDS_EXTERNAL {
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
+        //CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }.view()
+
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = DO_MLST.out.checked_MLSTs.map{         meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]}
         .join(GAMMA_HV.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])
@@ -437,8 +439,7 @@ workflow SCAFFOLDS_EXTERNAL {
         .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])
         .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
                                 .map{                            meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
-        .map{meta, checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, k2_bh_summary, amrfinder_report, ani_best_hit -> [[meta], [], checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, [], k2_bh_summary, amrfinder_report, ani_best_hit] }
-
+        .map{meta, checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, k2_bh_summary, amrfinder_report, ani_best_hit -> [meta, [], checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, [], k2_bh_summary, amrfinder_report, ani_best_hit] }
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
         shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining

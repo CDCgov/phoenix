@@ -1,8 +1,8 @@
 process SPADES {
     tag "$meta.id"
     label 'process_high_memory'
-    // v4.0.0
-    container 'staphb/spades@sha256:5df39e8404df2678ccc6c6ed9d7aa0e59b79dfa798aef7fd4fc06cc86ba0b4c0'
+    // v4.2.0
+    container 'staphb/spades@sha256:b186acb3b52675036322fb7559539f1734b29498ea7808acef69870ca3828429'
 
     input:
     tuple val(meta), path(reads), path(unpaired_reads), path(k2_bh_summary), \

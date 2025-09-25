@@ -23,11 +23,13 @@ workflow DO_MLST {
 
         // Creating channel to ensure ID is paired with matching trimmed assembly
         if (run_type=="original") {
-            mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id], fasta]}\
+
+            mlst_ch = trimmed_assembly.map{                           meta, fasta         -> [[id:meta.id], fasta]}\
             .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
             .filter { meta, reads, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
             .join(taxonomy.map{meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0])
             .map{ meta, fasta, fairy_outcome, taxonomy -> return [meta, fasta, taxonomy] }
+
         } else if (run_type=="update") {
             /*mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id, project_id:meta.project_id], fasta]}\
             .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\

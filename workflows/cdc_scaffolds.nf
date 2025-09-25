@@ -317,7 +317,7 @@ workflow SCAFFOLDS_EXQC {
         // Combining weighted kraken report with the FastANI hit based on meta.id
         best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary]}\
             .join(FORMAT_ANI.out.ani_best_hit_to_check.map{  meta, ani_best_hit_to_check  -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0])
-            .map{ meta, k2_bh_summary, ani_best_hit_to_check -> [[meta], k2_bh_summary, ani_best_hit_to_check, []] }
+            .map{ meta, k2_bh_summary, ani_best_hit_to_check -> [[id:meta.id], k2_bh_summary, ani_best_hit_to_check, []] }
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (
@@ -475,7 +475,7 @@ workflow SCAFFOLDS_EXQC {
                     .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: []]}  // If shigapass_file is null, use empty list
 
         // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
-        line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0]) 
+        line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0])
 
         // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE (

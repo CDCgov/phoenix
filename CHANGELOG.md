@@ -316,7 +316,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - amrfinderplus: v3.12.8 to [v4.0.19](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.0.19)
   - busco: v5.4.7--pyhdfd78af_0 to [v5.8.0--pyhdfd78af_0](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG)  
   - bbtools: v39.01 to v39.13  
-  - spades: v3.15.5 to [v4.0.0](https://github.com/ablab/spades/releases/tag/v4.0.0)  
+  - spades: v3.15.5 to [v4.2.0](https://github.com/ablab/spades/releases/tag/v4.2.0)  
   - quast: v5.0.2 to [v5.3.0](https://github.com/ablab/quast/releases/tag/quast_5.3.0)  
   - sra-tools: v3.1.1 to [v3.2.0--h4304569_0](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md)  
   - phx_base: python upgraded from 3.7.12 to 3.9.19, base image updated from jammy to oracular. 

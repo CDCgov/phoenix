@@ -46,7 +46,7 @@ workflow SPADES_WF {
         // Combining weighted kraken report with the FastANI hit based on meta.id - filter to only run on spades failures
         best_hit_ch = k2_bh_summary.map{                             meta, ksummary       -> [[id:meta.id], ksummary]}\
             .join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]}, by: [0])
-            .filter{meta, ksummary, spades_outcome -> "${spades_outcome[0]}" != "run_failure" || "${spades_outcome[1]}" != "no_scaffolds" || "${spades_outcome[2]}" != "no_contigs"}
+            .filter{meta, ksummary, spades_outcome -> "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"}
             .map{ meta, ksummary, spades_outcome -> [meta, [], [], ksummary] }
 
         // if spades completes, but not scaffolds are made get the taxa id 
@@ -68,7 +68,7 @@ workflow SPADES_WF {
 
             // Adding the outcome of spades (scaffolds created or not) to the channel - filter to only run on spades failures
             pipeline_stats_ch = pipeline_stats_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]})
-                .filter{meta, fastp_raw_qc, fastp_total_qc, fullgene_results, report, html, ksummary, taxonomy, spades_outcome -> "${spades_outcome[0]}" != "run_failure" || "${spades_outcome[1]}" != "no_scaffolds" || "${spades_outcome[2]}" != "no_contigs"}
+                .filter{meta, fastp_raw_qc, fastp_total_qc, fullgene_results, report, html, ksummary, taxonomy, spades_outcome -> "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"}
                 .map{ meta, fastp_raw_qc, fastp_total_qc, fullgene_results, report, html, ksummary, taxonomy, spades_outcome -> [meta, fastp_raw_qc, fastp_total_qc, fullgene_results, report, html, ksummary, taxonomy ] }
 
             // Generate pipeline stats for case when spades fails to create scaffolds
@@ -88,7 +88,7 @@ workflow SPADES_WF {
 
             // Adding the outcome of spades (scaffolds created or not) to the channel - filter to only run on spades failures
             pipeline_stats_ch = pipeline_stats_ch.join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]}, by: [0])
-                .filter{meta, fastp_raw_qc, fastp_total_qc, report, html, ksummary, taxonomy, spades_outcome -> "${spades_outcome[0]}" != "run_failure" || "${spades_outcome[1]}" != "no_scaffolds" || "${spades_outcome[2]}" != "no_contigs"}
+                .filter{meta, fastp_raw_qc, fastp_total_qc, report, html, ksummary, taxonomy, spades_outcome -> "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"}
                 .map{ meta, fastp_raw_qc, fastp_total_qc, report, html, ksummary, taxonomy, spades_outcome -> [meta, fastp_raw_qc, fastp_total_qc, [], report, html, ksummary, taxonomy] }
 
             // Generate pipeline stats for case when spades fails to create scaffolds
@@ -106,7 +106,7 @@ workflow SPADES_WF {
             .join(k2_bh_summary.map{                                                   meta, ksummary        -> [[id:meta.id],ksummary]},       by: [0])
             .join(DETERMINE_TAXA_ID.out.taxonomy.map{                                  meta, taxonomy        -> [[id:meta.id],taxonomy]},       by: [0])
             .join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]}, by: [0])
-                    .filter{meta, pipeline_stats, fastp_total_qc, ksummary, taxonomy, spades_outcome -> "${spades_outcome[0]}" != "run_failure" || "${spades_outcome[1]}" != "no_scaffolds" || "${spades_outcome[2]}" != "no_contigs"}
+                    .filter{meta, pipeline_stats, fastp_total_qc, ksummary, taxonomy, spades_outcome -> "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"}
                     .map{ meta, pipeline_stats, fastp_total_qc, ksummary, taxonomy, spades_outcome -> [meta, fastp_total_qc, [], [], [], [], [], [], pipeline_stats, taxonomy, ksummary, [], [], [], []] }
 
         // Create one line summary for case when spades fails to create scaffolds
