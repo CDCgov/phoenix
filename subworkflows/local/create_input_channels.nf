@@ -552,7 +552,20 @@ workflow CREATE_INPUT_CHANNELS {
             ch_versions = ch_versions.mix(COLLECT_SAMPLE_FILES.out.versions)
 
             //collect all fairy files and then recreate meta groups with flatten and buffer.
-            file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(COLLECT_SAMPLE_FILES.out.fairy_summary.collect().ifEmpty([])).flatten().buffer(size:2)
+            // Was having issues with this first version not cutting files returned to a single file causing cname collisons in GRiPHiN.
+            //file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(COLLECT_SAMPLE_FILES.out.fairy_summary.collect().ifEmpty([])).flatten().buffer(size:2)
+            file_integrity_ch = Channel.empty()
+                .mix(
+                    CREATE_FAIRY_FILE.out.created_fairy_file,
+                    COLLECT_SAMPLE_FILES.out.fairy_summary
+                )
+                .map { meta, p -> [ meta.id as String, p ] }  // [id, path]
+                .groupTuple()                                 // id, List<Path>
+                .map { id, paths ->
+                    // choose preferred; fallback to first
+                    def chosen = paths.find { it.toString().contains('/file_integrity/') } ?: paths[0]
+                    [ [id: id], chosen ]
+                }
 
             //combine reads to get into one channel
             combined_reads_ch = COLLECT_SAMPLE_FILES.out.read1.join(COLLECT_SAMPLE_FILES.out.read2, by: [0]).map{ meta, read1, read2 -> [meta, [read1, read2]]}
@@ -571,9 +584,9 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
                                         .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
             filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.ncbi_assembly_stats))
-                                        .map{ meta, assembly_ratio, ncbi_stats -> previous_updater_check(meta, assembly_ratio, ncbi_stats, "ncbi_stats_ratio") }
+                                        .map{ meta, assembly_ratio, ncbi_stats_ratio -> previous_updater_check(meta, assembly_ratio, ncbi_stats_ratio, "ncbi_stats_ratio") }
             filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.ncbi_assembly_stats))
-                                        .map{ meta, gc_content, ncbi_stats -> previous_updater_check(meta, gc_content, ncbi_stats, "ncbi_stats_gc") }
+                                        .map{ meta, gc_content, ncbi_stats_gc -> previous_updater_check(meta, gc_content, ncbi_stats_gc, "ncbi_stats_gc") }
             filtered_srst2_ar_ch = COLLECT_SAMPLE_FILES.out.srst2_ar.combine(Channel.fromPath(params.ardb))
                                         .map{ meta, srst2_ar, ardb -> previous_updater_check(meta, srst2_ar, ardb, "srst2") }
             filtered_trimd_kraken_bh_ch        = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
