@@ -573,8 +573,6 @@ workflow PHOENIX_EXTERNAL {
         fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
                             .concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
 
-        fairy_files_ch.view()
-
         griphin_inputs_ch = Channel.empty()
             .mix(
                 GET_TRIMD_STATS.out.fastp_total_qc,
@@ -585,7 +583,6 @@ workflow PHOENIX_EXTERNAL {
                 KRAKEN2_WTASMBLD.out.report,
                 QUAST.out.report_tsv,
                 fairy_files_ch,
-                SCAFFOLD_COUNT_CHECK.out.outcome,
                 DO_MLST.out.checked_MLSTs,
                 SPADES_WF.out.taxonomy,
                 CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
