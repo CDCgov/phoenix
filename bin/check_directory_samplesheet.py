@@ -23,8 +23,8 @@ def parse_args(args=None):
     parser.add_argument("FILE_OUT", help="Output file.")
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     parser.add_argument('--updater', default=False, action='store_true',)# Add an argument to display the version
+    parser.add_argument('--sheet_by_dir', default=False, action='store_true',)# Add an argument to display the version
     return parser.parse_args(args)
-
 
 def make_dir(path):
     if len(path) > 0:
@@ -52,7 +52,7 @@ def check_for_duplicates(file_in):
         for index, row in duplicate_rows.iterrows():
             raise ValueError(f"Duplicate row found: {row}. The pair of sample name and directory must be unique.")
 
-def check_samplesheet(file_in, file_out, updater):
+def check_samplesheet(file_in, file_out, updater, sheet_by_dir):
     """
     This function checks that the samplesheet follows the following structure:
 
@@ -199,7 +199,7 @@ def check_samplesheet(file_in, file_out, updater):
                 else:
                     sample_mapping_dict[sample].append(directory)
 
-        if updater: # makes samplesheet by project_id
+        if sheet_by_dir: # makes samplesheet by project_id
             ## Write validated samplesheet with appropriate columns
             out_dir = os.path.dirname(file_out)
             make_dir(out_dir)
@@ -240,7 +240,7 @@ def check_samplesheet(file_in, file_out, updater):
 def main(args=None):
     args = parse_args(args)
     check_for_duplicates(args.FILE_IN)
-    check_samplesheet(args.FILE_IN, args.FILE_OUT, args.updater)
+    check_samplesheet(args.FILE_IN, args.FILE_OUT, args.updater, args.sheet_by_dir)
 
 if __name__ == "__main__":
     sys.exit(main())

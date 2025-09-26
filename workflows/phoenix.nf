@@ -573,6 +573,8 @@ workflow PHOENIX_EXTERNAL {
         fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
                             .concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
 
+        fairy_files_ch.view()
+
         griphin_inputs_ch = Channel.empty()
             .mix(
                 GET_TRIMD_STATS.out.fastp_total_qc,

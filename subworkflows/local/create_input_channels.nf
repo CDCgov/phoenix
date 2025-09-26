@@ -2,7 +2,6 @@
 // workflow handles taking in either a samplesheet or directory and creates correct channels for scaffolds entry point
 //
 // for centar entry
-include { SAMPLESHEET_CHECK as CENTAR_SAMPLESHEET_CHECK   } from '../../modules/local/samplesheet_check'
 include { CREATE_SAMPLESHEET as CENTAR_CREATE_SAMPLESHEET } from '../../modules/local/create_samplesheet'
 // for cdc_phoenix, phoenix entry
 include { SAMPLESHEET_CHECK as SAMPLESHEET_CHECK          } from '../../modules/local/samplesheet_check'
@@ -211,7 +210,7 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_busco_short_summary_ch = Channel.fromPath(busco_glob) // use created regrex to get samples
                 .map{ it -> create_meta(it, ".filtered.scaffolds.fa.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, short_summary, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, short_summary, all_passed_id_channel -> [meta, short_summary]}.ifEmpty([]) //remove all_passed_id_channel from output
+                .map{ meta, short_summary, all_passed_id_channel -> [meta, short_summary]} //remove all_passed_id_channel from output
 
             // get *.top_kraken_hit.txt 
             def wtasmbld_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.top_kraken_hit.txt')
@@ -269,9 +268,11 @@ workflow CREATE_INPUT_CHANNELS {
                     } else {
                         matchingFile = srst2_ar.getName().contains(ardbDate[0][1]) ?  srst2_ar : null
                     }
-                    if (srst2_ar.getName().contains(ardbDate[0][1])) {
-                        def cleanedFilename = srst2_ar.toString().split('/').last().replace("_srst2__results.txt", "").replace(meta.id.toString()+"_", "")
-                        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}__fullgenes__ResGANNCBI_${ardbDate[0][1]}_srst2__results.txt will be overwritten.${reset}")
+                    if (params.mode_upper == "UPDATE_PHOENIX") {
+                        if (srst2_ar.getName().contains(ardbDate[0][1])) {
+                            def cleanedFilename = srst2_ar.toString().split('/').last().replace("_srst2__results.txt", "").replace(meta.id.toString()+"_", "")
+                            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}__fullgenes__ResGANNCBI_${ardbDate[0][1]}_srst2__results.txt will be overwritten.${reset}")
+                        }
                     }
                     return [meta, matchingFile] }.filter{ meta, srst2_ar -> srst2_ar != null }
 
@@ -291,9 +292,11 @@ workflow CREATE_INPUT_CHANNELS {
                     } else {
                         matchingFile = gamma_ar.getName().contains(ardbDate[0][1]) ?  gamma_ar : null
                     }
-                    if (gamma_ar.getName().contains(ardbDate[0][1])) {
-                        def cleanedFilename = gamma_ar.toString().split('/').last().replace(".gamma", "").replace(meta.id.toString()+"_", "")
-                        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
+                    if (params.mode_upper == "UPDATE_PHOENIX") {
+                        if (gamma_ar.getName().contains(ardbDate[0][1])) {
+                            def cleanedFilename = gamma_ar.toString().split('/').last().replace(".gamma", "").replace(meta.id.toString()+"_", "")
+                            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
+                        }
                     }
                     return [meta, matchingFile] }.filter{ meta, gamma_ar -> gamma_ar != null }
 
@@ -313,9 +316,11 @@ workflow CREATE_INPUT_CHANNELS {
                     } else {
                         matchingFile = ncbi_report.getName().contains(ardbDate[0][1]) ?  ncbi_report : null
                     }
-                    if (ncbi_report.getName().contains(ardbDate[0][1])) {
-                        def cleanedFilename = ncbi_report.toString().split('/').last().replace("amrfinderdb_", "").replace(".tar.gz", "")
-                        println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
+                    if (params.mode_upper == "UPDATE_PHOENIX") {
+                        if (ncbi_report.getName().contains(ardbDate[0][1])) {
+                            def cleanedFilename = ncbi_report.toString().split('/').last().replace("amrfinderdb_", "").replace(".tar.gz", "")
+                            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
+                        }
                     }
                     return [meta, matchingFile] }.filter{ meta, ncbi_report -> ncbi_report != null }
 
@@ -358,9 +363,11 @@ workflow CREATE_INPUT_CHANNELS {
                     } else {
                         matchingFile = assembly_ratio.getName().contains(refdbdate[0][1]) ?  assembly_ratio : null
                     }
-                    if (assembly_ratio.getName().contains(refdbdate[0][1])) {
-                        def cleanedFilename = assembly_ratio.toString().split('/').last().replace("_Assembly_ratio_", "")
-                        println("${orange}WARNING: ${meta.id} already had updater run with Stats db date ${cleanedFilename}, ${meta.id}_Assembly_ratio_${refdbdate[0][1]}.txt will be overwritten.${reset}")
+                    if (params.mode_upper == "UPDATE_PHOENIX") {
+                        if (assembly_ratio.getName().contains(refdbdate[0][1])) {
+                            def cleanedFilename = assembly_ratio.toString().split('/').last().replace("_Assembly_ratio_", "")
+                            println("${orange}WARNING: ${meta.id} already had updater run with Stats db date ${cleanedFilename}, ${meta.id}_Assembly_ratio_${refdbdate[0][1]}.txt will be overwritten.${reset}")
+                        }
                     }
                     return [meta, matchingFile] }.filter{ meta, assembly_ratio -> assembly_ratio != null }
 
@@ -379,9 +386,11 @@ workflow CREATE_INPUT_CHANNELS {
                     } else {
                         matchingFile = gc_content.getName().contains(refdbdate[0][1]) ?  gc_content : null
                     }
-                    if (gc_content.getName().contains(refdbdate[0][1])) {
-                        def cleanedFilename = gc_content.toString().split('/').last().replace("_GC_content_", "").replace(".msh.xz", "")
-                        println("${orange}WARNING: ${meta.id} already had updater run with Stats db date ${cleanedFilename}, ${meta.id}_GC_content_${refdbdate[0][1]}.txt will be overwritten.${reset}")
+                    if (params.mode_upper == "UPDATE_PHOENIX") {
+                        if (gc_content.getName().contains(refdbdate[0][1])) {
+                            def cleanedFilename = gc_content.toString().split('/').last().replace("_GC_content_", "").replace(".msh.xz", "")
+                            println("${orange}WARNING: ${meta.id} already had updater run with Stats db date ${cleanedFilename}, ${meta.id}_GC_content_${refdbdate[0][1]}.txt will be overwritten.${reset}")
+                        }
                     }
                     return [meta, matchingFile] }.filter{ meta, gc_content -> gc_content != null }
 
@@ -470,15 +479,15 @@ workflow CREATE_INPUT_CHANNELS {
             all_pipeline_info_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(pipeline_info_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
 
             // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
-            if (centar == true) {
+            //if (centar == true) {
                 //get valid samplesheet for griphin step in cdc_scaffolds
-                CENTAR_CREATE_SAMPLESHEET (
+                CREATE_SAMPLESHEET (
                     indir
                 )
-                ch_versions = ch_versions.mix(CENTAR_CREATE_SAMPLESHEET.out.versions)
+                ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
                 
-                valid_samplesheet = CENTAR_CREATE_SAMPLESHEET.out.samplesheet
-            } else {
+                valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
+            /*} else {
                 //get valid samplesheet for griphin step in cdc_scaffolds
                 CREATE_SAMPLESHEET (
                     indir
@@ -486,7 +495,7 @@ workflow CREATE_INPUT_CHANNELS {
                 ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
 
                 valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
-            }
+            }*/
 
             // combining all summary files into one channel
             summary_files_ch = all_griphin_excel_ch.map{            meta, griphin_excel -> [[project_id:meta.project_id], griphin_excel]}
@@ -510,15 +519,15 @@ workflow CREATE_INPUT_CHANNELS {
         } else if (samplesheet != null) {
             meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ create_samplesheet_meta(it) }.unique()
 
-            if (centar == true) { // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
-                CENTAR_SAMPLESHEET_CHECK (
+            //if (centar == true) { // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
+                SAMPLESHEET_CHECK (
                     samplesheet, false, false, true, meta_ch
                 )
-                ch_versions = ch_versions.mix(CENTAR_SAMPLESHEET_CHECK.out.versions)
+                ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
 
-                samplesheet = CENTAR_SAMPLESHEET_CHECK.out.csv.first()  
-                samplesheet_meta_ch = Channel.empty().ifEmpty([]) //only needed for --pipeline update_phoenix
-            } else {
+                samplesheet = SAMPLESHEET_CHECK.out.csv.first()
+                samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
+            /*} else {
                 // get meta to be project_id:Project_id, full_project_id:$FULL_PATH/Project_id in meta_ch
                 // if a samplesheet was passed then use that to create the channel
                 SAMPLESHEET_CHECK (
@@ -528,12 +537,12 @@ workflow CREATE_INPUT_CHANNELS {
 
                 //if there are multiple dirs in --input samplesheet then several sheets come out here and it increases downstream processes... so only unique go forward
                 samplesheet = SAMPLESHEET_CHECK.out.csv.first() 
-                //only needed for --pipeline update_phoenix
                 samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
-            }
+            }*/
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
-            file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }
+            file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }.filter{meta, clean_path, fairy_exists -> fairy_exists == false }
+            file_integrity_exists.view()
 
             CREATE_FAIRY_FILE (
                 file_integrity_exists, false
@@ -553,19 +562,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             //collect all fairy files and then recreate meta groups with flatten and buffer.
             // Was having issues with this first version not cutting files returned to a single file causing cname collisons in GRiPHiN.
-            //file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(COLLECT_SAMPLE_FILES.out.fairy_summary.collect().ifEmpty([])).flatten().buffer(size:2)
-            file_integrity_ch = Channel.empty()
-                .mix(
-                    CREATE_FAIRY_FILE.out.created_fairy_file,
-                    COLLECT_SAMPLE_FILES.out.fairy_summary
-                )
-                .map { meta, p -> [ meta.id as String, p ] }  // [id, path]
-                .groupTuple()                                 // id, List<Path>
-                .map { id, paths ->
-                    // choose preferred; fallback to first
-                    def chosen = paths.find { it.toString().contains('/file_integrity/') } ?: paths[0]
-                    [ [id: id], chosen ]
-                }
+            file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(COLLECT_SAMPLE_FILES.out.fairy_summary.collect().ifEmpty([])).flatten().buffer(size:2)
 
             //combine reads to get into one channel
             combined_reads_ch = COLLECT_SAMPLE_FILES.out.read1.join(COLLECT_SAMPLE_FILES.out.read2, by: [0]).map{ meta, read1, read2 -> [meta, [read1, read2]]}
@@ -579,16 +576,25 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_taxonomy_ch          = COLLECT_SAMPLE_FILES.out.tax
             filtered_gamma_pf_ch          = COLLECT_SAMPLE_FILES.out.gamma_pf
             filtered_gamma_hv_ch          = COLLECT_SAMPLE_FILES.out.gamma_hv
-            filtered_gamma_ar_ch  = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
-                                        .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
-            filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
-                                        .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
-            filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.ncbi_assembly_stats))
-                                        .map{ meta, assembly_ratio, ncbi_stats_ratio -> previous_updater_check(meta, assembly_ratio, ncbi_stats_ratio, "ncbi_stats_ratio") }
-            filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.ncbi_assembly_stats))
-                                        .map{ meta, gc_content, ncbi_stats_gc -> previous_updater_check(meta, gc_content, ncbi_stats_gc, "ncbi_stats_gc") }
-            filtered_srst2_ar_ch = COLLECT_SAMPLE_FILES.out.srst2_ar.combine(Channel.fromPath(params.ardb))
-                                        .map{ meta, srst2_ar, ardb -> previous_updater_check(meta, srst2_ar, ardb, "srst2") }
+            if (params.mode_upper == "UPDATE_PHOENIX") {
+                filtered_gamma_ar_ch  = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
+                                            .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
+                filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
+                                            .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
+                filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.ncbi_assembly_stats))
+                                            .map{ meta, assembly_ratio, ncbi_stats -> previous_updater_check(meta, assembly_ratio, ncbi_stats, "ncbi_stats_ratio") }
+                filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.ncbi_assembly_stats))
+                                            .map{ meta, gc_content, ncbi_stats -> previous_updater_check(meta, gc_content, ncbi_stats, "ncbi_stats_gc") }
+                filtered_srst2_ar_ch = COLLECT_SAMPLE_FILES.out.srst2_ar.combine(Channel.fromPath(params.ardb))
+                                            .map{ meta, srst2_ar, ardb -> previous_updater_check(meta, srst2_ar, ardb, "srst2") }
+            } else {
+                // in normal mode we just take all the files
+                filtered_gamma_ar_ch  = COLLECT_SAMPLE_FILES.out.gamma_ar
+                filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report
+                filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio
+                filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content
+                filtered_srst2_ar_ch = COLLECT_SAMPLE_FILES.out.srst2_ar
+            }
             filtered_trimd_kraken_bh_ch        = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
             filtered_trimd_krona_ch            = COLLECT_SAMPLE_FILES.out.trimd_kraken_krona
             filtered_trimd_kraken_report_ch    = COLLECT_SAMPLE_FILES.out.trimd_kraken_report
@@ -957,7 +963,8 @@ def get_old_fairy_samples(filePaths) {
             // Get the file name by removing the path and extension
             def fileName = filePath.getFileName().toString().split('/')[-1]
             // Remove everything after the regex '_*_summary.txt'
-            def passing_file2 = fileName.replaceAll(/_summary\.txt/, '')
+            def passing_file1 = fileName.replaceAll(/_scaffolds_summary\.txt/, '').replaceAll(/_rawstats_summary\.txt/, '').replaceAll(/_corruption_summary\.txt/, '').replaceAll(/_trimstats_summary\.txt/, '')
+            def passing_file2 = passing_file1.replaceAll(/_summary\.txt/, '')
             passingFiles << passing_file2 // Add the passing file name to the list
         }
     }

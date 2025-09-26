@@ -10,7 +10,7 @@ process SAMPLESHEET_CHECK {
     val(reads_entry)
     val(scaffolds_entry)
     val(directory_entry)
-    val(meta) // used for -profile update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
+    val(meta) // used for --mode update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
 
     output:
     path('samplesheet.valid.csv'),                   emit: csv
@@ -25,7 +25,8 @@ process SAMPLESHEET_CHECK {
     def reads_check = reads_entry ? "true" : "false"
     def scaffolds_check = scaffolds_entry ? "true" : "false"
     def directory_check = directory_entry ? "true" : "false"
-    def updater = (params.mode_upper == "UPDATE_PHOENIX" ) ? "--updater" : ""
+    def sheet_by_dir = (params.mode_upper == "UPDATE_PHOENIX" || params.mode_upper == "CENTAR") ? "--sheet_by_dir" : ""
+    def updater = (params.mode_upper == "UPDATE_PHOENIX" || params.mode_upper == "CENTAR") ? "--updater" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     if [ ${reads_check} = "true" ]; then
@@ -38,7 +39,7 @@ process SAMPLESHEET_CHECK {
         script_version=\$(echo check_assembly_samplesheet.py: \$(${ica}check_assembly_samplesheet.py --version ))
     elif [ ${directory_check} = "true" ]; then
         echo "Running check of directory samplesheet"
-        ${ica}check_directory_samplesheet.py ${samplesheet} samplesheet.valid.csv ${updater}
+        ${ica}check_directory_samplesheet.py ${samplesheet} samplesheet.valid.csv ${updater} ${sheet_by_dir}
         script_version=\$(echo check_directory_samplesheet.py: \$(${ica}check_directory_samplesheet.py --version ))
     else
         echo "No valid check type provided, exiting."

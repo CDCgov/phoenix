@@ -1,4 +1,4 @@
-process CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS {
+process META_CUSTOM_DUMPSOFTWAREVERSIONS {
     label 'process_low'
     tag "${meta.project_id}"
 

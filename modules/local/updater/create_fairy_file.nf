@@ -48,8 +48,8 @@ process CREATE_FAIRY_FILE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-       phoenix_base_container_tag: ${container_version}
-       phoenix_base_container: ${container}
+        phoenix_base_container_tag: ${container_version}
+        phoenix_base_container: ${container}
     END_VERSIONS
     """
 }
