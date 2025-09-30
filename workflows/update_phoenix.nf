@@ -308,7 +308,7 @@ workflow UPDATE_PHOENIX_WF {
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }, false
+            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
@@ -627,9 +627,13 @@ workflow UPDATE_PHOENIX_WF {
                     // build per-sample bundles inside each project
                     .map { String project_id, metas, files ->
                             def sample_ids = metas.unique{ it.id }*.id as List<String>
-
                             def per_sample = sample_ids.collect { sid ->
-                                def sfiles = files.findAll { it.getName().startsWith(sid) }
+                                def sfiles = files.findAll { file ->
+                                    def filename = file.getName()
+                                    // Match files that start with sid followed by delimiter (explicit matching)
+                                    filename.startsWith(sid + "_") || filename.startsWith(sid + ".") ||
+                                    (filename.startsWith("short_summary") && filename.contains("." + sid + "."))
+                                }
                                 [
                                     meta : [ id: sid, filenames: sfiles.collect { it.getName() } ],
                                     files: sfiles
@@ -637,10 +641,8 @@ workflow UPDATE_PHOENIX_WF {
                             }
                             def meta_list  = per_sample.collect { it.meta }
                             def files_flat = per_sample.collectMany { it.files }
-
                         // emit a tuple keyed by project for joining, plus the two payloads we need
                         [ [project_id: project_id], meta_list, files_flat ]
-
                     }
 
                 // Join griphin_inputs_ch with boolean_ch
@@ -705,7 +707,7 @@ workflow UPDATE_PHOENIX_WF {
                 software_versions_ch = griphins_ch.map{meta, old_excel, new_excel -> [[project_id:meta.project_id, full_project_id:meta.full_project_id]]}
                                 .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-                UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
+                META_CUSTOM_DUMPSOFTWAREVERSIONS (
                     software_versions_ch
                 )
 
@@ -746,7 +748,7 @@ workflow UPDATE_PHOENIX_WF {
                 software_versions_ch = outdir_full_path.toList().map{dir -> [[project_id:dir.toString().split('/')[-1].replace("]", ""), full_project_id:dir]]}.unique()
                                 .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-                UPDATER_CUSTOM_DUMPSOFTWAREVERSIONS (
+                META_CUSTOM_DUMPSOFTWAREVERSIONS (
                     software_versions_ch
                 )
             }

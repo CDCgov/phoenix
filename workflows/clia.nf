@@ -55,14 +55,14 @@ include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
-include { ABRITAMR                       } from '../modules/local/abritamr'
-include { ABRITAMR_REPORT                } from '../modules/local/abritamr_report'
+include { ABRITAMR                       } from '../modules/local/clia/abritamr'
+include { ABRITAMR_REPORT                } from '../modules/local/clia/abritamr_report'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
 include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
 include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
-include { CLIA_GRIPHIN                   } from '../modules/local/clia_griphin'
+include { CLIA_GRIPHIN                   } from '../modules/local/clia/clia_griphin'
 include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/create_ncbi_upload_sheet'
-include { CREATE_CLIA_PDF                } from '../modules/local/clia_pdf'
+include { CREATE_CLIA_PDF                } from '../modules/local/clia/clia_pdf'
 
 /*
 ========================================================================================
@@ -335,7 +335,7 @@ workflow CLIA_INTERNAL {
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            DETERMINE_TAXA_ID.out.taxonomy, true
+            DETERMINE_TAXA_ID.out.taxonomy
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
@@ -347,7 +347,7 @@ workflow CLIA_INTERNAL {
 
         // Run AMRFinder
         AMRFINDERPLUS_RUN (
-            amr_channel, params.amrfinder_db
+            amr_channel, params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
@@ -357,7 +357,7 @@ workflow CLIA_INTERNAL {
         .join(GET_TAXA_FOR_AMRFINDER.out.abritamr_taxa.splitCsv(strip:true).map{meta, abritamr_taxa      -> [meta, abritamr_taxa ]}, by: [0])
 
         ABRITAMR (
-            abritamr_ch, params.amrfinder_db
+            abritamr_ch, params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(ABRITAMR.out.versions)
 
@@ -409,16 +409,7 @@ workflow CLIA_INTERNAL {
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
-        // combine all line summaries into one channel
-        fairy_summary_ch = CORRUPTION_CHECK.out.summary_line.collect().ifEmpty( [] )\
-        .combine(GET_RAW_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        .combine(GET_TRIMD_STATS.out.summary_line.collect().ifEmpty( [] ))\
-        .combine(SCAFFOLD_COUNT_CHECK.out.summary_line.collect().ifEmpty( [] ))\
-        .ifEmpty( [] )
-
-        all_summaries_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ it -> remove_meta(it) }.collect().ifEmpty( [] )
-        all_spades_outcomes_ch = SPADES_WF.out.spades_outcome.map{ it -> remove_meta(it) }.collect().ifEmpty( [] )
-
+        //pull all fairy files together
         fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
                             .concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
 
@@ -432,7 +423,6 @@ workflow CLIA_INTERNAL {
                 KRAKEN2_WTASMBLD.out.report,
                 QUAST.out.report_tsv,
                 fairy_files_ch,
-                SCAFFOLD_COUNT_CHECK.out.outcome,
                 SPADES_WF.out.taxonomy,
                 CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
                 CALCULATE_ASSEMBLY_RATIO.out.ratio,
@@ -451,7 +441,7 @@ workflow CLIA_INTERNAL {
 
         //create GRiPHin report
         CLIA_GRIPHIN (
-            params.amrfinder_db,
+            params.clia_amrfinder_db,
             INPUT_CHECK.out.valid_samplesheet,
             griphin_inputs_ch.map { it.meta }.collect(),
             griphin_inputs_ch.map { it.files }.collect(),
@@ -463,7 +453,7 @@ workflow CLIA_INTERNAL {
 
         // pdf file
         CREATE_CLIA_PDF (
-            outdir_path, CLIA_GRIPHIN.out.phoenix_tsv_report, CLIA_GRIPHIN.out.griphin_tsv_report, workflow.start, params.amrfinder_db, params.coverage
+            outdir_path, CLIA_GRIPHIN.out.phoenix_tsv_report, CLIA_GRIPHIN.out.griphin_tsv_report, workflow.start, params.clia_amrfinder_db, params.coverage
         )
         ch_versions = ch_versions.mix(CREATE_CLIA_PDF.out.versions)
 

@@ -1860,15 +1860,20 @@ def main():
             output_dir_string = str(args.output).replace("_GRiPHin_Summary","").replace("_GRiPHin","")
             input_samplesheet_df = input_samplesheet_df[input_samplesheet_df["directory"].str.contains(fr"/{str(output_dir_string)}", na=False, regex=True)]
         samples_to_run = input_samplesheet_df["sample"].astype(str).tolist()
+        print("Samples to run:", samples_to_run)
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
+    print("Using samplesheet:", samplesheet)
     with open(samplesheet) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         header = next(csv_reader) # skip the first line of the samplesheet
         csv_rows = list(csv_reader)  # Convert the iterator to a list to reuse it
         if (args.centar or args.updater) and args.samplesheet is not None and args.filter_samples:
+            print("Filtering samples to only those in samplesheet")
             # Convert samples_to_run to strings once at the beginning
             filtered_out_samples = [row[0] for row in csv_rows if any(sample not in row[0] for sample in samples_to_run)]
+            print(filtered_out_samples)
             csv_rows = [row for row in csv_rows if row[0] in samples_to_run]
+            print(csv_rows)
             print("\n\033[93m Warning: The following sample(s) are not in samplesheet and were filtered out of reporting in griphin: {}\033[0m\n".format(list(set(filtered_out_samples) - set(samples_to_run))))
         for row in csv_rows:
             sample_name = row[0]
@@ -1880,7 +1885,7 @@ def main():
             directory = "./GRiPHin/" + sample_name + "/" # all samples should be in this directory
             # check if species specific information is present
             data_location, parent_folder = Get_Parent_Folder(directory2)
-            print("D:", directory, "D2:", directory2, "Sample:", sample_name, "Data_location:", data_location, "Parent_folder:", parent_folder)
+            #print("D:", directory, "D2:", directory2, "Sample:", sample_name, "Data_location:", data_location, "Parent_folder:", parent_folder)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2, args.updater)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \

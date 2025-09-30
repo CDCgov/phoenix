@@ -104,7 +104,10 @@ def create_centar_combined_df(directory1, sample_name, directory2):
     # if there is a trailing / remove it
     directory1 = directory1.rstrip('/')
     # create file names
+    print(directory1 + "/" + sample_name + "_centar_output.tsv")
+    print(directory2 + "/" + sample_name + "/CENTAR/" + sample_name + "_centar_output.tsv")
     centar_summary = try_paths( directory1 + "/" + sample_name + "_centar_output.tsv", directory2 + "/" + sample_name + "/CENTAR/" + sample_name + "_centar_output.tsv" )
+    print(centar_summary)
     #clean up the dataframe
     try: # handling for samples that failed and didn't get centar files created
 #        centar_df = pd.read_csv(centar_summary, sep='\t', header=0)

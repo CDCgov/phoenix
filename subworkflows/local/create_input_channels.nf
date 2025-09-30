@@ -542,7 +542,6 @@ workflow CREATE_INPUT_CHANNELS {
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }.filter{meta, clean_path, fairy_exists -> fairy_exists == false }
-            file_integrity_exists.view()
 
             CREATE_FAIRY_FILE (
                 file_integrity_exists, false

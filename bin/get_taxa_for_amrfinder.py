@@ -17,7 +17,7 @@ def parseArgs(args=None):
     """Takes in a taxa file and creates a file with the taxa found"""
     parser = argparse.ArgumentParser(description='Script to generate a PHoeNIx summary line')
     parser.add_argument('-t', '--taxa', dest="taxa_file", required=True, help='.tax file that comes from determine_taxID.sh')
-    parser.add_argument('-c', '--clia', dest="clia_entry", default=False, action='store_true', help='.tax file that comes from determine_taxID.sh')
+    parser.add_argument('-a', '--abritamr_taxa', dest="abritamr_taxa", default=False, action='store_true', help='Creates a *_ABRITAMR_Organism.csv file for abritamr with taxa.')
     parser.add_argument('-o', '--output', dest="output", required=True, help='name of output file prefix')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
@@ -37,9 +37,9 @@ def get_taxa(taxa_file):
 
 def taxa_check(genus_match, species_match, gen_sp):
     # species and genus lists
-    species = ['Enterococcus_faecalis', 'Enterobacter_cloacae', 'Enterobacter_asburiae', 'Citrobacter_freundii', 'Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae', 
-    'Klebsiella_oxytoca', 'Streptococcus_pyogenes', 'Clostridioides_difficile', 'Pseudomonas_aeruginosa', 'Vibrio_cholerae','Neisseria_gonorrhoeae', 'Neisseria_meningitidis', 'Serratia_marcescens',
-    'Vibrio_vulfinicus', 'Vibrio_parahaemolyticus']
+    species = ['Enterococcus_faecalis', 'Enterobacter_cloacae', 'Enterobacter_asburiae','Burkholderia_mallei', 'Bordetella_pertussis', 'Citrobacter_freundii', 'Klebsiella_oxytoca', 'Clostridioides_difficile', 'Corynebacterium_diphtheriae', 'Haemophilus_influenzae', 'Pseudomonas_aeruginosa','Neisseria_gonorrhoeae', 'Neisseria_meningitidis', 
+    'Serratia_marcescens','Staphylococcus_aureus','Staphylococcus_pseudintermedius','Streptococcus_agalactiae','Streptococcus_pyogenes', 'Vibrio_cholerae'
+    'Vibrio_parahaemolyticus', 'Vibrio_vulfinicus']
     genus = ['Salmonella']
     complex_genera = ['Acinetobacter', 'Escherichia', 'Klebsiella','Campylobacter', 'Shigella', 'Streptococcus', 'Burkholderia'] # for v3.11 update
     if gen_sp in species:
@@ -61,7 +61,7 @@ def complicated_genus(gen_sp, genus_match):
     Enterococcus_faecium = ['Enterococcus_faecium', 'Enterococcus_hirae']
     Streptococcus_pneumoniae = ['Streptococcus_pneumoniae', 'Streptococcus_mitis']
     # A. baumannii-calcoaceticus species complex
-    Acinetobacter_baumannii = ['Acinetobacter_baumannii','Acinetobacter_calcoaceticus', 'Acinetobacter_lactucae', 'Acinetobacter_nosocomialis', 'Acinetobacter_pittii', 'Acinetobacter_seifertii']
+    Acinetobacter_baumannii = ['Acinetobacter_baumannii','Acinetobacter_calcoaceticus', 'Acinetobacter_genomosp. 13', 'Acinetobacter_lactucae', 'Acinetobacter_nosocomialis', 'Acinetobacter_pittii', 'Acinetobacter_seifertii']
     # create Acinetobacter sp. names
     AB_complex_sp = []
     AB_sp = [ '0000-0051-1906','0000-0051-1909','0000-0051-8448','0000-0052-5682','0000-0052-7200','0000-0053-2562','0000-0053-7518','0000-0060-4277','0000-0082-5590','0000-0091-0263',
@@ -78,7 +78,7 @@ def complicated_genus(gen_sp, genus_match):
     'Burkholderia_orbicola', 'Burkholderia_paludis', 'Burkholderia_pseudomultivorans', 'Burkholderia_puraquae', 'Burkholderia_pyrrocinia', 'Burkholderia_semiarida', 'Burkholderia_seminalis', 
     'Burkholderia_sola', 'Burkholderia_stabilis', 'Burkholderia_stagnalis', 'Burkholderia_territorii', 'Burkholderia_ubonensis', 'Burkholderia_vietnamiensis', 'unclassified_Burkholderia_cepacia_complex' ]
     # Burkholderia pesudomallei complex 
-    Burkholderia_pseudomallei = ['Burkholderia_humptydooensis', 'Burkholderia_mallei', 'Burkholderia_mayonis', 'Burkholderia_oklahomensis', 'Burkholderia_pseudomallei', 'Burkholderia_savannae', 'Burkholderia_singularis', 'Burkholderia_thailandensis' ]
+    Burkholderia_pseudomallei = ['Burkholderia_humptydooensis', 'Burkholderia_mayonis', 'Burkholderia_oklahomensis', 'Burkholderia_pseudomallei', 'Burkholderia_savannae', 'Burkholderia_singularis', 'Burkholderia_thailandensis' ]
     # create Burkholderia sp. names for Burkholderia pesudomallei complex
     Burk_Pseudo_complex_sp = []
     Burk_Pseudo_sp = ["ABCPW 14", "BDU5", "MSMB0265", "MSMB1498", "MSMB1552", "MSMB1588", "MSMB1589WGS", "MSMB2040", "MSMB2041", "MSMB2042", "MSMB617WGS", "MSMB712", "MSMB713", "MSMB714", "TSV86"]
@@ -142,7 +142,7 @@ def abritamr_taxa_check(genus_match, species_match, gen_sp):
 def main():
     args = parseArgs()
     genus_match, species_match, gen_sp = get_taxa(args.taxa_file)
-    if args.clia_entry == True:
+    if args.abritamr_taxa == True:
         taxa = taxa_check(genus_match, species_match, gen_sp)
         write_file(taxa, args.output, "_AMRFinder_Organism.csv")
         taxa = abritamr_taxa_check(genus_match, species_match, gen_sp)

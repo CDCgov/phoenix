@@ -279,6 +279,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - Condensing GENERATE_PIPELINE_STATS modules and subworkflows. 
    - GRiPHin module was rewritten to be nextflowly (i.e. module runs off input files rather than a directory). Thanks to Savannah Linen (@ztb2), Andreea Stoica (@astoicame) and Les Kallestad (@lekalle) for their help with this. 
    - Removed DETERMINE_TAXA_ID_FAILURE, CREATE_SUMMARY_LINE_FAILURE and GENERATE_PIPELINE_STATS_FAILURE_EXQC modules, by condensing them into DETERMINE_TAXA_ID, CREATE_SUMMARY_LINE and GENERATE_PIPELINE_STATS_FAILURE respectively.
+- *Haemophilus influenzae* and *Bordetella pertussis* added as possible taxa to pass to AMRFinder with `--organism`. *Burkholderia mallei* moved from *Burkholderia pseudomallei* complex set and is just run as *Burkholderia mallei*.
 
 **Summary File Changes:**
 - For spades failures, lack of reads after trimming or corruption we simplifed the warnings produced in `GRiPHin.py` by supressing other warnings as the root cause is the aforementioned failures. Similarly, if the reason for the Auto QC Failure is "Assembly file not found" then only that is reported rather than listing files with unknowns.  

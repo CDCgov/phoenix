@@ -6,7 +6,6 @@ process GET_TAXA_FOR_AMRFINDER {
 
     input:
     tuple val(meta), path(taxa_file)
-    val(clia_entry)
 
     output:
     tuple val(meta), path("*_AMRFinder_Organism.csv"),               emit: amrfinder_taxa
@@ -19,10 +18,10 @@ process GET_TAXA_FOR_AMRFINDER {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container_version = "base_v2.2.0"
-    def clia = clia_entry ? "--clia" : "" //add if you are running the clia version to get the taxa for abritamr
+    def abritamr_val = (params.mode_upper == "CLIA" || params.run_abritamr == true) ? "--abritamr_taxa" : "" //add if you are running the clia version to get the taxa for abritamr
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix} ${clia}
+    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix} ${abritamr_val}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

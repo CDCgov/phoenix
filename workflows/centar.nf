@@ -333,7 +333,12 @@ workflow RUN_CENTAR {
                     .map { String project_id, metas, files ->
                             def sample_ids = metas.unique{ it.id }*.id as List<String>
                             def per_sample = sample_ids.collect { sid ->
-                                def sfiles = files.findAll { it.getName().startsWith(sid) }
+                                def sfiles = files.findAll { file ->
+                                    def filename = file.getName()
+                                    // Match files that start with sid followed by delimiter (explicit matching)
+                                    filename.startsWith(sid + "_") || filename.startsWith(sid + ".") ||
+                                    (filename.startsWith("short_summary") && filename.contains("." + sid + "."))
+                                }
                                 [
                                     meta : [ id: sid, filenames: sfiles.collect { it.getName() } ],
                                     files: sfiles
@@ -412,9 +417,6 @@ workflow RUN_CENTAR {
 
             } else {
 
-                // check if shigapass was run
-                shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }
-                            .map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.collect().sum().map{ it -> it[0] > 0 }
                 outdir_full_path = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
                 //was busco run on any samples
                 busco_boolean = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> busco_boolean}.collect().map{ busco_booleans -> busco_booleans.any{ it == true }}
