@@ -80,14 +80,11 @@ process SPADES {
     # also, will rename the fairy file to publish
     ${ica}afterSpades.sh
 
-    #get version information
-    aspades_version=\$(${ica}afterSpades.sh -V)
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
         spades_container: ${container}
-        \${aspades_version}
+        ${ica}afterSpades.sh -V
     END_VERSIONS
     """
 }
