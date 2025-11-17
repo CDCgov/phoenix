@@ -90,7 +90,7 @@ task update_phoenix {
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
-      if
+      fi
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}' | sed 's/ecoli//g' | sed 's/abaumannii//g' | tee MLST1_NCBI
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_2); print $MLST_2 "_" $MLST_SCHEME_2}' | sed 's/ecoli//g' | sed 's/abaumannii//g'| tee MLST2_NCBI
     elif [ $mode == "CDC_PHOENIX" ]; then
@@ -106,7 +106,7 @@ task update_phoenix {
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
-      if
+      fi
       # handling for abaumannii and ecoli 2nd schemes, novels
       if [[ "$(sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}')"=="-_" ]]; then
         sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1}' | tee MLST1_NCBI

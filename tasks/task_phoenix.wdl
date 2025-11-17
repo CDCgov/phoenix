@@ -141,7 +141,7 @@ task phoenix {
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
-      if
+      fi
       # handling for abaumannii and ecoli primary schemes, novels
       if [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}')"=="-_" ]]; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print "ML" $MLST_1}' | tee MLST1_NCBI
@@ -187,7 +187,7 @@ task phoenix {
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
-      if
+      fi
 
       # handling for abaumannii and ecoli 2nd schemes, novels
       if [[ "$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}')"=="-_" ]]; then
