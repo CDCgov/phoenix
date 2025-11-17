@@ -84,7 +84,7 @@ process SPADES {
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
         spades_container: ${container}
-        ${ica}afterSpades.sh -V
+        \$(${ica}afterSpades.sh -V)
     END_VERSIONS
     """
 }
