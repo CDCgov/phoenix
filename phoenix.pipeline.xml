@@ -7,11 +7,11 @@
         </pd:dataInput>
         <pd:dataInput code="input_sra" format="CSV" type="FILE" required="false" multiValue="false">
             <pd:label>input_sra</pd:label>
-            <pd:description>A csv file that has one SRR number per line. Use with SRA or CDC_SRA entry point.</pd:description>
+            <pd:description>A csv file that has one SRR number per line. Use with SRA or CDC_SRA modes.</pd:description>
         </pd:dataInput>
         <pd:dataInput code="input_samples" format="FASTQ, FASTA" type="FILE" required="false" multiValue="true">
             <pd:label>input_samples</pd:label>
-            <pd:description>input samples for pipeline. For SCAFFOLDS and CDC_SCAFFOLDS entry points this should be a FASTA file, for PHOENIX and CDC_PHOENIX entry points it should be a FASTQ file. Don't pass any samples if using SRA or CDC_SRA, just pass a text file with one SRR per line to INPUT_SRA.
+            <pd:description>input samples for pipeline. For SCAFFOLDS and CDC_SCAFFOLDS modes this should be a FASTA file, for PHOENIX and CDC_PHOENIX modes it should be a FASTQ file. Don't pass any samples if using SRA or CDC_SRA, just pass a text file with one SRR per line to INPUT_SRA.
 All files will be staged in workflow.launchDir</pd:description>
         </pd:dataInput>
         <pd:dataInput code="kraken2db" format="TAR" type="FILE" required="true" multiValue="false">
@@ -29,20 +29,28 @@ All files will be staged in workflow.launchDir</pd:description>
         </pd:dataInput>
     </pd:dataInputs>
     <pd:steps>
-        <pd:step execution="MANDATORY" code="general">
-            <pd:label>general</pd:label>
-            <pd:description>general parameters</pd:description>
-            <pd:tool code="general parameters">
-                <pd:label>general</pd:label>
-                <pd:description>general parameters</pd:description>
+        <pd:step execution="MANDATORY" code="Mandatory Parameter">
+            <pd:label>Mandatory Parameter</pd:label>
+            <pd:description>Mandatory Parameter</pd:description>
+            <pd:tool code="Mandatory Parameter">
+                <pd:label>Mandatory Parameter</pd:label>
+                <pd:description>Mandatory Parameter</pd:description>
                 <pd:parameter code="mode" minValues="1" maxValues="1" classification="USER">
                     <pd:label>entry</pd:label>
-                    <pd:description>State the entry of the pipeline you want to use. The options are PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA and CDC_SRA.",
+                    <pd:description>State the mode of the pipeline you want to use. The options are PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA and CDC_SRA.",
 </pd:description>
                     <pd:stringType/>
                     <pd:value>PHOENIX</pd:value>
                 </pd:parameter>
-                <pd:parameter code="busco_db_path" minValues="1" maxValues="1" classification="USER">
+            </pd:tool>
+        </pd:step>
+        <pd:step execution="OPTIONAL_WITH_DEFAULT_ON" code="Optional Parameters">
+            <pd:label>Optional Parameters</pd:label>
+            <pd:description>optional parameters</pd:description>
+            <pd:tool code="Optional Parameters">
+                <pd:label>optional parameters</pd:label>
+                <pd:description>optional parameters</pd:description>
+                <pd:parameter code="busco_db_path" minValues="0" maxValues="1" classification="USER">
                     <pd:label>busco_db_path</pd:label>
                     <pd:description>Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.</pd:description>
                     <pd:stringType/>
@@ -74,7 +82,7 @@ All files will be staged in workflow.launchDir</pd:description>
             <pd:tool code="scaffolds entry parameters">
                 <pd:label>scaffolds entry parameters</pd:label>
                 <pd:description>scaffolds entry parameters</pd:description>
-                <pd:parameter code="indir" minValues="1" maxValues="1" classification="USER">
+                <pd:parameter code="indir" minValues="0" maxValues="1" classification="USER">
                     <pd:label>indir</pd:label>
                     <pd:description>Path to a input directory to search for assemblies. Files with the extention '*.filtered.scaffolds.fa.gz' and '*.renamed.scaffolds.fa.gz' will be ignored. Alternatively, you can pass a samplesheet (columns should be 'sample,assembly') with the --input argument.</pd:description>
                     <pd:stringType/>
