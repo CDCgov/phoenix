@@ -84,15 +84,49 @@ task update_phoenix {
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f33 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f35 | tee MLST_2
+        # handling for abaumannii and ecoli 1st schemes, novels
+        MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $29); print $31 "_" $29}')
+        if [[ "$MLST1_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($31 != "" && $31 != "-") print "ML" $31; else print ""}' | tee MLST1_NCBI
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST1_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($31 != "" && $31 != "-"); gsub(/[^a-zA-Z0-9]/, "", $29); print "ML" $31 "_" $29}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
+        fi
+        # handling for abaumannii and ecoli 2nd schemes, novels
+        MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $33); print $35 "_" $33}')
+        if [[ "$MLST2_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($35 != "" && $35 != "-") print "ML" $35; else print ""}' | tee MLST2_NCBI
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST2_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv  | awk -F'\t' '{if ($35 != "" && $35 != "-"); {gsub(/[^a-zA-Z0-9]/, "", $33); print "ML" $35 "_" $33}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+        fi
       else
         echo "" | tee SHIGAPASS_TAXA
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_2
+        # handling for abaumannii and ecoli primary schemes, novels
+        MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}')
+        if [[ "$MLST1_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($30 != "" && $30 != "-") print "ML" $30; else print ""}' | tee MLST1_NCBI
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST1_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($30 != "" && $30 != "-") {gsub(/[^a-zA-Z0-9]/, "", $28); print "ML" $30 "_" $28} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
+        fi
+        # handling for abaumannii and ecoli primary schemes, novels
+        MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}')
+        if [[ "$MLST2_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($34 != "" && $34 != "-") print "ML" $34; else print ""}' | tee MLST2_NCBI
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST2_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($34 != "" && $34 != "-") {gsub(/[^a-zA-Z0-9]/, "", $32); print "ML" $34 "_" $32} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+        fi
       fi
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}' | sed 's/ecoli//g' | sed 's/abaumannii//g' | tee MLST1_NCBI
-      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_2); print $MLST_2 "_" $MLST_SCHEME_2}' | sed 's/ecoli//g' | sed 's/abaumannii//g'| tee MLST2_NCBI
     elif [ $mode == "CDC_PHOENIX" ]; then
       if head -n 1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "ShigaPass_Organism"; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee SHIGAPASS_TAXA
@@ -100,28 +134,48 @@ task update_phoenix {
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f33 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f35 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f37 | tee MLST_2
+        # handling for abaumannii and ecoli 1st schemes, novels
+        MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $31); print $33 "_" $31}')
+        if [[ "$MLST1_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($33 != "" && $33 != "-") print "ML" $33; else print ""}' | tee MLST1_NCBI
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST1_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($33 != "" && $33 != "-") {gsub(/[^a-zA-Z0-9]/, "", $31); print "ML" $33 "_" $31} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
+        fi
+        # handling for abaumannii and ecoli 2nd schemes, novels
+        MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $35); print $37 "_" $35}')
+        if [[ "$MLST2_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($37 != "" && $37 != "-") print "ML" $37; else print ""}' | tee MLST2_NCBI
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST2_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($37 != "" && $37 != "-") {gsub(/[^a-zA-Z0-9]/, "", $35); print "ML" $37 "_" $35} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+        fi
       else
         echo "" | tee SHIGAPASS_TAXA
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f36 | tee MLST_2
-      fi
-      # handling for abaumannii and ecoli 2nd schemes, novels
-      if [[ "$(sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}')"=="-_" ]]; then
-        sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1}' | tee MLST1_NCBI
-      elif [[ "$(sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}')"=="*Novel*" ]]; then
-        echo "" | tee MLST1_NCBI
-      else
-        sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_1); print $MLST_1 "_" $MLST_SCHEME_1}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
-      fi
-      # handling for abaumannii and ecoli 2nd schemes, novels
-      if [[ "$(sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_2); print $MLST_2 "_" $MLST_SCHEME_2}')"=="-_" ]]; then
-        sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_2); print $MLST_2}' | tee MLST2_NCBI
-      elif [[ "$(sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_2); print $MLST_2 "_" $MLST_SCHEME_2}')"=="*Novel*" ]]; then
-        echo "" | tee MLST2_NCBI
-      else
-        sed -n 7p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $MLST_SCHEME_2); print $MLST_2 "_" $MLST_SCHEME_2}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+        # handling for abaumannii and ecoli 1st schemes, novels
+        MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}')
+        if [[ "$MLST1_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($32 != "" && $32 != "-") print "ML" $32; else print ""}' | tee MLST1_NCBI
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST1_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($32 != "" && $32 != "-") {gsub(/[^a-zA-Z0-9]/, "", $30); print "ML" $32 "_" $30} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
+        fi
+        # handling for abaumannii and ecoli 2nd schemes, novels
+        MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}')
+        if [[ "$MLST2_CHECK" == "-_" ]]; then
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($36 != "" && $36 != "-") print "ML" $36; else print ""}' | tee MLST2_NCBI
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+          echo "" | tee MLST2_NCBI
+        else
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($36 != "" && $36 != "-") {gsub(/[^a-zA-Z0-9]/, "", $34); print "ML" $36 "_" $34} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+        fi
       fi
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
