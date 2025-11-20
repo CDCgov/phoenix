@@ -187,7 +187,7 @@ task phoenix {
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee HYPERVIRULENCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee PLASMID_INCOMPATIBILITY_REPLICONS
       echo "Only run in CDC_PHOENIX mode" | tee BUSCO_DB
-      echo "Only run in CDC_PHOENIX mode" | tee BUSCO
+      echo "Only run in CDC_PHOENIX mode" | tee BUSCO_PERCENT_MATCH
     elif [ ${mode_upper} == "CDC_PHOENIX" ] || [ ${mode_upper} == "CDC_SRA" ] || [ ${mode_upper} == "CDC_SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f22 | tee BUSCO_DB
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f23 | tee BUSCO_PERCENT_MATCH
