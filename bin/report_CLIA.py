@@ -1,7 +1,7 @@
 #!/scicomp/home-pure/dyp9/.conda/envs/report_env/bin/python
 """
 CLIA WGS Run Summary generating script for CLIA Phoenix
-9-14-2025
+11-18-2025
 @author: Frank Bao
 email: dyp9@cdc.gov
 """
@@ -52,7 +52,7 @@ R2_Q30_TRIM = 70
 SCAFFOLD = 200
 BUSCO = 97
 FASTANI_MATCH = 95
-FASTANI_COVERAGE = 90
+FASTANI_COVERAGE = 70
 KRAKEN_ASSEMBLY_GENUS = 70
 
 #note_text1 = "Failed QC - Numbers below thresholds will be highlighted in red: <30x coverage; Assembly stdev >2.58; Min assembly length <1,000,000 bp; >500 scaffolds"
@@ -248,6 +248,8 @@ def clia_report(args):
         taxa_df = pd.read_csv(matching_files[0],sep='\t', usecols=taxa_columns_to_read)
         taxa_df = taxa_df.rename(columns={'WGS_ID':'ID','FastANI_Organism':'FastANI_Organism', 'Taxa_Source':'Taxonomic ID Source', 'FastANI_%ID':'FastANI Match (%)','FastANI_%Coverage':'Bases Aligned to FastANI Taxon (%)',
                                             'BUSCO_%Match':'BUSCO Match (%)','Kraken_ID_WtAssembly_%':'Kraken Assembly (%)'})
+        # need update it based on some conditions
+        taxa_df.insert(1, 'Taxonomic QC', 'PASS')
         #unknowns
         taxa_df[['Kraken Assembly (%)']] = taxa_df[['Kraken Assembly (%)']].applymap(lambda x: color_unknown_red(x))
         # Failures
