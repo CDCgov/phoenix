@@ -11,12 +11,13 @@ process GRIPHIN {
     path(outdir) //output directory used as prefix for the summary file
     val(phx_version)
     val(coverage)
-    val(entry)
+    val(phx_mode)
     val(shigapass_detected)
     val(centar_detected)
     path(bldb)
-    val(filter_var) // needed for species specific entry points
+    val(filter_var) // needed for species specific mode
     val(dont_publish)
+    path(blind_list) // -b (mostly needed for PhyloPHoenix runs)
 
     output:
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"),                         emit: griphin_report
@@ -29,7 +30,8 @@ process GRIPHIN {
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
-    def phoenix = entry ? "" : "--phoenix"
+    def blind_names   = blind_list ? "--blind_list ${blind_list}" : ""
+    def phoenix_mode = phx_mode ? "" : "--phoenix"
     def scaffolds = (params.mode_upper == "SCAFFOLDS" || params.mode_upper == "CDC_SCAFFOLDS") ? "--scaffolds" : "" 
     def shigapass = shigapass_detected ? "--shigapass" : ""
     def centar = centar_detected ? "--centar" : ""
@@ -54,7 +56,7 @@ process GRIPHIN {
     echo \$full_path > full_path_file.txt
 
     ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --bldb ${bldb} --phx_version ${phx_version} ${filter}\
-        --coverage ${coverage} ${phoenix} ${shigapass} ${centar} ${scaffolds} --samplesheet ${original_samplesheet} ${updater}
+        --coverage ${coverage} ${phoenix_mode} ${shigapass} ${centar} ${scaffolds} --samplesheet ${original_samplesheet} ${updater} ${blind_names}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

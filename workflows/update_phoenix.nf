@@ -592,7 +592,7 @@ workflow UPDATE_PHOENIX_WF {
                     workflow.manifest.version,
                     params.coverage,
                     busco_boolean,
-                    shigapass_var, false, params.bldb, false, false
+                    shigapass_var, false, params.bldb, false, false, []
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
@@ -673,7 +673,8 @@ workflow UPDATE_PHOENIX_WF {
                     false,                                         // val(centar_detected)
                     params.bldb,                                   // path(bldb)
                     true,                                          // val(filter_var)
-                    true                                           // val(dont_publish)
+                    true,                                           // val(dont_publish)
+                    []
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
@@ -738,7 +739,7 @@ workflow UPDATE_PHOENIX_WF {
                         workflow.manifest.version,
                         params.coverage,
                         busco_boolean,
-                        shigapass_var, false, params.bldb, true, false
+                        shigapass_var, false, params.bldb, true, false, []
                     )
                     ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 

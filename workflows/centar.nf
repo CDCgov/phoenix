@@ -302,7 +302,7 @@ workflow RUN_CENTAR {
                 params.coverage,
                 // Fix once implemented, for now its hard-coded
                 CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{meta, tsv -> tsv.readLines().first().contains('BUSCO')}, 
-                false, true, params.bldb, false, false // True is for centar_var but we are in centar so its always true" Falses are for filtering and 'dont_publish'
+                false, true, params.bldb, false, false, []// True is for centar_var but we are in centar so its always true" Falses are for filtering and 'dont_publish'
             )
             ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
@@ -377,7 +377,8 @@ workflow RUN_CENTAR {
                     true,                                          // val(centar_detected)
                     params.bldb,                                   // path(bldb)
                     true,                                          // val(filter_var)
-                    true                                           // val(dont_publish)
+                    true,                                           // val(dont_publish)
+                    []
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
@@ -438,7 +439,7 @@ workflow RUN_CENTAR {
                     workflow.manifest.version,
                     params.coverage,
                     busco_boolean,
-                    false, true, params.bldb, true, false
+                    false, true, params.bldb, true, false, []
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
