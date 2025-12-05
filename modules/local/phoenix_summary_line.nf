@@ -1,7 +1,7 @@
 process CREATE_SUMMARY_LINE {
     tag "${meta.id}"   // <-- closure for tag
     label 'process_single'
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     tuple val(meta),
@@ -44,7 +44,7 @@ process CREATE_SUMMARY_LINE {
     def mlst_file              = mlst ? "-m $mlst" : ""
     def fastp_file             = fastp_total_qc ? "-t $fastp_total_qc" : ""
     def shigapass_file = (shigapass && shigapass.size() > 0) ? "--shigapass ${shigapass.join(' ')}" : ''
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}Phoenix_summary_line.py \\

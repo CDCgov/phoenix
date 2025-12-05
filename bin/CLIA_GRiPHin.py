@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+sys.dont_write_bytecode = True
 import glob
 import os
 from decimal import *
@@ -13,9 +14,11 @@ import operator
 import xlsxwriter as ws
 from xlsxwriter.utility import xl_rowcol_to_cell
 import csv
+import string
 from Bio import SeqIO
 from itertools import chain
-from species_specific_griphin import try_paths
+from species_specific_griphin import  transform_value, create_shiga_df, double_check_taxa_id, fill_taxa_id
+
 
 ##Makes a summary Excel file when given a series of output summary line files from PhoeNiX
 ##Usage: >python GRiPHin.py -s ./samplesheet.csv -a ResGANNCBI_20220915_srst2.fasta -c control_file.csv -o output --phoenix --scaffolds
@@ -29,17 +32,21 @@ def get_version():
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
     parser.add_argument('-s', '--samplesheet', default=None, required=False, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
+    parser.add_argument('-b', '--bldb', default=None, required=False, dest='bldb', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
     parser.add_argument('-d', '--directory', default=None, required=False, dest='directory', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
-    parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
-    parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
-    parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
     parser.add_argument('-a', '--ar_db', dest="ar_db", required=True, help='Pass the name of the amrfinder database used. Only used for documentation purposes')
+    parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
+    parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
+    parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
+    parser.add_argument('--shigapass', dest="shigapass", default=False, action='store_true', required=False, help='Use for when there are E. coli or Shigella isolates in samplesheet.')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen
+#set colors for warnings so they are seen
 CRED = '\033[91m'+'\nWarning: '
+CYELLOW = '\033[93m'
 CEND = '\033[0m'
 
 def Get_Parent_Folder(directory):
@@ -202,21 +209,18 @@ def get_assembly_ratio(asmbld_ratio, tax_file):
     assembly_ratio_metrics = [ratio, stdev, tax_method]
     return assembly_ratio_metrics
 
-def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
+def compile_alerts(coverage, assembly_stdev, gc_stdev):
     """
     No orphaned reads found after trimming
     <10 reference genomes for species identified so no stdev for assembly ratio or %GC content calculated
     >150x coverage or <40x coverage
     """
     alerts = []
-    if scaffolds_entry == False:
-        if coverage != "Unknown": # if its unknown it will fail already so skip
-            if int(coverage) > 30 and int(coverage) < 40:
-                alerts.append("coverage between 30-40x("+ str(coverage) + "x)")
-            elif int(coverage) > 100.00:
-                alerts.append("coverage >100x(" + str(coverage) + "x)")
-    else:
-        pass
+    if coverage != "Unknown": # if its unknown it will fail already so skip
+        if int(coverage) > 30 and int(coverage) < 40:
+            alerts.append("Coverage between 30-40x("+ str(coverage) + "x)")
+        elif int(coverage) > 100.00:
+            alerts.append("Coverage >100x(" + str(coverage) + "x)")
     if str(assembly_stdev) == "NA":
         if str(gc_stdev) == "NA":
             alerts.append("Assembly ratio and GC% STDev are N/A <10 genomes as reference")
@@ -229,9 +233,9 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
     alerts = ', '.join(alerts)
     return alerts
 
-def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
+def compile_warnings(Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_per, Trim_Q30_R2_per, scaffolds, gc_metrics, \
                      assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent, kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,\
-                     fastani_warning, busco_id, FastANI_ID, FastANI_coverage):
+                     fastani_warning, busco_id, FastANI_ID, FastANI_coverage, QC_reason):
     """
     <1,000,000 total reads for each raw and trimmed reads - Total_Sequenced_reads
     % raw and trimmed reads with Q30 average for R1 (<90%) and R2 (<70%) - Q30_R1_percent, Q30_R2_percent
@@ -241,27 +245,33 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     """
     # check warnings
     warnings = []
-    if scaffolds_entry == False:
-        if Total_Trimmed_reads == "Unknown" or int(Total_Trimmed_reads) < int(1000000):
-            warnings.append("<1,000,000 trimmed reads")
-        if Total_Raw_reads == "Unknown" or int(Total_Raw_reads) < int(1000000):
-            warnings.append("<1,000,000 raw reads")
-        if Q30_R1_per == "Unknown" or float(Q30_R1_per) < float(90.00):
-            warnings.append("Average Q30 of raw R1 reads <{:.2f}%".format(float(90.00)))
-        if Q30_R2_per == "Unknown" or float(Q30_R2_per) < float(70.00):
-            warnings.append("Average Q30 of raw R2 reads <{:.2f}%".format(int(70.00)))
-        if Trim_Q30_R1_per == "Unknown" or float(Trim_Q30_R1_per) < float(90.00):
+    if Total_Trimmed_reads == "Unknown" or int(Total_Trimmed_reads) < int(1000000):
+        warnings.append("<1,000,000 trimmed reads")
+    if Total_Raw_reads == "Unknown" or int(Total_Raw_reads) < int(1000000):
+        warnings.append("<1,000,000 raw reads")
+    if Q30_R1_per == "Unknown" or float(Q30_R1_per) < float(90.00):
+        warnings.append("Average Q30 of raw R1 reads <{:.2f}%".format(float(90.00)))
+    if Q30_R2_per == "Unknown" or float(Q30_R2_per) < float(70.00):
+        warnings.append("Average Q30 of raw R2 reads <{:.2f}%".format(int(70.00)))
+    if Trim_Q30_R1_per == "Unknown" or float(Trim_Q30_R1_per) < float(90.00):
+        try:
             warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({:.2f}%)".format(float(90.00),float(Trim_Q30_R1_per)))
-        if Trim_Q30_R2_per == "Unknown" or float(Trim_Q30_R2_per) < float(70.00):
-            warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({:.2f}%)".format(int(70.00), float(Trim_Q30_R2_per)))
-        if Trim_unclassified_percent == "trimmed" or float(Trim_unclassified_percent) > float(30.00):
-            warnings.append(">{:.2f}% unclassifed trimmed reads".format(int(30)))
-        if len(kraken_trim_genus) >=2:
-            warnings.append(">=2 genera had >{:.2f}% of reads assigned to them".format(int(25)))
-        if float(Trim_Genus_percent) <float(70.00):
+        except ValueError:
+            warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({})".format(float(90.00),Trim_Q30_R1_per))
+    if Trim_Q30_R2_per == "Unknown" or float(Trim_Q30_R2_per) < float(70.00):
+        try:
+            warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({:.2f}%)".format(float(70.00),float(Trim_Q30_R2_per)))
+        except ValueError:
+            warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({})".format(float(70.00),Trim_Q30_R2_per))
+    if Trim_unclassified_percent == "Unknown" or float(Trim_unclassified_percent) > float(30.00):
+        warnings.append(">{:.2f}% unclassifed trimmed reads".format(int(30)))
+    if len(kraken_trim_genus) >=2:
+        warnings.append(">=2 genera had >{:.2f}% of reads assigned to them".format(int(25)))
+    if Trim_Genus_percent == "Unknown" or float(Trim_Genus_percent) <float(70.00):
+        try:
             warnings.append("<70% of reads assigned to top genera hit ({:.2f}%)".format(float(Trim_Genus_percent)))
-    else:
-        pass
+        except ValueError:
+            warnings.append("<70% of reads assigned to top genera hit ({})".format(Trim_Genus_percent))
     if gc_metrics[0] != "NA" and gc_metrics[0] != "Unknown":
         # sample_gc > (species_gc_mean + out_of_range_stdev)
         if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
@@ -274,7 +284,10 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         if float(Asmbld_Genus_percent) <float(70.00):
             warnings.append("<70% of weighted scaffolds assigned to top genera hit ({:.2f}%)".format(float(Asmbld_Genus_percent)))
     elif scaffolds == "Unknown" and Wt_asmbld_unclassified_percent == "Unknown" and Asmbld_Genus_percent == "Unknown":
-        warnings.append("No assembly file found possible SPAdes failure.")
+        if "No assembly due to:" in QC_reason: # if there is already a QC reason for no assembly then don't add this warning
+            pass
+        else:
+            warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
         warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them.".format(int(25))) 
     if FastANI_ID != "Unknown":
@@ -288,7 +301,28 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
     #add in fastani warning
     if fastani_warning != None:
         warnings.append(fastani_warning)
-    warnings = ', '.join(warnings).strip(", ")
+    # For spades failures, lack of reads after trimming or corruption we will simplify the warnings by supressing other warnings
+    if "No assembly file found possible SPAdes failure." in warnings:
+        warnings = "No assembly file found possible SPAdes failure."
+    elif "is corrupt and is unable to be unzipped" in warnings:
+        warnings = [item for item in warnings if "corrupt" in item]
+    elif "The # of reads in raw R1/R2 files are NOT equal." in warnings:
+        warnings = [item for item in warnings if "NOT equal" in item]
+    # Reduce warnings if certain QC reasons are present
+    if "The # of reads in raw R1/R2 files are NOT equal." in QC_reason:
+        warnings = [item for item in warnings if "trimmed" not in item and "reads assigned" not in item]
+        warnings.insert(0, "Skipped trimmed steps: unequal R1/R2 read counts.")
+    elif "No reads remain after trimming" in QC_reason :
+        warnings = [item for item in warnings if "trimmed" not in item and "reads assigned" not in item]
+        warnings.insert(0, "Skipped trimmed steps: No reads remain after trimming.")
+    elif "corrupt" in QC_reason :
+        warnings = "Corrupted input FASTQ file(s): downstream steps skipped."
+    if isinstance(warnings, list) and len(warnings) > 1:
+        warnings = ', '.join(warnings).strip(", ")
+    elif len(warnings) == 1:
+        warnings = warnings[0]
+    elif warnings == [""] or warnings == []:
+        warnings = ""
     return warnings
 
 def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name):
@@ -333,7 +367,7 @@ def parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
         kraken_wtasmbld_report = 'Unknown'
     return kraken_trim_genus, kraken_wtasmbld_genus
 
-def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds, spades_outcome_file):
+def Checking_auto_pass_fail(fairy_files, spades_fairy_file, coverage, length, assembly_stdev, asmbld_ratio, set_coverage, scaffolds, sample_name):
     """
     Checking auto pass fail conditions
     SPAdes failure would say: "run_failure,no_scaffolds,no_contigs"
@@ -346,56 +380,77 @@ def Checking_auto_pass_fail(fairy_file, scaffolds_entry, coverage, length, assem
     QC_result = [] # set as blank to begin with, need this to assign variable in QC_result == "FAIL": line
     QC_result.append("PASS") #set default as PASS
     #check output of fairy and determine if reads were corrupt or had unequal number of reads
-    with open(fairy_file, 'r') as f:
-        for line in f:
-            if ('FAILED CORRUPTION CHECK!' in line):
-                fastq_file_failure = str(line.split(' ')[10])
-                QC_result.append("FAIL")
-                QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped.")
-            if ('FAILED: The number of reads in R1/R2 are NOT the same!' in line):
-                QC_result.append("FAIL")
-                QC_reason.append("The # of reads in raw R1/R2 files are NOT equal.")
-            if ('FAILED: There are 0 reads in' in line):
-                QC_result.append("FAIL")
-                QC_reason.append("No reads remain after trimming.")
-            if ('FAILED: No scaffolds in ' in line):
-                QC_result.append("FAIL")
-                QC_reason.append("No scaffolds were >500bp.")
-    f.close()
-    if scaffolds_entry == False: # if its not being used for scaffolds entry check estimated coverage otherwise don't
-        if coverage == "Unknown" or int(coverage) < int(set_coverage):
-            QC_result.append("FAIL")
-            if coverage == "Unknown": # if else really only needed so you don't end up with "unknownx"
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
-            else:
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
-    else:
-        pass
+    for fairy_file in fairy_files:
+        with open(fairy_file, 'r') as f:
+            for line in f:
+                if ('FAILED CORRUPTION CHECK!' in line):
+                    fastq_file_failure = str(line.split(' ')[10])
+                    QC_result.append("FAIL")
+                    QC_reason.append(str(fastq_file_failure) +" is corrupt and is unable to be unzipped")
+                if ('FAILED: The number of reads in R1/R2 are NOT the same!' in line):
+                    QC_result.append("FAIL")
+                    QC_reason.append("The # of reads in raw R1/R2 files are NOT equal")
+                if ('FAILED: There are 0 reads in' in line):
+                    QC_result.append("FAIL")
+                    QC_reason.append("No reads remain after trimming")
+                if ('FAILED: No scaffolds in ' in line):
+                    QC_result.append("FAIL")
+                    QC_reason.append("No scaffolds were >500bp")
+    # Check if spades_fairy_file exists and is not empty before trying to open it
+    if spades_fairy_file and spades_fairy_file != "":
+        try:
+            with open(spades_fairy_file, 'r') as sp:
+                for line in sp:
+                        if ('no_scaffolds,no_contigs' in line):
+                            QC_result.append("FAIL")
+                            QC_reason.append("No scaffolds created by SPAdes")
+                        elif ('no_scaffolds,contigs_created' in line):
+                            QC_result.append("FAIL")
+                            QC_reason.append("No scaffolds created by SPAdes only contigs")
+        except FileNotFoundError:
+            print(f"Warning: {spades_fairy_file} not found for sample {sample_name}")
+    if coverage == "Unknown" or int(coverage) < int(set_coverage):
+        QC_result.append("FAIL")
+        if coverage == "Unknown": # if else really only needed so you don't end up with "unknownx"
+            QC_reason.append("Coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
+        else:
+            QC_reason.append("Coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
     if length == "Unknown" or int(length) <= 1000000:
         QC_result.append("FAIL")
         QC_reason.append("assembly <1,000,000bps (" + str(length) + ")")
     if str(assembly_stdev) != "NA": # have to have a second layer cuz you can't make NA a float, N/A means less than 10 genomes so no stdev calculated
         if str(asmbld_ratio) == "Unknown": # if there is no ratio file then fail the sample
             QC_result.append("FAIL")
-            QC_reason.append("assembly file not found")
+            QC_reason.append("Assembly file not found")
         elif float(assembly_stdev) > 2.58:
             QC_result.append("FAIL")
-            QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ")")
+            QC_reason.append("Assembly stdev >2.58 (" + str(assembly_stdev) + ")")
     if str(scaffolds) == "Unknown" or int(scaffolds) > int(500):
         QC_result.append("FAIL")
         QC_reason.append("High scaffold count >500 ({}).".format(str(scaffolds)))
-    #if spades_outcome_files isn't found fail sample as it failed upstream
-    try: 
-        with open(spades_outcome_file) as f:
-            if "run_failure" in f.readline():
-                QC_reason.append("SPAdes Failed.")
-                QC_result.append("FAIL")
-            elif "no_scaffolds" in f.readline():
-                QC_reason.append("No Scaffolds created only contigs.")
-                QC_result.append("FAIL")
-    except FileNotFoundError:
-        QC_result.append("FAIL")
+    QC_reason = set(QC_reason)
     QC_reason = ', '.join(QC_reason)
+    # Simplify error for when Assembly file not found
+    check_QC_reason = QC_reason
+    if "Assembly file not found" in check_QC_reason:
+        QC_reason = "Assembly file not found"
+        if "is corrupt and is unable to be unzipped" in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "corrupt" in item ]
+            if len(new_QC_reason) == 1:
+                QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+            elif len(new_QC_reason) == 2:
+                QC_reason = "No assembly due to: " + sample_name + "_R1 and " + sample_name + "_R2 files being corrupted."
+            else:
+                print(f"This shouldn't happen, please open a github issue.")
+        elif "The # of reads in raw R1/R2 files are NOT equal" in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "NOT equal" in item]
+            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+        elif "No scaffolds created by SPAdes" in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "No scaffolds created by SPAdes" in item ]
+            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
+        elif "No reads" in check_QC_reason or "No scaffolds" in check_QC_reason and "No scaffolds created by SPAdes" not in check_QC_reason:
+            new_QC_reason = [item for item in check_QC_reason.split(",") if "No reads" in item or "No scaffolds" in item]
+            QC_reason = "No assembly due to: " + new_QC_reason[0] + "."
     #checking if it was a pass
     if any("FAIL" in sub for sub in QC_result):
         QC_result = "FAIL"
@@ -419,7 +474,6 @@ def duplicate_column_clean(df):
 def parse_amrfinder_ar(amrfinder_file, sample_name, final_df, ar_db):
     """Parsing the AMRFinder file run on the antibiotic resistance database."""
     db = ar_db.replace(".tar.gz", "")
-    db =  ar_db.replace("/scicomp/groups/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.1.0-dev/phoenix/assets/databases/", "")
     amrfinder_df = pd.read_csv(amrfinder_file, sep='\t', header=0)
     # Drop rows where 'Scope' contains the string 'plus'
     amrfinder_df = amrfinder_df[~amrfinder_df['Scope'].str.contains('plus')]
@@ -503,7 +557,7 @@ def parse_ani(fast_ani_file):
         FastANI_output_list = [source_file, ID, coverage, organism]
     return FastANI_output_list, fastani_warning
 
-def Get_Metrics(scaffolds_entry, set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, fairy_file, amrfinder_file, fast_ani_file, tax_file, ar_db, spades_outcome_file):
+def Get_Metrics(set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, fairy_files, spades_fairy_file, amrfinder_file, fast_ani_file, tax_file, ar_db):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
         Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
@@ -546,8 +600,9 @@ def Get_Metrics(scaffolds_entry, set_coverage, ar_df, trim_stats, raw_stats, kra
         gc_stdev = sample_gc = out_of_range_stdev = species_gc_mean = 'Unknown'
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
-        QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count, spades_outcome_file)
-    except FileNotFoundError: 
+        QC_result, QC_reason = Checking_auto_pass_fail(fairy_files, spades_fairy_file, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count, sample_name)
+    
+    except FileNotFoundError:
         print("Warning: Possibly coverage and assembly length was not calculated and/or "+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
     try:
@@ -559,125 +614,86 @@ def Get_Metrics(scaffolds_entry, set_coverage, ar_df, trim_stats, raw_stats, kra
     try:
         ar_df = parse_amrfinder_ar(amrfinder_file, sample_name, ar_df, ar_db)
     except FileNotFoundError: 
-        print("Warning: AMRFinder file " + sample_name + "_all_genes.tsv not found.")
+        print("Warning: AMRFinder file " + sample_name + "_all_genes_blank.tsv not found.")
         df = pd.DataFrame({'WGS_ID':[sample_name], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['AMRFinder file not found'] })
         df.index = [sample_name]
         ar_df = pd.concat([ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
-        alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1], gc_metrics[0])
+        alerts = compile_alerts(Coverage, assembly_ratio_metrics[1], gc_metrics[0])
     except:
         alerts = ""
     # try except in the function itself
     kraken_trim_genus, kraken_wtasmbld_genus = parse_kraken_report(kraken_trim_report, kraken_wtasmbld_report, sample_name)
     try:
-        warnings = compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
+        warnings = compile_warnings(Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
                                     Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent,\
                                     kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, 
-                                    fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2])
+                                    fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2], QC_reason)
     except:
         warnings = ""
     return ar_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
-    Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, full_busco_line
+    Scaffold_Count, busco_metrics, assembly_ratio_metrics, gc_metrics, QC_result, QC_reason, full_busco_line
 
-def Get_Files(directory1, sample_name, directory2, updater):
+def Get_Files(directory, sample_name):
     '''Create file paths to collect files from sample folder.'''
     # if there is a trailing / remove it
-    directory1 = directory1.rstrip('/')
-    #print("Directory 1: " + directory1)
-    directory2 = directory2.rstrip('/')
-    #print("Directory 2: " + directory2)
+    directory = directory.rstrip('/')
     # create file names
-    trim_stats = try_paths( directory1 + "/" + sample_name + "_trimmed_read_counts.txt", directory2 + "/" + sample_name + "/qc_stats/" + sample_name + "_trimmed_read_counts.txt" )
-    raw_stats = try_paths( directory1 + "/" + sample_name + "_raw_read_counts.txt", directory2 + "/" + sample_name + "/raw_stats/" + sample_name + "_raw_read_counts.txt" )
-    kraken_trim = try_paths( directory1 + "/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt" )
-    kraken_trim_report = try_paths( directory1 + "/" + sample_name + ".kraken2_trimd.summary.txt", directory2 + "/" + sample_name + "/kraken2_trimd/" + sample_name + ".kraken2_trimd.summary.txt" )
-    kraken_wtasmbld = try_paths( directory1 + "/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt" )
-    kraken_wtasmbld_report = try_paths( directory1 + "/" + sample_name + ".kraken2_wtasmbld.summary.txt", directory2 + "/" + sample_name + "/kraken2_asmbld_weighted/" + sample_name + ".kraken2_wtasmbld.summary.txt" )
-    quast_report = try_paths( directory1 + "/" + sample_name + "_summary.tsv", directory2 + "/" + sample_name + "/quast/" + sample_name + "_summary.tsv" )
+    trim_stats = directory + "/" + sample_name + "_trimmed_read_counts.txt"
+    raw_stats = directory + "/" + sample_name + "_raw_read_counts.txt"
+    kraken_trim = directory + "/" + sample_name + ".kraken2_trimd.top_kraken_hit.txt"
+    kraken_trim_report = directory + "/" + sample_name + ".kraken2_trimd.summary.txt"
+    kraken_wtasmbld = directory + "/" + sample_name + ".kraken2_wtasmbld.top_kraken_hit.txt"
+    kraken_wtasmbld_report = directory + "/" + sample_name + ".kraken2_wtasmbld.summary.txt"
+    quast_report = directory + "/" + sample_name + "_summary.tsv"
     # For glob patterns, try both directories
-    fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "*_summary.txt")
-    spades_fairy_file_1 = glob.glob(directory1 + "/" + sample_name + "*_spades_outcome.csv")
-    fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "*_summary.txt")
-    spades_fairy_file_2 = glob.glob(directory2 + "/" + sample_name + "/file_integrity/" + sample_name + "*_spades_outcome.csv")
-    fairy_file = fairy_file_1 if fairy_file_1 else fairy_file_2
-    spades_fairy_file = spades_fairy_file_1[0] if spades_fairy_file_1 else (spades_fairy_file_2[0] if spades_fairy_file_2 else "")
+    fairy_files = glob.glob(directory + "/" + sample_name + "*_summary.txt")
+    spades_fairy_file_1 = glob.glob(directory + "/" + sample_name + "*_spades_outcome.csv")
+    spades_fairy_file = spades_fairy_file_1[0] if spades_fairy_file_1 else ""
     # For the remaining glob patterns, handle with try-except but attempt both directories
     try:
-        busco_short_summary_1 = glob.glob(directory1 + "/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
+        amrfinder_file1 = glob.glob(directory + "/" + sample_name + "_all_genes_*.tsv")
+        if amrfinder_file1:
+            amrfinder_file = amrfinder_file1[0]
+        else:
+            amrfinder_file = directory + "/" + sample_name + "_all_genes_blank.tsv"
+    except IndexError:
+        amrfinder_file = directory + "/" + sample_name + "_all_genes_blank.tsv"
+    try:
+        busco_short_summary_1 = glob.glob(directory + "/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
         if busco_short_summary_1:
             busco_short_summary = busco_short_summary_1[0]
         else:
-            busco_short_summary_2 = glob.glob(directory2 + "/" + sample_name + "/BUSCO/short_summary.specific.*" + sample_name + ".filtered.scaffolds.fa.txt")
-            if busco_short_summary_2:
-                busco_short_summary = busco_short_summary_2[0]
-            else:
-                busco_short_summary = directory1 + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+            busco_short_summary = directory + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     except IndexError:
-        busco_short_summary = directory1 + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
+        busco_short_summary = directory + "/short_summary.specific.blank" + sample_name + ".filtered.scaffolds.fa.txt"
     try:
-        asmbld_ratio_1 = glob.glob(directory1 + "/" + sample_name + "_Assembly_ratio_*.txt")
+        asmbld_ratio_1 = glob.glob(directory + "/" + sample_name + "_Assembly_ratio_*.txt")
         if asmbld_ratio_1:
             asmbld_ratio = asmbld_ratio_1[0]
         else:
-            asmbld_ratio_2 = glob.glob(directory2 + "/" + sample_name + "/" + sample_name + "_Assembly_ratio_*.txt")
-            if asmbld_ratio_2:
-                asmbld_ratio = asmbld_ratio_2[0]
-            else:
-                asmbld_ratio = directory1 + "/" + sample_name + "_Assembly_ratio_blank.txt"
+            asmbld_ratio = directory + "/" + sample_name + "_Assembly_ratio_blank.txt"
     except IndexError:
-        asmbld_ratio = directory1 + "/" + sample_name + "_Assembly_ratio_blank.txt"
+        asmbld_ratio = directory + "/" + sample_name + "_Assembly_ratio_blank.txt"
     try:
-        if updater == False:
-            gc_1 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
-            if gc_1:
-                gc = gc_1[0]
-            else:
-                gc_2 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
-                if gc_2:
-                    gc = gc_2[0]
-                else:
-                    gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
-        else: # if running updater then only look in directory1 since directory2 is the old run folder
-            gc_1 = glob.glob(directory2 + "/" + sample_name + "_GC_content_*.txt")
-            if gc_1:
-                gc = gc_1[0]
-            else:
-                gc_2 = glob.glob(directory1 + "/" + sample_name + "_GC_content_*.txt")
-                if gc_2:
-                    gc = gc_2[0]
-                else:
-                    gc = directory2 + "/" + sample_name + "_GC_content_blank.txt"
-    except IndexError:
-        gc = directory1 + "/" + sample_name + "_GC_content_blank.txt"
-    # Continue with similar pattern for remaining glob patterns
-    try:
-        gamma_ar_file_1 = glob.glob(directory1 + "/" + sample_name + "_ResGANNCBI_*.gamma")
-        if gamma_ar_file_1:
-            gamma_ar_file = gamma_ar_file_1[0]
+        gc_1 = glob.glob(directory + "/" + sample_name + "_GC_content_*.txt")
+        if gc_1:
+            gc = gc_1[0]
         else:
-            gamma_ar_file_2 = glob.glob(directory2 + "/" + sample_name + "/gamma_ar/" + sample_name + "_*.gamma")
-            if gamma_ar_file_2:
-                gamma_ar_file = gamma_ar_file_2[0]
-            else:
-                gamma_ar_file = directory1 + "/" + sample_name + "_ResGANNCBI_blank.gamma"
+            gc = directory + "/" + sample_name + "_GC_content_blank.txt"
     except IndexError:
-        gamma_ar_file = directory1 + "/" + sample_name + "_ResGANNCBI_blank.gamma"
+        gc = directory + "/" + sample_name + "_GC_content_blank.txt"
     try:
-        fast_ani_file_1 = glob.glob(directory1 + "/" + sample_name + "_REFSEQ_*.fastANI.txt")
+        fast_ani_file_1 = glob.glob(directory + "/" + sample_name + "_REFSEQ_*.fastANI.txt")
         if fast_ani_file_1:
             fast_ani_file = fast_ani_file_1[0]
         else:
-            fast_ani_file_2 = glob.glob(directory2 + "/" + sample_name + "/ANI/" + sample_name + "_REFSEQ_*.fastANI.txt")
-            if fast_ani_file_2:
-                fast_ani_file = fast_ani_file_2[0]
-            else:
-                fast_ani_file = directory1 + "/" + sample_name + ".fastANI.txt"
+            fast_ani_file = directory + "/" + sample_name + ".fastANI.txt"
     except IndexError:
-        fast_ani_file = directory1 + "/" + sample_name + ".fastANI.txt"
+        fast_ani_file = directory + "/" + sample_name + ".fastANI.txt"
     # For regular paths, use the try_paths function
-    tax_file = try_paths( directory1 + "/" + sample_name + ".tax", directory2 + "/" + sample_name + "/" + sample_name + ".tax")
-    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_file, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, fast_ani_file, tax_file
-
+    tax_file = directory + "/" + sample_name + ".tax"
+    return trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_files, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, amrfinder_file, fast_ani_file, tax_file
 
 def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
             Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, full_busco_line,
@@ -715,12 +731,14 @@ def Append_Lists(data_location, parent_folder, sample_name, Q30_R1_per, Q30_R2_p
         return data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
         Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L
 
-def Create_df(data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
+def Create_df(phx_version, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L,
 Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L):
+    phx_version_L = [str(phx_version)] * len(Sample_Names)
     #combine all metrics into a dataframe
     data = {'WGS_ID'             : Sample_Names,
     'Parent_Folder'              : parent_folder_L,
     'Data_Location'              : data_location_L,
+    'PHX_Version'                : phx_version_L,
     'Minimum_QC_Check'           : QC_result_L,
     'Minimum_QC_Issues'          : QC_reason_L,
     'Warnings'                   : warnings_L,
@@ -737,10 +755,11 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     'Assembly_Length'            : Assembly_Length_L,
     'Assembly_Ratio'             : assembly_ratio_L,
     'Assembly_StDev'             : assembly_stdev_L,
+    'Final_Taxa_ID'              : "", # we will fill this later
     'Taxa_Source'                : tax_method_L,
     'BUSCO_Lineage'              : busco_lineage_L,
     'BUSCO_%Match'               : percent_busco_L,
-    'Kraken_ID_Raw_Reads_%'      : Trim_kraken_L,
+    'Kraken_ID_Trimmed_Reads_%'  : Trim_kraken_L,
     'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
     'FastANI_Organism'           : fastani_organism_L, 
     'FastANI_%ID'                : fastani_ID_L, 
@@ -752,19 +771,41 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     busco_df = pd.DataFrame(busco_data)
     return df, busco_df
 
-def big5_check(final_ar_df):
+def find_big_5(BLDB):
+    df = pd.read_csv(BLDB)
+    # Filter rows where 'Protein_name' contains any of the substrings
+    big5_genes = ["KPC", "IMP", "NDM", "OXA", "VIM"]
+    filtered_df = df[df["Protein name"].str.contains('|'.join(big5_genes), case=False, na=False)]
+    # \xa0 is from hyperlinks as there is not normal spaces # Further filter for 'carbapenemase' or 'IR carbapenemase' in the assumed column (e.g., "Classification")
+    final_df = filtered_df[filtered_df["Functional information"].isin(["carbapenemase", "IR carbapenemase", "carbapenemase\xa0view", "IR carbapenemase\xa0view"])]
+    # Condition to check if "Protein_name" contains "OXA"
+    oxa_condition = final_df["Protein name"].str.contains("OXA", case=False, na=False)
+    # Condition to filter "Subfamily" only for rows where "Protein_name" contains "OXA"
+    subfamily_condition = final_df["Subfamily"].isin(["OXA-48-like", "OXA-23-like", "OXA-24-like", "OXA-58-like", "OXA-143-like"])
+    # Keep all rows where "Protein_name" does NOT contain "OXA"
+    non_oxa_rows = final_df[~oxa_condition]
+    # Keep only filtered rows where "Protein_name" contains "OXA" and "Subfamily" is in the list
+    filtered_oxa_rows1 = final_df[oxa_condition & subfamily_condition]
+    ###########print(filtered_oxa_rows1)
+    filtered_oxa_rows = filtered_oxa_rows1[~(filtered_oxa_rows1["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~filtered_oxa_rows1["Subfamily"].str.contains("OXA-48-like", na=False))]
+    # Combine both DataFrames
+    filtered_final_df = pd.concat([non_oxa_rows, filtered_oxa_rows])
+    # Select the relevant columns and drop complete duplicates
+    unique_proteins = final_df[["Protein name", "Alternative protein names"]].drop_duplicates()
+    # Flatten into a list and remove NaN values
+    protein_list = unique_proteins.values.flatten()
+    protein_list = [protein for protein in protein_list if pd.notna(protein)]  # Remove NaNs
+    # Separate protein_list into two lists
+    oxa_proteins = [protein for protein in protein_list if "OXA" in protein]
+    non_oxa_proteins = [protein for protein in protein_list if "OXA" not in protein]
+    return non_oxa_proteins, oxa_proteins
+
+def big5_check(final_ar_df, BLDB):
     """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
     columns_to_highlight = []
     final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
     all_genes = final_ar_df.columns.tolist()
-    big5_keep = [ "blaIMP", "blaVIM", "blaNDM", "blaKPC"] # list of genes to highlight
-    blaOXA_48_like = [ "blaOXA-48", "blaOXA-54", "blaOXA-162", "blaOXA-181", "blaOXA-199", "blaOXA-204", "blaOXA-232", "blaOXA-244", "blaOXA-245", "blaOXA-247", "blaOXA-252", "blaOXA-370", "blaOXA-416", "blaOXA-436", \
-    "blaOXA-438", "blaOXA-439", "blaOXA-484", "blaOXA-505", "blaOXA-514", "blaOXA-515", "blaOXA-517", "blaOXA-519", "blaOXA-535", "blaOXA-538", "blaOXA-546", "blaOXA-547", "blaOXA-566", "blaOXA-567", "blaOXA-731", \
-    "blaOXA-788", "blaOXA-793", "blaOXA-833", "blaOXA-894", "blaOXA-918", "blaOXA-920", "blaOXA-922", "blaOXA-923", "blaOXA-924", "blaOXA-929", "blaOXA-933", "blaOXA-934", "blaOXA-1038", "blaOXA-1039", "blaOXA-1055", "blaOXA-1119", "blaOXA-1146" ]
-    # combine lists of all genes we want to highlight
-    #all_big5_keep = big5_keep + blaOXA_48_like
-    # remove list of genes that look like big 5 but don't have activity
-    big5_drop = [ "blaKPC-62", "blaKPC-63", "blaKPC-64", "blaKPC-65", "blaKPC-66", "blaKPC-72", "blaKPC-73", "blaOXA-163", "blaOXA-405"]
+    big5_keep, big5_oxa_keep= find_big_5(BLDB)
     # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
     for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
         if gene == 'No_AR_Genes_Found':
@@ -772,23 +813,28 @@ def big5_check(final_ar_df):
         else:
             gene_name = gene.split('_(')[0] # remove drug name for matching genes
             drug = gene.split('_(')[1] # keep drug name to add back later
-            # make sure we have a complete match for blaOXA-48 and blaOXA-48-like genes
-            if gene_name.startswith("blaOXA"): #check for complete blaOXA match
-                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_keep_gene in blaOXA_48_like if gene_name == big5_keep_gene ]
+            if "-like" in gene_name:
+                gene_name = gene_name.split('_bla')[0] # remove blaOXA-1-like name for matching genes -- just extra stuff that doesn't allow complete match
+            # make sure we have a complete match for oxa 48/23/24/58/143 genes and oxa 48/23/24/58/143-like genes
+            if "OXA" in gene_name: #check for complete blaOXA match
+                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_oxa in big5_oxa_keep if gene_name == big5_oxa ]
             else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
-                for big5 in big5_keep:
-                    if search(big5, gene_name): #search for big5 gene substring in the gene name
-                        columns_to_highlight.append(gene_name + "_(" + drug)
-    #loop through list of genes to drop and removed if they are in the highlight list
-    for bad_gene in big5_drop:
-        #search for big5 gene substring in the gene name and remove if it is
-        [columns_to_highlight.remove(gene) for gene in columns_to_highlight if bad_gene in gene]
+                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5 in big5_keep if search(big5, gene_name) ]
+    print(CYELLOW + "\nhighlighting colums:", columns_to_highlight, CEND)
     return columns_to_highlight
+
+def column_letter(index):
+    """Convert zero-based column index to Excel column letter."""
+    letters = list(string.ascii_uppercase)
+    if index < 26:
+        return letters[index]
+    else:
+        return letters[index // 26 - 1] + letters[index % 26]  # Handle AA, AB, etc.
 
 def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, columns_to_highlight, ar_df, ar_db):
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     if output != "":
-        writer = pd.ExcelWriter((output + '_GRiPHin_Summary.xlsx'), engine='xlsxwriter')
+        writer = pd.ExcelWriter((output + '.xlsx'), engine='xlsxwriter')
     else:
         writer = pd.ExcelWriter(('GRiPHin_Summary.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
@@ -841,9 +887,13 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, columns_
     #worksheet.set_column('', "PHoeNIx Summary", cell_format_light_blue)
     #worksheet.write('A1', "PHoeNIx Summary") #use for only 1 column in length
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
-    worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
-    worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
-    worksheet.merge_range('S1:AA1', "Taxonomic Information", cell_format_green)
+    worksheet.merge_range('A1:D1', "PHoeNIx Summary", cell_format_light_blue)
+    worksheet.merge_range('E1:S1', "QC Metrics", cell_format_grey_blue)
+    #taxa column 
+    taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
+    taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
+    # Dynamically merge based on start and end column
+    worksheet.merge_range(f"{taxa_start_col}1:{taxa_end_col}1", "Taxonomic Information", cell_format_green)
     worksheet.merge_range(0, qc_max_col, 0, (qc_max_col + ar_gene_count - 1), "Antibiotic Resistance Genes", cell_format_lightgrey)
     # making WGS IDs bold
     bold = workbook.add_format({'bold': True})
@@ -904,7 +954,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, columns_
     # add autofilter
     worksheet.autofilter(1, 0, max_row, max_col - 1)
     # Close the Pandas Excel writer and output the Excel file.
-    writer.save()
+    writer.close()
 
 def blind_samples(final_df, control_file):
     """If you passed a file to -c this will swap out sample names to 'blind' the WGS_IDs in the final excel file."""
@@ -962,21 +1012,19 @@ def sort_samplesheet(samplesheet):
 def convert_excel_to_tsv(output):
     '''Reads in the xlsx file that was just created, outputs as tsv version with first layer of headers removed'''
     if output != "":
-        output_file = output + '_GRiPHin_Summary'
+        output_file = output
     else:
         output_file = 'GRiPHin_Summary'
     #Read excel file into a dataframe
     data_xlsx = pd.read_excel(output_file + '.xlsx', 'Sheet1', index_col=None, header=[1])
+    #Replace all fields having line breaks with space
+    #data_xlsx = data_xlsx.replace('\n', ' ',regex=True)
     #drop the footer information
-    data_xlsx = data_xlsx.iloc[:-19]
-    # setting columns to make human readable
-    columns_to_format = ["Total_Raw_[reads]","Paired_Trimmed_[reads]","Total_Trimmed_[reads]","Assembly_Length"]
-    # Override formatting for specific columns
-    data_xlsx[columns_to_format] = data_xlsx[columns_to_format].applymap(lambda x: "{:,.0f}".format(x) if pd.notna(x) and x != "Unknown" else x)
+    data_xlsx = data_xlsx.iloc[:-11] 
     #Write dataframe into csv
-    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, line_terminator='\n')
+    data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
 
-def clean_ar_df(df, ar_df):
+def clean_ar_df(df, ar_df, BLDB):
     ar_cols = list(ar_df)
     # move the column to head of list using index, pop and insert
     ar_cols.insert(0, ar_cols.pop(ar_cols.index('No_AR_Genes_Found')))
@@ -985,7 +1033,7 @@ def clean_ar_df(df, ar_df):
     final_ar_df = ar_df.loc[:, ar_cols]
     ar_max_col = final_ar_df.shape[1] - 1 #remove one for the WGS_ID column
     # now we will check for the "big 5" genes for highlighting later.
-    columns_to_highlight = big5_check(final_ar_df)
+    columns_to_highlight = big5_check(final_ar_df, BLDB)
     # combining all dataframes
     final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
     #get database names and remove if file is not found in the database list
@@ -1004,7 +1052,7 @@ def write_phoenix_summary(set_coverage, final_df, final_ar_df, busco_df):
     # Dictionary mapping old column names in GRiPHin to new column names in phoenix_summary.tsv
     column_name_mapping = {'WGS_ID':'ID','Minimum_QC_Check':'Auto_QC_Outcome', 'Estimated_Trimmed_Coverage':'Estimated_Coverage', 'Assembly_Length':'Genome_Length',
                             'GC[%]':'GC_%', 'BUSCO_Lineage':'BUSCO_DB', 'Assembly_StDev':'Assembly_Ratio_(STDev)', 'Scaffolds':'#_of_Scaffolds_>500bp', 'FastANI_%Coverage':'Taxa_Coverage',
-                            'Kraken_ID_Raw_Reads_%':'Kraken2_Trimd', 'Kraken_ID_WtAssembly_%':'Kraken2_Weighted','Minimum_QC_Issues': 'Auto_QC_Failure_Reason','BUSCO_%Match':'BUSCO_Match'}
+                            'Kraken_ID_Trimmed_Reads_%':'Kraken2_Trimd', 'Kraken_ID_WtAssembly_%':'Kraken2_Weighted','Minimum_QC_Issues': 'Auto_QC_Failure_Reason','BUSCO_%Match':'BUSCO_Match'}
                             #'Primary_MLST_Scheme':'MLST_Scheme_1', 'Primary_MLST':'MLST_1','Secondary_MLST_Scheme':'MLST_2 }
     # Rename multiple columns
     final_df = final_df.rename(columns=column_name_mapping)
@@ -1053,7 +1101,7 @@ def extract_species(row):
         scaffolds_match = re.search(r'\((\d+(\.\d+)?)%', row['Kraken_ID_WtAssembly_%'])
         return f"{scaffolds_match.group(1)}"
     elif row['Taxa_Source'] == 'kraken2_trimmed':
-        reads_match = re.search(r'\((\d+(\.\d+)?)%', row['Kraken_ID_Raw_Reads_%'])
+        reads_match = re.search(r'\((\d+(\.\d+)?)%', row['Kraken_ID_Trimmed_Reads_%'])
         return f"{reads_match.group(1)}"
     elif row['Taxa_Source'] == 'Unknown':
         return "Unknown"
@@ -1067,7 +1115,7 @@ def extract_confidence(row):
     elif row['Taxa_Source'] == 'kraken2_wtasmbld':
         return row['Kraken_ID_WtAssembly_%'].str.replace(r'\([^)]*\)', '')
     elif row['Taxa_Source'] == 'kraken2_trimmed':
-        return row['Kraken_ID_Raw_Reads_%'].str.replace(r'\([^)]*\)', '')
+        return row['Kraken_ID_Trimmed_Reads_%'].str.replace(r'\([^)]*\)', '')
     elif row['Taxa_Source'] == 'Unknown':
         return "Unknown"
     else:
@@ -1075,6 +1123,7 @@ def extract_confidence(row):
 
 def main():
     args = parseArgs()
+    shiga_df = pd.DataFrame()
     # create empty lists to append to later
     Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, data_location_L, parent_folder_L, full_busco_line_L = ([] for i in range(29))
@@ -1094,12 +1143,12 @@ def main():
         header = next(csv_reader) # skip the first line of the samplesheet
         for row in csv_reader:
             sample_name = row[0]
-            directory = row[1]
+            directory = "./GRiPHin/" + sample_name + "/" # all samples should be in this directory
             data_location, parent_folder = Get_Parent_Folder(directory)
-            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_file, busco_short_summary, asmbld_ratio, gc, amrfinder_file, fast_ani_file, tax_file, spades_outcome_file = Get_Files(directory, sample_name)
+            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_files, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, amrfinder_file, fast_ani_file, tax_file = Get_Files(directory, sample_name)
             #Get the metrics for the sample
-            ar_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
-            QC_reason, full_busco_line = Get_Metrics(args.scaffolds, args.set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, fairy_file, amrfinder_file, fast_ani_file, tax_file, args.ar_db, spades_outcome_file)
+            ar_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, assembly_ratio_metrics, gc_metrics, QC_result, \
+            QC_reason, full_busco_line = Get_Metrics(args.set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, fairy_files, spades_fairy_file, amrfinder_file, fast_ani_file, tax_file, args.ar_db)
             #Collect this mess of variables into appeneded lists
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L = Append_Lists(data_location, parent_folder, sample_name, \
@@ -1107,11 +1156,17 @@ def main():
             gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, full_busco_line, \
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L)
+            if args.shigapass == True:
+                shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3], "")
     # combine all lists into a dataframe
-    df, busco_df = Create_df(data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+    df, busco_df = Create_df(args.phx_version, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L)
+    if args.shigapass == True:
+        df = double_check_taxa_id(shiga_df, df)
+    else:
+        df['Final_Taxa_ID'] = df.apply(fill_taxa_id, axis=1)
     (qc_max_row, qc_max_col) = df.shape
-    final_df, ar_max_col, columns_to_highlight, final_ar_df, ar_db_col = clean_ar_df(df, ar_df)
+    final_df, ar_max_col, columns_to_highlight, final_ar_df, ar_db_col = clean_ar_df(df, ar_df, args.bldb)
     # Checking if there was a control sheet submitted
     if args.control_list !=None:
         final_df = blind_samples(final_df, args.control_list)

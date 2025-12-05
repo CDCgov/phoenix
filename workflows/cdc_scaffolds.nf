@@ -190,7 +190,7 @@ workflow SCAFFOLDS_EXQC {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
+            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path, params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -246,24 +246,24 @@ workflow SCAFFOLDS_EXQC {
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
         if (params.busco_db_path != null) {
-            // Allow relative paths for krakendb argument
-            busco_db_path = Channel.fromPath(params.busco_db_path, relative: true)
-            // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it.
-            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.combine(busco_db_path)\
-            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
-            .filter { meta, filtered_scaffolds, busco_db_path, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
-            .map{ meta, filtered_scaffolds, busco_db_path, fairy_outcome -> return [meta, filtered_scaffolds, busco_db_path] }
+            // Allow relative paths for busco_db_path argument
+            busco_db_path = Channel.fromPath(params.busco_db_path, relative: true) 
+            // Add in busco_db into the scaffolds channel so each scaffolds ch has a busco_db to go with it.
+            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}.combine(busco_db_path)\
+                .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome  -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0]) 
+                .filter { meta, filtered_scaffolds, busco_db_path, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+                .map{ meta, filtered_scaffolds, busco_db_path, fairy_outcome -> return [meta, filtered_scaffolds, busco_db_path] }
         } else {
             // passing empty channel for busco db to align with expected inputs for the module
-            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{ meta, scaffolds -> [ [id:meta.id, single_end:meta.single_end], scaffolds, []]}\
-            .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
-            .filter { meta, filtered_scaffolds, busco_db_path, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
-            .map{ meta, filtered_scaffolds, busco_db_path, fairy_outcome -> return [meta, filtered_scaffolds, busco_db_path] }
+            busco_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds, []]}\
+                .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome  -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+                .filter { meta, filtered_scaffolds, busco_db_path, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+                .map{ meta, filtered_scaffolds, busco_db_path, fairy_outcome -> return [meta, filtered_scaffolds, busco_db_path] }
         }
 
         // Checking single copy genes for assembly completeness
         BUSCO (
-            busco_ch, 'auto', []
+            busco_ch, 'auto_prok', []
         )
         ch_versions = ch_versions.mix(BUSCO.out.versions)
 

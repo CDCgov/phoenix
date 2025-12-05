@@ -1,8 +1,19 @@
+#!/usr/bin/env python3
+
 import csv
 import re
 import os
 import glob
-import sys
+import argparse
+
+# Function to get the script version
+def get_version():
+    return "1.0.0"
+
+def parseArgs(args=None):
+    parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
+    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    return parser.parse_args()
 
 def clean_gene_name(gene):
     """Remove special characters from gene names"""
@@ -73,7 +84,6 @@ def process_amrfinder_file(amrfinder_file):
 
 def create_summary(abritamr_file, amrfinder_file, output_file, sample_name):
     """Create summary file with gene, coverage, and identity data"""
-    
     try:
         # Get clean gene names from abritamr file
         abritamr_genes = process_abritamr_file(abritamr_file)
@@ -137,106 +147,66 @@ def create_summary(abritamr_file, amrfinder_file, output_file, sample_name):
         print(f"  ✗ Error processing {sample_name}: {str(e)}")
         return None
 
-def find_amrfinder_folders(root_path):
-    """Find all AMRFinder folders in the given root path"""
-    amrfinder_folders = []
-    
-    # Walk through all directories
-    for root, dirs, files in os.walk(root_path):
-        # Check if current directory is named AMRFinder (case insensitive)
-        if os.path.basename(root).lower() == 'amrfinder':
-            amrfinder_folders.append(root)
-    
-    return amrfinder_folders
-
-def find_sample_files(amrfinder_folder):
+def find_sample_files():
     """Find sample files in AMRFinder folder"""
     samples = {}
     
     # Look for .abritamr.txt files
-    abritamr_files = glob.glob(os.path.join(amrfinder_folder, "*.abritamr.txt"))
+    abritamr_files = glob.glob("*.abritamr.txt")
     
     for abritamr_file in abritamr_files:
         # Extract sample name (everything before .abritamr.txt)
         sample_name = os.path.basename(abritamr_file).replace('.abritamr.txt', '')
         
         # Look for corresponding .amrfinder.out file
-        amrfinder_file = os.path.join(amrfinder_folder, f"{sample_name}.amrfinder.out")
+        amrfinder_file = f"{sample_name}.amrfinder.out"
         
         if os.path.exists(amrfinder_file):
             samples[sample_name] = {
                 'abritamr': abritamr_file,
-                'amrfinder': amrfinder_file,
-                'folder': amrfinder_folder
+                'amrfinder': amrfinder_file
             }
     
     return samples
 
-def process_multiple_folders(root_path):
-    """Process all AMRFinder folders in the given root path"""
-    
-    if not os.path.exists(root_path):
-        print(f"Error: Path '{root_path}' does not exist.")
-        return
-    
-    print(f"Searching for AMRFinder folders in: {root_path}")
-    
-    # Find all AMRFinder folders
-    amrfinder_folders = find_amrfinder_folders(root_path)
-    
-    if not amrfinder_folders:
-        print("No AMRFinder folders found.")
-        return
-    
-    print(f"Found {len(amrfinder_folders)} AMRFinder folder(s)")
-    
+def process_multiple_folders():
+    """Process all AMRFinder folders in the given"""
     total_processed = 0
-    
-    # Process each AMRFinder folder
-    for folder in amrfinder_folders:
-        print(f"\nProcessing folder: {folder}")
+
+    # Find sample files in this folder
+    samples = find_sample_files()
         
-        # Find sample files in this folder
-        samples = find_sample_files(folder)
+    if not samples:
+        print("  No matching sample files found.")
+    print(f"  Found {len(samples)} sample(s): {', '.join(samples.keys())}")
         
-        if not samples:
-            print("  No matching sample files found.")
-            continue
-        
-        print(f"  Found {len(samples)} sample(s): {', '.join(samples.keys())}")
-        
-        # Process each sample
-        for sample_name, files in samples.items():
-            print(f"\n  Processing sample: {sample_name}")
+    # Process each sample
+    for sample_name, files in samples.items():
+        print(f"\n  Processing sample: {sample_name}")
+        # Create output filename
+        output_file = os.path.join(f"{sample_name}_AR_details.csv")
+
+        # Process the sample
+        result = create_summary(
+            files['abritamr'], 
+            files['amrfinder'], 
+            output_file,
+            sample_name
+        )
             
-            # Create output filename
-            output_file = os.path.join(folder, f"{sample_name}_AR_details.csv")
-            
-            # Process the sample
-            result = create_summary(
-                files['abritamr'], 
-                files['amrfinder'], 
-                output_file,
-                sample_name
-            )
-            
-            if result is not None:
-                total_processed += 1
+        if result is not None:
+            total_processed += 1
     
     print(f"\n" + "="*50)
     print(f"Processing complete!")
     print(f"Total samples processed: {total_processed}")
     print(f"Output files created with pattern: [sample]_AR_details.csv")
 
-if __name__ == "__main__":
-    # Check if folder path is provided as command line argument
-    if len(sys.argv) > 1:
-        root_path = sys.argv[1]
-    else:
-        # Default to current directory if no argument provided
-        root_path = input("Enter the root folder path to search for AMRFinder folders: ").strip()
-        if not root_path:
-            root_path = os.getcwd()
-    
+def main():
+    args = parseArgs()
     # Process all AMRFinder folders in the given path
-    process_multiple_folders(root_path)
+    process_multiple_folders()
+
+if __name__ == "__main__":
+    main()
+

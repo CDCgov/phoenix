@@ -331,7 +331,7 @@ workflow CDC_SCAFFOLDS {
         phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
 
-/*/
+//
 // WORKFLOW: Entry point for CLIA analysis
 //
 workflow CLIA {
@@ -364,20 +364,13 @@ workflow CLIA {
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode CLIA: Input samplesheet not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
-
-    // Check that a busco_db_path is passed
     // ; means do nothing as that is correct
-    if (params.busco_db_path != null) { ; } else { exit 1, 'For --mode CLIA, BUSCO offline mode is not allowed, please pass a path to --busco_db_path!' }
+    if (params.busco_db_path != null) { ; } else { exit 1, 'For --mode CLIA, BUSCO online mode is not allowed, please pass a path to --busco_db_path!' }
 
     main:
         CLIA_INTERNAL ( ch_input, ch_versions )
 
-    emit:
-        scaffolds        = CLIA_INTERNAL.out.scaffolds
-        trimmed_reads    = CLIA_INTERNAL.out.trimmed_reads
-        amrfinder_report = CLIA_INTERNAL.out.amrfinder_report
-        summary_report   = CLIA_INTERNAL.out.summary_report
-}*/
+}
 
 /*
 ========================================================================================

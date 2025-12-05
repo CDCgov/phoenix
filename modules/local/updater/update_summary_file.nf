@@ -1,8 +1,8 @@
 process UPDATE_SUMMARY_FILE {
     tag "${meta.id}"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 36)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    // base_v2.3.0 - MUST manually change below (line 36)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     tuple val(meta), path(phoenix_line_summary), \
@@ -24,7 +24,7 @@ process UPDATE_SUMMARY_FILE {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}Update_Phoenix_summary_line.py \\

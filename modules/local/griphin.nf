@@ -1,7 +1,7 @@
 process GRIPHIN {
     label 'process_low'
-    // base_v2.2.0 - MUST manually change below (line 36)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    // base_v2.3.0 - MUST manually change below (line 36)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     path(db)
@@ -39,7 +39,7 @@ process GRIPHIN {
     //def samplesheet_command = (centar_detected && original_samplesheet) ? "--samplesheet ${original_samplesheet}" : ""
     def filter = filter_var ? "--filter_samples" : ""
     def output_prefix = ((dont_publish == true) || (params.mode_upper == "CENTAR" && params.indir == null)) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     def prefix = task.ext.prefix ?: "GRiPHin"
     def stage_files = [
@@ -62,6 +62,7 @@ process GRIPHIN {
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
         griphin.py: \$(${ica}GRiPHin.py --version)
+        bldb_creation_date: \$(echo ${bldb} | sed 's/[^0-9]//g')
         phoenix_base_container: ${container}
     END_VERSIONS
     """

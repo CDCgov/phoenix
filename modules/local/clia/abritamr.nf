@@ -4,8 +4,7 @@ process ABRITAMR {
     container "quay.io/biocontainers/abritamr:1.0.17--pyh5707d69_1"
 
     input:
-    tuple val(meta), path(fasta), val(fairy_outcome), val(organism_param)
-    path(ar_bd)
+    tuple val(meta), path(fasta), val(organism_param), path(ar_bd)
 
     output:
     tuple val(meta), path("*.summary_matches.txt")  , emit: matches
@@ -14,10 +13,6 @@ process ABRITAMR {
     tuple val(meta), path("*.amrfinder.out")        , emit: amrfinder
     tuple val(meta), path("*.abritamr.txt")         , emit: summary, optional: true
     path "versions.yml"                             , emit: versions
-
-    when:
-    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def is_compressed = fasta.getName().endsWith(".gz") ? true : false
@@ -32,24 +27,24 @@ process ABRITAMR {
     #have to add ID in front for handling for if the ID is only numbers
     abritamr run \\
         --contigs $fasta_name \\
-        --prefix ID_${meta.id} \\
+        --prefix ${meta.id} \\
         --jobs $task.cpus \\
         --amrfinder_db ${ar_bd} \\
         $species
 
     # Rename output files to prevent name collisions
-    mv ID_${meta.id}/summary_matches.txt ./ID_${meta.id}.summary_matches.txt
-    mv ID_${meta.id}/summary_partials.txt ./ID_${meta.id}.summary_partials.txt
-    mv ID_${meta.id}/summary_virulence.txt ./ID_${meta.id}.summary_virulence.txt
-    mv ID_${meta.id}/amrfinder.out ./ID_${meta.id}.amrfinder.out
+    mv ${meta.id}/summary_matches.txt ./${meta.id}.summary_matches.txt
+    mv ${meta.id}/summary_partials.txt ./${meta.id}.summary_partials.txt
+    mv ${meta.id}/summary_virulence.txt ./${meta.id}.summary_virulence.txt
+    mv ${meta.id}/amrfinder.out ./${meta.id}.amrfinder.out
     if [ -f ${meta.id}/abritamr.txt ]; then
         # This file is not always present
-        mv ID_${meta.id}/abritamr.txt ./ID_${meta.id}.abritamr.txt
+        mv ${meta.id}/abritamr.txt ./${meta.id}.abritamr.txt
     fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        abritamr: \$(echo \$(abritamr --version 2>&1) | sed 's/^.*abritamr //' ))
+        abritamr: \$(echo \$(abritamr --version 2>&1) | sed 's/^.*abritamr //' | sed 's/)//'))
         amrfinderplus: \$(amrfinder --version)
     END_VERSIONS
     """

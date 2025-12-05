@@ -184,7 +184,7 @@ workflow PHOENIX_EXQC {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
+            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path, params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -231,9 +231,9 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(FASTP_SINGLES.out.versions)
 
         // Combining fastp json outputs based on meta.id
-        passed_fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0,0])\
-        .join(GET_RAW_STATS.out.combined_raw_stats, by: [0,0])\
-        .join(GET_RAW_STATS.out.outcome_to_edit, by: [0,0])
+        passed_fastp_json_ch = FASTP_TRIMD.out.json.join(FASTP_SINGLES.out.json, by: [0,0])
+            .join(GET_RAW_STATS.out.combined_raw_stats, by: [0,0])
+            .join(GET_RAW_STATS.out.outcome_to_edit, by: [0,0])
 
         // Script gathers data from jsons for pipeline stats file
         GET_TRIMD_STATS (
@@ -352,7 +352,7 @@ workflow PHOENIX_EXQC {
 
         // Checking single copy genes for assembly completeness
         BUSCO (
-            busco_ch, 'auto', []
+            busco_ch, 'auto_prok', []
         )
         ch_versions = ch_versions.mix(BUSCO.out.versions)
 
@@ -405,8 +405,10 @@ workflow PHOENIX_EXQC {
 
         // Combining weighted kraken report with the FastANI hit based on meta.id
         best_hit_ch = KRAKEN2_WTASMBLD.out.k2_bh_summary.map{meta, k2_bh_summary         -> [[id:meta.id], k2_bh_summary]}\
-            .join(FORMAT_ANI.out.ani_best_hit_to_check.map{  meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check ]}, by: [0])\
+            .join(FORMAT_ANI.out.ani_best_hit.map{           meta, ani_best_hit          -> [[id:meta.id], ani_best_hit ]}, by: [0])\
             .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{       meta, k2_bh_summary         -> [[id:meta.id], k2_bh_summary ]},         by: [0])
+
+        best_hit_ch.view()
 
         // Getting ID from either FastANI or if fails, from Kraken2
         DETERMINE_TAXA_ID (

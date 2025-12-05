@@ -1,8 +1,8 @@
 process SCAFFOLD_COUNT_CHECK {
     tag "${meta.id}"
     label 'process_medium'
-    // base_v2.2.0 - MUST manually change below (line 50)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    // base_v2.3.0 - MUST manually change below (line 50)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     tuple val(meta), path(bbmap_log), path(fairy_read_count_outcome),
@@ -39,7 +39,7 @@ process SCAFFOLD_COUNT_CHECK {
     def kraken2_trimd_report = kraken2_trimd_report_file ? "-e $kraken2_trimd_report_file" : ""
     def krona_trimd = krona_trimd_file ? "-g $krona_trimd_file" : ""
     def extended_qc_arg = extended_qc ? "--extended_qc" : ""
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     #checking that the output contains scaffolds still:

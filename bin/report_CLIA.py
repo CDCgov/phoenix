@@ -1,15 +1,7 @@
-#!/scicomp/home-pure/dyp9/.conda/envs/report_env/bin/python
-"""
-CLIA WGS Run Summary generating script for CLIA Phoenix
-11-18-2025
-@author: Frank Bao
-email: dyp9@cdc.gov
-"""
+#!/usr/bin/env python3
 
-# Function to get the script version
-def get_version():
-    return "1.1.0"
-
+import sys
+sys.dont_write_bytecode = True
 import argparse
 import pandas as pd
 import numpy as np
@@ -19,12 +11,17 @@ import logging
 import os, glob
 from ar_tiers_processor import get_ar_tiers
 
+##CLIA WGS Run Summary generating script for CLIA Phoenix
+###11-18-2025
+###@author: Frank Bao
+###email: dyp9@cdc.gov
+
+# Function to get the script version
+def get_version():
+    return "1.1.0"
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        formatter_class = argparse.RawTextHelpFormatter,
-        description = "Summary report generating script for CLIA Phoenix"
-    )
+    parser = argparse.ArgumentParser( formatter_class = argparse.RawTextHelpFormatter, description = "Summary report generating script for CLIA Phoenix" )
     parser.add_argument('-p', '--project_dir', type=str, help='Phoenix output folder', required=True)
     parser.add_argument('-t', '--start_time', dest="start_time", type=str, help='Time the pipeline started.', required=False)
     parser.add_argument('--phx_version', dest="phx_version", type=str, help='Phoenix version', required=True)
@@ -100,7 +97,7 @@ def color_red(val, cutoff, flag):
             return f'<font style="background-color: lightcoral">{val}</font>'
         else:
             return val
-        
+
 def color_unknown_red(val):
     if val == "Unknown":
         return f'<font style="background-color: lightcoral">{val}</font>'
@@ -131,17 +128,26 @@ def combine_strings(row):
 def get_griphin_df(griphin_summary, COVERAGE_CUTOFF):
     columns_to_read = ['WGS_ID','Minimum_QC_Check','Raw_Q30_R1_[%]','Raw_Q30_R2_[%]','Total_Raw_[reads]','Total_Trimmed_[reads]','Estimated_Trimmed_Coverage', 'GC[%]','Scaffolds','Assembly_Length','Assembly_Ratio','Assembly_StDev']
     griphin_df = pd.read_csv(griphin_summary,sep='\t', usecols=columns_to_read)
+    print(griphin_df)
+    # find first index where the entire row is NaN
+    idx = griphin_df.index[griphin_df.isna().all(axis=1)][0]
+    # keep everything *before* that row
+    griphin_df = griphin_df.loc[:idx-1]
+    print(griphin_df)
     griphin_df = griphin_df.rename(columns={'WGS_ID':'ID','Minimum_QC_Check':'Minimum QC','Raw_Q30_R1_[%]':'R1 Q30 (%)', 'Raw_Q30_R2_[%]':'R2 Q30 (%)','Total_Raw_[reads]':'Total Raw', 'GC[%]': 'GC (%)',
                                             'Total_Trimmed_[reads]':'Total Trimmed','Estimated_Trimmed_Coverage':'Estimated Coverage','Assembly_Length':'Assembly Length','Assembly_Ratio':'Assembly Ratio','Assembly_StDev':'Assembly StDev'})
     #griphin_df['Assembly Length'] = griphin_df['Assembly Length'].apply(lambda x: f'{int(x.replace(",", "")):,}' if x != "Unknown" and x == x else x).astype(str)
     # Convert 'Scaffolds' from float to int - allows unknown
     #griphin_df['Scaffolds'] = griphin_df['Scaffolds'].astype(int)
     #griphin_df['Scaffolds'] = pd.to_numeric(griphin_df['Scaffolds'], errors='coerce').fillna('Unknown')
-    griphin_df[['Total Raw','Total Trimmed','Scaffolds']] = griphin_df[['Total Raw','Total Trimmed','Scaffolds']].applymap(lambda x: f'{int(float(str(x).replace(",", ""))):,}' if x != "Unknown" and x == x else x).astype(str)
+    griphin_df[['Total Raw','Total Trimmed','Scaffolds']] = (griphin_df[['Total Raw','Total Trimmed','Scaffolds']].apply(lambda col: col.map(lambda x: f'{int(float(str(x).replace(",", ""))):,}' if x != "Unknown" and x == x else x)).astype(str))
+    #griphin_df[['Total Raw','Total Trimmed','Scaffolds']] = griphin_df[['Total Raw','Total Trimmed','Scaffolds']].applymap(lambda x: f'{int(float(str(x).replace(",", ""))):,}' if x != "Unknown" and x == x else x).astype(str)
     # Round to 2 decimals
-    griphin_df[['Assembly Ratio', 'Assembly StDev']] = griphin_df[['Assembly Ratio', 'Assembly StDev']].applymap(lambda x: round(float(x), 2) if x != "Unknown" and x == x else x)
+    griphin_df[['Assembly Ratio', 'Assembly StDev']] = (griphin_df[['Assembly Ratio', 'Assembly StDev']].apply(lambda col: col.map(lambda x: round(float(x), 2) if x != "Unknown" and x == x else x)))
+    #griphin_df[['Assembly Ratio', 'Assembly StDev']] = griphin_df[['Assembly Ratio', 'Assembly StDev']].applymap(lambda x: round(float(x), 2) if x != "Unknown" and x == x else x)
     #unknowns
-    griphin_df[['GC (%)','Assembly Ratio']] = griphin_df[['GC (%)','Assembly Ratio']].applymap(lambda x: color_unknown_red(x))
+    griphin_df[['GC (%)','Assembly Ratio']] = (griphin_df[['GC (%)','Assembly Ratio']].apply(lambda col: col.map(color_unknown_red)))
+    #griphin_df[['GC (%)','Assembly Ratio']] = griphin_df[['GC (%)','Assembly Ratio']].applymap(lambda x: color_unknown_red(x))
     #Failures
     griphin_df['Minimum QC'] = griphin_df['Minimum QC'].apply(lambda x: color_unknown_red(x))
     # Failures
@@ -251,7 +257,7 @@ def clia_report(args):
         # need update it based on some conditions
         taxa_df.insert(1, 'Taxonomic QC', 'PASS')
         #unknowns
-        taxa_df[['Kraken Assembly (%)']] = taxa_df[['Kraken Assembly (%)']].applymap(lambda x: color_unknown_red(x))
+        taxa_df[['Kraken Assembly (%)']] = taxa_df[['Kraken Assembly (%)']].map(color_unknown_red)
         # Failures
         taxa_df['Taxonomic ID Source'] = taxa_df['Taxonomic ID Source'].apply(lambda x: color_string_red(x))
         # Warnings

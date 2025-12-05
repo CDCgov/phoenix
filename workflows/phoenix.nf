@@ -179,7 +179,7 @@ workflow PHOENIX_EXTERNAL {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
+            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path, params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 

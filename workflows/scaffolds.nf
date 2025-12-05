@@ -190,7 +190,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
+            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path, params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -422,8 +422,6 @@ workflow SCAFFOLDS_EXTERNAL {
             CALCULATE_ASSEMBLY_RATIO.out.gc_content
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
-
-        //CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }.view()
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = DO_MLST.out.checked_MLSTs.map{         meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]}

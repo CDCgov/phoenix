@@ -1,9 +1,9 @@
 process CORRUPTION_CHECK {
     tag "${meta.id}"
     label 'process_medium'
-    // base_v2.2.0 - MUST manually change below (line 29)!!!
+    // base_v2.3.0 - MUST manually change below (line 29)!!!
     stageInMode 'copy'
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     tuple val(meta), path(reads)
@@ -24,7 +24,7 @@ process CORRUPTION_CHECK {
     def num1 = "${reads[0]}".minus(".fastq.gz")
     def num2 = "${reads[1]}".minus(".fastq.gz")
     def busco_parameter = busco_val ? "-b" : ""
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     #set +e

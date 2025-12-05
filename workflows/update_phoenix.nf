@@ -203,7 +203,7 @@ workflow UPDATE_PHOENIX_WF {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, []
+            params.zipped_sketch, params.custom_mlstdb, [], params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 

@@ -1,8 +1,8 @@
 process DETERMINE_TOP_MASH_HITS {
     tag "$meta.id"
     label 'process_low'
-    // base_v2.2.0 - MUST manually change below (line 31)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    // base_v2.3.0 - MUST manually change below (line 31)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     tuple val(meta), path(mash_dists), path(assembly_scaffolds)
@@ -21,7 +21,7 @@ process DETERMINE_TOP_MASH_HITS {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def sample_name = "${mash_dists}" - ".txt" //get full sample name with REFSEQ_DATE
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     mkdir reference_dir

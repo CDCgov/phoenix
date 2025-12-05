@@ -10,8 +10,11 @@ def get_ar_tiers(project_dir, griphin_summary_file):
     # Read the GRiPHin summary to get WGS_ID and FastANI_Organism
     griphin_df = pd.read_csv(griphin_summary_file, sep='\t')
     wgs_data = griphin_df[['WGS_ID', 'FastANI_Organism']].copy()
+    # Find the index of the first row where all values are NA
+    na_row_index = wgs_data.index[wgs_data.isna().all(axis=1)][0]
+    # Keep only rows BEFORE that row
+    wgs_data = wgs_data.loc[:na_row_index - 1]
     wgs_data = wgs_data.rename(columns={'WGS_ID': 'ID', 'FastANI_Organism': 'Species'})
-    
     # Hardcoded exception genes - add your exception genes here
     ex_gene = [
         'vanH-A',
@@ -36,9 +39,8 @@ def get_ar_tiers(project_dir, griphin_summary_file):
     
     # Process each WGS_ID
     for idx, row in wgs_data.iterrows():
-        wgs_id = row['ID']
+        wgs_id = str(row['ID'])
         abritamr_file = os.path.join(project_dir, wgs_id, 'AMRFinder', f'{wgs_id}.abritamr.txt')
-        
         if os.path.exists(abritamr_file):
             try:
                 # Read abritamr file
@@ -95,7 +97,6 @@ def get_ar_tiers(project_dir, griphin_summary_file):
                 print(f"Error processing {abritamr_file}: {e}")
         else:
             print(f"File not found: {abritamr_file}")
-    
     return wgs_data
 
 if __name__ == "__main__":

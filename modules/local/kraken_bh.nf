@@ -1,8 +1,8 @@
 process KRAKEN_BEST_HIT {
     tag "$meta.id"
     label 'process_low'
-    // base_v2.2.0 - MUST manually change below (line 26)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    // base_v2.3.0 - MUST manually change below (line 26)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     tuple val(meta), path(kraken_summary), path(count_file) //[-q count_file (reads or congtigs)] so quast report for assembled or output of GATHERING_READ_QC_STATS for trimmed
@@ -19,7 +19,7 @@ process KRAKEN_BEST_HIT {
     def ica = params.ica ? "bash ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}kraken2_best_hit.sh -i $kraken_summary -q $count_file -n ${prefix} $terra

@@ -119,8 +119,6 @@ workflow SPADES_WF {
         //single end needs to be true for kraken2 weighted and assembled steps
         spades_ch = SPADES.out.scaffolds.map{meta, scaffolds -> [[id:meta.id, single_end:true], scaffolds]}
 
-        DETERMINE_TAXA_ID.out.taxonomy.view()
-
     emit:
         spades_ch                   = spades_ch
         fairy_outcome               = SPADES.out.fairy_outcome

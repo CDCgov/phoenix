@@ -262,9 +262,9 @@ def compile_alerts(scaffolds_entry, coverage, assembly_stdev, gc_stdev):
     if scaffolds_entry == False:
         if coverage != "Unknown": # if its unknown it will fail already so skip
             if int(coverage) > 30 and int(coverage) < 40:
-                alerts.append("coverage between 30-40x("+ str(coverage) + "x)")
+                alerts.append("Coverage between 30-40x("+ str(coverage) + "x)")
             elif int(coverage) > 100.00:
-                alerts.append("coverage >100x(" + str(coverage) + "x)")
+                alerts.append("Coverage >100x(" + str(coverage) + "x)")
     else:
         pass
     if str(assembly_stdev) == "NA":
@@ -307,9 +307,9 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
                 warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({})".format(float(90.00),Trim_Q30_R1_per))
         if Trim_Q30_R2_per == "Unknown" or float(Trim_Q30_R2_per) < float(70.00):
             try:
-                warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({:.2f}%)".format(float(90.00),float(Trim_Q30_R2_per)))
+                warnings.append("Average Q30 of trimmed 21 reads <{:.2f}% ({:.2f}%)".format(float(70.00),float(Trim_Q30_R2_per)))
             except ValueError:
-                warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({})".format(float(90.00),Trim_Q30_R2_per))
+                warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({})".format(float(70.00),Trim_Q30_R2_per))
         if Trim_unclassified_percent == "Unknown" or float(Trim_unclassified_percent) > float(30.00):
             warnings.append(">{:.2f}% unclassifed trimmed reads.".format(int(30)))
         if len(kraken_trim_genus) >=2:
@@ -487,9 +487,9 @@ def Checking_auto_pass_fail(fairy_files, spades_fairy_file, scaffolds_entry, cov
         if coverage == "Unknown" or int(coverage) < int(set_coverage):
             QC_result.append("FAIL")
             if coverage == "Unknown": # if else really only needed so you don't end up with "unknownx"
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
+                QC_reason.append("Coverage <"+ str(set_coverage) +"x (" + str(coverage) + ")")
             else:
-                QC_reason.append("coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
+                QC_reason.append("Coverage <"+ str(set_coverage) +"x (" + str(coverage) + "x)")
     else:
         pass
     if length == "Unknown" or int(length) <= 1000000:
@@ -501,7 +501,7 @@ def Checking_auto_pass_fail(fairy_files, spades_fairy_file, scaffolds_entry, cov
             QC_reason.append("Assembly file not found")
         elif float(assembly_stdev) > 2.58:
             QC_result.append("FAIL")
-            QC_reason.append("assembly stdev >2.58 (" + str(assembly_stdev) + ")")
+            QC_reason.append("Assembly stdev >2.58 (" + str(assembly_stdev) + ")")
     if str(scaffolds) == "Unknown" or int(scaffolds) > int(500):
         QC_result.append("FAIL")
         QC_reason.append("High scaffold count >500 ({})".format(str(scaffolds)))
@@ -509,7 +509,6 @@ def Checking_auto_pass_fail(fairy_files, spades_fairy_file, scaffolds_entry, cov
     QC_reason = ', '.join(QC_reason)
     # Simplify error for when Assembly file not found
     check_QC_reason = QC_reason
-    print(QC_reason)
     if "Assembly file not found" in check_QC_reason:
         QC_reason = "Assembly file not found"
         if "is corrupt and is unable to be unzipped" in check_QC_reason:

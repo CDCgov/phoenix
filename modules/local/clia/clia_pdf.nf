@@ -1,7 +1,7 @@
 process CREATE_CLIA_PDF {
     label 'process_single'
     // base_v2.2.0 - MUST manually change below (line 23)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     path(directory)
@@ -11,10 +11,12 @@ process CREATE_CLIA_PDF {
     path(ar_database)
     val(coverage)
     val(phx_version)
+    val(amrfinderplus_version)
 
     output:
     path("WGS_Run_Summary_report*.pdf"),  emit: pdf_summary
     path("WGS_Run_Summary_report*.html"), emit: html_summary
+    path("AR_tiers_output_*.csv"),        emit: ar_tiers_csv
     path("versions.yml"),                 emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/griphin/bin/
@@ -25,10 +27,7 @@ process CREATE_CLIA_PDF {
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
 
-    # Assign the Nextflow variable to a Bash variable
-    amrfinder_version=\$(amrfinder --version)
-
-    ${ica}report_CLIA.py -p ${directory} --phx_version ${phx_version} -t ${start_time} --ar_database ${ar_database} --amrfinder_version ${amrfinder_version} --coverage ${coverage}
+    ${ica}report_CLIA.py -p ${directory} --phx_version ${phx_version} -t ${start_time} --ar_database ${ar_database} --amrfinder_version ${amrfinderplus_version} --coverage ${coverage}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -1,30 +1,35 @@
 process ASSET_CHECK {
     label 'process_low'
-    // base_v2.2.0 - MUST manually change below (line 22)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    // base_v2.3.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     path(zipped_sketch)
     path(mlst_db_path)
     path(kraken_db)
+    path(clia_db_zipped)
 
     output:
-    path('*.msh'),        emit: mash_sketch
-    path("versions.yml"), emit: versions
-    path('db'),           emit: mlst_db
-    path('*_folder'),     emit: kraken_db
+    path('*.msh'),                          emit: mash_sketch
+    path("versions.yml"),                   emit: versions
+    path('db'),                             emit: mlst_db
+    path('*_folder'),                       emit: kraken_db
+    path('amrfinderdb_v*'), optional: true, emit: clia_db
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def kraken_db_path = kraken_db ? "${kraken_db}" : "false" //checking if its null or an empty list
-    def container_version = "base_v2.2.0"
+    def container_version = "base_v2.3.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
+    def unzip_clia_db = params.mode_upper == "CLIA" ? "tar --use-compress-program='pigz -vdf' -xf ${clia_db_zipped}" : "" 
     // Allow for multitude of zipped sources and remove the last extension, nevermind not needed for xz
     // def kraken_db_path = (!kraken_db || kraken_db.size() == 0) ? "false" : "${kraken_db}" //checking if its null or an empty list
     """
+    ${unzip_clia_db}
+
     if [[ ${zipped_sketch} = *.gz ]]
     then
         echo "Unzipping gz file ${zipped_sketch}"

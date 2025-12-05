@@ -2,7 +2,7 @@ process COLLECT_SAMPLE_FILES {
     tag "${meta.id}"
     stageInMode 'copy'
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
     tuple val(meta), path(dir)
