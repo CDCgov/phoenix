@@ -29,7 +29,6 @@ process WGMLST {
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
-    def container_version = "base_v2.1.0"
     def container = params.wgmlst_container.toString()
     """
     # Call the real internal scripts to infer the ribotpes

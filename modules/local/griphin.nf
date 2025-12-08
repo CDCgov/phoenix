@@ -1,7 +1,7 @@
 process GRIPHIN {
     label 'process_low'
-    // base_v2.3.0 - MUST manually change below (line 36)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 36)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     path(db)
@@ -39,7 +39,7 @@ process GRIPHIN {
     //def samplesheet_command = (centar_detected && original_samplesheet) ? "--samplesheet ${original_samplesheet}" : ""
     def filter = filter_var ? "--filter_samples" : ""
     def output_prefix = ((dont_publish == true) || (params.mode_upper == "CENTAR" && params.indir == null)) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
     def prefix = task.ext.prefix ?: "GRiPHin"
     def stage_files = [

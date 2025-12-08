@@ -2,7 +2,7 @@ process UPDATE_GRIPHIN {
     tag "${full_project_id.toString().split('/')[-1].replace("]","")}"
     label 'process_low'
     stageInMode 'copy' // you need this or openpyxl complains that excel files aren't excel files. 
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     path(griphins_excel)

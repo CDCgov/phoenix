@@ -42,7 +42,7 @@ process PROKKA {
     def prodigal_opt = prodigal_tf ? "--prodigaltf ${prodigal_tf[0]}" : ""
     def container = task.container.toString() - "staphb/prokka@"
     """
-    #adding prokka path for running busco on terra
+    #adding prokka path for running prokka on terra
     $terra
 
     # Main output unzipped formatted fasta headers lines

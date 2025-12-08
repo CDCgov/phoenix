@@ -2,8 +2,8 @@ process SAMPLESHEET_CHECK {
     tag "$samplesheet"
     label 'process_low'
     stageInMode 'copy'
-    // base_v2.3.0 - MUST manually change below (line 24)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 24)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     path(samplesheet)
@@ -21,7 +21,7 @@ process SAMPLESHEET_CHECK {
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def reads_check = reads_entry ? "true" : "false"
     def scaffolds_check = scaffolds_entry ? "true" : "false"
     def directory_check = directory_entry ? "true" : "false"

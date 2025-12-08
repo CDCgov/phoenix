@@ -2,8 +2,8 @@ process GET_RAW_STATS {
     tag "${meta.id}"
     label 'process_single'
     stageInMode 'copy'
-    // base_v2.3.0 - MUST manually change below (line 32)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 32)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(reads), path(fairy_outcome)
@@ -24,7 +24,7 @@ process GET_RAW_STATS {
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def busco_parameter = busco_val ? "--busco" : ""
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}q30.py -i ${reads[0]} > ${prefix}_R1_stats.txt

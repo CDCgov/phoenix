@@ -1,7 +1,7 @@
 process CHECK_SHIGAPASS_TAXA {
     tag "${meta.id}"
     label 'process_low'
-    // base_v2.3.0 - MUST manually change below (line 20)!!!
+    // base_v2.2.0 - MUST manually change below (line 20)!!!
     container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
 
     input:
@@ -16,7 +16,7 @@ process CHECK_SHIGAPASS_TAXA {
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # when running --mode UPDATE_PHOENIX input will have same name as the output so we will create a directory to store the output

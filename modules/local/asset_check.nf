@@ -1,7 +1,7 @@
 process ASSET_CHECK {
     label 'process_low'
-    // base_v2.3.0 - MUST manually change below (line 22)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     path(zipped_sketch)
@@ -21,7 +21,7 @@ process ASSET_CHECK {
 
     script:
     def kraken_db_path = kraken_db ? "${kraken_db}" : "false" //checking if its null or an empty list
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
     def unzip_clia_db = params.mode_upper == "CLIA" ? "tar --use-compress-program='pigz -vdf' -xf ${clia_db_zipped}" : "" 

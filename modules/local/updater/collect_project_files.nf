@@ -3,7 +3,7 @@ process COLLECT_PROJECT_FILES {
     //tag "${meta.project_id}"
     stageInMode 'copy' // default is symlink. if its not set to copy changes in this script then changes original files.
     label 'process_low'
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(griphin_excel), path(griphin_tsv), path(phoenix_tsv), path(pipeline_info)

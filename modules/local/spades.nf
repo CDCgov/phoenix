@@ -36,7 +36,20 @@ process SPADES {
     def phred_offset = params.phred
     def extended_qc_arg = extended_qc ? "-c" : ""
     def container = task.container.toString() - "staphb/spades@"
+        //set up for terra
+    if (params.terra==false) {
+        terra = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra = "PATH=/opt/conda/envs/spades/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/spades/bin:||')" """
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    #adding spades path for running spades on terra
+    $terra
+
     # Set default to be that spades fails and doesn't create scaffolds or contigs
     spades_complete=run_failure
     echo \$spades_complete | tr -d "\\n" > ${prefix}_spades_outcome.csv
@@ -86,5 +99,8 @@ process SPADES {
         spades_container: ${container}
         \$(${ica}afterSpades.sh -V)
     END_VERSIONS
+
+    #revert path back to main envs for running on terra
+    $terra_exit
     """
 }

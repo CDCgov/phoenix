@@ -1,8 +1,8 @@
 process CREATE_AND_UPDATE_README {
     tag "${meta.id}"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 36)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 36)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(directory), path(pipeline_info), path(readme), path(old_gamma_ar), path(new_gamma_ar), path(old_ncbi_ar), path(new_ncbi_ar), path(old_tax), path(new_tax)

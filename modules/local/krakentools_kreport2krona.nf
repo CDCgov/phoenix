@@ -1,8 +1,8 @@
 process KRAKEN2_KRONA {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.3.0 - MUST manually change below (line 22)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(kraken_report)
@@ -17,7 +17,7 @@ process KRAKEN2_KRONA {
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def krakentools_version = "1.2"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """

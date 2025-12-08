@@ -2,7 +2,7 @@ process CDIFF_PLASMIDS {
     tag "$meta.id"
     label 'process_single'
     // base_v2.2.0 - MUST manually change below (line 24)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:2122c46783447f2f04f83bf3aaa076a99129cdd69d4ee462bdbc804ef66aa367'
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(assembly), val(fairy_outcome)

@@ -1,8 +1,8 @@
 process DETERMINE_TAXA_ID {
     tag "${meta.id}"
     label 'process_single'
-    // base_v2.3.0 - MUST manually change below (line 25)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 25)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(kraken_weighted), path(formatted_ani), path(k2_bh_summary)
@@ -22,7 +22,7 @@ process DETERMINE_TAXA_ID {
     def k2_bh_file         = k2_bh_summary ? "-r $k2_bh_summary" : ""
     def k2_weighted_file   = kraken_weighted ? "-k $kraken_weighted" : ""
     def formatted_ani_file = formatted_ani ? "-f $formatted_ani" : ""
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}determine_taxID.sh $k2_weighted_file -s ${meta.id} $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file

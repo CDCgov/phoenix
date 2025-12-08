@@ -1,8 +1,8 @@
 process GET_TAXA_FOR_AMRFINDER {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.3.0 - MUST manually change below (line 21)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 21)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(taxa_file)
@@ -17,7 +17,7 @@ process GET_TAXA_FOR_AMRFINDER {
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def abritamr_val = (params.mode_upper == "CLIA" || params.run_abritamr == true) ? "--abritamr_taxa" : "" //add if you are running the clia version to get the taxa for abritamr
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """

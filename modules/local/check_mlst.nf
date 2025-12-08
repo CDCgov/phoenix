@@ -1,8 +1,8 @@
 process CHECK_MLST {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.3.0 - MUST manually change below (line 23)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 23)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(mlst_file), path(taxonomy_file), path(local_dbases)
@@ -18,7 +18,7 @@ process CHECK_MLST {
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}fix_MLST2.py --input $mlst_file --taxonomy $taxonomy_file --mlst_database ${local_dbases}

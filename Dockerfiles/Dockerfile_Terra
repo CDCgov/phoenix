@@ -1,4 +1,4 @@
-FROM mambaorg/micromamba:2.0.5 as micromamba
+FROM mambaorg/micromamba:2.0.5
 
 # metadata
 LABEL base.image="mambaorg/micromamba:2.0.5"
@@ -17,14 +17,17 @@ LABEL maintainer.email="jvhagey@gmail.com"
 #conda config --add channels bioconda && \
 #conda config --add channels conda-forge
 
+ENV CONDA_SOLVER=libmamba
+
 # creating base environment
 RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::python  \
     conda-forge::biopython \
-    anaconda::pandas=1.3.5 \
-    anaconda::openpyxl \
+    pandas=2.3.3 \
+    openpyxl \
     conda-forge::rsync \
-    conda-forge::xlsxwriter \
+    conda-forge::numpy=2.3.5 \
+    conda-forge::xlsxwriter=3.2.9 \
     conda-forge::bc \
     conda-forge::wget \
     conda-forge::ca-certificates \
@@ -33,8 +36,8 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::openssl \
     conda-forge::gsutil \
     conda-forge::pigz \
-    anaconda::git=2.40.1 \
-    anaconda::graphviz \
+    git \
+    graphviz \
     conda-forge::libcurl \
     # need this for mash: error while loading shared libraries: libgsl.so.25: https://github.com/ParBLiSS/FastANI/issues/96
     conda-forge::gsl=2.7=he838d99_0 \
@@ -51,21 +54,22 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     bioconda::fastani=1.34 \
     bioconda::entrez-direct=16.2 \
     bioconda::kraken2=2.1.3 \
-    bioconda::spades=4.0.0 \
+    #bioconda::spades=4.2.0 \
     bioconda::krona=2.8.1 \
     bioconda::shigapass=1.5.0 \
     #bioconda::prokka=1.14.5 \
     #bioconda::quast=5.2.0 \
-    bioconda::nextflow=24.10.4 && \
+    bioconda::nextflow=25.04.2 && \
     micromamba clean -a -y
     #&& echo "source activate phoenix" >> ~/.bashrc
 
-RUN micromamba create -n bbmap -c conda-forge bioconda::bbmap=39.13 && micromamba clean -a -y
-RUN micromamba create -n quast -c conda-forge bioconda::quast=5.3.0 && micromamba clean -a -y
-RUN micromamba create -n prokka -c conda-forge bioconda::prokka=1.14.5 && micromamba clean -a -y
-RUN micromamba create -n busco -c conda-forge -c bioconda busco=5.4.7 && micromamba clean -a -y
-RUN micromamba create -n srst2 -c conda-forge bioconda::srst2==0.2.0 && micromamba clean -a -y
-RUN micromamba create -n amrfinderplus -c conda-forge bioconda::ncbi-amrfinderplus=4.0.19 && micromamba clean -a -y
+RUN micromamba create -n bbmap -c conda-forge bioconda::bbmap=39.13 -y && \
+    micromamba create -n quast -c conda-forge bioconda::quast=5.3.0 -y && \
+    micromamba create -n prokka -c conda-forge bioconda::prokka=1.14.5 -y && \
+    micromamba create -n busco -c conda-forge -c bioconda busco=6.0.0 -y && \
+    micromamba create -n srst2 -c conda-forge bioconda::srst2==0.2.0  -y && \
+    micromamba create -n spades -c conda-forge bioconda::spades=4.2.0 -y && \
+    micromamba create -n amrfinderplus -c conda-forge bioconda::ncbi-amrfinderplus=4.2.5 && micromamba clean -a -y
 
 #RUN source ~/opt/conda/etc/profile.d/conda.sh
 ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/bin:/opt/conda/envs/env/bin:/opt/conda/envs/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

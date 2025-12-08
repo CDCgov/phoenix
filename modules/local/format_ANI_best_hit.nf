@@ -1,8 +1,8 @@
 process FORMAT_ANI {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.3.0 - MUST manually change below (line 25)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:b8e3d7852e5f5b918e9469c87bfd8a539e4caa18ebb134fd3122273f1f412b05'
+    // base_v2.2.0 - MUST manually change below (line 25)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
 
     input:
     tuple val(meta), path(ani_file)
@@ -21,7 +21,7 @@ process FORMAT_ANI {
     else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.3.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     line=\$(head -n1 ${ani_file})
