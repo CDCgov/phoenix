@@ -181,7 +181,7 @@ def get_gc_metrics(gc_file):
                 else:
                     sample_gc = float((line.split("Sample_GC_Percent: ",1)[1]).strip())
             elif "Species_GC_Mean:" in line:
-                if "No Match Found" in line:
+                if "No Match Found" in line or "-" in line:
                     species_gc_mean="NA"
                 else:
                     species_gc_mean = float((line.split("Species_GC_Mean: ",1)[1]).strip())
@@ -1043,7 +1043,7 @@ def clean_ar_df(df, ar_df, BLDB):
     ar_db = ",".join(ar_db)
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, ar_db
 
-def write_phoenix_summary(set_coverage, final_df, final_ar_df, busco_df):
+def write_phoenix_summary(set_coverage, final_df, busco_df):
     #full_busco_line_L = full_busco_line_L.rename(columns=column_name_mapping)
     columns_to_remove = ['Parent_Folder', 'Data_Location', "No_AR_Genes_Found"]
     final_df = final_df.drop(columns=columns_to_remove)
@@ -1051,7 +1051,7 @@ def write_phoenix_summary(set_coverage, final_df, final_ar_df, busco_df):
     final_df = pd.merge(final_df, busco_df, on='WGS_ID')
     # Dictionary mapping old column names in GRiPHin to new column names in phoenix_summary.tsv
     column_name_mapping = {'WGS_ID':'ID','Minimum_QC_Check':'Auto_QC_Outcome', 'Estimated_Trimmed_Coverage':'Estimated_Coverage', 'Assembly_Length':'Genome_Length',
-                            'GC[%]':'GC_%', 'BUSCO_Lineage':'BUSCO_DB', 'Assembly_StDev':'Assembly_Ratio_(STDev)', 'Scaffolds':'#_of_Scaffolds_>500bp', 'FastANI_%Coverage':'Taxa_Coverage',
+                            'GC[%]':'GC_%', 'BUSCO_Lineage':'BUSCO_DB', 'Assembly_StDev':'Assembly_Ratio_(STDev)', 'Scaffolds':'#_of_Scaffolds_>500bp',
                             'Kraken_ID_Trimmed_Reads_%':'Kraken2_Trimd', 'Kraken_ID_WtAssembly_%':'Kraken2_Weighted','Minimum_QC_Issues': 'Auto_QC_Failure_Reason','BUSCO_%Match':'BUSCO_Match'}
                             #'Primary_MLST_Scheme':'MLST_Scheme_1', 'Primary_MLST':'MLST_1','Secondary_MLST_Scheme':'MLST_2 }
     # Rename multiple columns
@@ -1061,7 +1061,7 @@ def write_phoenix_summary(set_coverage, final_df, final_ar_df, busco_df):
     cols_to_drop = ['ID', 'Auto_QC_Outcome', 'Auto_QC_Failure_Reason', 'Warnings', 'Alerts', 'Raw_Q30_R1_[%]', 'Raw_Q30_R2_[%]', 'Total_Raw_[reads]',
        'Paired_Trimmed_[reads]', 'Total_Trimmed_[reads]','Estimated_Coverage', 'GC_%', '#_of_Scaffolds_>500bp', 'Genome_Length',
        'Assembly_Ratio', 'Assembly_Ratio_(STDev)', 'Taxa_Source', 'BUSCO_DB', 'BUSCO_Match', 'BUSCO', 'Kraken2_Trimd', 'Kraken2_Weighted',
-       'FastANI_Organism', 'FastANI_%ID', 'Taxa_Coverage','Species_Support_ANI', 'AR_Database']
+       'FastANI_Organism', 'FastANI_%ID', 'FastANI_%Coverage','Species_Support_ANI', 'AR_Database']
     # remove what we don't want
     #column_list = [item for item in column_list if item not in cols_to_drop]
     pattern = re.compile(r'\((.*?)\)$')  # Pattern to match the last string between "(" and ")" at the end of the string
@@ -1069,14 +1069,14 @@ def write_phoenix_summary(set_coverage, final_df, final_ar_df, busco_df):
     #pattern = re.compile(r'\w{2}_\d+\.\d+')
     #resistance_types = [col_name.split(re.search(pattern, col_name).group(),1)[1].replace('_(', '').replace(')', '') for col_name in column_list ]
     #create ar db
-    ar_db_df = pd.DataFrame()
-    for resistance_type in resistance_types:
+    #ar_db_df = pd.DataFrame()
+    #for resistance_type in resistance_types:
         #get all column names that match resistance type
-        matching_col_resistance_type = [col for col in final_ar_df.columns if resistance_type in col]
+    #    matching_col_resistance_type = [col for col in final_ar_df.columns if resistance_type in col]
         # Handle multiple matching columns and combining gene names with ,
-        ar_db_df[resistance_type] = final_ar_df.apply(lambda row: ', '.join([col.split('_')[0] for col in matching_col_resistance_type if row[col] != ""]), axis=1)
+    #    ar_db_df[resistance_type] = final_ar_df.apply(lambda row: ', '.join([col.split('_')[0] for col in matching_col_resistance_type if row[col] != ""]), axis=1)
     # Set make index into ID column
-    ar_db_df = ar_db_df.reset_index().rename(columns={'index':'ID'})
+    #ar_db_df = ar_db_df.reset_index().rename(columns={'index':'ID'})
     # Apply the function to create the new Taxa_Confidence column
     final_df['Taxa_Confidence'] = final_df.apply(extract_confidence, axis=1)
     # Apply the function to create the new Species column
@@ -1084,13 +1084,13 @@ def write_phoenix_summary(set_coverage, final_df, final_ar_df, busco_df):
     # make column for warnings count
     final_df['Warning_Count'] = final_df['Warnings'].str.split(',').str.len()
     #make new dataframe
-    phx_df = final_df[['ID','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length','Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%', 'BUSCO','BUSCO_DB',\
-                       'Species', 'Taxa_Confidence','Taxa_Coverage', 'Taxa_Source','Kraken2_Trimd','Kraken2_Weighted']]#,'MLST_Scheme_1','MLST_1','MLST_Scheme_2','MLST_2']]
-    phx_df = pd.merge(phx_df, ar_db_df, on='ID')
+    final_df = final_df[['ID','PHX_Version','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length','Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%','BUSCO','BUSCO_DB',\
+                       'Final_Taxa_ID', 'Taxa_Source', 'FastANI_Organism','FastANI_%ID','FastANI_%Coverage','ShigaPass_Organism','Kraken2_Trimd','Kraken2_Weighted', 'Auto_QC_Failure_Reason']]#,'MLST_Scheme_1','MLST_1','MLST_Scheme_2','MLST_2']]
+    #phx_df = pd.merge(phx_df, ar_db_df, on='ID')
     # add commas to make it more readable
-    phx_df["Genome_Length"] = phx_df["Genome_Length"].apply(lambda x: "{:,.0f}".format(x) if pd.notna(x) and x != "Unknown" else x)
+    final_df["Genome_Length"] = final_df["Genome_Length"].apply(lambda x: "{:,.0f}".format(x) if pd.notna(x) and x != "Unknown" else x)
     #print out Phoenix_Summary.tsv
-    phx_df.to_csv('Phoenix_Summary.tsv', sep='\t', index=False)
+    final_df.to_csv('Phoenix_Summary.tsv', sep='\t', index=False)
 
 def extract_species(row):
     """Define a function to extract the relevant information based on Taxa_Source."""
@@ -1098,10 +1098,10 @@ def extract_species(row):
         return f"{row['FastANI_Organism']}"
     elif row['Taxa_Source'] == 'kraken2_wtasmbld':
         # Extract the first number in parentheses using regular expression
-        scaffolds_match = re.search(r'\((\d+(\.\d+)?)%', row['Kraken_ID_WtAssembly_%'])
+        scaffolds_match = re.search(r'\((\d+(\.\d+)?)', row['Kraken2_Weighted'])
         return f"{scaffolds_match.group(1)}"
     elif row['Taxa_Source'] == 'kraken2_trimmed':
-        reads_match = re.search(r'\((\d+(\.\d+)?)%', row['Kraken_ID_Trimmed_Reads_%'])
+        reads_match = re.search(r'\((\d+(\.\d+)?)', row['Kraken2_Trimd'])
         return f"{reads_match.group(1)}"
     elif row['Taxa_Source'] == 'Unknown':
         return "Unknown"
@@ -1113,9 +1113,9 @@ def extract_confidence(row):
     if row['Taxa_Source'] == 'ANI_REFSEQ':
         return row['FastANI_%ID']
     elif row['Taxa_Source'] == 'kraken2_wtasmbld':
-        return row['Kraken_ID_WtAssembly_%'].str.replace(r'\([^)]*\)', '')
+        return row['Kraken2_Weighted'].replace(r'\([^)]*\)', '')
     elif row['Taxa_Source'] == 'kraken2_trimmed':
-        return row['Kraken_ID_Trimmed_Reads_%'].str.replace(r'\([^)]*\)', '')
+        return row['Kraken2_Trimd'].replace(r'\([^)]*\)', '')
     elif row['Taxa_Source'] == 'Unknown':
         return "Unknown"
     else:
@@ -1145,10 +1145,11 @@ def main():
             sample_name = row[0]
             directory = "./GRiPHin/" + sample_name + "/" # all samples should be in this directory
             data_location, parent_folder = Get_Parent_Folder(directory)
-            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_files, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, amrfinder_file, fast_ani_file, tax_file = Get_Files(directory, sample_name)
+            trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_files, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, amrfinder_file, fastani_file, tax_file = Get_Files(directory, sample_name)
+            print(fastani_file)
             #Get the metrics for the sample
             ar_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, assembly_ratio_metrics, gc_metrics, QC_result, \
-            QC_reason, full_busco_line = Get_Metrics(args.set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, fairy_files, spades_fairy_file, amrfinder_file, fast_ani_file, tax_file, args.ar_db)
+            QC_reason, full_busco_line = Get_Metrics(args.set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, fairy_files, spades_fairy_file, amrfinder_file, fastani_file, tax_file, args.ar_db)
             #Collect this mess of variables into appeneded lists
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L = Append_Lists(data_location, parent_folder, sample_name, \
@@ -1156,6 +1157,7 @@ def main():
             gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, full_busco_line, \
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L)
+            print(fastani_organism_L)
             if args.shigapass == True:
                 shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3], "")
     # combine all lists into a dataframe
@@ -1174,7 +1176,7 @@ def main():
         final_df = final_df
     write_to_excel(args.set_coverage, args.output, final_df, qc_max_col, ar_max_col, columns_to_highlight, final_ar_df, ar_db_col)
     convert_excel_to_tsv(args.output)
-    write_phoenix_summary(args.set_coverage, final_df, final_ar_df, busco_df)
+    write_phoenix_summary(args.set_coverage, final_df, busco_df)
 
 if __name__ == '__main__':
     main()

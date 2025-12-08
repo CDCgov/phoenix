@@ -314,18 +314,18 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
-  - amrfinderplus: v3.12.8 to [v4.0.19](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.0.19)
-  - busco: v5.4.7--pyhdfd78af_0 to [v5.8.0--pyhdfd78af_0](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG)  
+  - amrfinderplus: v3.12.8 to [v4.2.5](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.2.5)  
+  - busco: v5.4.7--pyhdfd78af_0 to [v6.0.0](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG)  
   - bbtools: v39.01 to v39.13  
   - spades: v3.15.5 to [v4.2.0](https://github.com/ablab/spades/releases/tag/v4.2.0)  
   - quast: v5.0.2 to [v5.3.0](https://github.com/ablab/quast/releases/tag/quast_5.3.0)  
   - sra-tools: v3.1.1 to [v3.2.0--h4304569_0](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md)  
-  - phx_base: python upgraded from 3.7.12 to 3.9.19, base image updated from jammy to oracular. 
+  - phx_base: python upgraded from 3.7.12 to 3.12.3, base image updated from jammy to resolute.  
 
 **Database Updates:**  
 - Curated AR gene database was updated on 2025-02-14 (yyyy-mm-dd) to include the new AMRFinder database:
    - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
-      - Version [2024-12-18.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/4.0/)  
+      - Version [2025-12-03.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/4.2/)  
    - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)
       - Mcr genes added, 2 false positives and 1 duplicate removed, and 2 modified gene. See [history.txt](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/history.txt) file for more details (for this new version changes from 2024-04-25 to 2024-12-13 are included).
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since last version release.
