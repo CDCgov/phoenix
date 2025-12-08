@@ -120,32 +120,52 @@ while IFS= read -r var; do
 		else
 			# Loop through field numbers 3-6 to find valid GCF_ pattern
 			GCF_found=0
-			for field_num in {3..6}; do
-				GCF_name=$(echo "${source}" | cut -d'_' -f${field_num}-)
-				GCF_check=${GCF_name:0:4}
-				if [[ "${GCF_check}" = "GCF_" ]]; then
-					GCF_found=1
-					filename=$(echo ${source} | cut -d'_' -f${field_num}- | rev | cut -d'_' -f2,3,4 | rev)
-					alpha=${filename:4:3}
-					beta=${filename:7:3}
-					charlie=${filename:10:3}
-					echo "Copying - ${filename}"
-					echo "Trying - wget $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz"
-					$wget_path $certificate_check https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${GCF_name}.gz -O ${outdir}/${source}.gz
-		#			echo "Trying - wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz"
-		#			wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz -O ${filename}_genomic.fna.gz
-					#curl --remote-name --remote-time "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${beta}/${charlie}/${filename}/${filename}_genomic.fna.gz"
-					# Check if file exists and is not empty, if so it will move on to the next best hit. Dont really know a better way to deal with a crappy download situation
-					if [[ -s "${outdir}/${source}.gz" ]]; then
-						echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
-			#			echo "${GCF_name}.gz" >> "${sample_name}_best_MASH_hits.txt"
-						matches=$(( matches + 1))
-					else
-						echo "${source} did not download correctly" >> ${sample_name}_genome_download_log.txt
-					fi
-					break  # Exit the for loop once GCF_ is found
-				fi
-			done
+			# Extract GCF accession using regex pattern matching
+            if [[ "${source}" =~ (GCF_[0-9]{9}\.[0-9]+) ]]; then
+				GCF_found=1
+                GCF_accession="${BASH_REMATCH[1]}"
+                
+                # Extract the numeric part (e.g., "000005845" from "GCF_000005845.2")
+                accession_number="${GCF_accession#GCF_}"  # Remove GCF_ prefix
+                accession_number="${accession_number%%.*}"  # Remove version suffix
+                
+                # Split into directory structure components (3-digit chunks)
+                alpha="${accession_number:0:3}"
+                bravo="${accession_number:3:3}"
+                charlie="${accession_number:6:3}"
+                
+                # Construct the full filename from source (assumes it ends with the GCF accession)
+                # This finds everything from GCF_ to the end
+                if [[ "${source}" =~ (GCF_[0-9]{9}\.[0-9]+[^/]*) ]]; then
+                    filename="${BASH_REMATCH[1]}"
+                else
+                    filename="${GCF_accession}"
+                fi
+                
+                echo "Copying - ${filename}"
+				filename="${filename%.fna}"
+                
+                # Construct URL
+                url="https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/${alpha}/${bravo}/${charlie}/${filename}/${filename}_genomic.fna.gz"
+                
+                echo "Trying - ${wget_path} ${certificate_check} ${url} -O ${outdir}/${source}.gz"
+                
+                # Download the file
+                ${wget_path} ${certificate_check} "${url}" -O "${outdir}/${source}.gz"
+                
+                # Check if file exists and is not empty
+                if [[ -s "${outdir}/${source}.gz" ]]; then
+                    echo "${outdir}/${source}.gz" >> "${sample_name}_best_MASH_hits.txt"
+                    matches=$(( matches + 1))
+                    echo "✓ Successfully downloaded: ${source}" >> "${sample_name}_genome_download_log.txt"
+                else
+                    echo "✗ ${source} did not download correctly" >> "${sample_name}_genome_download_log.txt"
+                    # Clean up failed download
+                    rm -f "${outdir}/${source}.gz"
+                fi
+            else
+                echo "⚠ No valid GCF accession found in: ${source}" >> "${sample_name}_genome_download_log.txt"
+            fi
 			if [[ ${GCF_found} -eq 0 ]]; then
 				echo "GCF check did not pass for any field position in ${source}" >> ${sample_name}_genome_download_log.txt
 			fi
