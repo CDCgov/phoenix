@@ -65,6 +65,7 @@ workflow PHOENIX {
 
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode PHOENIX: Input samplesheet not specified!' }
+    if (params.input_sra != null ) { exit 1, 'For --mode PHOENIX: Input samplesheet not specified! --input_sra is for --mode SRA, did you mean to run that mode?' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
@@ -102,6 +103,7 @@ workflow CDC_PHOENIX {
 
     //input on command line
     if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode CDC_PHOENIX: Input samplesheet not specified!' }
+    if (params.input_sra != null ) { exit 1, 'For --mode CDC_PHOENIX: Input samplesheet not specified! --input_sra is for --mode CDC_SRA, did you mean to run that mode?' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
@@ -143,6 +145,7 @@ workflow SRA {
 
     // Checking that --create_ncbi_sheet wasn't passed
     if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for --mode SRA.' }
+    if (params.input != null) { exit 1, '--input is for --mode PHOENIX, did you mean to run that mode? Use --input_sra for --mode SRA' }
 
     // Check mandatory parameters
     //input on command line
@@ -196,6 +199,7 @@ workflow CDC_SRA {
 
     // Checking that --create_ncbi_sheet wasn't passed
     if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for --mode CDC_SRA.' }
+    if (params.input != null) { exit 1, '--input is for --mode CDC_PHOENIX, did you mean to run that mode? Use --input_sra for --mode CDC_SRA' }
 
     // Check mandatory parameters
     //input on command line

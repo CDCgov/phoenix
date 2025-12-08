@@ -176,7 +176,7 @@ def get_gc_metrics(gc_file):
                     gc_stdev = float((line.split("Species_GC_StDev: ",1)[1]).strip())
                     out_of_range_stdev = gc_stdev*2.58
             elif "Sample_GC_Percent:" in line:
-                if "No Match Found" in line:
+                if "No Match Found" in line or "NA" in line:
                     sample_gc="NA"
                 else:
                     sample_gc = float((line.split("Sample_GC_Percent: ",1)[1]).strip())
@@ -1146,7 +1146,6 @@ def main():
             directory = "./GRiPHin/" + sample_name + "/" # all samples should be in this directory
             data_location, parent_folder = Get_Parent_Folder(directory)
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, fairy_files, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, amrfinder_file, fastani_file, tax_file = Get_Files(directory, sample_name)
-            print(fastani_file)
             #Get the metrics for the sample
             ar_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, assembly_ratio_metrics, gc_metrics, QC_result, \
             QC_reason, full_busco_line = Get_Metrics(args.set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, fairy_files, spades_fairy_file, amrfinder_file, fastani_file, tax_file, args.ar_db)
@@ -1157,7 +1156,6 @@ def main():
             gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, full_busco_line, \
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, full_busco_line_L)
-            print(fastani_organism_L)
             if args.shigapass == True:
                 shiga_df = create_shiga_df(directory, sample_name, shiga_df, FastANI_output_list[3], "")
     # combine all lists into a dataframe

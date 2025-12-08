@@ -218,13 +218,13 @@ def get_gc_metrics(gc_file):
                 else:
                     gc_stdev = float((line.split("Species_GC_StDev: ",1)[1]).strip())
                     out_of_range_stdev = gc_stdev*2.58
-            elif "Sample_GC_Percent:" in line:
+            elif "Sample_GC_Percent:" in line or "NA" in line:
                 if "No Match Found" in line:
                     sample_gc="NA"
                 else:
                     sample_gc = float((line.split("Sample_GC_Percent: ",1)[1]).strip())
             elif "Species_GC_Mean:" in line:
-                if "No Match Found" in line:
+                if "No Match Found" in line or "-" in line:
                     species_gc_mean="NA"
                 else:
                     species_gc_mean = float((line.split("Species_GC_Mean: ",1)[1]).strip())
