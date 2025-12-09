@@ -1084,7 +1084,7 @@ def write_phoenix_summary(set_coverage, final_df, busco_df):
     # make column for warnings count
     final_df['Warning_Count'] = final_df['Warnings'].str.split(',').str.len()
     #make new dataframe
-    final_df = final_df[['ID','PHX_Version','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length','Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%','BUSCO','BUSCO_DB',\
+    final_df = final_df[['ID','PHX_Version','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length','Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%','BUSCO','BUSCO_DB',
                        'Final_Taxa_ID', 'Taxa_Source', 'FastANI_Organism','FastANI_%ID','FastANI_%Coverage','ShigaPass_Organism','Kraken2_Trimd','Kraken2_Weighted', 'Auto_QC_Failure_Reason']]#,'MLST_Scheme_1','MLST_1','MLST_Scheme_2','MLST_2']]
     #phx_df = pd.merge(phx_df, ar_db_df, on='ID')
     # add commas to make it more readable
