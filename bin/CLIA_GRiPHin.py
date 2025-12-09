@@ -1082,10 +1082,24 @@ def write_phoenix_summary(set_coverage, final_df, busco_df):
     # Apply the function to create the new Species column
     final_df['Species'] = final_df.apply(extract_species, axis=1)
     # make column for warnings count
-    final_df['Warning_Count'] = final_df['Warnings'].str.split(',').str.len()
-    #make new dataframe
-    final_df = final_df[['ID','PHX_Version','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length','Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%','BUSCO','BUSCO_DB',
-                       'Final_Taxa_ID', 'Taxa_Source', 'FastANI_Organism','FastANI_%ID','FastANI_%Coverage','ShigaPass_Organism','Kraken2_Trimd','Kraken2_Weighted', 'Auto_QC_Failure_Reason']]#,'MLST_Scheme_1','MLST_1','MLST_Scheme_2','MLST_2']]
+    final_df['Warning_Count'] = final_df['Warnings'].str.split(',').apply(len)
+    
+    # Define the base columns to include
+    columns_to_include = ['ID','PHX_Version','Auto_QC_Outcome','Warning_Count','Estimated_Coverage',
+                         'Genome_Length','Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%',
+                         'BUSCO','BUSCO_DB','Final_Taxa_ID', 'Taxa_Source', 'FastANI_Organism',
+                         'FastANI_%ID','FastANI_%Coverage']
+    
+    # Only add ShigaPass_Organism if it exists in the DataFrame
+    if 'ShigaPass_Organism' in final_df.columns:
+        columns_to_include.append('ShigaPass_Organism')
+    
+    # Add the remaining columns
+    columns_to_include.extend(['Kraken2_Trimd','Kraken2_Weighted', 'Auto_QC_Failure_Reason'])
+    
+    # Select only the columns that exist in the DataFrame
+    final_df = final_df[columns_to_include]
+    
     #phx_df = pd.merge(phx_df, ar_db_df, on='ID')
     # add commas to make it more readable
     final_df["Genome_Length"] = final_df["Genome_Length"].apply(lambda x: "{:,.0f}".format(x) if pd.notna(x) and x != "Unknown" else x)
