@@ -177,7 +177,7 @@ def get_gc_metrics(gc_file):
                     out_of_range_stdev = gc_stdev*2.58
             elif "Sample_GC_Percent:" in line:
                 extracted_value = (line.split("Sample_GC_Percent: ",1)[1]).strip()
-                if "No Match Found" in extracted_value  or extracted_value == "NA":
+                if "No Match Found" in extracted_value or extracted_value == "NA":
                     sample_gc = "NA"
                 else: 
                     sample_gc = float(extracted_value)
