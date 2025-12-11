@@ -148,18 +148,18 @@ fi
 #echo "Checking if Assembly_stats exists: ${OUTDATADIR}/quast/report.tsv"
 #if [[ -f "${OUTDATADIR}/quast/report.tsv" ]]; then
 #	assembly_length=$(sed -n '16p' "${OUTDATADIR}/quast/report.tsv" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-# echo "Checking if quast Assembly_stats exists: ${quast_report}"
-# if [[ -f "${quast_report}" ]]; then
-# 	assembly_length=$(sed -n '16p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-# 	sample_gc_percent=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+echo "Checking if quast Assembly_stats exists: ${quast_report}"
+if [[ -f "${quast_report}" ]]; then
+	assembly_length=$(sed -n '16p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+	sample_gc_percent=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 # # Another method if we start seeing too many failures with main method
 # #elif
-# else
-# 	echo "No quast exists, cannot continue"
-# 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
-# 	echo -e "Tax: No genus Found	No species found\nNCBI_TAXID: No Match Found\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
-# 	exit
-# fi
+else
+	echo "No quast exists, cannot continue"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
+	echo -e "Tax: No genus Found	No species found\nNCBI_TAXID: No Match Found\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+	exit
+fi
 counter=0
 
 # Dont know if we even use thiu anymore, could break if used though
