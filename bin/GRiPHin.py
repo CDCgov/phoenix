@@ -35,7 +35,7 @@ def get_version():
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
     parser.add_argument('-s', '--samplesheet', default=None, required=False, dest='samplesheet', help='PHoeNIx style samplesheet of sample,directory in csv format. Directory is expected to have PHoeNIx stype output.')
-    parser.add_argument('-b', '--bldb', default=None, required=False, dest='bldb', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
+    parser.add_argument('-b', '--bldb', default=None, required=False, dest='bldb', help='')
     parser.add_argument('-d', '--directory', default=None, required=False, dest='directory', help='If a directory is given rather than samplesheet GRiPHin will create one for all samples in the directory.')
     parser.add_argument('-c', '--control_list', required=False, dest='control_list', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
@@ -218,7 +218,7 @@ def get_gc_metrics(gc_file):
                 else:
                     gc_stdev = float((line.split("Species_GC_StDev: ",1)[1]).strip())
                     out_of_range_stdev = gc_stdev*2.58
-            elif "Sample_GC_Percent:" in line or "NA" in line:
+            elif "Sample_GC_Percent:" in line:
                 extracted_value = (line.split("Sample_GC_Percent: ",1)[1]).strip()
                 if "No Match Found" in extracted_value or extracted_value == "NA":
                     sample_gc="NA"
