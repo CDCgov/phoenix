@@ -209,10 +209,8 @@ def Get_BUSCO_Gene_Count(busco_short_summary):
 
 def get_gc_metrics(gc_file):
     '''Collects the gc and gc stdev.'''
-    print(gc_file)
     with open(gc_file, 'r') as f:
         for line in f:
-            print(line)
             if "Species_GC_StDev:" in line:
                 if "Not calculated on species with n<10 references" in line or "No Match Found" in line:
                     gc_stdev = "NA"
@@ -234,7 +232,6 @@ def get_gc_metrics(gc_file):
                     species_gc_mean = float(extracted_value)
             else:
                 pass
-    quit()
     return gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean
 
 def get_assembly_ratio(asmbld_ratio, tax_file):
