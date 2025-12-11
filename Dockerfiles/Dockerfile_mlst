@@ -1,6 +1,6 @@
-FROM ubuntu:focal as app
+FROM ubuntu:focal AS app
 
-ARG MLST_VER="2.23.0"
+ARG MLST_VER="2.25.0"
 ARG ANY2FASTA_VER="0.4.2"
 
 LABEL base.image="ubuntu:focal"
@@ -10,8 +10,7 @@ LABEL software.version="${MLST_VER}"
 LABEL description="Scan contig files against PubMLST typing schemes"
 LABEL website="https://github.com/tseemann/mlst"
 LABEL license="https://github.com/tseemann/mlst/blob/master/LICENSE"
-LABEL maintainer="Jill Hagey"
-LABEL maintainer.email="qpk9@cdc.gov"
+LABEL maintainer="Jill Hagey <qpk9@cdc.gov>, Nick Vlachos <nvx4@cdc.gov>"
 
 # install dependencies via apt; cleanup apt garbage
 # blast from ubuntu:focal is v2.9.0 (as of 2022-05-09)
@@ -55,3 +54,5 @@ COPY db /data/db
 RUN mv /data/db ../mlst-${MLST_VER}
 #change permissions of database files
 RUN chmod 755 --recursive /mlst-${MLST_VER}/db/*
+#RUN chmod 755 /mlst-${MLST_VER}/db/blast/*
+#RUN chmod 755 /mlst-${MLST_VER}/db/pubmlst/*
