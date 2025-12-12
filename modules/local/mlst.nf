@@ -84,13 +84,13 @@ process MLST {
             mlst --scheme ecoli_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
             cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
             rm ${prefix}_*.tsv
-        elif [[ \$scheme == "cfreundii" ]]; then
+        elif [[ \$scheme == "citrobacter" ]]; then
             mv ${prefix}.tsv ${prefix}.OLD-tsv
             mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
             mlst --scheme ecoli_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
             cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
             rm ${prefix}_*.tsv
-        elif [[ \$scheme == "senterica" ]]; then
+        elif [[ \$scheme == "salmonella_Achtman" ]] || [[ \$scheme == "salmonella_Oxford" ]]; then
             mv ${prefix}.tsv ${prefix}.OLD-tsv
             mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
             mlst --scheme ecoli_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
