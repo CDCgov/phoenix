@@ -183,10 +183,14 @@ Check_source 0
 # Check if species was assigned and get starting taxID
 if [[ -n ${species} ]]; then
 	if [[ "$species" != *complex* && "$species" != *strain* ]]; then
-		species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )
+		#species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )
+		species=$(echo "${species}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/-chromosome$//' )
 		# Check if the string contains "sp."
-		if [[ $species == *sp.* ]]; then
-			# If yes, add a space after "sp."
+		#if [[ $species == *sp.* ]]; then
+		#	# If yes, add a space after "sp."
+		#	species="${species/sp./sp. }"
+		#fi
+		if [[ $species =~ sp\.\S ]]; then
 			species="${species/sp./sp. }"
 		fi
 	# Check if "strain" is in the string
