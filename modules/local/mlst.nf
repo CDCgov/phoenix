@@ -2,7 +2,8 @@ process MLST {
     tag "$meta.id"
     label 'process_medium'
     // 2.25.0_12102025 - must edit manually below (line 28)!!!
-    container 'quay.io/jvhagey/mlst@sha256:75da09f926c18c69c656ff22c5bbee6f037307aa4a41d11b14ff0ccaa2d6c628'
+    //container 'quay.io/jvhagey/mlst@sha256:75da09f926c18c69c656ff22c5bbee6f037307aa4a41d11b14ff0ccaa2d6c628'
+    container 'quay.io/enteevlachos/phx_mlst@sha256:a535991f81596c2df13a0b0b9f669d0513ba96d295008e38bc58f24c21bf1aab'
 
     input:
     tuple val(meta), path(fasta), path(taxonomy)
@@ -19,7 +20,7 @@ process MLST {
     def prefix = task.ext.prefix ?: "${meta.id}"
     // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
     def container = task.container.toString() - "quay.io/jvhagey/mlst@"
-    def mlst_version = "2.25.0_12102025"
+    def mlst_version = "2.25.0_20251212"
     def mlst_version_clean = mlst_version.split("_")[0]
     """
     if [[ ${fasta} = *.gz ]]
@@ -42,6 +43,7 @@ process MLST {
         \$unzipped_fasta \\
         > ${prefix}.tsv
 
+    # Address all the cases where we need to run mlst twice to get both schemes
     scheme=\$(tail -n1 | cut -d \$'\t' -f2 ${prefix}.tsv)
     if [[ \$scheme == "abaumannii_2" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
@@ -63,7 +65,116 @@ process MLST {
         mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
-    elif [[ \${genus,,} == "mycobacterium" ]]; then
+    elif [[ \$scheme == "aparagallinarum_Ghanem" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme aparagallinarum_Guo --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "aparagallinarum_Guo" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme aparagallinarum_Ghanem --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "efaecium" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme efaecium_Bezdicek --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "efaecium_Bezdicek" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme efaecium --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "leptospira" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme leptospira_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        mlst --scheme leptospira_3 --threads $task.cpus \$unzipped_fasta > ${prefix}_3.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv ${prefix}_3.tsv> ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "leptospira_2" ]]; then
+        mv ${prefix}.tsv ${prefix}_2.tsv
+        mlst --scheme leptospira_1 --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
+        mlst --scheme leptospira_3 --threads $task.cpus \$unzipped_fasta > ${prefix}_3.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv ${prefix}_3.tsv> ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "leptospira_3" ]]; then
+        mv ${prefix}.tsv ${prefix}_3.tsv
+        mlst --scheme leptospira_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        mlst --scheme leptospira --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv ${prefix}_3.tsv> ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "salmonella_Oxford" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme salmonella_Achtman --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "salmonella_Achtman" ]]; then
+        mv ${prefix}.tsv ${prefix}_3.tsv
+        mlst --scheme salmonella_Oxford --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        mlst --scheme leptospira --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv ${prefix}_3.tsv> ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "mgallisepticum_Ghanem" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme mgallisepticum_Beko --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "mgallisepticum_Beko" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme mgallisepticum_Ghanem --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "pmultocida_multihost" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme pmultocida_rirdc --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "pmultocida_rirdc" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme pmultocida_multihost --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "mbovis" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme mbovis_legacy --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "mbovis_legacy" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme mbovis --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "smutans_Do" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme smutans_Kakano --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "smutans_Kakano" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme smutans_Do --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "sthermophilus" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme sthermophilus_2 --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "sthermophilus_2" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme sthermophilus --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "tpallidum_Grillova" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme tpallidum_Pla-Diaz --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \$scheme == "tpallidum_Pla-Diaz" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme tpallidum_Grillova --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
+    elif [[ \${genus,,} == "mycobacterium" ]] || [[ \${genus,,} == "mycobacteroides" ]] ; then
         if [[ \$scheme == "mabscessus" ]]; then
             mv ${prefix}.tsv ${prefix}_1.tsv
             mlst --scheme mycobacteria --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
@@ -107,11 +218,11 @@ process MLST {
     fi
 
     # Add in generic header
-    sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 lous_9  locus_10' ${prefix}.tsv
+    sed -i '1i source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 locus_9  locus_10' ${prefix}.tsv
 
     #handling to get database version being used
     if [[ $terra == false ]]; then
-        db_version=\$(cat /mlst-${mlst_version_clean}/db/db_version | date -f - +%Y-%m-%d )
+        db_version=\$(head -n 1 "/mlst-${mlst_version_clean}/db/db_version" | awk '{\$1=\$1; print}')
     else
         db_version=\$(cat /opt/conda/envs/phoenix/db/db_version | date -f - +%Y-%m-%d )
     fi
