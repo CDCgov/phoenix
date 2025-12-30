@@ -30,7 +30,7 @@ Description: PHoeNIx (Portable Healthcare Nextgen Informatics pipeline) is a sta
 
 Languages: Python, Other, Perl
 
-Purpose of the SHARE IT Act
+Purpose of the SHARE IT Act:  
 The SHARE IT Act is a federal law that says government agencies like CDC must be more transparent about the software we build using federal funds. It CDC publishes a public list that describes what custom-developed software we’ve created. This helps other agencies know what exists so we’re not reinventing the wheel.   
 
 # Quick Start
