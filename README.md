@@ -23,10 +23,8 @@ PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
 # SHARE IT Act Compliance  
-Org: CDC/NCEZID/DHQP/CEMB  
-Contact Email: ncezid_shareit@cdc.gov  
-Organization: CDC/NCEZID/DHQP/CEMB
-Contact email: ncezid_shareit@cdc.gov
+Organization: CDC/NCEZID/DHQP/CEMB  
+Contact email: ncezid_shareit@cdc.gov  
 
 Description: PHoeNIx (Portable Healthcare Nextgen Informatics pipeline) is a standardized, containerized Nextflow pipeline developed and maintained by CDC’s Division of Healthcare Quality Promotion (DHQP) to support genomic surveillance of healthcare-associated bacterial pathogens. Designed for public health laboratories, the pipeline processes sequencing data to perform quality control, taxonomic confirmation, genome assembly, sequence typing (MLST), plasmid detection, and identification of antimicrobial resistance and hypervirulence genes. PHoeNIx provides reproducible, portable analyses that generate outputs compatible with downstream investigations such as outbreak detection and molecular epidemiology, supporting the CDC AR Lab Network mission to rapidly detect emerging antimicrobial resistance threats.
 
