@@ -958,7 +958,7 @@ def convert(to_convert):
         'Pseudomonas putida' : 'pputida',
         'Riemerella anatipestifer' : 'ranatipestifer',
         'Rhodococcus spp.' : 'rhodococcus',
-        'Salmonella spp.' : 'salmonellaAchtman,salmonella_Oxford',
+        'Salmonella spp.' : 'salmonella_Achtman,salmonella_Oxford',
         'Saprolegnia parasitica' : 'sparasitica',
         'Shewanella spp.' : 'shewanella',
         'Sinorhizobium spp.' : 'sinorhizobium',

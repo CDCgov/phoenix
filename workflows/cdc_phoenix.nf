@@ -168,7 +168,7 @@ workflow PHOENIX_EXQC {
         ch_input
         ch_versions
         ncbi_excel_creation
-        centar_param // was --centar passed or not, we have to pull it in like this for handling -entry CENTAR correctly
+        centar_param // was --centar passed or not, we have to pull it in like this for handling -mode CENTAR correctly
 
     main:
         // Allow outdir to be relative

@@ -169,8 +169,11 @@ def parse_mlst_line(items: List[str], source_type: str, pull_date: str) -> List[
     if len(items) <= start_col:
         return [[sample, db_name, "-", 1, ["-"], ["-"], source_type, pull_date]]
     
+
     # Parse alleles
     allele_names, allele_options, has_multiple = parse_alleles(items, start_col)
+
+    print("allele names:", allele_names, "options:", allele_options, "multiple:", has_multiple)
     
     if not allele_names:
         return [[sample, db_name, "-", 1, ["-"], ["-"], source_type, pull_date]]
@@ -243,17 +246,22 @@ def classify_profile_type(profile: List, mlst_db_path: str) -> str:
     Returns:
         ST number or status (Novel_allele, Missing_allele, Novel_profile, etc.)
     """
+    database = profile[1]
     st_type = profile[2]
     alleles = profile[5]
+    source = profile[6]
+
+    print("classifying profile:", profile, database, st_type, alleles)
     
-    # Check for special characters indicating issues
-    bad_markers = ["*", "?", "~", "NF"]
-    if any(marker in st_type for marker in bad_markers):
-        return "Novel_profile"
-    
+    # Check for special characters indicating issues, this should only be occuring in srst2 profiles, so imma edit somee
+#    bad_markers = ["*", "?", "~", "NF"]
+#    if any(marker in st_type for marker in bad_markers):
+#        return "Novel_profile"
+
     # Handle dash
-    if st_type == "-":
-        return "Novel_profile" if profile[3] > 1 else "-"
+    if (database == "-" and int(profile[3]) == 1) or (database.startswith("No match found for") and int(profile[3]) == 1):
+#        return "Novel_profile" if profile[3] > 1 else "-"
+        return "-" 
     
     if st_type == "failed":
         return "Failed" if profile[3] > 1 else "failed"
@@ -268,6 +276,8 @@ def classify_profile_type(profile: List, mlst_db_path: str) -> str:
     # Check alleles for issues
     has_novel = False
     has_missing = False
+
+    print(alleles)
     
     for allele in alleles:
         if any(marker in allele for marker in ['*', '?', '~']):
@@ -290,7 +300,7 @@ def classify_profile_type(profile: List, mlst_db_path: str) -> str:
     
     if not profile_file.exists():
         print(f"Warning: Profile file not found: {profile_file}")
-        return "Novel_profile"
+        return "File_not_Found"
     
     try:
         with open(profile_file, 'r') as f:
@@ -326,6 +336,22 @@ def standardize_database_name(db_name: str) -> str:
         "ecoli_achtman_4": "ecoli(Achtman)",
         "ecoli_2": "ecoli_2(Pasteur)",
         "Escherichia_coli#2": "ecoli_2(Pasteur)",
+        "aparagallinarum_Ghanem": "aparagallinarum(Ghanem)",
+        "aparagallinarum_Guo": "aparagallinarum(Guo)",
+        # None for 'regular' efaecium
+        "efaecium_Bezdicek": "efaecium(Bezdicek)",
+        "salmonella_Oxford": "salmonella(Oxford)",
+        "salmonella_Achtman": "salmonella(Achtman)",
+        "mgallisepticum_Ghanem": "mgallisepticum(Ghanem)",
+        "mgallisepticum_Beko": "mgallisepticum(Beko)",
+        "pmultocida_multihost": "pmultocida(multihost)",
+        "pmultocida_rirdc": "pmultocida(rirdc)",
+        # None for 'regular' mbovis
+        "mbovis_legacy": "mbovis(legacy)",
+        "smutans_Do": "smutans(Do)",
+        "smutans_Kakano": "smutans(Kakano)",
+        "tpallidum_Grillova": "tpallidum(Grillova)",
+        "tpallidum_Pla-Diaz": "tpallidum(Pla-Diaz)"
     }
     
     return name_map.get(db_name, db_name)
@@ -565,7 +591,7 @@ def read_srst2_file(filepath: str) -> List[Tuple[str, str]]:
         with open(filepath, 'r') as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#'):
+                if line and not line.startswith('#') and not line.startswith("Sample\tdatabase\tST"):
                     results.append((line, "srst2"))
     except FileNotFoundError:
         print(f"Warning: SRST2 file not found: {filepath}")
@@ -629,12 +655,15 @@ def do_MLST_check(input_MLST_line_tuples: List[Tuple], taxonomy_file: str, mlst_
     
     # Classify each profile
     for profile in merged_profiles:
+        print("about to classify profile", profile)
         profile[2] = classify_profile_type(profile, mlst_db_path)
         
         # Check for paralogs
         if detect_paralogs(profile):
             profile[2] = f"{profile[2]}-PARALOG"
         
+        print("classified profile as", profile[2])
+
         # Standardize database name
         profile[1] = standardize_database_name(profile[1])
     
