@@ -1,11 +1,11 @@
 # base image
-FROM ubuntu:resolute
+FROM ubuntu:noble
 
 # for easy upgrade later. ARG variables only persist during image build time
 ARG PHX_VER="2.2.0"
 
 # metadata
-LABEL base.image="ubuntu:resolute"
+LABEL base.image="ubuntu:noble"
 LABEL dockerfile.version="2"
 LABEL software="PhoeNIx"
 LABEL software.version="v2.2.0"
@@ -25,14 +25,13 @@ LABEL maintainer.email="qpk9@cdc.gov"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # install dependencies (pigz needed for nf-core modules, bc and rsync needed for post gamma steps in PHoeNIx)
-RUN apt-get update && apt-get -y --no-install-recommends install \
+RUN apt-get update && apt-get -y --no-install-recommends install ca-certificates ubuntu-keyring \
     #python3.7 \
     #python3-pip \
     python3-dev \
     #python-is-python3 \
     bsdextrautils \
     util-linux \
-    ca-certificates \
     libssl-dev \
     zlib1g-dev \
     libbz2-dev \
@@ -87,7 +86,7 @@ RUN pyenv local 3.12.3 && pip3 install biopython \
     regex \
     times \
     xlsxwriter==3.2.9 \
-    cryptography==36.0.2 \
+    cryptography \
     pytest-shutil \
     openpyxl \
     pyyaml \
