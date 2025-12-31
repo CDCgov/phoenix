@@ -320,7 +320,9 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - spades: v3.15.5 to [v4.2.0](https://github.com/ablab/spades/releases/tag/v4.2.0)  
   - quast: v5.0.2 to [v5.3.0](https://github.com/ablab/quast/releases/tag/quast_5.3.0)  
   - sra-tools: v3.1.1 to [v3.2.0--h4304569_0](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md)  
-  - phx_base: python upgraded from 3.7.12 to 3.12.3, base image updated from jammy to resolute.  
+  - entrez-direct: v16.2--he881be0_1 to [v24.0--he881be0_0](https://www.ncbi.nlm.nih.gov/books/NBK564895/)  
+  - MLST: v2.23.0_07282023 to [v2.25.0_12312025](https://github.com/tseemann/mlst/releases/tag/v2.25.0)  
+  - phx_base: python upgraded from 3.7.12 to 3.12.3, base image updated from jammy to 24.04.  
 
 **Database Updates:**  
 - Curated AR gene database was updated on 2025-02-14 (yyyy-mm-dd) to include the new AMRFinder database:

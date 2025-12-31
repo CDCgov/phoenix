@@ -18,7 +18,7 @@ PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality
 
 <!--- ![GitHub Clones](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Clones-)  --->
 
-[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%2011687-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)   
+[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%2011716-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)   
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
@@ -28,7 +28,7 @@ Contact email: ncezid_shareit@cdc.gov
 
 Description: PHoeNIx (Portable Healthcare Nextgen Informatics pipeline) is a standardized, containerized Nextflow pipeline developed and maintained by CDC’s Division of Healthcare Quality Promotion (DHQP) to support genomic surveillance of healthcare-associated bacterial pathogens. Designed for public health laboratories, the pipeline processes sequencing data to perform quality control, taxonomic confirmation, genome assembly, sequence typing (MLST), plasmid detection, and identification of antimicrobial resistance and hypervirulence genes. PHoeNIx provides reproducible, portable analyses that generate outputs compatible with downstream investigations such as outbreak detection and molecular epidemiology, supporting the CDC AR Lab Network mission to rapidly detect emerging antimicrobial resistance threats.
 
-Languages: Python, Other, Perl
+Languages: Python, Nextflow, Shell, Other
 
 Purpose of the SHARE IT Act:  
 The SHARE IT Act is a federal law that says government agencies like CDC must be more transparent about the software we build using federal funds. It CDC publishes a public list that describes what custom-developed software we’ve created. This helps other agencies know what exists so we’re not reinventing the wheel.   
