@@ -105,7 +105,7 @@ process MLST {
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "leptospira_2" ]]; then
         mv ${prefix}.tsv ${prefix}_2.tsv
-        mlst --scheme leptospira_1 --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
+        mlst --scheme leptospira --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
         mlst --scheme leptospira_3 --threads $task.cpus \$unzipped_fasta > ${prefix}_3.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv ${prefix}_3.tsv> ${prefix}.tsv
         rm ${prefix}_*.tsv
@@ -121,10 +121,9 @@ process MLST {
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "salmonella_Achtman" ]]; then
-        mv ${prefix}.tsv ${prefix}_3.tsv
+        mv ${prefix}.tsv ${prefix}_1.tsv
         mlst --scheme salmonella_Oxford --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
-        mlst --scheme leptospira --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv
-        cat ${prefix}_1.tsv ${prefix}_2.tsv ${prefix}_3.tsv> ${prefix}.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
     elif [[ \$scheme == "mgallisepticum_Ghanem" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
