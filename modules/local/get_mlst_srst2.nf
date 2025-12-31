@@ -3,6 +3,7 @@ process GET_MLST_SRST2 {
     label 'process_low'
     // 2.7--1
     container "quay.io/biocontainers/python@sha256:bf7656f00f9392b3bd8785571a088cdb7c933cae5716fc468471cf592eb5f128"
+    //container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta),  path(taxonomy), val(status), path(local_mlst_db)

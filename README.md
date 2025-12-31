@@ -28,7 +28,7 @@ Contact email: ncezid_shareit@cdc.gov
 
 Description: PHoeNIx (Portable Healthcare Nextgen Informatics pipeline) is a standardized, containerized Nextflow pipeline developed and maintained by CDC’s Division of Healthcare Quality Promotion (DHQP) to support genomic surveillance of healthcare-associated bacterial pathogens. Designed for public health laboratories, the pipeline processes sequencing data to perform quality control, taxonomic confirmation, genome assembly, sequence typing (MLST), plasmid detection, and identification of antimicrobial resistance and hypervirulence genes. PHoeNIx provides reproducible, portable analyses that generate outputs compatible with downstream investigations such as outbreak detection and molecular epidemiology, supporting the CDC AR Lab Network mission to rapidly detect emerging antimicrobial resistance threats.
 
-Languages: Python, Other, Perl
+Languages: Python, Nextflow, Shell, Other
 
 Purpose of the SHARE IT Act:  
 The SHARE IT Act is a federal law that says government agencies like CDC must be more transparent about the software we build using federal funds. It CDC publishes a public list that describes what custom-developed software we’ve created. This helps other agencies know what exists so we’re not reinventing the wheel.   

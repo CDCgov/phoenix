@@ -1,9 +1,8 @@
 process MLST {
     tag "$meta.id"
     label 'process_medium'
-    // 2.25.0_12102025 - must edit manually below (line 28)!!!
-    //container 'quay.io/jvhagey/mlst@sha256:75da09f926c18c69c656ff22c5bbee6f037307aa4a41d11b14ff0ccaa2d6c628'
-    container 'quay.io/enteevlachos/phx_mlst@sha256:a535991f81596c2df13a0b0b9f669d0513ba96d295008e38bc58f24c21bf1aab'
+    // 2.25.0_12312025 - must edit manually below (line 28)!!!
+    container 'quay.io/jvhagey/mlst@sha256:101a91f8473d415521b1efc16372bd9a9c071b0310a8c2a47c2c1666dd61061e'
 
     input:
     tuple val(meta), path(fasta), path(taxonomy)
@@ -13,6 +12,16 @@ process MLST {
     path("versions.yml")          , emit: versions
 
     script:
+        //set up for terra
+    if (params.terra==false) {
+        terra_path = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra_path = "PATH=/opt/conda/envs/mlst/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/mlst/bin:||')" """
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     // helps set correct paths to get database version being used
     def terra = params.terra ? "true" : "false"
     //define variables
@@ -20,9 +29,12 @@ process MLST {
     def prefix = task.ext.prefix ?: "${meta.id}"
     // mlst is suppose to allow gz and non-gz, but when run in the container (outside of the pipeline) it doesn't work. Also, doesn't work on terra so adding unzip step
     def container = task.container.toString() - "quay.io/jvhagey/mlst@"
-    def mlst_version = "2.25.0_20251212"
+    def mlst_version = "2.25.0_20251231"
     def mlst_version_clean = mlst_version.split("_")[0]
     """
+    #adding mlst path for running mlst on terra
+    $terra_path
+
     if [[ ${fasta} = *.gz ]]
     then
         unzipped_fasta=\$(basename ${fasta} .gz)
@@ -233,5 +245,8 @@ process MLST {
         mlst_db: \$db_version
         mlst_container: ${container}
     END_VERSIONS
+
+    #revert path back to main envs for running on terra
+    $terra_exit
     """
 }
