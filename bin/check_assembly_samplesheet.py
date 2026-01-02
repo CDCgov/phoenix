@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-"""Provide a command line tool to validate and transform tabular samplesheets."""
+"""Provide a command line tool to .valid.csvate and transform tabular samplesheets."""
 
 
 import argparse
@@ -80,9 +80,9 @@ class RowChecker:
 
     def _validate_fastq_format(self, filename):
         """Assert that a given filename has one of the expected FASTQ extensions."""
-        if not any(filename.endswith(extension) for extension in self.VALID_FORMATS):
+        if not any(filename.strip().endswith(extension) for extension in self.VALID_FORMATS):
             raise AssertionError(
-                f"The FASTQ file has an unrecognized extension: {filename}\n"
+                f"The FASTQ file has an unrecognized extension: {filename}.\n"
                 f"It should be one of: {', '.join(self.VALID_FORMATS)}"
             )
 
@@ -202,7 +202,9 @@ def check_samplesheet(file_in, file_out):
         writer = csv.DictWriter(out_handle, header, delimiter=",")
         writer.writeheader()
         for row in checker.modified:
-            writer.writerow(row)
+            # Strip whitespace from all values in the row dictionary
+            stripped_row = {key: value.strip() if isinstance(value, str) else value for key, value in row.items()}
+            writer.writerow(stripped_row)
 
 
 def parse_args(argv=None):
