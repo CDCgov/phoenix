@@ -271,6 +271,7 @@ task phoenix {
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warnings                          = read_string("WARNINGS")
+    String  warning_count                     = read_string("WARNING_COUNT")
     String  estimated_coverage                = read_string("ESTIMATED_COVERAGE") #make string for cases where it's "unknown"
     String  genome_length                     = read_string("GENOME_LENGTH") #make string for cases where it's "unknown"
     String  N50                               = read_string("N50")
