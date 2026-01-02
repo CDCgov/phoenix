@@ -388,18 +388,18 @@ task phoenix {
     File? amrfinder_taxa_match     = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
     File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20251203.tsv"
     #species specific
-    File? shigapass_summary       = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_ShigaPass_summary.csv"
-    File? centar_summary          = "~{samplename}/phx_output/~{samplename}/CENTAR/~{samplename}_centar_output.tsv"
-    File? centar_ar_AA_gamma      = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_AA_20240910.gamma"
-    File? centar_ar_NT_gamma      = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_NT_20240910.gamma"
-    File? centar_tox_gamma        = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_toxins/~{samplename}_Cdiff_toxins_srst2_20240909.gamma"
-    File? centar_clade            = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
+    File? shigapass_summary        = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_ShigaPass_summary.csv"
+    File? centar_summary           = "~{samplename}/phx_output/~{samplename}/CENTAR/~{samplename}_centar_output.tsv"
+    File? centar_ar_AA_gamma       = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_AA_20240910.gamma"
+    File? centar_ar_NT_gamma       = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_specific_ar/~{samplename}_centar_ar_db_wt_NT_20240910.gamma"
+    File? centar_tox_gamma         = "~{samplename}/phx_output/~{samplename}/CENTAR/gamma_cdiff_toxins/~{samplename}_Cdiff_toxins_srst2_20240909.gamma"
+    File? centar_clade             = "~{samplename}/phx_output/~{samplename}/CENTAR/clade/~{samplename}_cdifficile_clade.tsv"
     # NCBI files - optional
-    File? ncbi_biosample          = "~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx"
-    File? ncbi_sra_metadata       = "~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx"
+    Array[File]? ncbi_biosample    = glob("~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx")
+    Array[File]? ncbi_sra_metadata = glob("~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx")
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
-    File? multiqc_output          = "~{samplename}/phx_output/multiqc/multiqc_report.html"
+    File versions_file             = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
+    File? multiqc_output           = "~{samplename}/phx_output/multiqc/multiqc_report.html"
   }
   runtime {
     docker: "quay.io/jvhagey/phoenix@sha256:d41682797fd662a4430a0f624475b0761a94611184f26f8acab769d3263b4153"
