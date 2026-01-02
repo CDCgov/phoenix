@@ -92,9 +92,9 @@ ENV AUGUSTUS_CONFIG_PATH=/opt/conda/envs/busco/config/
 
 #remove db and add custom mlst db
 RUN rm /opt/conda/envs/mlst/db/scheme_species_map.tab && rm -r /opt/conda/envs/mlst/db/pubmlst && rm -r /opt/conda/envs/mlst/db/blast
-COPY --chown=mambauser:mambauser db /opt/conda/envs/phoenix/db/
+COPY --chown=mambauser:mambauser db /opt/conda/envs/mlst/db/
 #change permissions of database files
-RUN chmod 755 --recursive /opt/conda/envs/phoenix/db/*
+RUN chmod 755 --recursive /opt/conda/envs/mlst/db/*
 
 #-e ENV_NAME=env2
 #RUN micromamba shell init --shell bash
