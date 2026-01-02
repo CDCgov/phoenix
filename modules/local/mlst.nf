@@ -235,7 +235,7 @@ process MLST {
     if [[ $terra == false ]]; then
         db_version=\$(head -n 1 "/mlst-${mlst_version_clean}/db/db_version" | awk '{\$1=\$1; print}')
     else
-        db_version=\$(cat /opt/conda/envs/phoenix/db/db_version | date -f - +%Y-%m-%d )
+        db_version=\$(cat /opt/conda/envs/mlst/db/db_version | date -f - +%Y-%m-%d )
     fi
 
     cat <<-END_VERSIONS > versions.yml
