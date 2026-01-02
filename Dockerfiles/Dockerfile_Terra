@@ -67,7 +67,7 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
 RUN micromamba create -n bbmap -c conda-forge bioconda::bbmap=39.13 -y && \
     micromamba create -n quast -c conda-forge bioconda::quast=5.3.0 -y && \
     micromamba create -n prokka -c conda-forge bioconda::prokka=1.14.5 -y && \
-    micromamba create -n busco -c conda-forge -c bioconda busco=6.0.0 -y && \
+    micromamba create -n busco -c conda-forge -c bioconda python=3.12.11 numpy=2.3.1 busco=6.0.0 -y && \
     micromamba create -n srst2 -c conda-forge bioconda::srst2==0.2.0  -y && \
     micromamba create -n spades -c conda-forge bioconda::spades=4.2.0 -y && \
     micromamba create -n mlst -c conda-forge bioconda::mlst=2.25.0 -y && \
