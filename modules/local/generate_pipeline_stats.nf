@@ -48,8 +48,8 @@ process GENERATE_PIPELINE_STATS {
     def k2_trim_summary        = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
     def krona_trim             = krona_trimd ? "-g $krona_trimd" : ""
     
-    def assembly_scaffolds_gz  = krona_trimd ? "-h $assembly_scaffolds" : ""
-    def filtered_assembly_gz   = krona_trimd ? "-i $filtered_assembly" : ""
+    def assembly_scaffolds_gz  = assembly_scaffolds ? "-h $assembly_scaffolds" : ""
+    def filtered_assembly_gz   = filtered_assembly ? "-i $filtered_assembly" : ""
     def tax_file               = taxID ? "-q $taxID" : ""
     def quast_file             = quast_report ? "-p $quast_report" : ""
     def mlst_file              = mlst ? "-y $mlst" : ""
@@ -66,7 +66,7 @@ process GENERATE_PIPELINE_STATS {
     
     def ar_gamma_file          = ar_gamma ? "-u $ar_gamma" : ""
     def amr_file               = amr_report ? "-4 $amr_report" : ""
-    def pf_gamma_file          = ar_gamma ? "-v $pf_gamma" : ""
+    def pf_gamma_file          = pf_gamma ? "-v $pf_gamma" : ""
     def hv_gamma_file          = hv_gamma ? "-w $hv_gamma" : ""
     def busco_summary          = busco_specific_short_summary ? "-s $busco_specific_short_summary" : ""
     def srst_fullgenes_file    = srst_fullgenes ? "-x $srst_fullgenes" : ""
