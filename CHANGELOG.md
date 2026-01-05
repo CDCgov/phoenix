@@ -265,7 +265,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
       - Version [2024-01-31.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.12/)  
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) and [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/) haven't changed since last version release.
 
-## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (XX/XX/2025)
+## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (01/05/2026)
 
 **COMMAND CHANGE:** 
 - Due to deprecated of `-entry` since nextflow `v24.10.0` we switched to the use of `--mode` to run specific workflows `PHOENIX`, `CDC_PHOENIX` etc. this parameter is case insensitive. 
@@ -325,11 +325,11 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - phx_base: python upgraded from 3.7.12 to 3.12.3, base image updated from jammy to 24.04.  
 
 **Database Updates:**  
-- Curated AR gene database was updated on 2025-02-14 (yyyy-mm-dd) to include the new AMRFinder database:
+- Curated AR gene database was updated on 2025-12-08 (yyyy-mm-dd) to include the new AMRFinder database:
    - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
       - Version [2025-12-03.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/4.2/)  
    - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)
-      - Mcr genes added, 2 false positives and 1 duplicate removed, and 2 modified gene. See [history.txt](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/history.txt) file for more details (for this new version changes from 2024-04-25 to 2024-12-13 are included).
+      - Notably, NDM-58 and 60 were added. See [history.txt](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/history.txt) file for more details (for this new version changes from 2024-12-13 to 2025-09-09 are included).
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since last version release.
 
 ## [vx.x.x](https://github.com/CDCgov/phoenix/releases/tag/vx.x.x) (XX/XX/202X)

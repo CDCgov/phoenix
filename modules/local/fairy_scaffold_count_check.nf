@@ -15,6 +15,7 @@ process SCAFFOLD_COUNT_CHECK {
     val(coverage)
     path(nodes_file)
     path(names_file)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_scaffolds_summary.txt'), optional:true, emit: outcome
@@ -66,7 +67,7 @@ process SCAFFOLD_COUNT_CHECK {
 
         # write summary_line file
         ${ica_python}Phoenix_summary_line.py -n ${prefix} -s ${prefix}.synopsis -x ${prefix}.tax -o ${prefix}_summaryline.tsv\\
-        $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg
+        $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg --phx_version $phx_version
 
         # change pass to fail and add in error
         ${ica_python}edit_line_summary.py -i ${prefix}_summaryline.tsv

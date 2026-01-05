@@ -8,6 +8,7 @@ process CORRUPTION_CHECK {
     input:
     tuple val(meta), path(reads)
     val(busco_val)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_corruption_summary.txt'), optional:true, emit: outcome
@@ -30,8 +31,8 @@ process CORRUPTION_CHECK {
     #set +e
     #check for file integrity and log errors
     #if there is a corruption problem the script will create a *_summaryline.tsv and *.synopsis file for the sample.
-    ${ica}fairy_proc.sh -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} 
-    ${ica}fairy_proc.sh -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} 
+    ${ica}fairy_proc.sh -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} -v ${phx_version}
+    ${ica}fairy_proc.sh -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} -v ${phx_version}
 
     script_version=\$(${ica}fairy_proc.sh -V)
 

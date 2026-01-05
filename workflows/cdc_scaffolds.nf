@@ -211,7 +211,7 @@ workflow SCAFFOLDS_EXQC {
 
         // Checking that there are still scaffolds left after filtering
         SCAFFOLD_COUNT_CHECK (
-            scaffold_check_ch, true, params.coverage, params.nodes, params.names
+            scaffold_check_ch, true, params.coverage, params.nodes, params.names, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
 

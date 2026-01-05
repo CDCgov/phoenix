@@ -190,7 +190,7 @@ workflow PHOENIX_EXQC {
 
         //fairy compressed file corruption check & generate read stats
         CORRUPTION_CHECK (
-            INPUT_CHECK.out.reads, true // true says busco is being run in this workflow
+            INPUT_CHECK.out.reads, true, workflow.manifest.version // true says busco is being run in this workflow
         )
         ch_versions = ch_versions.mix(CORRUPTION_CHECK.out.versions)
 
@@ -203,7 +203,7 @@ workflow PHOENIX_EXQC {
 
         //Get stats on raw reads if the reads aren't corrupted
         GET_RAW_STATS (
-            passed_read_stats_ch, true // true says busco is being run in this workflow
+            passed_read_stats_ch, true, workflow.manifest.version // true says busco is being run in this workflow
         )
         ch_versions = ch_versions.mix(GET_RAW_STATS.out.versions)
 
@@ -237,7 +237,7 @@ workflow PHOENIX_EXQC {
 
         // Script gathers data from jsons for pipeline stats file
         GET_TRIMD_STATS (
-            passed_fastp_json_ch, true // true says busco is being run in this workflow
+            passed_fastp_json_ch, true, workflow.manifest.version // true says busco is being run in this workflow
         )
         ch_versions = ch_versions.mix(GET_TRIMD_STATS.out.versions)
 
@@ -301,7 +301,7 @@ workflow PHOENIX_EXQC {
 
         // Checking that there are still scaffolds left after filtering
         SCAFFOLD_COUNT_CHECK (
-            scaffold_check_ch, true, params.coverage, params.nodes, params.names
+            scaffold_check_ch, true, params.coverage, params.nodes, params.names, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
 

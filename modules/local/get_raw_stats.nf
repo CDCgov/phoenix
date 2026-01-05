@@ -8,6 +8,7 @@ process GET_RAW_STATS {
     input:
     tuple val(meta), path(reads), path(fairy_outcome)
     val(busco_val)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_stats.txt'),                           emit: raw_stats
@@ -34,7 +35,7 @@ process GET_RAW_STATS {
     ## checking that read counts match before moving on
 
     # Output check for messages indicating read pairs that do not match
-    ${ica}fairy.py -r ${prefix}_raw_read_counts.txt -f ${fairy_outcome} ${busco_parameter}
+    ${ica}fairy.py -r ${prefix}_raw_read_counts.txt -f ${fairy_outcome} ${busco_parameter} --phx_version $phx_version
 
     #making a copy of the summary file to pass to BBMAP_REFORMAT to handle file names being the same
     cp ${prefix}_rawstats_summary.txt ${prefix}_summary_old_2.txt

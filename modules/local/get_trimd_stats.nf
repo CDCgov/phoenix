@@ -6,11 +6,9 @@ process GET_TRIMD_STATS {
     container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
-    tuple val(meta), path(fastp_trimd_json),
-    path(fastp_singles_json),
-    path(raw_qc), 
-    path(fairy_outcome)
+    tuple val(meta), path(fastp_trimd_json), path(fastp_singles_json), path(raw_qc), path(fairy_outcome)
     val(busco_val)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_trimmed_read_counts.txt'),               emit: fastp_total_qc
@@ -37,7 +35,7 @@ process GET_TRIMD_STATS {
     # Check that there are still reads in R1 and R2 before fastqc. If there aren't reads then fastqc dies.
 
     # Output check for messages indicating there are no trimmed reads after filtering.
-    ${ica}fairy.py -r ${raw_qc} -f ${fairy_outcome} -t ${prefix}_trimmed_read_counts.txt ${busco_parameter}
+    ${ica}fairy.py -r ${raw_qc} -f ${fairy_outcome} -t ${prefix}_trimmed_read_counts.txt ${busco_parameter} --phx_version $phx_version
 
     #making a copy of the summary file to pass to BBMAP_REFORMAT to handle file names being the same
     cp ${prefix}_trimstats_summary.txt ${prefix}_summary_old_3.txt
