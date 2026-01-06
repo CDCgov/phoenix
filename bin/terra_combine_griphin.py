@@ -283,6 +283,7 @@ def get_column_counts(df):
         ar_db.remove("GAMMA file not found")
     except ValueError:
         pass
+    ar_db = [x for x in ar_db if pd.notna(x)]
     ar_db = ','.join(str(x) for x in ar_db)
     # get hv number of columns
     hv_df = df.loc[:,'HV_Database':'Plasmid_Replicon_Database']
@@ -293,7 +294,8 @@ def get_column_counts(df):
         hv_db.remove("GAMMA file not found")
     except ValueError:
         pass
-    hv_db = ','.join(hv_db)
+    hv_db = [x for x in hv_db if pd.notna(x)]
+    hv_db = ','.join(str(x) for x in hv_db)
     # get hv number of columns
     pf_df = df.loc[:,'Plasmid_Replicon_Database':]
     pf_max_col = int(len(pf_df.columns))
@@ -302,7 +304,8 @@ def get_column_counts(df):
         pf_db.remove("GAMMA file not found")
     except ValueError:
         pass
-    pf_db = ','.join(pf_db)
+    pf_db = [x for x in pf_db if pd.notna(x)]
+    pf_db = ','.join(str(x) for x in pf_db)
     return qc_max_col, ar_max_col, pf_max_col, hv_max_col, ar_df, pf_db, ar_db, hv_db
 
 def main():
