@@ -91,7 +91,7 @@ def separate_column_type(excl_merged, df):
     return sorted_col_list
 
 def fix_ar_col_order(col_list):
-    ar_drugs_list = [re.findall('.*\((.*)\).*', col) for col in col_list]
+    ar_drugs_list = [re.findall('.*\\((.*)\\).*', col) for col in col_list]
     ar_drugs_list = sorted(set(list(chain.from_iterable(ar_drugs_list))))
     final_ar_list = []
     # loop over each gene with the same drug its name
@@ -206,7 +206,7 @@ def write_excel(output_file, df, set_coverage, phoenix, qc_max_col, ar_gene_coun
     # add autofilter
     worksheet.autofilter(1, 0, max_row, max_col - 1)
     # Close the Pandas Excel writer and output the Excel file.
-    writer.save()
+    writer.close()
 
 def big5_check(final_ar_df):
     """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
