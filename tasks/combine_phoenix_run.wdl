@@ -220,6 +220,7 @@ task combine_phoenix_run {
     File?   griphin_xlsx_summary    = if length(glob("*GRiPHin_Summary.xlsx")) > 0 then glob("*GRiPHin_Summary.xlsx")[0] else None
     File?   griphin_tsv_summary     = if length(glob("*GRiPHin_Summary.tsv")) > 0 then glob("*GRiPHin_Summary.tsv")[0] else None
     File?   biosample_excel_summary = if length(glob("*BiosampleAttributes_Microbe.1.0.xlsx")) > 0 then glob("*BiosampleAttributes_Microbe.1.0.xlsx")[0] else None
+    File?   sra_excel_summary       = if length(glob("*Sra_Microbe.1.0.xlsx")) > 0 then glob("*Sra_Microbe.1.0.xlsx")[0] else None
     String  phoenix_version         = read_string("VERSION")
     String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date           = read_string("DATE")
