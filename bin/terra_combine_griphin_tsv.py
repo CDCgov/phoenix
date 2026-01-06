@@ -22,7 +22,7 @@ def parseArgs(args=None):
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
- 
+
 def combine_tsvs(file_list):
     # create a new dataframe to store the merged excel file.
     excl_merged = pd.DataFrame()
@@ -119,7 +119,7 @@ def get_variables(file_list):
                 coverage = re.findall(r'coverage <\d+x', cell_val[0])
                 coverage_list.append(coverage[0])
             else:
-                print("Warning: the coverage used to run {} could not be determined!".format(file))
+                print("Warning: the coverage used to run {} could not be determined! Highlighting coverage column might be wrong.".format(file))
         except AttributeError:
             print("Warning: the coverage used to run {} could not be determined!".format(file))
     #check that coverage is the same in all files
@@ -138,7 +138,7 @@ def write_combined_tsv(df, output):
     else:
         output_file = 'GRiPHin_Summary.tsv'
     #Write dataframe into csv
-    df.to_csv(output_file, sep='\t', index=False, line_terminator='\n')
+    df.to_csv(output_file, sep='\t', index=False)
 
 def main():
     args = parseArgs()
@@ -146,7 +146,7 @@ def main():
     file_list = glob.glob("*GRiPHin_*_Summary.tsv")
     # check that the file_list isn't empty
     if len(file_list) == 0:
-        print("Error: No GRiPHin_Summary.tsv files were found using *GRiPHin_Summary.tsv!")
+        print("Error: No GRiPHin_Summary.tsv files were found using *GRiPHin_*_Summary.tsv!")
         exit()
     phoenix = get_variables(file_list)
     df = combine_tsvs(file_list)

@@ -24,7 +24,7 @@ def parseArgs(args=None):
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
- 
+
 def combine_excels(file_list):
     # create a new dataframe to store the merged excel file.
     excl_merged = pd.DataFrame()
@@ -278,11 +278,12 @@ def get_column_counts(df):
     ar_df = ar_df.drop(['HV_Database'], axis=1)
     ar_max_col = int(len(ar_df.columns))
     ar_db = list(ar_df['AR_Database'].unique())
+    print(ar_db)
     try:
         ar_db.remove("GAMMA file not found")
     except ValueError:
         pass
-    ar_db = ','.join(ar_db)
+    ar_db = ','.join(str(x) for x in ar_db)
     # get hv number of columns
     hv_df = df.loc[:,'HV_Database':'Plasmid_Replicon_Database']
     hv_df = hv_df.drop(['Plasmid_Replicon_Database'], axis=1)
