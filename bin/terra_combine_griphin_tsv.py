@@ -85,7 +85,7 @@ def separate_column_type(excl_merged, df):
     return sorted_col_list
 
 def fix_ar_col_order(col_list):
-    ar_drugs_list = [re.findall('.*\((.*)\).*', col) for col in col_list]
+    ar_drugs_list = [re.findall('.*\\((.*)\\).*', col) for col in col_list]
     ar_drugs_list = sorted(set(list(chain.from_iterable(ar_drugs_list))))
     final_ar_list = []
     # loop over each gene with the same drug its name
