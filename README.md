@@ -1,10 +1,11 @@
 # :fire::bird::fire: PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens
 
-PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality Promotion (DHQP)](https://www.cdc.gov/ncezid/dhqp/index.html) to standardize genomic analysis of bacterial pathogens causing healthcare-associated infections, with a focus on antimicrobial resistance (AR). The pipeline supports the aims of the Antimicrobial Resistance Laboratory Network (AR Lab Network) to rapidly detect emerging and novel AR threats.
+PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality Promotion (DHQP)](https://www.cdc.gov/ncezid/dhqp/index.html) to standardize genomic analysis of bacterial pathogens causing healthcare-associated infections, with a focus on antimicrobial resistance (AR). The pipeline supports the aims of the Antimicrobial Resistance Laboratory Network (AR Lab Network) to rapidly detect emerging and novel AR threats.  
 
-<!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->
+<!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->  
 
-[![DOI](https://zenodo.org/badge/490844937.svg)](https://zenodo.org/badge/latestdoi/490844937)  
+[![DOI](https://zenodo.org/badge/490844937.svg)](https://zenodo.org/badge/latestdoi/18169441)   
+
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
