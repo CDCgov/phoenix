@@ -37,6 +37,8 @@ reports:
     display: "Best hit from kraken2 on trimmed reads"
   "**/ANI/*.fastANI.txt":
     display: "List of matches from FastANI. The top match information is the first line of the file."
+  "**/ANI/*_ShigaPass_summary.csv":
+    display: "Output of ShigaPass analysis if the isolate was Shigella or E. coli."
   "**/AMRFinder/*_all_genes.tsv":
     display: "AMRFinder Output"
   "**/gamma_ar/*_ResGANNCBI_*_srst2.gamma":

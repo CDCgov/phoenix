@@ -13,10 +13,12 @@ import retrieve_taxo_mlst
 import tools
 import glob
 from load_files import FileLoader
+import xlsxwriter
 
 # Function to get the script version
 def get_version():
-    return "2.0.0"
+    #update to 2.1.0 to make one sheet per biosample
+    return "2.1.0"
 
 def parseArgs(args=None):
     """"""
@@ -40,7 +42,7 @@ def get_isolate_dirs(directory, griphin_summary):
     skip_list_dirs = ["pipeline_info", "multiqc"]
     # check that directories have the files needed.
     df = pd.read_csv(griphin_summary, header=0, sep='\t')
-    df_fails = df[df['Minimum_QC_Check'].str.contains('FAIL')]
+    df_fails = df[df['Minimum_QC_Check'].fillna('').str.contains('FAIL')]
     failed_id_list = df_fails["WGS_ID"].tolist()
     skip_list = skip_list_dirs + failed_id_list
     # remove bad directories from list
@@ -181,23 +183,32 @@ def check_input(input):
         return flag
 
 def base_output(output_path, sra, sra_columns, bio_attribute, biosample_columns):
-    path = output_path
-    if not os.path.exists(path):
-        # Create the directory
-        os.makedirs(path)
-    path_bio = path + "/BiosampleAttributes_Microbe.1.0.xlsx"
-    path_sra = path + "/Sra_Microbe.1.0.xlsx"
+    #create biosample df
     df_biosample = pd.DataFrame(tools.purify_dict(bio_attribute)).T.reset_index(drop=True)
-    #make sure the column order is correct
-    df_biosample = df_biosample[biosample_columns]
-    df_biosample.to_excel(path_bio, index=False)
+    #SRA df
     df_sra = pd.DataFrame(tools.purify_dict(sra)).T.reset_index(drop=True)
-    #make sure the column order is correct
-    df_sra = df_sra[sra_columns]
-    df_sra.to_excel(path_sra, index=False)
-    #add disclaimer
-    add_disclaimer(df_biosample, path_bio, "Sheet1")
-    add_disclaimer(df_sra, path_sra, "SRA_data")
+    # Group by bioproject_accession
+    grouped = df_biosample.groupby('bioproject_accession')
+    # Create a dictionary of DataFrames
+    for biosample_id, df_biosample in grouped:
+        if not os.path.exists(output_path):
+            # Create the directory
+            os.makedirs(output_path)
+        path_bio = output_path + "/" + biosample_id + "_BiosampleAttributes_Microbe.1.0.xlsx"
+        path_sra = output_path + "/" + biosample_id + "_Sra_Microbe.1.0.xlsx"
+        #make sure the column order is correct
+        df_biosample = df_biosample[biosample_columns]
+        df_biosample.to_excel(path_bio, index=False)
+        #Convert column '*sample_name' from df2 to a list
+        sample_names_list = df_biosample['*sample_name'].tolist()
+        #Filter rows in df_sra based on the sample_names_list
+        df_sra_filtered = df_sra[df_sra['sample_name'].isin(sample_names_list)]
+        #make sure the column order is correct
+        df_sra_filtered = df_sra_filtered[sra_columns]
+        df_sra_filtered.to_excel(path_sra, index=False)
+        #add disclaimer
+        add_disclaimer(df_biosample, path_bio, "Sheet1")
+        add_disclaimer(df_sra_filtered, path_sra, "SRA_data")
 
 def add_disclaimer(df, input_excel, input_sheet_name):
     # Load the Excel file using pandas ExcelWriter
@@ -215,9 +226,9 @@ def add_disclaimer(df, input_excel, input_sheet_name):
             worksheet.set_column(idx, idx, max_len)  # set column width
         # Add text to the cell
         # Change the font color to red
-        red_format = workbook.add_format({'color': 'red', 'bold': True, 'text_wrap': True})
+        red_format = workbook.add_format({'font_color': 'red', 'bold': True, 'text_wrap': True})
         # Change the font color to orange
-        orange_format = workbook.add_format({'color': 'orange', 'bold': True, 'text_wrap': True})
+        orange_format = workbook.add_format({'font_color': 'orange', 'bold': True, 'text_wrap': True})
         biosample_delete_warning = """Do the following before upload:
 1. Delete this row and the rows below!
 2. At minimum fill out the following columns: 

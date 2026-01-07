@@ -9,7 +9,7 @@ workflow INPUT_CHECK {
     samplesheet // file: /path/to/samplesheet.csv
 
     main:
-    SAMPLESHEET_CHECK ( samplesheet )
+    SAMPLESHEET_CHECK ( samplesheet, true, false, false, [] ) // last [] used for --pipeline update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
         .csv
         .splitCsv ( header:true, sep:',' )
         .map { create_fastq_channels(it) }

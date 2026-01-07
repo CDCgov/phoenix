@@ -70,6 +70,9 @@ def check_samplesheet(file_in, file_out):
         sample_name_list = [] # used to check if sample name has been used before
         Read_list = []
         for line in fin:
+            # Handle empty lines in samplesheet
+            if not line.strip():
+                continue  # Skip empty or whitespace-only lines
             lspl = [x.strip().strip('"') for x in line.strip().split(",")]
 
             # Check for duplicate sample names

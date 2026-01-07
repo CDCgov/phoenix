@@ -14,7 +14,7 @@ task combine_phoenix_run {
     String? combined_ncbi_sra_xlsx_prefix
   }
   command <<<
-    version="v2.1.1-dev"
+    version="v2.2.0"
     echo $version | tee VERSION
     date | tee DATE
 
@@ -216,17 +216,17 @@ task combine_phoenix_run {
 
   >>>
   output {
-    File?   phoenix_tsv_summary     = glob("*Phoenix_Summary.tsv")[0]
-    File?   griphin_xlsx_summary    = glob("*GRiPHin_Summary.xlsx")[0]
-    File?   griphin_tsv_summary     = glob("*GRiPHin_Summary.tsv")[0]
-    File?   biosample_excel_summary = glob("*BiosampleAttributes_Microbe.1.0.xlsx")[0]
-    File?   sra_excel_summary       = glob("*Sra_Microbe.1.0.xlsx")[0]
+    File?   phoenix_tsv_summary     = if defined(combined_phoenix_tsv_prefix) then "~{combined_phoenix_tsv_prefix}_Phoenix_Summary.tsv" else "Phoenix_Summary.tsv"
+    File?   griphin_xlsx_summary    = if defined(combined_griphin_xlsx_prefix) then "~{combined_griphin_xlsx_prefix}_GRiPHin_Summary.xlsx" else "GRiPHin_Summary.xlsx"
+    File?   griphin_tsv_summary     = if defined(combined_griphin_tsv_prefix) then "~{combined_griphin_tsv_prefix}_GRiPHin_Summary.tsv" else "GRiPHin_Summary.tsv"
+    File?   biosample_excel_summary = if defined(combined_ncbi_biosample_xlsx_prefix) then "~{combined_ncbi_biosample_xlsx_prefix}_BiosampleAttributes_Microbe.1.0.xlsx" else "BiosampleAttributes_Microbe.1.0.xlsx"
+    File?   sra_excel_summary       = if defined(combined_ncbi_sra_xlsx_prefix) then "~{combined_ncbi_sra_xlsx_prefix}_Sra_Microbe.1.0.xlsx" else "Sra_Microbe.1.0.xlsx"
     String  phoenix_version         = read_string("VERSION")
     String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.0.2"
     String  analysis_date           = read_string("DATE")
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix:2.1.1"
+    docker: "quay.io/jvhagey/phoenix@sha256:d41682797fd662a4430a0f624475b0761a94611184f26f8acab769d3263b4153" # 2.2.0
     memory: "8 GB"
     cpu: 1
     disks:  "local-disk 100 SSD"

@@ -1,30 +1,31 @@
 process GATHER_SUMMARY_LINES {
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 22)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 22)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
+    val(meta) // need for meta.full_project_id in -profile update_phoenix /species specific pipeliens for publishing
     path(summary_line_files)
-    path(outdir_path)
+    path(full_project_id) // for --mode update_phoenix and species specific pipelines for publishing location
     val(busco_val)
+    val(pipeline_info) //needed for --pipeline update_phoenix
 
     output:
-    path('Phoenix_Summary.tsv'), emit: summary_report
-    path("versions.yml")             , emit: versions
+    path('*hoenix_Summary.tsv'), emit: summary_report
+    path("versions.yml")       , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def busco_parameter = busco_val ? "--busco" : ""
-    def container_version = "base_v2.1.0"
+    def software_versions = pipeline_info ? "--software_versions ${pipeline_info}" : ""
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def updater = ((params.mode_upper == "UPDATE_PHOENIX" && params.outdir == "${launchDir}/phx_output") || (params.mode_upper == "CENTAR" && params.outdir == "${launchDir}/phx_output")) ? "--all_samples" : ""
+    def output = "Phoenix_Summary.tsv" 
     """
-    ${ica}Create_phoenix_summary_tsv.py \\
-        --out Phoenix_Summary.tsv \\
-        $busco_parameter
+    ${ica}Create_phoenix_summary_tsv.py --out ${output} ${updater} ${software_versions} $busco_parameter
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

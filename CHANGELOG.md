@@ -246,10 +246,10 @@ Below are the list of changes to phx since is initial release. As fixes can take
 
 ## [v2.1.1](https://github.com/CDCgov/phoenix/releases/tag/v2.1.1) (03/25/2024)
 
-**Implemented Enhancements:** 
- - The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-1167","blaOXA-1181","blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213".
+**Implemented Enhancements:**  
+ - The following OXA genes were added to be highlighted as blaOXA-48 like in the griphin summary: "blaOXA-1167","blaOXA-1181","blaOXA-1200","blaOXA-1201","blaOXA-1205","blaOXA-1207","blaOXA-1211","blaOXA-1212","blaOXA-1213".  
 
-**Fixed Bugs:**
+**Fixed Bugs:**  
 - Fix for issue [#130](https://github.com/CDCgov/phoenix/issues/130) Identified when an Isolate is incorrectly assigned to cronobacter scheme when it should have been ecloacae. Extension of larger scoring problem with MLST-2.23.0.
 - Fixed [#142](https://github.com/CDCgov/phoenix/issues/142) where names with multiple instances of "R2" in their name couldn't be parsed properly and don't move past the corruption check step. [commit `7fc0ac3c026b7c12608be4dd1d3682675e31d0fe`](https://github.com/CDCgov/phoenix/commit/7fc0ac3c026b7c12608be4dd1d3682675e31d0fe)
 - Fixed an issue in FASTANI. The file for checking 80%+ identity could not be found because the DB_Version was not set when "No Mash Hits found" occurs.
@@ -264,3 +264,75 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
       - Version [2024-01-31.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.12/)  
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) and [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/) haven't changed since last version release.
+
+## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (01/06/2026)
+
+**COMMAND CHANGE:** 
+- Due to deprecation of `-entry` since nextflow `v24.10.0` we switched to the use of `--mode` to run specific workflows `PHOENIX`, `CDC_PHOENIX` etc. this parameter is case insensitive. 
+
+**Implemented Enhancements:** 
+- Creation of `--mode UPDATE_PHOENIX` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") and update MLST and AR calls. Files will be overwritten inplace and a "${samplename}_updater_log.tsv" file will be created the first time this is run and will be updated everytime it is run there after. This file will contain a record of the what was updated and when.  
+- `--create_ncbi_sheet` now creates separate excel sheets for each BioProject (if there is more than one in your run) to make upload to NCBI easier.  
+- Updating the big 5 genes to be highlighed, particularly OXA genes has become too big of lift to hard code so the BLDB databased was added to reference and the process is described in [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes).  
+- To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` were removed from phx output. If you need or want these files you can get them from the workdir for the process(es) `KRAKEN2_TRIMD` and `KRAKEN2_ASMBLD`. Alternatively, you can create your own [config file](https://www.nextflow.io/docs/latest/config.html) and add back in the publishing of the files like [this](https://github.com/CDCgov/phoenix/blob/717d19c19338373fc0f89eba30757fe5cfb3e18a/conf/modules.config#L457)
+- Improved linking of Taxonomy across modules. Use of NCBI TaxID in ANI,Assembly_Ratio, GC_Content allows for more standardized comparisons across tools
+- Expanded available taxonomy for MLST SRST2 to match the expansion of the pubMLST and other MLST databases.
+- MLST profile output now merges novel alleles into a single profile (e.g. MLST and SRST2 both find a novel allele at the rpoB loci then the out put would show rpoB(12*,33~)) instead of showing 2 separate lines/profiles
+- Code base reductions:
+   - Condensing GENERATE_PIPELINE_STATS modules and subworkflows. 
+   - GRiPHin module was rewritten to be nextflowly (i.e. module runs off input files rather than a directory). Thanks to Savannah Linen (@ztb2), Andreea Stoica (@astoicame) and Les Kallestad (@lekalle) for their help with this. 
+   - Removed DETERMINE_TAXA_ID_FAILURE, CREATE_SUMMARY_LINE_FAILURE and GENERATE_PIPELINE_STATS_FAILURE_EXQC modules, by condensing them into DETERMINE_TAXA_ID, CREATE_SUMMARY_LINE and GENERATE_PIPELINE_STATS_FAILURE respectively.
+- *Haemophilus influenzae* and *Bordetella pertussis* added as possible taxa to pass to AMRFinder with `--organism`. *Burkholderia mallei* moved from *Burkholderia pseudomallei* complex set and is just run as *Burkholderia mallei*.
+
+**Summary File Changes:**
+- For spades failures, lack of reads after trimming or corruption we simplifed the warnings produced in `GRiPHin.py` by supressing other warnings as the root cause is the aforementioned failures. Similarly, if the reason for the Auto QC Failure is "Assembly file not found" then only that is reported rather than listing files with unknowns.  
+- New columns added to GRiPHin summary files: `PHX_Version`, `Final_Taxa_ID` and `ShigaPass_Organism`
+- For alignment across GRiPHin summary files and `Phoenix_Summary.tsv` in the latter the columns `Final_Taxa_ID` and `ShigaPass_Organism` were added. Additionally, the `Species` column was changed to `FastANI_Organism`, `Taxa_Confidence` to `FastANI_%ID`, and `Taxa_Coverage` to `FastANI_%Coverage`.  
+- AMRFinder files 
+
+**Terra.bio Output Updates:**
+- Columns are now reported based on `*_GRiPHin_Summary.tsv` except for the columns `BETA_LACTAM_RESISTANCE_GENES`, `OTHER_AR_GENES`, `AMRFINDER_POINT_MUTATIONS`, `HYPERVIRULENCE_GENES` and `PLASMID_INCOMPATIBILITY_REPLICONS` still come from the `Phoenix_Summary.tsv` file. 
+   - `MLST1_NCBI` and `MLST2_NCBI` added columns, which are a combination of the MLSTs and MLST_SCHEMEs columns. These new columns are formated for uploading to NCBI following ARLN guidance.  
+   - `SHIGAPASS_TAXA` is the output of Shigapass if it was run. The `TAXA_SOURCE` column will state if Shigapass was used for the final taxa call.  
+   - `FINAL_TAXA_ID` is the final taxa call for the isolate.  
+   - `N50` is the N50 from `Quast`.  
+   - `WARNINGS_COUNT` was changed to `WARNINGS` and it is print out of the warnings, rather than just a count.
+   - AMRFinderPlus genes are now reported in the columns `AMRFINDERPLUS_AMR_CLASSES`, `AMRFINDERPLUS_AMR_CORE_GENES`, `AMRFINDERPLUS_AMR_PLUS_GENES`, `AMRFINDERPLUS_AMR_SUBCLASSES`, `AMRFINDERPLUS_STRESS_GENES` and `AMRFINDERPLUS_VIRULENCE_GENES`.  
+   - To reduce the space needed to save phx output, `*.kraken2_trimd.classifiedreads.txt` and `*.kraken2_wtasmbld.classifiedreads.txt` are no longer output from PHX. `*.kraken2_asmbld.classifiedreads.txt` was added as an output as taxids are in that file, which is different from the `*.kraken2_wtasmbld.classifiedreads.txt`. These files aren't really needed expect for edge cases such as questions about conflicting results or investigating suspected contamination.  
+- Due to [deprecation of "When" block](https://www.nextflow.io/docs/latest/process.html#when) in nextflow `when` statements in modules were removed and `.filter{}` is used throughout instead. Thanks to Savannah Linen (@ztb2), Andreea Stoica (@astoicame) and Les Kallestad (@lekalle) for their help implimenting this.
+
+**Fixed Bugs:**  
+- Taxonomy Fixes:  
+   - BAD BUG!! `sort_and_prep_dist.sh` was not evaluating scientific notation so in some cases exact matches were not being reported. For context, when reviewing our dataset of 71,670 samples, 2,837 (~4%) had scientific notation in their mash distances, 31 (0.04%) have different species if you sort with the scientific notation compared to what PHX was originally reported. All of the 31 would be considered in the same complex, e.g. *E. hormaechei*/*E. cloacae*, *E. coli*/*Shigella*, *K. michiganensis*/*K. oxytoca*. Thus, the impact of previously reported taxa isn't expected to be large, but this fix **could maybe** resolve differences reported between MALDI/WGS.  
+   - [Shigapass](https://github.com/imanyass/ShigaPass) was added to distinguish correctly between *E. coli*/*Shigella*. If FastANI determines the species to be either *E. coli* or *Shigella* Shigapass will now run to confirm the call. In GRiPHin there is a new `Final_Taxa_ID` column that has the final determined call. The column `Taxa_source` will still say `ANI_REFSEQ` if the FastANI call was kept and now will have `Shigapass` if the FastANI call was determined to be wrong by Shigapass and was thus overwritten. This was added to all entry points.   
+- Changes were made to allow `-resume` to work better.  
+- More robust checks in PHoeNIx to pull in only sample_names correctly.  
+- Fixed error that caused the column "No_AR_Genes_Found" to not appear in the GRiPHin report.  
+- Fix for `--coverage` being converted to a string when run on Seqera Cloud. Thanks to @DOH-JDJ0303 for the [PR](https://github.com/CDCgov/phoenix/pull/173).  
+- Changes to genes were highlighted in teh GRiPHin_Summary:
+   - [Beta-Lactamase DataBase (BLDB)](http://bldb.eu/) is now used as an input to determine which genes to highlight rather than hard coding. The big-5 genes that have their function labelled as ESBL/IR/IR ESBL were removed from being highlighted as part of the `big 5` genes as are not thought to have carbapenemase acvitity.  
+   - Full details on highlighing methods found in the [wiki](https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#highlighting-of-big-5-genes)
+- The column `Kraken_ID_Raw_Reads_%` in the GRiPHin summary files (xlsx and tsv) was changed to `Kraken_ID_Trimmed_Reads_%` to accurately reflect what that column has been reporting... whoopsie.  
+- Fixed bug where passing samples were not entering BBDuk step due to forward/reverse being in the file name rather than R1/R2.  
+
+**Container Updates:**  
+- Containers updated to include developers bug fixes:  
+  - amrfinderplus: v3.12.8 to [v4.2.5](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.2.5)  
+  - busco: v5.4.7--pyhdfd78af_0 to [v6.0.0](https://gitlab.com/ezlab/busco/-/blob/master/CHANGELOG)  
+  - bbtools: v39.01 to v39.13  
+  - spades: v3.15.5 to [v4.2.0](https://github.com/ablab/spades/releases/tag/v4.2.0)  
+  - quast: v5.0.2 to [v5.3.0](https://github.com/ablab/quast/releases/tag/quast_5.3.0)  
+  - sra-tools: v3.1.1 to [v3.2.0--h4304569_0](https://github.com/ncbi/sra-tools/blob/master/CHANGES.md)  
+  - entrez-direct: v16.2--he881be0_1 to [v24.0--he881be0_0](https://www.ncbi.nlm.nih.gov/books/NBK564895/)  
+  - MLST: v2.23.0_07282023 to [v2.25.0_12312025](https://github.com/tseemann/mlst/releases/tag/v2.25.0)  
+  - phx_base: python upgraded from 3.7.12 to 3.12.3, base image updated from jammy to 24.04.  
+
+**Database Updates:**  
+- Curated AR gene database was updated on 2025-12-08 (yyyy-mm-dd) to include the new AMRFinder database:
+   - [AMRFinderPlus database](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/)  
+      - Version [2025-12-03.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/4.2/)  
+   - [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/)
+      - Notably, NDM-58 and 60 were added. See [history.txt](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/history.txt) file for more details (for this new version changes from 2024-12-13 to 2025-09-09 are included).
+   - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since last version release.
+- MLST database is now created using pubMLST API and merged with the unique schemes available on pasteur and enterobase sites
+   - Numerous new schemes were added including a significant group that now contain more than a single scheme for an organism

@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: Script to clean up the output of SPAdes
@@ -51,6 +51,7 @@ if [ -f scaffolds.fasta ]; then
 else
     spades_complete=no_scaffolds
     echo ,$spades_complete | tr -d "\n" >> ${prefix}_spades_outcome.csv
+    mv ${prefix}_summary_old_3.txt ${prefix}_trimstats_summary.txt
 fi
 if [ -f contigs.fasta ]; then
     mv contigs.fasta ${prefix}.contigs.fa
@@ -60,6 +61,7 @@ if [ -f contigs.fasta ]; then
 else
     spades_complete=no_contigs
     echo ,$spades_complete | tr -d "\n" >> ${prefix}_spades_outcome.csv
+    mv ${prefix}_summary_old_3.txt ${prefix}_trimstats_summary.txt
 fi
 if [ -f assembly_graph_with_scaffolds.gfa ]; then
     mv assembly_graph_with_scaffolds.gfa ${prefix}.assembly.gfa

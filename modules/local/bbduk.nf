@@ -1,21 +1,17 @@
 process BBDUK {
     tag "$meta.id"
     label 'process_medium'
-    //v39.01
+    //v39.13
     container 'staphb/bbtools@sha256:161b0e1e198110b7edff8084ae9854d84eb32789d0fd62c7ced302078911c9d7'
 
     input:
-    tuple val(meta), path(reads), val(fairy_outcome)
+    tuple val(meta), path(reads)
     path(contaminants)
 
     output:
     tuple val(meta), path('*.fastq.gz'), emit: reads
     tuple val(meta), path('*.log')     , emit: log
     path "versions.yml"                , emit: versions
-
-    when:
-    //if the files are not corrupt and there are equal number of reads in each file then run bbduk
-    "${fairy_outcome[0]}" == "PASSED: File ${meta.id}_R1 is not corrupt." && "${fairy_outcome[1]}" == "PASSED: File ${meta.id}_R2 is not corrupt." && "${fairy_outcome[2]}" == "PASSED: Read pairs for ${meta.id} are equal."
 
     script:
     def args = task.ext.args ?: ''
@@ -25,7 +21,20 @@ process BBDUK {
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     def maxmem = task.memory.toGiga()-(task.attempt*12) // keep heap mem low so and rest of mem is for java expansion.
     def container = task.container.toString() - "staphb/bbtools@"
+    //set up for terra
+    if (params.terra==false) {
+        terra = ""
+        terra_exit = ""
+    } else if (params.terra==true) {
+        terra = "PATH=/opt/conda/envs/bbmap/bin:\$PATH"
+        terra_exit = """PATH="\$(printf '%s\\n' "\$PATH" | sed 's|/opt/conda/envs/bbmap/bin:||')" """
+    } else {
+        error "Please set params.terra to either \"true\" or \"false\""
+    }
     """
+    #adding path for running bbmap on terra
+    $terra
+
     maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
     bbduk.sh \\
         -Xmx\$maxmem \\
@@ -41,5 +50,8 @@ process BBDUK {
         bbmap: \$(bbversion.sh)
         bbmap_container: ${container}
     END_VERSIONS
+
+    #revert path back to main envs for running on terra
+    $terra_exit
     """
 }

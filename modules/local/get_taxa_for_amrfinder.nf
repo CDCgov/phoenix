@@ -1,27 +1,27 @@
 process GET_TAXA_FOR_AMRFINDER {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 21)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 21)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(taxa_file)
 
     output:
-    tuple val(meta), path("*_AMRFinder_Organism.csv"), emit: amrfinder_taxa
-    path("versions.yml"),                           emit: versions
+    tuple val(meta), path("*_AMRFinder_Organism.csv"),               emit: amrfinder_taxa
+    tuple val(meta), path("*_ABRITAMR_Organism.csv"), optional:true, emit: abritamr_taxa
+    path("versions.yml"),                                            emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
+    def abritamr_val = (params.mode_upper == "CLIA" || params.run_abritamr == true) ? "--abritamr_taxa" : "" //add if you are running the clia version to get the taxa for abritamr
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix}_AMRFinder_Organism.csv
+    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix} ${abritamr_val}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

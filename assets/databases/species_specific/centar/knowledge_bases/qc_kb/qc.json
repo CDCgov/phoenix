@@ -1,0 +1,24 @@
+{
+    "AlleleCalling": {
+        "DEFAULT": [
+            {
+                "name": "Core Loci Percentage",
+                "description": "Percentage of core loci is low.",
+                "FAIL": [
+                    {
+                        "key": "corePercentage",
+                        "operator": "LT",
+                        "value": 85
+                    }
+                ],
+                "WARN": [
+                    {
+                        "key": "corePercentage",
+                        "operator": "W",
+                        "value": [85,94]
+                    }
+                ]
+            }
+        ]
+    }
+}

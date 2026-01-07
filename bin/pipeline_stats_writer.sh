@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #
 # Description: Checks sample output folders for correct fiels and tests the thresholds for passability. Edited for use in PHoeNIx
 #
@@ -146,9 +146,9 @@ while getopts ":1?a:b:c:d:e:f:g:h:i:j:k:l:m:n:o:p:q:r:s:t:u:v:w:x:y:z:4:2:5:3V" 
     4)
 		echo "Option -1 triggered, argument = ${OPTARG}"
 		amr_file=${OPTARG};;
-		2)
-			echo "Option -2 triggered"
-			terra=${OPTARG};;
+	2)
+		echo "Option -2 triggered"
+		terra=${OPTARG};;
     5)
 		echo "Option -5 triggered, argument = ${OPTARG}"
 		coverage=${OPTARG};;
@@ -506,10 +506,9 @@ if [[ -s "${SPAdes_assembly}" ]]; then
 	printf "%-30s: %-8s : %s\\n" "ASSEMBLY" "SUCCESS" "${full_scaffolds} scaffolds found"  >> "${sample_name}.synopsis"
 else
 	printf "%-30s: %-8s : %s\\n" "ASSEMBLY" "FAILED" "${sample_name}.scaffolds.fa.gz not found"  >> "${sample_name}.synopsis"
-	QC_FAIL=$QC_FAIL"smaller_than_1000000_bps(0)-"
+	QC_FAIL=$QC_FAIL"Assembly_file_not_found-"
 	status="FAILED"
 fi
-
 
 #Check short scaffolds reduction script
 if [[ -s "${trimmed_assembly}" ]]; then
@@ -633,7 +632,7 @@ if [[ "${internal_phoenix}" == "true" ]]; then
 			percent_integer=$(echo "${percent}" | cut -d'.' -f1)
 			# 3rd element is the taxon level classification
 			lassification=${arrLine[3]}
-			printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
+			#printf "${line} - ${classification} - ${percent_integer} - ${kraken2_contamination_threshold}" >> "${sample_name}.synopsis"
 			if [[ "${classification}" = "G" ]] && (( percent_integer > kraken2_contamination_threshold )); then
 				number_of_genera=$(( number_of_genera + 1 ))
 			fi

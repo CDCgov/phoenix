@@ -43,7 +43,7 @@ process FASTANI {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        fastani: \$(fastANI --version 2>&1 | sed 's/version//;')
+        fastani:\$(fastANI --version 2>&1 | sed 's/version//;')
         fastani_container: ${container}
     END_VERSIONS
     """

@@ -1,8 +1,8 @@
 process SCAFFOLD_COUNT_CHECK {
     tag "${meta.id}"
     label 'process_medium'
-    // base_v2.1.0 - MUST manually change below (line 50)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 50)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(bbmap_log), path(fairy_read_count_outcome),
@@ -15,27 +15,20 @@ process SCAFFOLD_COUNT_CHECK {
     val(coverage)
     path(nodes_file)
     path(names_file)
+    val(phx_version)
 
     output:
-    tuple val(meta), path('*_summary.txt'),             emit: outcome
-    path('*_summaryline.tsv'),           optional:true, emit: summary_line
-    tuple val(meta), path('*.synopsis'), optional:true, emit: synopsis
-    path("versions.yml"),                               emit: versions
+    tuple val(meta), path('*_scaffolds_summary.txt'), optional:true, emit: outcome
+    path('*_summaryline.tsv'),                        optional:true, emit: summary_line
+    tuple val(meta), path('*.synopsis'),              optional:true, emit: synopsis
+    path("versions.yml"),                                            emit: versions
 
     script:
     // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) { terra = ""} 
-    else if (params.terra==true) { terra = "-2 terra" }
-    else { error "Please set params.terra to either \"true\" or \"false\"" }
+    def terra = params.terra ? "-t terra" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { 
-        ica_python = ""
-        ica_bash = ""
-    } else if (params.ica==true) { 
-        ica_python = "python ${workflow.launchDir}/bin/" 
-        ica_bash = "bash ${workflow.launchDir}/bin/" 
-    }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    ica_python = params.ica ? "python ${params.bin_dir}" : ""
+    ica_bash = params.ica ? "bash ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def fairy_read_count_outcome_file = fairy_read_count_outcome ? "$fairy_read_count_outcome" : ""
@@ -47,7 +40,7 @@ process SCAFFOLD_COUNT_CHECK {
     def kraken2_trimd_report = kraken2_trimd_report_file ? "-e $kraken2_trimd_report_file" : ""
     def krona_trimd = krona_trimd_file ? "-g $krona_trimd_file" : ""
     def extended_qc_arg = extended_qc ? "--extended_qc" : ""
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     #checking that the output contains scaffolds still:
@@ -74,13 +67,13 @@ process SCAFFOLD_COUNT_CHECK {
 
         # write summary_line file
         ${ica_python}Phoenix_summary_line.py -n ${prefix} -s ${prefix}.synopsis -x ${prefix}.tax -o ${prefix}_summaryline.tsv\\
-        $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg
+        $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg --phx_version $phx_version
 
         # change pass to fail and add in error
         ${ica_python}edit_line_summary.py -i ${prefix}_summaryline.tsv
 
         #change file name.
-        cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
+        cp ${prefix}_summary_old_3.txt ${prefix}_scaffolds_summary.txt
 
     # if there are scaffolds left after filtering do the following...
     else
@@ -95,7 +88,7 @@ process SCAFFOLD_COUNT_CHECK {
             echo "PASSED: Using Scaffold entry no trimd reads to check." >> ${prefix}_summary_old_3.txt
             echo "PASSED: More than 0 scaffolds in ${prefix} after filtering." >> ${prefix}_summary_old_3.txt
         fi
-        cp ${prefix}_summary_old_3.txt ${prefix}_summary.txt
+        cp ${prefix}_summary_old_3.txt ${prefix}_scaffolds_summary.txt
     fi
 
     #gettings script versions

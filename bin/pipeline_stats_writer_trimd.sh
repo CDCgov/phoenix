@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #
 # Description: Checks sample output folders for correct fiels and tests the thresholds for passability. Edited for use in P
 #
@@ -474,7 +474,7 @@ if [[ -s "${SPAdes_assembly}" ]]; then
   printf "%-30s: %-8s : %s\\n" "ASSEMBLY" "SUCCESS" "${full_scaffolds} scaffolds found"  >> "${sample_name}.synopsis"
 else
   printf "%-30s: %-8s : %s\\n" "ASSEMBLY" "FAILED" "${sample_name}.scaffolds.fa.gz not found"  >> "${sample_name}.synopsis"
-  QC_FAIL=$QC_FAIL"smaller_than_1000000_bps(0)-"
+  QC_FAIL=$QC_FAIL"No_assembly_file_created-"
   status="FAILED"
 fi
 

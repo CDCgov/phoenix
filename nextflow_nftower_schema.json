@@ -89,9 +89,9 @@
                     "fa_icon": "fas fa-file-signature"
                 },
                 "coverage": {
-                    "type": "string",
+                    "type": "integer",
                     "description": "If you want to increase the coverage cut off >30x use --coverage (ex. --coverage 40)",
-                    "default": "30",
+                    "default": 30,
                     "fa_icon": "fas fa-hashtag"
                 },
                 "busco_db_path": {

@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: Script to format ANI output to include more information on the top line
@@ -82,7 +82,7 @@ fi
 topline=$(head -n1 ${ani_file})
 percent_id=$(head -n1 ${ani_file} | cut -d$'\t' -f3)
 if (( $(echo "${percent_id} < 80" | $bc_path -l) )); then
-	echo -e "Mash/FastANI Error: No hits above an ANI value >=80%" > "${sample_name}_${db_name}.fastANI.txt"
+	echo -e "Mash/FastANI Error: No hits above an ANI value >=80%" > "${sample_name}_${db_name}.fastANI_initial.txt"
 else
 	sorted_ani=${ani_file//.txt/.sorted.txt}
 
@@ -100,19 +100,40 @@ else
 	best_coverage=$(echo "scale=2; 100 * $fragment_matches / $total_fragments" | $bc_path -l)
 
 	# Pulling taxonomy from filename which was looked up. Can possibly be out of date. REFSEQ file will ALWAYS be current though
-	best_genus=$(echo "${best_file}" | cut -d'_' -f1)
-	# handling for if uncultured is in the organism genome file name
-	if [[ "${best_genus}" == "Uncultured" ]]; then
-		best_genus=$(echo "${best_file}" | cut -d'_' -f2)
-		best_species=$(echo "${best_file}" | cut -d'_' -f3)
+	echo "${best_file}"
+	if [[ "${best_file}" =~ ^Uncultured_(.+)_GCF ]]; then
+		# Format: Uncultured_Genus_species_GCF...
+		after_uncultured="${BASH_REMATCH[1]}"
+		best_genus=$(echo "${after_uncultured}" | cut -d'_' -f1)
+		
+		# Get everything between genus and GCF for species
+		species_part="${after_uncultured#${best_genus}_}"  # Remove genus_
+		best_species="${species_part%%_GCF*}"              # Remove _GCF and everything after
+		best_species="${best_species//_/ }"                # Replace underscores with spaces
+		
+	elif [[ "${best_file}" =~ ^([^_]+)_(.+)_GCF ]]; then
+		# Standard format: Genus_species_info_GCF...
+		best_genus="${BASH_REMATCH[1]}"
+		
+		# Get everything between genus and GCF for species
+		between_genus_and_gcf="${BASH_REMATCH[2]}"
+		best_species="${between_genus_and_gcf%%_GCF*}"     # Ensure no GCF remnants
+		best_species="${best_species//_/ }"                # Replace underscores with spaces
+		
 	else
+		# Fallback: no GCF found, use simple parsing
+		best_genus=$(echo "${best_file}" | cut -d'_' -f1)
 		best_species=$(echo "${best_file}" | cut -d'_' -f2)
 	fi
+
+	# Clean up any dashes that might be in species names
+	#best_species="${best_species//-/ }"
+
 	best_organism_guess="${best_genus} ${best_species}"
 
 	#Creates a line at the top of the file to show the best match in an easily readable format that matches the style on the MMB_Seq log
-	echo -e "% ID	% Coverage	Organism	Source File" > "${sample_name}_${db_name}.fastANI.txt"
-	echo -e "${best_percent}	${best_coverage}	${best_organism_guess}	${best_file}" >> "${sample_name}_${db_name}.fastANI.txt"
+	echo -e "% ID	% Coverage	Organism	Source File" > "${sample_name}_${db_name}.fastANI_initial.txt"
+	echo -e "${best_percent}	${best_coverage}	${best_organism_guess}	${best_file}" >> "${sample_name}_${db_name}.fastANI_initial.txt"
 
 	### Add headers to file for Splunk integration
 	# sed 1i 'Isolate_Assembly_File	RefSEQ_Assembly_File	ANI_value	Mtaching_fragments	Total_fragments' "${sorted_ani}"

@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #
 # Description: Creates a single file that attempts to pull the best taxonomic information from the isolate. Currently, it operates in a linear fashion, e.g. 1.ANI, 2.kraken2 assembly 3.kraken2 reads
 # 	The taxon is chosen based on the highest ranked classifier first
@@ -88,7 +88,7 @@ Check_source() {
 	start_at="${1}"
 	if [[ "${start_at}" -le 1 ]]; then
 #		for f in ${OUTDATADIR}/ANI/*; do
-		if [[ "${fastani_file}" = *".fastANI"*".txt" ]]; then
+		if [[ "${fastani_file}" = *"fastANI"*".txt" ]]; then
 			header=$(head -n1 ${fastani_file})
 			if [[ ${header} != "No matching ANI database found for"* ]] && [[ ${header} != "Mash/FastANI Error: "* ]] && [[ ${header} != "0.00%"* ]] ; then
 				do_ANI
@@ -182,13 +182,36 @@ Check_source 0
 
 # Check if species was assigned and get starting taxID
 if [[ -n ${species} ]]; then
-	species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )
-	# Check if the string contains "sp."
-	if [[ $species == *sp.* ]]; then
-		# If yes, add a space after "sp."
-		species="${species/sp./sp. }"
+	if [[ "$species" != *complex* && "$species" != *strain* ]]; then
+		#species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )
+		species=$(echo "${species}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/-chromosome$//' )
+		# Check if the string contains "sp."
+		#if [[ $species == *sp.* ]]; then
+		#	# If yes, add a space after "sp."
+		#	species="${species/sp./sp. }"
+		#fi
+		if [[ $species =~ sp\.\S ]]; then
+			species="${species/sp./sp. }"
+		fi
+	# Check if "strain" is in the string
+	elif [[ $species == *"strain"* ]]; then
+		# Extract everything after "strain"
+		#strain=$(echo "$species" | sed -E 's/.*strain[- ]*//')
+		# Extract "strain" and everything after it
+		strain=$(echo "$species" | grep -o 'strain.*')
+		# Extract everything before "strain" and remove trailing "-" or " "
+		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*strain.*$/\1/' | sed -E 's/-.*//' | sed 's/[[:space:]]*$//')
+	elif [[ $species == *"complex sp."* ]]; then
+		# Extract "complex-sp." and everything after it
+		strain=$(echo "$species" | grep -o 'complex sp.*')
+		# Extract everything before "strain" and remove trailing "-" or " "
+		species=$(echo "$species" | sed -E 's/^(.*?)[- ]*complex sp.*$/\1/' | sed -E 's/-.*//' | sed 's/[[:space:]]*$//')
+	else
+		species=""
+		strain=""
 	fi
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
+	species_taxID=0
 	#echo "${species} - zgrep '	|	${Genus^} ${species}	|	' ${names}"
 	IFS=$'\n'
 	for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
@@ -204,7 +227,7 @@ if [[ -n ${species} ]]; then
 	if [[ "${genus_taxID}" != "Not_needed,species_found" ]]; then
 		echo "No species match found converting - to space and trying again."
 		species="${species//-/ }"
-		echo $species
+		#echo $species
 		for name_line in $(zgrep $'\t|\t'"${Genus^} ${species}"$'\t|\t' ${names}); do
 			taxID=$(echo "${name_line}" | cut -d$'\t' -f1)
 			name=$(echo "${name_line}" | cut -d$'\t' -f3)
@@ -218,9 +241,8 @@ if [[ -n ${species} ]]; then
 	fi
 fi
 
-
 # See if we can at least start at genus level to fill in upper taxonomy
-if [[ -z "${species_taxID}" ]]; then
+if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
 	# Check if genus was assigned
 	Genus=$(echo ${Genus} | tr -d [:space:] | tr -d "[]")
 	#echo "${Genus} - zgrep '	|	${Genus}	|	${names}'"
@@ -250,16 +272,20 @@ taxa_indices=( "kingdom" "phylum" "class" "order" "family" "genus" "species")
 declare -A taxID_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 declare -A tax_name_list=( [kingdom]="NA" [phylum]="NA" [class]="NA" [order]="NA" [family]="NA" [genus]="NA" [species]="NA")
 
-echo "${species_taxID}-${genus_taxID}"
+#echo "${species_taxID}-${genus_taxID}"
 
-if [[ -z "${species_taxID}" ]]; then
+if [[ -z "${species_taxID}" ]] || [[ "${species_taxID}" -eq 0 ]]; then
 	if [[ -z "${genus_taxID}" ]]; then
 		echo -e "${source}	${confidence_index}	${source_file}\nK:	Unknown\nP:	Unknown\nC:	Unknown\nO:	Unknown\nF:	Unknown\nG:	Unknown\ns:	Unknown\n" > "${sample_name}.tax"
 		exit
 	else
 		max_counter=6
 		taxID_list[species]=0
-		tax_name_list[species]="Unknown"
+		if [[ -z "${species}" ]]; then
+			tax_name_list[species]="Unknown"
+		else
+			tax_name_list[species]="${species}"
+		fi
 		taxID="${genus_taxID}"
 	fi
 else
