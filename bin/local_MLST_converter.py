@@ -960,6 +960,7 @@ def convert(to_convert):
         'Rhodococcus spp.' : 'rhodococcus',
         'Salmonella spp.' : 'salmonella_Achtman,salmonella_Oxford',
         'Saprolegnia parasitica' : 'sparasitica',
+        'Serratia spp.' : 'serratia',
         'Shewanella spp.' : 'shewanella',
         'Sinorhizobium spp.' : 'sinorhizobium',
         'Staphylococcus aureus' : 'saureus',
