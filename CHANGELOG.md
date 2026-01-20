@@ -336,3 +336,9 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since last version release.
 - MLST database is now created using pubMLST API and merged with the unique schemes available on pasteur and enterobase sites
    - Numerous new schemes were added including a significant group that now contain more than a single scheme for an organism
+ 
+## [v2.2.1](https://github.com/CDCgov/phoenix/releases/tag/v2.2.1) (01/20/2026)
+
+-MLST hotfix #1
+   - Corrected hard stoip when an Enterobacter isolate is in the analysis. There was a change to the named folder from processing pubMLST data.
+   -  Corrected the missing Serratia entry in the local_MLST_converter to match up the srst2 database assignment.
