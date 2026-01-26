@@ -912,7 +912,7 @@ def convert(to_convert):
         'Kingella kingae' : 'kkingae',
         'Klebsiella oxytoca' : 'koxytoca',
         'Klebsiella aerogenes' : 'kaerogenes',
-        'Klebsiella pneumoniae' : 'kpneumoniae',
+        'Klebsiella pneumoniae' : 'klebsiella',
         'Kudoa septempunctata' : 'kseptempunctata',
         'Lactobacillus salivarius' : 'lsalivarius',
         'Lactococcus garvieae' : 'lgarvieae',
