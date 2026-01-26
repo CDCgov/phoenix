@@ -7,9 +7,10 @@ process SAMPLESHEET_CHECK {
 
     input:
     path(samplesheet)
-    val(reads_entry)
-    val(scaffolds_entry)
-    val(directory_entry)
+    val(reads_mode)
+    val(scaffolds_mode)
+    val(directory_mode)
+    val(griphins_mode)
     val(meta) // used for --mode update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
 
     output:
@@ -22,9 +23,10 @@ process SAMPLESHEET_CHECK {
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def container_version = "base_v2.2.0"
-    def reads_check = reads_entry ? "true" : "false"
-    def scaffolds_check = scaffolds_entry ? "true" : "false"
-    def directory_check = directory_entry ? "true" : "false"
+    def reads_check = reads_mode ? "true" : "false"
+    def scaffolds_check = scaffolds_mode ? "true" : "false"
+    def directory_check = directory_mode ? "true" : "false"
+    def griphins_check = griphins_mode ? "true" : "false"
     def sheet_by_dir = (params.mode_upper == "UPDATE_PHOENIX" || params.mode_upper == "CENTAR") ? "--sheet_by_dir" : ""
     def updater = (params.mode_upper == "UPDATE_PHOENIX" || params.mode_upper == "CENTAR") ? "--updater" : ""
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
@@ -41,6 +43,10 @@ process SAMPLESHEET_CHECK {
         echo "Running check of directory samplesheet"
         ${ica}check_directory_samplesheet.py ${samplesheet} samplesheet.valid.csv ${updater} ${sheet_by_dir}
         script_version=\$(echo check_directory_samplesheet.py: \$(${ica}check_directory_samplesheet.py --version ))
+    elif [ ${griphins_check} = "true" ]; then
+        echo "Running check of GRiPHin samplesheet"
+        ${ica}check_griphin_samplesheet.py ${samplesheet} samplesheet.valid.csv
+        script_version=\$(echo check_griphin_samplesheet.py: \$(${ica}check_griphin_samplesheet.py --version ))
     else
         echo "No valid check type provided, exiting."
         exit 1

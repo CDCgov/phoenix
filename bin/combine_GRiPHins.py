@@ -140,6 +140,7 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines,engine='openpyxl')
+        df['WGS_ID'] = df['WGS_ID'].astype('string')
         if parent_folder is not None:
             # Add a suffix number for each duplicate WGS_ID (starting from 1)
             df['UNI'] = df.groupby('WGS_ID').cumcount() + 1

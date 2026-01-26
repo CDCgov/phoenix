@@ -602,7 +602,7 @@ workflow UPDATE_PHOENIX_WF {
                 software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()
                                 .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-                CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
+                META_CUSTOM_DUMPSOFTWAREVERSIONS (
                     software_versions_ch
                 )
 

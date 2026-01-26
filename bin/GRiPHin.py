@@ -1395,7 +1395,10 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
 
 def order_ar_gene_columns(ar_combined_df, is_combine):
     ar_combined_ordered_df = pd.DataFrame() #create new dataframe to fill
+    ar_combined_df = ar_combined_df.copy() # to keep python happy
     #fixing column orders
+    if 'No_AR_Genes_Found' not in ar_combined_df.columns:
+        ar_combined_df.loc[:, 'No_AR_Genes_Found'] = ''
     if (is_combine):
         ar_combined_ordered_df = pd.concat([ar_combined_ordered_df, ar_combined_df[['AR_Database', 'UNI','No_AR_Genes_Found']]], axis=1, sort=False) # first adding back in ['AR_Database', 'WGS_ID']
     else:

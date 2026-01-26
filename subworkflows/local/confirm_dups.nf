@@ -28,7 +28,24 @@ def create_deduped_ch(old_meta, reads, metadata_csv, dups){
         // Create tuple with sample name in it for the tag in RENAME_SRA_FASTA
         // function is used to swap out SRR meta.id for the sample name from SRA
         def meta = [:] // create meta array
-        meta.id = metadata_csv.readLines().get(1).split(',')[29].replaceAll(" ", "_").replaceAll("/", "_") // This gives the metadata sample name from the SRA, also some clean up
+        try {
+            def lines = metadata_csv.readLines()
+            // Sanity checks
+            if (lines.size() > 1) {
+                def cols = lines[1].split(',')
+                if (cols.size() > 29 && cols[29]) {
+                    meta.id = cols[29].replaceAll(" ", "_").replaceAll("/", "_")
+                } else {
+                    throw new IndexOutOfBoundsException("Missing SampleName column")
+                }
+            } else {
+                throw new IndexOutOfBoundsException("File has no data rows")
+            }
+        } catch (Exception e) {
+            // Fallback to filename-based sample name
+            meta.id = metadata_csv.toString().replace("_sra_metadata.csv", "").tokenize("/")[-1]
+        }
+        //meta.id = metadata_csv.readLines().get(1).split(',')[29].replaceAll(" ", "_").replaceAll("/", "_") // This gives the metadata sample name from the SRA, also some clean up
         output_array = [ meta, reads]
     } else {// There are duplicate sample names so use SRR number for naming
         // Just drop metadata_csv from the channel
@@ -39,8 +56,34 @@ def create_deduped_ch(old_meta, reads, metadata_csv, dups){
 
 def check_for_dups(metadata_csvs) {
     def list_of_sample_names = []
-    metadata_csvs.each {  // loop through each metadata_csv in the list
+    metadata_csvs.each { file -> // loop through each metadata_csv in the list
+        def sample_name
+        try {
+            def lines = file.readLines()
+            // Sanity checks
+            if (lines.size() > 1) {
+                def cols = lines[1].split(',')
+                if (cols.size() > 29 && cols[29]) {
+                    sample_name = cols[29].replaceAll(" ", "_").replaceAll("/", "_")
+                } else {
+                    throw new IndexOutOfBoundsException("Missing SampleName column")
+                }
+            } else {
+                throw new IndexOutOfBoundsException("File has no data rows")
+            }
+        } catch (Exception e) {
+            // Fallback to filename-based sample name
+            sample_name = file.toString().replace("_sra_metadata.csv", "").tokenize("/")[-1]
+        }
+        list_of_sample_names << sample_name
+    }
+    def list_len = list_of_sample_names.size()
+    def unique_len = list_of_sample_names.unique().size()
+    return unique_len < list_len ? "yes" : "no"
+}
+/* Old version of check_for_dups function for reference
         sample_name = it.readLines().get(1).split(',')[29].replaceAll(" ", "_").replaceAll("/", "_") // This gives the metadata sample name from the SRA, also some clean up
+        sample_name = it.toString().split("/")[-1].replace("_sra_metadata.csv","")
         list_of_sample_names.add(sample_name) // add each sample name to list
     }
     // get length of original list of names
@@ -49,4 +92,4 @@ def check_for_dups(metadata_csvs) {
     int unique_len = list_of_sample_names.unique().size
     def duplicates = unique_len < list_len? "yes": "no"
     return duplicates
-}
+}*/
