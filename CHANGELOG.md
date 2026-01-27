@@ -337,7 +337,10 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - MLST database is now created using pubMLST API and merged with the unique schemes available on pasteur and enterobase sites
    - Numerous new schemes were added including a significant group that now contain more than a single scheme for an organism
 
-## [vx.x.x](https://github.com/CDCgov/phoenix/releases/tag/vx.x.x) (XX/XX/202X)
+## [v2.2.1](https://github.com/CDCgov/phoenix/releases/tag/v2.2.1) (XX/XX/2026)
+
+**Fixed Bugs:**  
+- For `--mode SRA` or `--mode CDC_SRA` created fall back to use SRR number if metadata for sample_name is not in ncbi metadata. 
 
 **Implemented Enhancements:** 
 - Creation of `--mode CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
