@@ -41,6 +41,7 @@ def parseArgs(args=None):
     parser.add_argument('-a', '--ar_db', default=None, required=True, dest='ar_db', help='AR Gene Database file that is used to confirm srst2 gene names are the same as GAMMAs output.')
     parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
     parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
+    parser.add_argument('--old_software_version', default="", required=False, dest='old_software_version', help='The version of phx used to run all static data files.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
     parser.add_argument('--scaffolds', dest="scaffolds", default=False, action='store_true', help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
     parser.add_argument('--updater', dest="updater", default=False, action='store_true', help='When passed files locations are checked in two locations on in -d and in the dir listed in samplesheet.valid.csv.')
@@ -1867,9 +1868,9 @@ def parse_vars(pairs):
         return {"SRST2-NT":98, "SRST2-COV":90, "GAMMA-AA":98,"GAMMA-COV":90}
     return dict(parse_key_value(pair) for pair in pairs)
 
-
 def main():
     args = parseArgs()
+    print("OSV:",args.old_software_version)
     # create empty lists to append to later
     Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, Scaffold_Count_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L, MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L, data_location_L, parent_folder_L= ([] for i in range(36))
@@ -1946,7 +1947,12 @@ def main():
                 centar_df = create_centar_combined_df(directory, sample_name, directory2)
                 centar_dfs.append(centar_df)
     # combine all lists into a dataframe
-    df = Create_df(args.phx_version, args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
+    if args.old_software_version is not None and args.old_software_version != "":
+        phx_version = "BASE: "+str(args.old_software_version)+"; UPDATED: "+str(args.phx_version)
+    else:
+        phx_version = "BASE:"+str(args.phx_version)
+
+    df = Create_df(phx_version, args.phoenix, data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L, alerts_L, \
     Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L)
     if args.shigapass == True:
         df = double_check_taxa_id(shiga_df, df)
