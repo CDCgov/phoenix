@@ -21,7 +21,7 @@ process GET_MLST_SRST2 {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    def ica = params.ica ? "python ${params.bin_dir}" : ""
+    def ica = params.ica ? "python ${params.bin_dir}/" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container_version = task.container.toString() - "quay.io/biocontainers/python@"
@@ -82,9 +82,9 @@ process GET_MLST_SRST2 {
                 if [[ "\${DBID}" = "abaumannii" ]]; then
                     sed -i -e 's/Oxf_//g' "\${DBID}_temp.fasta"
                     sed -i -e 's/Oxf_//g' "\${DBID}_profiles_temp.csv"
-                elif [[ "\$DBID}" = "abaumannii_2" ]]; then
-                    sed -i -e 's/Pas_//g' "\${DBID}.fasta"
-                    sed -i -e 's/Pas_//g' "\${DBID}_profiles.csv"
+                elif [[ "\${DBID}" = "abaumannii_2" ]]; then
+                    sed -i -e 's/Pas_//g' "\${DBID}_temp.fasta"
+                    sed -i -e 's/Pas_//g' "\${DBID}_profiles_temp.csv"
                 fi
             fi
             counter=\$(( counter + 1))
@@ -98,7 +98,7 @@ process GET_MLST_SRST2 {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         local_MLST_converter.py: \$(${ica}local_MLST_converter.py --version 2>&1 | head -n1)
-        python: \$(python --version 2>&1 | sed 's/Python //' | awk '{print \$1)
+        python: \$(python --version 2>&1 | sed 's/Python //' | awk '{print \$1}')
         python_container: ${container_version}
     END_VERSIONS
     """
