@@ -178,7 +178,7 @@ workflow PHOENIX_EXQC {
 
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
         INPUT_CHECK (
-            ch_input
+            ch_input, false
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
@@ -655,7 +655,7 @@ workflow PHOENIX_EXQC {
             griphin_inputs_ch.map { it.files }.collect(),
             outdir_path,
             workflow.manifest.version,
-            params.coverage, true, shigapass_var, centar_var, params.bldb, false, false, []
+            params.coverage, true, shigapass_var, centar_var, params.bldb, false, false, [], "" //Add empty string to show there is no old_version_info
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

@@ -60,7 +60,6 @@ def get_taxa(input_ch){
                 }
             } catch (ArrayIndexOutOfBoundsException e) {
                 // Handle specific "Index 1 out of bounds for length 1" error - when there are is only a genus. line.split(":")[1].trim().split('\t')[1] - [1] is not needed
-                println(line)
                 if (e.getMessage() != null) {
                     if (e.message.contains("Index 1 out of bounds for length 1")) {
                         if (line.startsWith("G:")) {
@@ -81,7 +80,6 @@ def get_taxa(input_ch){
                 
             } catch (IndexOutOfBoundsException e) {
                 // Handle specific "Index 1 out of bounds for length 1" error - when there are is only a genus. line.split(":")[1].trim().split('\t')[1] - [1] is not needed
-                println(line)
                 if (e.getMessage() != null) {
                     if (e.message.contains("Index 1 out of bounds for length 1")) {
                         if (line.startsWith("G:")) {

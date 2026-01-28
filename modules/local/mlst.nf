@@ -222,7 +222,7 @@ process MLST {
     elif [[ \${genus,,} == "enterobacter" ]]; then
         if [[ \$scheme == "cronobacter" ]]; then
             mv ${prefix}.tsv ${prefix}.OLD-tsv
-            mlst --scheme ecloacae --threads $task.cpus \$unzipped_fasta > ${prefix}.tsv
+            mlst --scheme enterobacter --threads $task.cpus \$unzipped_fasta > ${prefix}.tsv
         fi
     else
         :

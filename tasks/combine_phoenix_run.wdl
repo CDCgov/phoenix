@@ -14,7 +14,7 @@ task combine_phoenix_run {
     String? combined_ncbi_sra_xlsx_prefix
   }
   command <<<
-    version="v2.2.0"
+    version="v2.3.0-dev"
     echo $version | tee VERSION
     date | tee DATE
 
