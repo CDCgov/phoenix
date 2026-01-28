@@ -165,8 +165,8 @@ workflow phoenix_workflow {
     File? centar_clade            = phoenix.centar_clade              # *_cdifficile_clade.tsv
     #File? centar_plasmid          = phoenix.centar_plasmid            # *_plasmids.tsv
     # NCBI files - optional
-    File? ncbi_biosample          = phoenix.ncbi_biosample            # BiosampleAttributes_Microbe.1.0.xlsx"
-    File? ncbi_sra_metadata       = phoenix.ncbi_sra_metadata         # Sra_Microbe.1.0.xlsx"
+    Array[File]? ncbi_biosample    = phoenix.ncbi_biosample            # BiosampleAttributes_Microbe.1.0.xlsx"
+    Array[File]? ncbi_sra_metadata = phoenix.ncbi_sra_metadata         # Sra_Microbe.1.0.xlsx"
     #run files - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
     File versions_file            = phoenix.versions_file             # software_versions.yml"
     File? multiqc_output          = phoenix.multiqc_output            # multiqc_report.html"
