@@ -265,7 +265,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
       - Version [2024-01-31.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/3.12/)  
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) and [ResFinder](https://bitbucket.org/genomicepidemiology/resfinder_db/src/master/) haven't changed since last version release.
 
-## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (01/05/2026)
+## [v2.2.0](https://github.com/CDCgov/phoenix/releases/tag/v2.2.0) (01/06/2026)
 
 **COMMAND CHANGE:** 
 - Due to deprecation of `-entry` since nextflow `v24.10.0` we switched to the use of `--mode` to run specific workflows `PHOENIX`, `CDC_PHOENIX` etc. this parameter is case insensitive. 
@@ -336,10 +336,14 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - [ARG-ANNOT](http://backup.mediterranee-infection.com/arkotheque/client/ihumed/_depot_arko/articles/2041/arg-annot-v4-aa-may2018_doc.fasta) hasn't changed since last version release.
 - MLST database is now created using pubMLST API and merged with the unique schemes available on pasteur and enterobase sites
    - Numerous new schemes were added including a significant group that now contain more than a single scheme for an organism
-
+ 
 ## [v2.2.1](https://github.com/CDCgov/phoenix/releases/tag/v2.2.1) (XX/XX/2026)
 
 **Fixed Bugs:**  
+
+-MLST hotfix #1
+   - Corrected hard stoip when an Enterobacter isolate is in the analysis. There was a change to the named folder from processing pubMLST data.
+   -  Corrected the missing Serratia entry in the local_MLST_converter to match up the srst2 database assignment.
 - For `--mode SRA` or `--mode CDC_SRA` created fall back to use SRR number if metadata for sample_name is not in ncbi metadata. 
 
 **Implemented Enhancements:** 
