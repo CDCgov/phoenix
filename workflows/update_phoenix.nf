@@ -325,18 +325,42 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         // combine info for updating the readme file
+//        files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id.split('/').last(), meta, file] }
+//                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
+//                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
+//                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
+//                                .filter{ it -> it.size() == 4 }.map{               meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
+//                                .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{      meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
+//                                .join(GAMMA_AR.out.gamma.map{                      meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
+//                                .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{   meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
+//                                .join(AMRFINDERPLUS_RUN.out.report.map{            meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
+//                                .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{      meta, taxonomy    -> [[id:meta.id, project_id:meta.project_id], taxonomy]},    by: [[0][0],[0][1]])
+//                                .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{meta, tax_file    -> [[id:meta.id, project_id:meta.project_id], tax_file]},    by: [[0][0],[0][1]], remainder: true) 
+//                                    .map{ meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file -> [meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file ?: []] }
+
+        // Helper to grab only the most recent file based on YYYYMMDD in filename
+        def get_newest = { meta, files ->
+            // Ensure files is a list, then sort alphabetically (since YYYYMMDD sorts chronologically)
+            def newest_file = [files].flatten().sort().last()
+            return [meta, newest_file]
+        }
+
         files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id.split('/').last(), meta, file] }
-                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
-                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
-                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
-                                .filter{ it -> it.size() == 4 }.map{               meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
-                                .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{      meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
-                                .join(GAMMA_AR.out.gamma.map{                      meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
-                                .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{   meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
-                                .join(AMRFINDERPLUS_RUN.out.report.map{            meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
-                                .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{      meta, taxonomy    -> [[id:meta.id, project_id:meta.project_id], taxonomy]},    by: [[0][0],[0][1]])
-                                .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{meta, tax_file    -> [[id:meta.id, project_id:meta.project_id], tax_file]},    by: [[0][0],[0][1]], remainder: true) 
-                                    .map{ meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file -> [meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file ?: []] }
+            .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
+            .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
+            .join(CREATE_INPUT_CHANNELS.out.readme, by: [0], remainder: true)
+            .filter{ it.size() == 4 }.map{ meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
+            
+            // --- Apply the Newest File Logic here ---
+            .join(CREATE_INPUT_CHANNELS.out.gamma_ar.groupTuple().map{ get_newest(it) }.map{ meta, gamma_ar -> [[id:meta.id, project_id:meta.project_id], gamma_ar]}, by: [[0][0],[0][1]])
+            .join(GAMMA_AR.out.gamma.groupTuple().map{ get_newest(it) }.map{ meta, gamma -> [[id:meta.id, project_id:meta.project_id], gamma]}, by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.ncbi_report.groupTuple().map{ get_newest(it) }.map{ meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
+            .join(AMRFINDERPLUS_RUN.out.report.groupTuple().map{ get_newest(it) }.map{ meta, report -> [[id:meta.id, project_id:meta.project_id], report]}, by: [[0][0],[0][1]])
+            
+            // Continue with the rest of your joins...
+            .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{ meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])
+            .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{ meta, tax_file -> [[id:meta.id, project_id:meta.project_id], tax_file]}, by: [[0][0],[0][1]], remainder: true) 
+            .map{ meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file -> [meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file ?: []] }
 
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
@@ -535,7 +559,31 @@ workflow UPDATE_PHOENIX_WF {
         centar_var = CREATE_INPUT_CHANNELS.out.centar.filter{ meta, file -> file.toString().endsWith("_centar_output.tsv") }
                         .ifEmpty { Channel.of(false)}.map { file -> return true}.first()  // If we get here with a file, it means we found a match and Take just the first result (true or false)
 
-         //create GRiPHin report channel
+        version_per_project_ch = collected_summaries_ch
+            .map { meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> 
+                def content = pipeline_info.text
+                def version = "unknown"
+                
+                // Try multiple patterns
+                if (content =~ /cdcgov\/phoenix:\s*(.+)/) {
+                    version = (content =~ /cdcgov\/phoenix:\s*(.+)/)[0][1].trim()
+                } else if (content =~ /version:\s*(.+)/) {
+                    version = (content =~ /version:\s*(.+)/)[0][1].trim()
+                } else if (content =~ /phoenix:\s*(.+)/) {
+                    version = (content =~ /phoenix:\s*(.+)/)[0][1].trim()
+                }
+                
+                // USE THE SAME KEY STRUCTURE AS griphin_inputs_ch uses
+                // Check if griphin_inputs_ch uses just project_id or full path
+                //println "DEBUG: meta.project_id = ${meta.project_id}"
+                //println "DEBUG: full_project_id = ${full_project_id}"
+                
+                // Try matching the key structure - use full_project_id if that's what griphin_inputs_ch uses
+                [[project_id: full_project_id], version]  // Changed from meta.project_id to full_project_id
+            }
+
+
+        //create GRiPHin report channel
         griphin_inputs_ch = Channel.empty()
             .mix(
                 CREATE_INPUT_CHANNELS.out.fastp_total_qc,
@@ -560,6 +608,8 @@ workflow UPDATE_PHOENIX_WF {
                 SRST2_AR.out.fullgene_results
             )
 
+        //griphin_inputs_ch.view{ log.debug("GRiPHin input file: ${it[0].id} - ${it[1].getName()}") ; return it }
+
         def software_versions_ch
         if (params.indir != null) { // If the input directory is not null, we need to check if the input directory is the same as the output directory
             //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
@@ -567,6 +617,7 @@ workflow UPDATE_PHOENIX_WF {
                             .collect().sum().map{ it -> it[0] > 0 }
 
             busco_boolean = collected_summaries_ch.map{ meta, summary_lines, full_project_id, busco_boolean, pipeline_info -> busco_boolean}
+            
             def outdir_full_path2
             if (params.outdir != "${launchDir}/phx_output") {
                 outdir_full_path2 = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
@@ -574,37 +625,62 @@ workflow UPDATE_PHOENIX_WF {
                 outdir_full_path2 = Channel.fromPath(params.indir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
             }
 
+            // Collect ALL versions from all projects (same approach as --input with --outdir)
+            old_versions_collected = version_per_project_ch
+                .map { project_key, version -> 
+                //    println "DEBUG (indir): Collecting version ${version} from project ${project_key.project_id}"
+                    version 
+                }
+                .collect()  // Collect all versions into a list
+                .map { versions -> 
+                    def unique_versions = versions.unique()
+                //    println "DEBUG (indir): Unique versions found: ${unique_versions}"
+                    if (unique_versions.size() > 1) {
+                        println "WARNING (indir): Multiple Phoenix versions detected: ${unique_versions}"
+                    }
+                    unique_versions.join(',')  // Join multiple versions with comma, or just return single version
+                }
+            
+            //old_versions_collected.view { "OLD_VERSIONS for GRIPHIN_PUBLISH (indir): ${it}" }
+
             //create GRiPHin report channel
             griphin_inputs_ch = griphin_inputs_ch.groupTuple()
                 .map { meta, files ->
                     [
                         meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
                         files: files 
-                    ] }
+                    ] 
+                }
 
-                //create GRiPHin report
-                GRIPHIN_PUBLISH (
-                    params.ardb,
-                    CREATE_INPUT_CHANNELS.out.valid_samplesheet,
-                    griphin_inputs_ch.map { it.meta }.collect(),
-                    griphin_inputs_ch.map { it.files }.collect(),
-                    outdir_full_path2,
-                    workflow.manifest.version,
-                    params.coverage,
-                    busco_boolean,
-                    shigapass_var, false, params.bldb, false, false, []
-                )
-                ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
+            //create GRiPHin report
+            GRIPHIN_PUBLISH (
+                params.ardb,
+                CREATE_INPUT_CHANNELS.out.valid_samplesheet,
+                griphin_inputs_ch.map { it.meta }.collect(),
+                griphin_inputs_ch.map { it.files }.collect(),
+                outdir_full_path2,
+                workflow.manifest.version,
+                params.coverage,
+                busco_boolean,
+                shigapass_var, 
+                false, 
+                params.bldb, 
+                false, 
+                false, 
+                [],
+                old_versions_collected  // ADD THIS - collected versions
+            )
+            ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
-                griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
-                griphin_report = GRIPHIN_PUBLISH.out.griphin_report
+            griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
+            griphin_report = GRIPHIN_PUBLISH.out.griphin_report
 
-                software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()
-                                .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
+            software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()
+                            .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-                CENTAR_CUSTOM_DUMPSOFTWAREVERSIONS (
-                    software_versions_ch
-                )
+            META_CUSTOM_DUMPSOFTWAREVERSIONS (
+                software_versions_ch
+            )
 
         } else { // for --input
 
@@ -626,38 +702,58 @@ workflow UPDATE_PHOENIX_WF {
                     .groupTuple()
                     // build per-sample bundles inside each project
                     .map { String project_id, metas, files ->
-                            def sample_ids = metas.unique{ it.id }*.id as List<String>
-                            def per_sample = sample_ids.collect { sid ->
-                                def sfiles = files.findAll { file ->
-                                    def filename = file.getName()
-                                    // Match files that start with sid followed by delimiter (explicit matching)
-                                    filename.startsWith(sid + "_") || filename.startsWith(sid + ".") ||
-                                    (filename.startsWith("short_summary") && filename.contains("." + sid + "."))
-                                }
-                                [
-                                    meta : [ id: sid, filenames: sfiles.collect { it.getName() } ],
-                                    files: sfiles
-                                ]
+                        // Ensure everything is a flat list of Path objects
+                        def all_files = [files].flatten()
+                        
+                        // Find the version file specifically
+                        def version_file = all_files.find { it.name.endsWith("software_versions.yml") || it.name.contains("pipeline_info") }
+
+                        def sample_ids = metas.unique{ it.id }*.id as List<String>
+                        def per_sample = sample_ids.collect { sid ->
+                            def sfiles = all_files.findAll { file ->
+                                def filename = file.name
+                                filename.startsWith(sid + "_") || filename.startsWith(sid + ".") ||
+                                (filename.startsWith("short_summary") && filename.contains("." + sid + "."))
                             }
-                            def meta_list  = per_sample.collect { it.meta }
-                            def files_flat = per_sample.collectMany { it.files }
-                        // emit a tuple keyed by project for joining, plus the two payloads we need
+                            [
+                                meta : [ id: sid, filenames: sfiles.collect { it.name } ],
+                                files: sfiles
+                            ]
+                        }
+
+                        def meta_list  = per_sample.collect { it.meta }
+                        def files_flat = per_sample.collectMany { it.files }
+                        
                         [ [project_id: project_id], meta_list, files_flat ]
                     }
 
-                // Join griphin_inputs_ch with boolean_ch
-                combined_ch = griphin_inputs_ch.join(boolean_ch, by: [0])
-                    .map { project_key, meta_list, files_flat, busco_boolean, samplesheet, shigapass_var ->
-                        // Order for the final call (we’ll unpack by index when invoking the module)
+                //griphin_inputs_ch.view { "GRIPHIN_INPUTS before join: ${it}" }
+                //boolean_ch.view { "BOOLEAN_CH: ${it}" }
+                //version_per_project_ch.view { "VERSION_PER_PROJECT: ${it}" }
+
+                // Join griphin_inputs_ch with boolean_ch AND version_per_project_ch
+                combined_ch = griphin_inputs_ch
+                    .join(boolean_ch, by: [0])
+                    .join(version_per_project_ch, by: [0])  // ADD THIS JOIN!
+                    .map { project_key, meta_list, files_flat, busco_boolean, samplesheet, shigapass_var, old_version ->
+                        // Order for the final call (we'll unpack by index when invoking the module)
                         [
                             meta_list,              // 0 -> val(metas)
                             files_flat,             // 1 -> path(griphin_files)
                             project_key.project_id, // 2 -> path(outdir)
                             samplesheet,            // 3 -> path(original_samplesheet)
                             busco_boolean,          // 4 -> val(entry)
-                            shigapass_var           // 5 -> val(shigapass_detected)
+                            shigapass_var,          // 5 -> val(shigapass_detected)
+                            old_version             // 6 -> val(old_phx_version) - FIXED variable name
                         ]
                     }
+
+                //combined_ch.view{ "GRiPHin combined input for project: ${it[2]} - metas: ${it[0].size()} files: ${it[1].size()} busco: ${it[4]} shigapass: ${it[5]} version: ${it[6]}"}
+                //combined_ch.view { log.debug("GRiPHin combined input for project: ${it[2]} - metas: ${it[0].size()} files: ${it[1].size()} busco: ${it[4]} shigapass: ${it[5]} version: ${it[6]}") ; return it }
+
+                // Before GRIPHIN_NO_PUBLISH call, add this:
+                //combined_ch.map { it[6] }.view { "OLD_PHX_VERSION being passed: '$it'" }
+
 
                 //create GRiPHin report
                 GRIPHIN_NO_PUBLISH (
@@ -674,7 +770,8 @@ workflow UPDATE_PHOENIX_WF {
                     params.bldb,                                   // path(bldb)
                     true,                                          // val(filter_var)
                     true,                                           // val(dont_publish)
-                    []
+                    [],
+                    combined_ch.map { it[6] }
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
@@ -721,27 +818,53 @@ workflow UPDATE_PHOENIX_WF {
                 //was busco run on any samples
                 busco_boolean = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> busco_boolean}.collect().map{ busco_booleans -> busco_booleans.any{ it == true }}
 
+                // Collect ALL versions from all projects (could be multiple different versions)
+                old_versions_collected = version_per_project_ch
+                    .map { project_key, version -> 
+                    //    println "DEBUG: Collecting version ${version} from project ${project_key.project_id}"
+                        version 
+                    }
+                    .collect()  // Collect all versions into a list
+                    .map { versions -> 
+                        def unique_versions = versions.unique()
+                    //    println "DEBUG: Unique versions found: ${unique_versions}"
+                        if (unique_versions.size() > 1) {
+                            println "WARNING: Multiple Phoenix versions detected across input directories: ${unique_versions}"
+                        }
+                        unique_versions.join(',')  // Join multiple versions with comma, or just return single version
+                    }
+                
+                //old_versions_collected.view { "OLD_VERSIONS for GRIPHIN_PUBLISH: ${it}" }
+
                 //create GRiPHin report channel
                 griphin_inputs_ch = griphin_inputs_ch.groupTuple()
                     .map { meta, files ->
                         [
                             meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
                             files: files 
-                        ] }
+                        ] 
+                    }
 
-                    //create GRiPHin report
-                    GRIPHIN_PUBLISH (
-                        params.ardb,
-                        CREATE_INPUT_CHANNELS.out.valid_samplesheet,
-                        griphin_inputs_ch.map { it.meta }.collect(),
-                        griphin_inputs_ch.map { it.files }.collect(),
-                        outdir_full_path,
-                        workflow.manifest.version,
-                        params.coverage,
-                        busco_boolean,
-                        shigapass_var, false, params.bldb, true, false, []
-                    )
-                    ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
+                //create GRiPHin report
+                GRIPHIN_PUBLISH (
+                    params.ardb,
+                    CREATE_INPUT_CHANNELS.out.valid_samplesheet,
+                    griphin_inputs_ch.map { it.meta }.collect(),
+                    griphin_inputs_ch.map { it.files }.collect(),
+                    outdir_full_path,
+                    workflow.manifest.version,
+                    params.coverage,
+                    busco_boolean,
+                    shigapass_var, 
+                    false, 
+                    params.bldb, 
+                    true, 
+                    false, 
+                    [],
+                    old_versions_collected  // Pass collected versions (comma-separated if multiple)
+                )
+                    
+                ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
                 griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
                 griphin_report = GRIPHIN_PUBLISH.out.griphin_report

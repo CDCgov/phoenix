@@ -84,7 +84,7 @@ workflow CREATE_SCAFFOLDS_INPUT_CHANNEL {
         } else if (samplesheet != null) {
             // if a samplesheet was passed then use that to create the channel
             meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ create_samplesheet_meta(it) }.unique()
-            scaffolds_ch = SAMPLESHEET_CHECK( samplesheet, false, true, false, meta_ch ) 
+            scaffolds_ch = SAMPLESHEET_CHECK( samplesheet, false, true, false, false, meta_ch ) 
                 .csv
                 .splitCsv( header:true, sep:',' )
                 .map { create_assembly_channel(it) }

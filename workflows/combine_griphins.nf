@@ -17,9 +17,9 @@ def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
     IMPORT LOCAL MODULES
 ========================================================================================
 */
-
-include { UPDATE_GRIPHIN                       } from '../modules/local/updater/update_griphin'
-include { UPDATE_GRIPHIN as UPDATE_CDC_GRIPHIN } from '../modules/local/updater/update_griphin'
+include { FILE_RENAME                               } from '../modules/local/file_rename'
+include { UPDATE_GRIPHIN                            } from '../modules/local/updater/update_griphin'
+include { UPDATE_GRIPHIN as UPDATE_GRIPHIN_ONLY_TWO } from '../modules/local/updater/update_griphin'
 
 /*
 ========================================================================================
@@ -27,6 +27,7 @@ include { UPDATE_GRIPHIN as UPDATE_CDC_GRIPHIN } from '../modules/local/updater/
 ========================================================================================
 */
 
+include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
 include { CREATE_INPUT_CHANNELS          } from '../subworkflows/local/create_input_channels'
 
 /*
@@ -67,86 +68,83 @@ def findGRiPHinSummaryFiles(path, extension) {
 
 workflow COMBINE_GRIPHINS_WF {
     take:
-        input_griphins_excel_ch
-        //input_griphins_tsv_ch
         ch_input
-        outdir_path
-        valid_samplesheet
         ch_versions
 
     main:
-        def update_griph_out_dir
+
+        // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
+        INPUT_CHECK (
+            ch_input, true
+        )
+        ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
+
+        // Rename GRiPHin files so there isn't collision when combining
+        FILE_RENAME (
+            INPUT_CHECK.out.griphins
+        )
+        ch_versions = ch_versions.mix(FILE_RENAME.out.versions)
+
+        def griph_out_path
+        // if there is no custom output directory for griphins, use the main outdir
         if (params.outdir == "${launchDir}/phx_output" && params.griphin_out != "${launchDir}") {
-            update_griph_out_path = params.griphin_out
+            griph_out_path = params.griphin_out
         } else {
-            update_griph_out_path = params.outdir
+            // Allow outdir to be relative
+            griph_out_path = Channel.fromPath(params.outdir, relative: true)
         }
-        update_griph_out_dir = update_griph_out_path.split('/')[-1]
 
-        if (input_griphins_excel_ch != null) { // for running at the end of another entry 
-            // bring all the griphins into one channel and pass one at a time to the UPDATE_GRIPHIN process
-            //update_griphin_ch = input_griphins_excel_ch.collect().combine(input_griphins_tsv_ch.collect()).combine(outdir_path)
-            update_griphin_ch = input_griphins_excel_ch.collect().combine(outdir_path).combine(outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")})
+        griphins_ch = FILE_RENAME.out.renamed_griphins.toList()combine(griph_out_path).map{ files, outdir_path ->
+                def meta = [:]
+                meta.project_id = outdir_path.toString().split('/')[-1]
+                meta.full_project_id = outdir_path
+                return [meta, files, files.size()]
+            }.branch{
+                exactly_two: it[2] == 2
+                more_than_two: it[2] > 2
+            }
 
-            // combine griphin files, the new one just created and the old one that was found in the project dir. 
-            UPDATE_GRIPHIN (
-                input_griphins_excel_ch.collect(),
-                //input_griphins_tsv_ch.collect(),
-                outdir_path,
-                outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
-                valid_samplesheet,
-                params.coverage,
-                params.bldb,
-                true,
-                // Some boolean to indicate if this is a species specific entry point
-                update_griph_out_dir // pass the outdir to the update_griphin process
-            )
-            ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
+        exactly_two_ch = griphins_ch.exactly_two.map{ meta, fileList, size -> [ meta, [fileList[0], fileList[1]] ] }
+        more_than_two_ch = griphins_ch.more_than_two.map{ meta, fileList, size -> [ meta, fileList ] }
 
-            /// need to figure out how to do this on a per directory 
-            // Collecting the software versions
-            COMBINE_CUSTOM_DUMPSOFTWAREVERSIONS (
-                ch_versions.unique().collectFile(name: 'collated_versions.yml')
-            )
+        // combine griphin files, the new one just created and the old one that was found in the project dir. 
+        UPDATE_GRIPHIN_ONLY_TWO (
+            exactly_two_ch.map{ meta, old_excel, new_excel -> [old_excel, new_excel] },
+            exactly_two_ch.map{ meta, old_excel, new_excel -> meta.full_project_id },
+            INPUT_CHECK.out.valid_samplesheet,
+            params.coverage,
+            params.bldb,
+            true,
+            exactly_two_ch.map{ meta, old_excel, new_excel -> meta.project_id }
+        )
+        ch_versions = ch_versions.mix(UPDATE_GRIPHIN_ONLY_TWO.out.versions)
 
-        } else { // for running as its own entry point
+        // combine griphin files, the new one just created and the old one that was found in the project dir. 
+        UPDATE_GRIPHIN (
+            more_than_two_ch.map{ meta, excels -> excels },
+            more_than_two_ch.map{ meta, excels -> meta.full_project_id },
+            INPUT_CHECK.out.valid_samplesheet,
+            params.coverage,
+            params.bldb,
+            true,
+            // Some boolean to indicate if this is a species specific entry point
+            more_than_two_ch.map{ meta, excels -> meta.project_id }
+        )
+        ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
 
-            //based on the location of the excel files get the tsv files.
-            excel_griphins = Channel.from(ch_input).splitCsv().map{it -> findGRiPHinSummaryFiles(it, "xlsx")}
-                .flatten()  // Flatten the list of lists into a single list of files
-                .filter { it != null && it.exists() }.collect() // Ensure the files exist and are not null
+        griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report.ifEmpty([]).mix(UPDATE_GRIPHIN_ONLY_TWO.out.griphin_tsv_report.ifEmpty([]))
+        griphin_report = UPDATE_GRIPHIN.out.griphin_report.ifEmpty([]).mix(UPDATE_GRIPHIN_ONLY_TWO.out.griphin_report.ifEmpty([]))
 
-            /*tsv_griphins = excel_griphins.flatten().map{it -> findGRiPHinSummaryFiles(it,"tsv")}
-                .flatten()  // Flatten the list of lists into a single list of files
-                .filter { it != null && it.exists() }.collect() // Ensure the files exist and are not null
-
-            //tsv_griphins.view()*/
-
-            // combine griphin files, the new one just created and the old one that was found in the project dir. 
-            UPDATE_GRIPHIN (
-                excel_griphins, 
-                outdir_path, 
-                outdir_path.map{ dir -> dir.toString().split('/')[-1].replace("]","")},
-                valid_samplesheet, //fix me
-                params.coverage,
-                params.bldb,
-                false, // Some boolean to indicate if this is a species specific entry point
-                update_griph_out_dir // pass the outdir to the update_griphin process
-            )
-            ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
-            
-            /// need to figure out how to do this on a per directory 
-            // Collecting the software versions
-            COMBINE_CUSTOM_DUMPSOFTWAREVERSIONS (
-                ch_versions.unique().collectFile(name: 'collated_versions.yml')
-            )
-        }
+        /// need to figure out how to do this on a per directory
+        // Collecting the software versions
+        COMBINE_CUSTOM_DUMPSOFTWAREVERSIONS (
+            ch_versions.unique().collectFile(name: 'collated_versions.yml')
+        )
 
     emit:
         //output for phylophoenix
-        griphin_tsv      = UPDATE_GRIPHIN.out.griphin_tsv_report
-        griphin_excel    = UPDATE_GRIPHIN.out.griphin_report
-        //dir_samplesheet  = UPDATE_CDC_GRIPHIN.out.converted_samplesheet*/
+        griphin_tsv      = griphin_tsv_report
+        griphin_excel    = griphin_report
 }
 
 /*

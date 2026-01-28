@@ -10,7 +10,7 @@ task update_phoenix {
     Int      disk_size = 100
   }
   command <<<
-    version="v2.2.0"
+    version="v2.2.1"
     echo $version | tee VERSION
     date | tee DATE
 

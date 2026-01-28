@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 #disable cache usage in the Python so __pycache__ isn't formed. If you don't do this using 'nextflow run cdcgov/phoenix...' a second time will causes and error
+import re
 import sys
 from packaging import version
 sys.dont_write_bytecode = True
@@ -27,6 +28,7 @@ def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='''Script to create new griphin excel sheet by combining two griphin summaries. The -g2 is considered the "new" file and thus when 
     samples with data in the -g1 file will have values overwritten to be the values in the -g2 file. This script relies on functions in GRiPHin.py, so this script can only be used with GRiPHin.py from the same version of PHoeNIx.''')
     parser.add_argument('-g1', '--old_griphin', default=None, required=False, dest='griphin_old', help='The first griphin excel file to combine.')
+    parser.add_argument('--old_phx_version', default=None, required=False, dest='old_phx_version', help='The PHoeNIx version string used to create the old griphin file. Used for compatibility checking.')
     parser.add_argument('--remove_dups', default=False, action='store_true', required=False, dest='remove_dups', help='Pass this argument if there are duplicate sample IDs in your griphins and this will remove the old sample rows and replace them with the new data in the new griphin. Only works with -g1 -g2 and not --griphin_list.')
     parser.add_argument('-g2', '--new_griphin', default=None, required=False, dest='griphin_new', help='The second griphin excel file to combine.')
     parser.add_argument('--parent_folder', required=False, default=None, dest='parent_folder', help='Directory that will be used for filling in the column "parent_folder" excel sheet if needed for backward compatibility.')
@@ -140,6 +142,7 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines,engine='openpyxl')
+        df['WGS_ID'] = df['WGS_ID'].astype('string')
         if parent_folder is not None:
             # Add a suffix number for each duplicate WGS_ID (starting from 1)
             df['UNI'] = df.groupby('WGS_ID').cumcount() + 1
@@ -267,16 +270,41 @@ def combine_qc_dataframes(df1_qc, df2_qc):
     if 'PHX_Version' not in combined_ordered_df.columns:
         combined_ordered_df['PHX_Version'] = None
 
-    # Normalize PHX_Version values
+#     # Normalize PHX_Version values
+#     def clean_version(ver):
+#         if pd.isna(ver):
+#             return version.parse("0.0.0")
+#         ver = ver.replace("-dev", ".dev0") # or ".dev1" if you want it later than dev0
+#  #       if "BASE:" in ver:
+#  #           ver = ver.split("BASE:")[-1]
+#         if ver[0:2] == "v.":
+#             ver=ver[2:]
+#         elif ver[0] == "v":
+#             ver=ver[1:]
+#         if "BASE:" in ver or "UPDATED:" in ver:
+#             return str(ver)
+#             ver = ver.split("BASE:")[-1]
+#         else:
+#             return version.parse(str(ver).strip())
+        
     def clean_version(ver):
-        if pd.isna(ver):
-            return version.parse("0.0.0")
-        ver = ver.replace("-dev", ".dev0") # or ".dev1" if you want it later than dev0
-        if ver[0:2] == "v.":
-            ver=ver[2:]
-        elif ver[0] == "v":
-            ver=ver[1:]
-        return version.parse(str(ver).strip())
+        if pd.isna(ver) or ver == "":
+            return (version.parse("0.0.0"), version.parse("0.0.0"))
+        
+        # Regex to find versions after specific labels
+        base_match = re.search(r'BASE:\s*v?([\d\.]+)', str(ver))
+        upd_match = re.search(r'UPDATED:\s*v?([\d\.]+)', str(ver))
+        
+        # If it's the old format (no BASE/UPDATED), treat it as the BASE version
+        if not base_match and not upd_match:
+            # Fallback for old style "2.1.1"
+            return (version.parse(str(ver).strip() or "0.0.0"), version.parse("0.0.0"))
+
+        v_base = version.parse(base_match.group(1)) if base_match else version.parse("0.0.0")
+        v_upd = version.parse(upd_match.group(1)) if upd_match else version.parse("0.0.0")
+
+        return (v_base, v_upd)
+
 
     # Track removed rows
     removed_unis = []
@@ -306,6 +334,7 @@ def combine_qc_dataframes(df1_qc, df2_qc):
             result = result[cols]
 
         return result
+
 
     deduped_df = (
         combined_ordered_df.groupby('WGS_ID', group_keys=False)
@@ -595,6 +624,7 @@ def main():
         # Derive output file name from input file name
         output_file = args.griphin_new.replace("_GRiPHin_Summary.xlsx", "")
     # checking what the input type is
+    print(args.old_phx_version)
     if args.griphin_old != None and args.griphin_new != None: # only two files being combined
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(args.griphin_old, args.griphin_new, args.samplesheet, args.remove_dups, args.parent_folder)
     else:
