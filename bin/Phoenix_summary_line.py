@@ -304,8 +304,11 @@ def Get_Taxa_Source(taxa_file, fastani, shigapass):
                 elif line.split(";")[7] == 'EIEC':
                     shigapass_organism = line.split(";")[7].strip()
                 else:
-                    shigapass_dict = dict([("SS", "Shigella sonnei"), ("SF1-5", "Shigella flexneri"), ("SB", "Shigella boydii"), ("SD", "Shigella dysenteriae")])
-                    shigapass_organism = shigapass_dict.get(line.split(";")[7].strip())
+                    for marker, sp in [("SS", "sonnei"), ("SF", "flexneri"), ("SB", "boydii"), ("SD", "dysenteriae")]:
+                        if marker in line.split(";")[7].strip():
+                            shigapass_organism = "Shigella " + sp
+                    #shigapass_dict = dict([("SS", "Shigella sonnei"), ("SF", "Shigella flexneri"), ("SB", "Shigella boydii"), ("SD", "Shigella dysenteriae")])
+                    #shigapass_organism = shigapass_dict.get(line.split(";")[7].strip())
     else:
         shigapass_organism = ""
     return final_taxa, taxa_source, fastani_percent_match, fastani_organism, fastani_coverage, shigapass_organism
@@ -472,6 +475,7 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
     except:
         read_match = "Unknown"
     if busco_file == None and extended_qc == False:
+        print(shigapass_organism)
         Line = ID  + '\t' + phx_version + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + final_taxa + '\t' + taxa_source + '\t' + fastani_organism + '\t' + fastani_percent_match + '\t' + fastani_coverage + '\t' + shigapass_organism + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
         busco = False
     elif busco_file is not None or extended_qc == True:

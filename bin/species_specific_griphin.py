@@ -158,13 +158,14 @@ def create_shiga_df(directory1, sample_name, shiga_df, taxa, directory2):
                         row_data["ShigaPass_Organism"] = line.split(";")[7]
                     # Convert the row data into a DataFrame and concatenate with the main DataFrame
                     shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
+                        # Define the mapping of short strings to longer strings
+            #for marker, sp in [("SS", "Shigella sonnei"), ("SF", "Shigella flexneri"), ("SB", "Shigella boydii"), ("SD", "Shigella dysenteriae")]:
+            #    if marker in shiga_df['ShigaPass_Organism']:
+            #        shiga_df['ShigaPass_Organism'] = sp           
             # Define the mapping of short strings to longer strings
-            mapping_dict = {'SB': 'Shigella boydii',
-                            'SD': 'Shigella dysenteriae',
-                            'SS': 'Shigella sonnei',
-                            'SF1-5': 'Shigella flexneri'}
+            mapping_dict = { r'^SB\w*': 'Shigella boydii', r'^SD\w*': 'Shigella dysenteriae', r'^SS\w*': 'Shigella sonnei', r'^SF\w*': 'Shigella flexneri' }
             # Apply the mapping using map()
-            shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict)
+            shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict, regex=True)
         except FileNotFoundError: 
             print("Warning: ShigaPass file for " + sample_name + " not found")
             # Add a row to the DataFrame with the WGS_ID column set to sample_name

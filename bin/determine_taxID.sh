@@ -127,6 +127,7 @@ do_ANI() {
 		Genus=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f1)
 		species=$(echo "${info}" | cut -d'	' -f3 | cut -d' ' -f2- | sed 's/[][]//g')
 		confidence_index=$(echo "${info}" | cut -d'	' -f1)
+		echo species_ani: ${species}
 	else
 		echo "source file (${fastani_file}) is empty"
 	fi
@@ -181,6 +182,7 @@ do_kraken2_reads() {
 Check_source 0
 
 # Check if species was assigned and get starting taxID
+echo "Species: ${species}"
 if [[ -n ${species} ]]; then
 	if [[ "$species" != *complex* && "$species" != *strain* ]]; then
 		#species=$(echo ${species} | tr -d [:space:] | sed 's/-chromosome$//' )

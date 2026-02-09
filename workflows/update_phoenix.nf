@@ -325,42 +325,20 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         // combine info for updating the readme file
-//        files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id.split('/').last(), meta, file] }
-//                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
-//                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
-//                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
-//                                .filter{ it -> it.size() == 4 }.map{               meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
-//                                .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{      meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
-//                                .join(GAMMA_AR.out.gamma.map{                      meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
-//                                .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{   meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
-//                                .join(AMRFINDERPLUS_RUN.out.report.map{            meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
-//                                .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{      meta, taxonomy    -> [[id:meta.id, project_id:meta.project_id], taxonomy]},    by: [[0][0],[0][1]])
-//                                .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{meta, tax_file    -> [[id:meta.id, project_id:meta.project_id], tax_file]},    by: [[0][0],[0][1]], remainder: true) 
-//                                    .map{ meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file -> [meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file ?: []] }
-
-        // Helper to grab only the most recent file based on YYYYMMDD in filename
-        def get_newest = { meta, files ->
-            // Ensure files is a list, then sort alphabetically (since YYYYMMDD sorts chronologically)
-            def newest_file = [files].flatten().sort().last()
-            return [meta, newest_file]
-        }
-
         files_to_update_ch = CREATE_INPUT_CHANNELS.out.pipeline_info.map{ meta, file -> [meta.project_id.split('/').last(), meta, file] }
-            .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
-            .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
-            .join(CREATE_INPUT_CHANNELS.out.readme, by: [0], remainder: true)
-            .filter{ it.size() == 4 }.map{ meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
-            
-            // --- Apply the Newest File Logic here ---
-            .join(CREATE_INPUT_CHANNELS.out.gamma_ar.groupTuple().map{ get_newest(it) }.map{ meta, gamma_ar -> [[id:meta.id, project_id:meta.project_id], gamma_ar]}, by: [[0][0],[0][1]])
-            .join(GAMMA_AR.out.gamma.groupTuple().map{ get_newest(it) }.map{ meta, gamma -> [[id:meta.id, project_id:meta.project_id], gamma]}, by: [[0][0],[0][1]])
-            .join(CREATE_INPUT_CHANNELS.out.ncbi_report.groupTuple().map{ get_newest(it) }.map{ meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
-            .join(AMRFINDERPLUS_RUN.out.report.groupTuple().map{ get_newest(it) }.map{ meta, report -> [[id:meta.id, project_id:meta.project_id], report]}, by: [[0][0],[0][1]])
-            
-            // Continue with the rest of your joins...
-            .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{ meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])
-            .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{ meta, tax_file -> [[id:meta.id, project_id:meta.project_id], tax_file]}, by: [[0][0],[0][1]], remainder: true) 
-            .map{ meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file -> [meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file ?: []] }
+                                .combine(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [ meta.project_id.split('/').last(), meta, dir] }, by: [0])
+                                .map { project_name, meta1, pipeline_info, meta2, directory_ch -> [meta2, pipeline_info, directory_ch]}
+                                .join(CREATE_INPUT_CHANNELS.out.readme, by: [[0][0],[0][0]], remainder: true)
+                                .filter{ it -> it.size() == 4 }.map{               meta, pipeline_info, dir, readme -> readme == null ? [meta, dir, pipeline_info, []] : [meta, dir, pipeline_info, readme] }
+                                .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{      meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
+                                .join(GAMMA_AR.out.gamma.map{                      meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
+                                .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{   meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
+                                .join(AMRFINDERPLUS_RUN.out.report.map{            meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
+                                .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{      meta, taxonomy    -> [[id:meta.id, project_id:meta.project_id], taxonomy]},    by: [[0][0],[0][1]])
+                                .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{meta, tax_file    -> [[id:meta.id, project_id:meta.project_id], tax_file]},    by: [[0][0],[0][1]], remainder: true) 
+                                .map{ meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file -> [meta, dir, pipeline_info, readme, gamma_ar, gamma, ncbi_report, report, taxonomy, tax_file ?: []] }
+
+
 
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
@@ -582,7 +560,6 @@ workflow UPDATE_PHOENIX_WF {
                 [[project_id: full_project_id], version]  // Changed from meta.project_id to full_project_id
             }
 
-
         //create GRiPHin report channel
         griphin_inputs_ch = Channel.empty()
             .mix(
@@ -607,8 +584,6 @@ workflow UPDATE_PHOENIX_WF {
                 CREATE_INPUT_CHANNELS.out.busco_short_summary,
                 SRST2_AR.out.fullgene_results
             )
-
-        //griphin_inputs_ch.view{ log.debug("GRiPHin input file: ${it[0].id} - ${it[1].getName()}") ; return it }
 
         def software_versions_ch
         if (params.indir != null) { // If the input directory is not null, we need to check if the input directory is the same as the output directory
@@ -727,10 +702,6 @@ workflow UPDATE_PHOENIX_WF {
                         [ [project_id: project_id], meta_list, files_flat ]
                     }
 
-                //griphin_inputs_ch.view { "GRIPHIN_INPUTS before join: ${it}" }
-                //boolean_ch.view { "BOOLEAN_CH: ${it}" }
-                //version_per_project_ch.view { "VERSION_PER_PROJECT: ${it}" }
-
                 // Join griphin_inputs_ch with boolean_ch AND version_per_project_ch
                 combined_ch = griphin_inputs_ch
                     .join(boolean_ch, by: [0])
@@ -747,12 +718,6 @@ workflow UPDATE_PHOENIX_WF {
                             old_version             // 6 -> val(old_phx_version) - FIXED variable name
                         ]
                     }
-
-                //combined_ch.view{ "GRiPHin combined input for project: ${it[2]} - metas: ${it[0].size()} files: ${it[1].size()} busco: ${it[4]} shigapass: ${it[5]} version: ${it[6]}"}
-                //combined_ch.view { log.debug("GRiPHin combined input for project: ${it[2]} - metas: ${it[0].size()} files: ${it[1].size()} busco: ${it[4]} shigapass: ${it[5]} version: ${it[6]}") ; return it }
-
-                // Before GRIPHIN_NO_PUBLISH call, add this:
-                //combined_ch.map { it[6] }.view { "OLD_PHX_VERSION being passed: '$it'" }
 
 
                 //create GRiPHin report
@@ -860,8 +825,7 @@ workflow UPDATE_PHOENIX_WF {
                     params.bldb, 
                     true, 
                     false, 
-                    [],
-                    old_versions_collected  // Pass collected versions (comma-separated if multiple)
+                    []
                 )
                     
                 ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)

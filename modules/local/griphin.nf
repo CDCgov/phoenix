@@ -24,6 +24,7 @@ process GRIPHIN {
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"),                         emit: griphin_report
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), path("*_GRiPHin*.tsv"), emit: griphins
     path("*_GRiPHin*.tsv"),                                                            emit: griphin_tsv_report
+    path("*_GRiPHin*.xlsx"),                                                           emit: griphin_excel_report
     path("Directory_samplesheet.csv"), optional:true,                                  emit: converted_samplesheet //the only time this isn't made is with --centar with --samplesheet
     path("versions.yml"),                                                              emit: versions
 
