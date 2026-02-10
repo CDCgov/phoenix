@@ -162,7 +162,7 @@ else
 fi
 counter=0
 
-# Dont know if we even use thiu anymore, could break if used though
+# Dont know if we even use this anymore, could break if used though
 if [[ ! "${force}" ]]; then
 	echo "Checking if Tax summary exists: ${tax_file}"
 	if  [[ -f "${tax_file}" ]]; then
@@ -172,15 +172,15 @@ if [[ ! "${force}" ]]; then
 			genus="No genus found"
 		fi
 		species=$(head -n8 "${tax_file}" | tail -n1 | cut -d'	' -f2)
-		# handling species with sp in the name.
-		if [[ $species == *sp.* ]]; then
-			# If yes, remove a space after "sp."
-			species="${species/sp. /sp.}"
-			#make sure the letters after sp. are in caps
-			species=$(echo "$species" | sed -E 's/(sp\.)([a-zA-Z]+)/\1\U\2/')
-			#change spaces to - to be inline with how the NCBI assembly stats file is made
-			species="${species// /-}"
-		fi
+#		# Testing removal of this formatting since we handle species taxonomy in other places now
+#		if [[ $species == *sp.* ]]; then
+#			# If yes, remove a space after "sp."
+#			species="${species/sp. /sp.}"
+#			#make sure the letters after sp. are in caps
+#			species=$(echo "$species" | sed -E 's/(sp\.)([a-zA-Z]+)/\1\U\2/')
+#			#change spaces to - to be inline with how the NCBI assembly stats file is made
+#			species="${species// /-}"
+#		fi
 		if [[ "${species}" = "" ]]; then
 			species="No species found"
 		fi
@@ -205,7 +205,7 @@ while IFS='' read -r line; do
     fi
 	IFS=$'\t' read -a arr_line <<< "$line"
 	#echo "${arr_line}"
-	#echo  "${genus} ${species} vs ${arr_line[0]}"
+	echo  "|${genus} ${species}| vs |${arr_line[0]}|"
 	# convert all variables to all lowercase for a case agnostic search
 	if [[ "${genus,,} ${species,,}" = "${arr_line[0],,}" ]]; then
 		# if sp. is in the name then 
@@ -218,6 +218,7 @@ while IFS='' read -r line; do
 		expected_length=$(echo "scale=0; 1000000 * ${arr_line[4]} / 1 " | $bc_path | cut -d'.' -f1)
 		reference_count="${arr_line[6]}"
 		stdev=$(echo "scale=4; 1000000 * ${arr_line[5]} /1 " | $bc_path | cut -d"." -f1)
+		echo "${arr_line[@]} - ${expected_length} - ${stdev} - ${reference_count}"
 		if [[ "${reference_count}" -lt 10 ]]; then
 			stdev="Not calculated on species with n<10 references"
 			stdevs="NA"

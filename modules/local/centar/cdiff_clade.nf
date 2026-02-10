@@ -2,7 +2,7 @@ process CDIFF_CLADE {
     tag "$meta.id"
     label 'process_single'
     // base_v2.2.0 - MUST manually change below (line 22)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(mlst_combined_file), path(mlst_database)

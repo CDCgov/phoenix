@@ -3,11 +3,12 @@ process GET_RAW_STATS {
     label 'process_single'
     stageInMode 'copy'
     // base_v2.2.0 - MUST manually change below (line 32)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(reads), path(fairy_outcome)
     val(busco_val)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_stats.txt'),                           emit: raw_stats
@@ -34,7 +35,7 @@ process GET_RAW_STATS {
     ## checking that read counts match before moving on
 
     # Output check for messages indicating read pairs that do not match
-    ${ica}fairy.py -r ${prefix}_raw_read_counts.txt -f ${fairy_outcome} ${busco_parameter}
+    ${ica}fairy.py -r ${prefix}_raw_read_counts.txt -f ${fairy_outcome} ${busco_parameter} --phx_version $phx_version
 
     #making a copy of the summary file to pass to BBMAP_REFORMAT to handle file names being the same
     cp ${prefix}_rawstats_summary.txt ${prefix}_summary_old_2.txt

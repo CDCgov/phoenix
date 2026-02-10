@@ -3,11 +3,12 @@ process CORRUPTION_CHECK {
     label 'process_medium'
     // base_v2.2.0 - MUST manually change below (line 29)!!!
     stageInMode 'copy'
-    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(reads)
     val(busco_val)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_corruption_summary.txt'), optional:true, emit: outcome
@@ -30,8 +31,8 @@ process CORRUPTION_CHECK {
     #set +e
     #check for file integrity and log errors
     #if there is a corruption problem the script will create a *_summaryline.tsv and *.synopsis file for the sample.
-    ${ica}fairy_proc.sh -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} 
-    ${ica}fairy_proc.sh -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} 
+    ${ica}fairy_proc.sh -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} -v ${phx_version}
+    ${ica}fairy_proc.sh -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} -v ${phx_version}
 
     script_version=\$(${ica}fairy_proc.sh -V)
 

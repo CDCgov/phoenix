@@ -17,11 +17,12 @@ def parseArgs(args=None):
     parser.add_argument('-f', '--summary_file', dest="summary_file", required=True)
     parser.add_argument('-t', '--trimd_read', dest="trimd_read", default=None, required=False)
     parser.add_argument('-b', '--busco', dest="busco", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
+    parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
 ## Compare the GET_RAW_STATS module combined reads output
-def reads_compare(read_file, trimd_file, filename, busco):
+def reads_compare(read_file, trimd_file, filename, busco, phx_version):
     prefix = read_file.split("_raw")[0]
     aggr_read_stats = pd.read_csv(read_file, sep="\t")
     if trimd_file != None: # if you have reached the trim step then read pairs were prior to trimming and we will check there are reads post trimming
@@ -38,7 +39,7 @@ def reads_compare(read_file, trimd_file, filename, busco):
             raw_length_R1, raw_length_R2, raw_reads, raw_pairs, raw_Q30_R1_rounded, raw_Q30_R2_rounded, raw_orphaned_reads = get_read_stats(aggr_read_stats, "false")
             trimd_length_R1, trimd_length_R2, trimd_reads, trimd_pairs, trimd_Q30_R1_rounded, trimd_Q30_R2_rounded, trimd_orphaned_reads = get_read_stats(aggr_trimd_stats, "true")
             warning_count = write_synopsis(prefix, busco, raw_length_R1, raw_length_R2, raw_reads, raw_pairs, raw_Q30_R1_rounded, raw_Q30_R2_rounded, trimd_file, trimd_length_R1, trimd_length_R2, trimd_reads, trimd_pairs, trimd_Q30_R1_rounded, trimd_Q30_R2_rounded, trimd_orphaned_reads)
-            write_summary_line(prefix, busco, warning_count, error)
+            write_summary_line(prefix, busco, warning_count, error, phx_version)
         #write to end of *_summary.txt file
         #filename = prefix + "_summary_old_2.txt"
         with open(filename, "a") as tmp:
@@ -59,7 +60,7 @@ def reads_compare(read_file, trimd_file, filename, busco):
             raw_length_R1, raw_length_R2, raw_reads, raw_pairs, raw_Q30_R1_rounded, raw_Q30_R2_rounded, raw_orphaned_reads = get_read_stats(aggr_read_stats, "false")
             trimd_length_R1, trimd_length_R2, trimd_reads, trimd_pairs, trimd_Q30_R1_rounded, trimd_Q30_R2_rounded, trimd_orphaned_reads = (None for i in range(7))
             warning_count = write_synopsis(prefix, busco, raw_length_R1, raw_length_R2, raw_reads, raw_pairs, raw_Q30_R1_rounded, raw_Q30_R2_rounded, trimd_file, trimd_length_R1, trimd_length_R2, trimd_reads, trimd_pairs, trimd_Q30_R1_rounded, trimd_Q30_R2_rounded, trimd_orphaned_reads)
-            write_summary_line(prefix, busco, warning_count, error)
+            write_summary_line(prefix, busco, warning_count, error, phx_version)
         #write to end of *_summary.txt file
         #filename = prefix + "_summary_old.txt"
         with open(filename, "a") as tmp:
@@ -174,29 +175,29 @@ def write_synopsis(sample_name, busco, raw_length_R1, raw_length_R2, raw_reads, 
         f.write("ALERT: something to note, does not mean it is a poor-quality assembly.")
     return warning_count
 
-def write_summary_line(prefix, busco, warning_count, error):
+def write_summary_line(prefix, busco, warning_count, error, phx_version):
     if busco == True:
-        column_names = ['ID','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
+        column_names = ['WGS_ID',"PHX_Version",'Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
         'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%','BUSCO', 'BUSCO_DB','Final_Taxa_ID', 'Taxa_Source',
         'FastANI_Organism','FastANI_%ID', 'FastANI_%Coverage','ShigaPass_Organism','Kraken2_Trimd','Kraken2_Weighted',
         'MLST_Scheme_1','MLST_1','MLST_Scheme_2','MLST_2','GAMMA_Beta_Lactam_Resistance_Genes','GAMMA_Other_AR_Genes',
         'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons','Auto_QC_Failure_Reason']
-        data = [[prefix,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', 'Unknown','Unknown','Unknown','Unknown',
+        data = [[prefix,phx_version,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', 'Unknown','Unknown','Unknown','Unknown',
                 'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', error]]
     else:
-        column_names = ['ID','Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
+        column_names = ['WGS_ID',"PHX_Version",'Auto_QC_Outcome','Warning_Count','Estimated_Coverage','Genome_Length',
         'Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%', 'Final_Taxa_ID', 'Taxa_Source',
         'FastANI_Organism','FastANI_%ID', 'FastANI_%Coverage','ShigaPass_Organism','Kraken2_Trimd','Kraken2_Weighted',
         'MLST_Scheme_1','MLST_1','MLST_Scheme_2','MLST_2','GAMMA_Beta_Lactam_Resistance_Genes','GAMMA_Other_AR_Genes',
         'AMRFinder_Point_Mutations','Hypervirulence_Genes','Plasmid_Incompatibility_Replicons','Auto_QC_Failure_Reason']
-        data = [[prefix,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
+        data = [[prefix,phx_version,'FAIL',warning_count,'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown',
                 'Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown','Unknown', error]]
     df = pd.DataFrame(data, columns=column_names)
     df.to_csv(prefix + '_summaryline.tsv', sep="\t",index=False)
 
 def main():
     args = parseArgs()
-    reads_compare(args.raw_read, args.trimd_read, args.summary_file, args.busco)
+    reads_compare(args.raw_read, args.trimd_read, args.summary_file, args.busco, args.phx_version)
 
 if __name__ == '__main__':
     main() 

@@ -506,10 +506,9 @@ if [[ -s "${SPAdes_assembly}" ]]; then
 	printf "%-30s: %-8s : %s\\n" "ASSEMBLY" "SUCCESS" "${full_scaffolds} scaffolds found"  >> "${sample_name}.synopsis"
 else
 	printf "%-30s: %-8s : %s\\n" "ASSEMBLY" "FAILED" "${sample_name}.scaffolds.fa.gz not found"  >> "${sample_name}.synopsis"
-	QC_FAIL=$QC_FAIL"smaller_than_1000000_bps(0)-"
+	QC_FAIL=$QC_FAIL"Assembly_file_not_found-"
 	status="FAILED"
 fi
-
 
 #Check short scaffolds reduction script
 if [[ -s "${trimmed_assembly}" ]]; then

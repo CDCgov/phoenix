@@ -2,7 +2,7 @@ process SCAFFOLD_COUNT_CHECK {
     tag "${meta.id}"
     label 'process_medium'
     // base_v2.2.0 - MUST manually change below (line 50)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f7cb3aa4e3324cab43d8635be17da8ae15f62e39d380acda844d1c9deef69c60'
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(bbmap_log), path(fairy_read_count_outcome),
@@ -15,6 +15,7 @@ process SCAFFOLD_COUNT_CHECK {
     val(coverage)
     path(nodes_file)
     path(names_file)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_scaffolds_summary.txt'), optional:true, emit: outcome
@@ -66,7 +67,7 @@ process SCAFFOLD_COUNT_CHECK {
 
         # write summary_line file
         ${ica_python}Phoenix_summary_line.py -n ${prefix} -s ${prefix}.synopsis -x ${prefix}.tax -o ${prefix}_summaryline.tsv\\
-        $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg
+        $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg --phx_version $phx_version
 
         # change pass to fail and add in error
         ${ica_python}edit_line_summary.py -i ${prefix}_summaryline.tsv

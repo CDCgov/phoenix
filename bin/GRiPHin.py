@@ -675,48 +675,55 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
 
 def parse_mlst(mlst_file, scheme_guess, sample_name):
     """Pulls MLST info from *_combined.tsv file."""
-    Scheme_list = [[],[],[],[],[]] # create empty list to fill later this would be the MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2
+    Scheme_list = [[],[],[],[],[]] # create empty list to fill later
     with open(mlst_file, 'r') as f:
         lines = f.readlines()
         lines.pop(0) # drop header line
         for rawline in lines:
-            line=rawline.strip()
+            line = rawline.strip()
             split_line = line.split("\t")
             source = split_line[1]
             date = split_line[2]
             DB_ID = split_line[3] # scheme name (i.e Pasteur or Oxford etc)
             Scheme = str(split_line[4]) # scheme number
-            if scheme_guess == "abaum" and "PARALOG" in Scheme: # supress Paralogs for Acinetobacter_baumannii
-                print("Warning: surpressing " + Scheme + " in " + sample_name)
+            
+            if scheme_guess == "abaum" and "PARALOG" in Scheme:
+                print("Warning: suppressing " + Scheme + " in " + sample_name)
+                continue
+            
+            # Handle cases where the alleles are all -
+            if (len(set(split_line[5:])) == 1) and split_line[5:][0] == "-":
+                alleles = "-"
             else:
-                #handle cases where the alleles are all -
-                if (len(set(split_line[5:]))==1) and split_line[5:][0] == "-":
-                    alleles = "-"
+                alleles = ".".join(split_line[5:]) # combine all alleles separated by .
+            
+            # Exclusion list
+            exclusion_list = ["-", "Novel_allele", "Novel_profile", "Missing_allele", 
+                            "Novel_allele-PARALOG", "Novel_profile-PARALOG", "Missing_allele-PARALOG"]
+            
+            # Find if this DB_ID already exists and get its index
+            try:
+                db_index = Scheme_list[0].index(DB_ID)
+                # Database already exists, append to its lists
+                if not any(x in Scheme for x in exclusion_list):
+                    Scheme_list[1][db_index].append("ST" + str(Scheme))
                 else:
-                    alleles = ".".join(split_line[5:]) # combine all alleles separated by -
-                #exclusion list for later
-                exclusion_list = [ "-", "Novel_allele", "Novel_profile", "Missing_allele", "Novel_allele-PARALOG", "Novel_profile-PARALOG", "Missing_allele-PARALOG" ]
-                if DB_ID in Scheme_list[0]: # check if scheme name is already in the scheme list
-                    for i in range(0,len(Scheme_list[0])): #loop through list of scheme names
-                        if DB_ID == Scheme_list[0][i]: # looking for matching scheme name that was already in the list 
-                            # If the scheme was already in the list then add the ST, alleles, source and data into that list within for that scheme
-                            # Example: [['abaumannii(Pasteur)', 'abaumannii(Oxford)'], [['ST2'], ['ST195', 'ST1816-PARALOG']], [['cpn60(2)-fusA(2)-gltA(2)-pyrG(2)-recA(2)-rplB(2)-rpoB(2)'], ['gltA(1)-gyrB(3)-gdhB(3)-recA(2)-cpn60(2)-gpi(96)-rpoD(3)', 'gltA(1)-gyrB(3)-gdhB(189)-recA(2)-cpn60(2)-gpi(96)-rpoD(3)']], [['standard/srst2'], ['standard', 'standard/srst2']], [['2022-12-02'], ['2022-12-02', '2022-12-02']]]
-                            if not any(x in Scheme for x in exclusion_list):
-                                Scheme_list[1][i].append("ST"+str(Scheme)) # if there is a value add ST in front of number
-                            else:
-                                Scheme_list[1][i].append(Scheme) # just append what is there
-                            Scheme_list[2][i].append(alleles)
-                            Scheme_list[3][i].append(source)
-                            Scheme_list[4][i].append(date)
-                else: # if scheme name is not already in the scheme list add it
-                    Scheme_list[0].append(DB_ID)
-                    if not any(x in Scheme for x in exclusion_list):
-                        Scheme_list[1].append(["ST"+str(Scheme)]) # if there is a value add ST in front of number
-                    else:
-                        Scheme_list[1].append([Scheme]) # just append what is there
-                    Scheme_list[2].append([alleles])
-                    Scheme_list[3].append([source])
-                    Scheme_list[4].append([date])
+                    Scheme_list[1][db_index].append(Scheme)
+                Scheme_list[2][db_index].append(alleles)
+                Scheme_list[3][db_index].append(source)
+                Scheme_list[4][db_index].append(date)
+                
+            except ValueError:
+                # Database doesn't exist, create new entry
+                Scheme_list[0].append(DB_ID)
+                if not any(x in Scheme for x in exclusion_list):
+                    Scheme_list[1].append(["ST" + str(Scheme)])
+                else:
+                    Scheme_list[1].append([Scheme])
+                Scheme_list[2].append([alleles])
+                Scheme_list[3].append([source])
+                Scheme_list[4].append([date])
+    
     return Scheme_list
 
 def parse_ani(fast_ani_file):
@@ -932,43 +939,63 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         genus = FastANI_output_list[3].split(" ")[0]
     try:
         Scheme_list = parse_mlst(mlst_file, scheme_guess, sample_name)
-        if len(Scheme_list[0]) > 1: # If there is more than one scheme
-            if Scheme_list[0][0] < Scheme_list[0][1]: # this if else is all just to make sure things are printing out in the same order.
-                MLST_scheme_1 = Scheme_list[0][0] # get 1st scheme name from the list
-                mlst_types_1=sorted(Scheme_list[1][0])[::-1]
-                # Added to maintain ordering of later lists, since sorting possibly changed order of types
-                order_1 = [Scheme_list[1][0].index(item) for item in mlst_types_1]
-                sorted_alleles_1=[Scheme_list[2][0][i] for i in order_1]
-                sorted_sources_1=[Scheme_list[3][0][i] for i in order_1]
+        if len(Scheme_list[0]) > 1:
+            if Scheme_list[0][0] < Scheme_list[0][1]:
+                MLST_scheme_1 = Scheme_list[0][0]
+                
+                # Get original indices before sorting
+                mlst_with_indices_1 = list(enumerate(Scheme_list[1][0]))
+                # Sort by ST value, keeping original index
+                mlst_sorted_1 = sorted(mlst_with_indices_1, key=lambda x: x[1], reverse=True)
+                
+                # Extract sorted values and original indices
+                mlst_types_1 = [item[1] for item in mlst_sorted_1]
+                order_1 = [item[0] for item in mlst_sorted_1]
+                
+                sorted_alleles_1 = [Scheme_list[2][0][i] for i in order_1]
+                sorted_sources_1 = [Scheme_list[3][0][i] for i in order_1]
                 MLST_type_1 = ", ".join(mlst_types_1)
                 MLST_alleles_1 = ",".join(sorted_alleles_1)
                 MLST_source_1 = ",".join(sorted_sources_1)
-                MLST_scheme_2 = Scheme_list[0][1] # get 2nd scheme name from the list
-                mlst_types_2=sorted(Scheme_list[1][1])[::-1]
-                # Added to maintain ordering of later lists, since sorting possibly changed order of types
                 
-                order_2 = [Scheme_list[1][1].index(item) for item in mlst_types_2]
-                sorted_alleles_2=[Scheme_list[2][1][i] for i in order_2]
-                sorted_sources_2=[Scheme_list[3][1][i] for i in order_2]
+                MLST_scheme_2 = Scheme_list[0][1]
+                
+                # Same fix for scheme 2
+                mlst_with_indices_2 = list(enumerate(Scheme_list[1][1]))
+                mlst_sorted_2 = sorted(mlst_with_indices_2, key=lambda x: x[1], reverse=True)
+                
+                mlst_types_2 = [item[1] for item in mlst_sorted_2]
+                order_2 = [item[0] for item in mlst_sorted_2]
+                
+                sorted_alleles_2 = [Scheme_list[2][1][i] for i in order_2]
+                sorted_sources_2 = [Scheme_list[3][1][i] for i in order_2]
                 MLST_type_2 = ", ".join(mlst_types_2)
                 MLST_alleles_2 = ",".join(sorted_alleles_2)
                 MLST_source_2 = ",".join(sorted_sources_2)
             else:
-                MLST_scheme_1 = Scheme_list[0][1] # get 1st scheme name from the list, in this case its the 2nd element
-                mlst_types_1=sorted(Scheme_list[1][1])[::-1]
-                # Added to maintain ordering of later lists, since sorting possibly changed order of types
-                order_1 = [Scheme_list[1][1].index(item) for item in mlst_types_1]
-                sorted_alleles_1=[Scheme_list[2][1][i] for i in order_1]
-                sorted_sources_1=[Scheme_list[3][1][i] for i in order_1]
+                # Same fix for the reversed case
+                MLST_scheme_1 = Scheme_list[0][1]
+                
+                mlst_with_indices_1 = list(enumerate(Scheme_list[1][1]))
+                mlst_sorted_1 = sorted(mlst_with_indices_1, key=lambda x: x[1], reverse=True)
+                mlst_types_1 = [item[1] for item in mlst_sorted_1]
+                order_1 = [item[0] for item in mlst_sorted_1]
+                
+                sorted_alleles_1 = [Scheme_list[2][1][i] for i in order_1]
+                sorted_sources_1 = [Scheme_list[3][1][i] for i in order_1]
                 MLST_type_1 = ", ".join(mlst_types_1)
                 MLST_alleles_1 = ",".join(sorted_alleles_1)
                 MLST_source_1 = ",".join(sorted_sources_1)
-                MLST_scheme_2 = Scheme_list[0][0] # get 2nd scheme name from the list, in this case its the first element
-                mlst_types_2=sorted(Scheme_list[1][0])[::-1]
-                # Added to maintain ordering of later lists, since sorting possibly changed order of types
-                order_2 = [Scheme_list[1][0].index(item) for item in mlst_types_2]
-                sorted_alleles_2=[Scheme_list[2][0][i] for i in order_2]
-                sorted_sources_2=[Scheme_list[3][0][i] for i in order_2]
+                
+                MLST_scheme_2 = Scheme_list[0][0]
+                
+                mlst_with_indices_2 = list(enumerate(Scheme_list[1][0]))
+                mlst_sorted_2 = sorted(mlst_with_indices_2, key=lambda x: x[1], reverse=True)
+                mlst_types_2 = [item[1] for item in mlst_sorted_2]
+                order_2 = [item[0] for item in mlst_sorted_2]
+                
+                sorted_alleles_2 = [Scheme_list[2][0][i] for i in order_2]
+                sorted_sources_2 = [Scheme_list[3][0][i] for i in order_2]
                 MLST_type_2 = ", ".join(mlst_types_2)
                 MLST_alleles_2 = ",".join(sorted_alleles_2)
                 MLST_source_2 = ",".join(sorted_sources_2)
@@ -1445,57 +1472,72 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
 
 def find_big_5(BLDB):
     df = pd.read_csv(BLDB)
-    # Filter rows where 'Protein_name' contains any of the substrings
     big5_genes = ["KPC", "IMP", "NDM", "OXA", "VIM"]
     filtered_df = df[df["Protein name"].str.contains('|'.join(big5_genes), case=False, na=False)]
-    # \xa0 is from hyperlinks as there is not normal spaces # Further filter for 'carbapenemase' or 'IR carbapenemase' in the assumed column (e.g., "Classification")
-    final_df = filtered_df[filtered_df["Functional information"].isin(["carbapenemase", "IR carbapenemase", "carbapenemase\xa0view", "IR carbapenemase\xa0view"])]
-    # Condition to check if "Protein_name" contains "OXA"
-    oxa_condition = final_df["Protein name"].str.contains("OXA", case=False, na=False)
-    # Condition to filter "Subfamily" only for rows where "Protein_name" contains "OXA"
-    subfamily_condition = final_df["Subfamily"].isin(["OXA-48-like", "OXA-23-like", "OXA-24-like", "OXA-58-like", "OXA-143-like"])
-    # Keep all rows where "Protein_name" does NOT contain "OXA"
-    non_oxa_rows = final_df[~oxa_condition]
-    # Keep only filtered rows where "Protein_name" contains "OXA" and "Subfamily" is in the list
-    filtered_oxa_rows1 = final_df[oxa_condition & subfamily_condition]
-    ###########print(filtered_oxa_rows1)
-    filtered_oxa_rows = filtered_oxa_rows1[~(filtered_oxa_rows1["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~filtered_oxa_rows1["Subfamily"].str.contains("OXA-48-like", na=False))]
-    # Combine both DataFrames
-    filtered_final_df = pd.concat([non_oxa_rows, filtered_oxa_rows])
-    # Select the relevant columns and drop complete duplicates
-    unique_proteins = final_df[["Protein name", "Alternative protein names"]].drop_duplicates()
-    # Flatten into a list and remove NaN values
-    protein_list = unique_proteins.values.flatten()
-    protein_list = [protein for protein in protein_list if pd.notna(protein)]  # Remove NaNs
-    # Separate protein_list into two lists
-    oxa_proteins = [protein for protein in protein_list if "OXA" in protein]
-    non_oxa_proteins = [protein for protein in protein_list if "OXA" not in protein]
-    return non_oxa_proteins, oxa_proteins
+    
+    # Handle functional info and whitespace
+    final_df = filtered_df[filtered_df["Functional information"].str.strip().isin([
+        "carbapenemase", "IR carbapenemase", "carbapenemase\xa0view", "IR carbapenemase\xa0view"
+    ])]
+    
+    # OXA Subfamily Filter
+    subfamily_list = ["OXA-48-like", "OXA-23-like", "OXA-24-like", "OXA-58-like", "OXA-143-like"]
+    oxa_cond = final_df["Protein name"].str.contains("OXA", case=False, na=False)
+    sub_cond = final_df["Subfamily"].isin(subfamily_list)
+    
+    non_oxa = final_df[~oxa_cond]
+    oxa_rows = final_df[oxa_cond & sub_cond]
+    oxa_filtered = oxa_rows[~(oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~oxa_rows["Subfamily"].str.contains("OXA-48-like", na=False))]
+    
+    # CRITICAL: Use the combined filtered dataframe
+    filtered_final_df = pd.concat([non_oxa, oxa_filtered])
+    
+    # Explode synonyms into a clean set
+    final_set = set()
+    for _, row in filtered_final_df[["Protein name", "Alternative protein names"]].drop_duplicates().iterrows():
+        if pd.notna(row["Protein name"]):
+            final_set.add(str(row["Protein name"]).strip())
+        if pd.notna(row["Alternative protein names"]):
+            # Split "OXA-181; blaOXA-181" into individual items
+            for name in re.split(r'[;,\s]+', str(row["Alternative protein names"])):
+                if name.strip(): final_set.add(name.strip())
+
+    protein_list = list(final_set)
+    return [p for p in protein_list if "OXA" not in p.upper()], [p for p in protein_list if "OXA" in p.upper()]
 
 def big5_check(final_ar_df, is_combine, BLDB):
-    """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
     columns_to_highlight = []
-    if (is_combine):
-        final_ar_df = final_ar_df.drop(['AR_Database','UNI'], axis=1)
+    if is_combine:
+        final_ar_df = final_ar_df.drop(['AR_Database','UNI'], axis=1, errors='ignore')
     else:
-        final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
+        final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1, errors='ignore')
+    
     all_genes = final_ar_df.columns.tolist()
-    big5_keep, big5_oxa_keep= find_big_5(BLDB)
-    # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
-    for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
-        if gene == 'No_AR_Genes_Found':
-            pass
+    big5_keep, big5_oxa_keep = find_big_5(BLDB)
+    
+    for gene in all_genes:
+        if gene == 'No_AR_Genes_Found': continue
+        
+        # Split header into gene name and drug info
+        parts = gene.split('_(')
+        if len(parts) < 2: continue
+        gene_header = parts[0]
+        drug = parts[1]
+        
+        # Clean header for matching
+        match_name = gene_header.upper()
+        if "-LIKE" in match_name:
+            match_name = match_name.split('_BLA')[0]
+
+        # Use substring matching (any gene name from DB found in the header)
+        if "OXA" in match_name:
+            if any(oxa.upper() in match_name for oxa in big5_oxa_keep):
+                columns_to_highlight.append(gene)
         else:
-            gene_name = gene.split('_(')[0] # remove drug name for matching genes
-            drug = gene.split('_(')[1] # keep drug name to add back later
-            if "-like" in gene_name:
-                gene_name = gene_name.split('_bla')[0] # remove blaOXA-1-like name for matching genes -- just extra stuff that doesn't allow complete match
-            # make sure we have a complete match for oxa 48/23/24/58/143 genes and oxa 48/23/24/58/143-like genes
-            if "OXA" in gene_name: #check for complete blaOXA match
-                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_oxa in big5_oxa_keep if gene_name == big5_oxa ]
-            else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
-                [ columns_to_highlight.append(gene_name + "_(" + drug) for big5 in big5_keep if search(big5, gene_name) ]
-    print(CYELLOW + "\nhighlighting colums:", columns_to_highlight, CEND)
+            if any(b5.upper() in match_name for b5 in big5_keep):
+                columns_to_highlight.append(gene)
+                
+    print(f"\nHighlighting columns: {columns_to_highlight}")
     return columns_to_highlight
 
 def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, scaffolds, is_combine, BLDB):

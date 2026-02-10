@@ -382,17 +382,21 @@ workflow CREATE_INPUT_CHANNELS {
                     def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
                     def matchingFile //define to make global
                     if (params.mode_upper == "UPDATE_PHOENIX"){
+                        //if running updater check if the gc file does NOT match the assembly stats date, if it does NOT match then use it, else null
+                        // if it doesn't exist or if it does match the date then it will be null
                         matchingFile = !gc_content.getName().contains(refdbdate[0][1]) ?  gc_content : null
                     } else {
+                        //if species specific check if gc file does match the assembly stats date and if so keep it. else null 
                         matchingFile = gc_content.getName().contains(refdbdate[0][1]) ?  gc_content : null
                     }
                     if (params.mode_upper == "UPDATE_PHOENIX") {
+                        // if gc file matches the date then warn user it will be overwritten
                         if (gc_content.getName().contains(refdbdate[0][1])) {
                             def cleanedFilename = gc_content.toString().split('/').last().replace("_GC_content_", "").replace(".msh.xz", "")
                             println("${orange}WARNING: ${meta.id} already had updater run with Stats db date ${cleanedFilename}, ${meta.id}_GC_content_${refdbdate[0][1]}.txt will be overwritten.${reset}")
                         }
                     }
-                    return [meta, matchingFile] }.filter{ meta, gc_content -> gc_content != null }
+                    return [meta, matchingFile] }.filter{ meta, gc_content -> gc_content != null } //filter out nulls
 
             // get prokka files
             def prokka_gff_glob = append_to_path(params.indir.toString(),'*/annotation/*.gff')

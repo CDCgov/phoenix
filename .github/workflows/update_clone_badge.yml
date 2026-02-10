@@ -7,14 +7,14 @@ on:
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/v2.2.0-dev'  # Run only on v2.2.0-dev branch
+    if: github.ref == 'refs/heads/v2.3.0-dev'  # Run only on v2.3.0-dev branch
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GH_ACTION }}
-          ref: v2.2.0-dev  # Specify the branch to checkout
+          ref: v2.3.0-dev  # Specify the branch to checkout
       
       - name: Get clone count for today
         

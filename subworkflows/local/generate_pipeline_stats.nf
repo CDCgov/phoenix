@@ -53,10 +53,16 @@ workflow GENERATE_PIPELINE_STATS_WF {
             asmbld_report = asmbld_report.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
             asmbld_krona_html = asmbld_krona_html.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
             asmbld_k2_bh_summary = asmbld_k2_bh_summary.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        } else if(fullgene_results == []) {
+        } else if(fullgene_results == [] && params.mode_upper != "CDC_SCAFFOLDS") {
             // make this work for cdc versions as well as regular phoenix
             fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
             busco = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
+        } else if(params.mode_upper == "CDC_SCAFFOLDS") {
+            // make this work for cdc versions as well as regular phoenix
+            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }

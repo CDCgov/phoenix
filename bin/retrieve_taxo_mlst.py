@@ -60,9 +60,11 @@ def retrieve_mlst_nonovel(fullpath):
     for path in fullpath:
         try:
             #print("start new isolate: " + path.split("/")[len(path.split("/")) - 1] + "_combined.tsv")
-            isolate_name = path.split("/")[len(path.split("/")) - 1]
+            isolate_name = path.split("/")[len(path.split("/")) - 1].replace('.filtered.scaffolds.fa', '')
             mlst_file = path + "/mlst/" + path.split("/")[len(path.split("/")) - 1] + "_combined.tsv"
             file_content = pd.read_csv(mlst_file, delimiter='\t', header=0, usecols = ["WGS_ID", "Source", "Pulled_on", "Database", "ST"])
+            #clean file names
+            file_content["WGS_ID"] = file_content["WGS_ID"].str.strip().str.replace('.filtered.scaffolds.fa', '')
             if file_content.empty:
                 isolate_mlst[isolate_name] = ""
             else:
@@ -80,7 +82,6 @@ def retrieve_mlst_nonovel(fullpath):
                     indices = file_content.index[file_content["Database"].str.contains("Oxford") |
                                                 file_content["Database"].str.contains("Pasteur") | file_content["Database"].str.contains("Achtman")]
                     tmp_dict = tools.rearrange_oxford_pasteur(file_content, indices)
-                    print(file_content["WGS_ID"][0])
                     isolate_mlst[str(file_content["WGS_ID"][0]).strip()] = tmp_dict[str(file_content["WGS_ID"][0]).strip()]
         except FileNotFoundError:
             isolate_mlst[isolate_name] = ""

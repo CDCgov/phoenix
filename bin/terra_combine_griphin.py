@@ -24,7 +24,7 @@ def parseArgs(args=None):
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
- 
+
 def combine_excels(file_list):
     # create a new dataframe to store the merged excel file.
     excl_merged = pd.DataFrame()
@@ -91,7 +91,7 @@ def separate_column_type(excl_merged, df):
     return sorted_col_list
 
 def fix_ar_col_order(col_list):
-    ar_drugs_list = [re.findall('.*\((.*)\).*', col) for col in col_list]
+    ar_drugs_list = [re.findall('.*\\((.*)\\).*', col) for col in col_list]
     ar_drugs_list = sorted(set(list(chain.from_iterable(ar_drugs_list))))
     final_ar_list = []
     # loop over each gene with the same drug its name
@@ -206,7 +206,7 @@ def write_excel(output_file, df, set_coverage, phoenix, qc_max_col, ar_gene_coun
     # add autofilter
     worksheet.autofilter(1, 0, max_row, max_col - 1)
     # Close the Pandas Excel writer and output the Excel file.
-    writer.save()
+    writer.close()
 
 def big5_check(final_ar_df):
     """"Function that will return list of columns to highlight if a sample has a hit for a big 5 gene."""
@@ -278,11 +278,13 @@ def get_column_counts(df):
     ar_df = ar_df.drop(['HV_Database'], axis=1)
     ar_max_col = int(len(ar_df.columns))
     ar_db = list(ar_df['AR_Database'].unique())
+    print(ar_db)
     try:
         ar_db.remove("GAMMA file not found")
     except ValueError:
         pass
-    ar_db = ','.join(ar_db)
+    ar_db = [x for x in ar_db if pd.notna(x)]
+    ar_db = ','.join(str(x) for x in ar_db)
     # get hv number of columns
     hv_df = df.loc[:,'HV_Database':'Plasmid_Replicon_Database']
     hv_df = hv_df.drop(['Plasmid_Replicon_Database'], axis=1)
@@ -292,7 +294,8 @@ def get_column_counts(df):
         hv_db.remove("GAMMA file not found")
     except ValueError:
         pass
-    hv_db = ','.join(hv_db)
+    hv_db = [x for x in hv_db if pd.notna(x)]
+    hv_db = ','.join(str(x) for x in hv_db)
     # get hv number of columns
     pf_df = df.loc[:,'Plasmid_Replicon_Database':]
     pf_max_col = int(len(pf_df.columns))
@@ -301,7 +304,8 @@ def get_column_counts(df):
         pf_db.remove("GAMMA file not found")
     except ValueError:
         pass
-    pf_db = ','.join(pf_db)
+    pf_db = [x for x in pf_db if pd.notna(x)]
+    pf_db = ','.join(str(x) for x in pf_db)
     return qc_max_col, ar_max_col, pf_max_col, hv_max_col, ar_df, pf_db, ar_db, hv_db
 
 def main():
