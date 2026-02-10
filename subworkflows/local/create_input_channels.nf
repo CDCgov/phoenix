@@ -525,7 +525,7 @@ workflow CREATE_INPUT_CHANNELS {
 
             //if (centar == true) { // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
                 SAMPLESHEET_CHECK (
-                    samplesheet, false, false, true, meta_ch
+                    samplesheet, false, false, true, false, meta_ch
                 )
                 ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
 
