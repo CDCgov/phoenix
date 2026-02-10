@@ -9,12 +9,22 @@ def get_ar_tiers(project_dir, griphin_summary_file):
     """
     # Read the GRiPHin summary to get WGS_ID and FastANI_Organism
     griphin_df = pd.read_csv(griphin_summary_file, sep='\t')
+    
+    # Remove extra notes at the end of the file
+    # Find first index where the entire row is NaN
+    nan_indices = griphin_df.index[griphin_df.isna().all(axis=1)]
+    if len(nan_indices) > 0:
+        idx = nan_indices[0]
+        # Keep everything *before* that row
+        griphin_df = griphin_df.loc[:idx-1]
+    
+    # Also remove rows where WGS_ID is NaN or empty
+    griphin_df = griphin_df[griphin_df['WGS_ID'].notna()]
+    griphin_df = griphin_df[griphin_df['WGS_ID'] != '']
+    
     wgs_data = griphin_df[['WGS_ID', 'FastANI_Organism']].copy()
-    # Find the index of the first row where all values are NA
-    na_row_index = wgs_data.index[wgs_data.isna().all(axis=1)][0]
-    # Keep only rows BEFORE that row
-    wgs_data = wgs_data.loc[:na_row_index - 1]
-    wgs_data = wgs_data.rename(columns={'WGS_ID': 'ID', 'FastANI_Organism': 'Species'})
+    wgs_data = wgs_data.rename(columns={'WGS_ID': 'ID', 'FastANI_Organism': 'FastANI Organism'})
+    
     # Hardcoded exception genes - add your exception genes here
     ex_gene = [
         'vanH-A',
@@ -39,8 +49,9 @@ def get_ar_tiers(project_dir, griphin_summary_file):
     
     # Process each WGS_ID
     for idx, row in wgs_data.iterrows():
-        wgs_id = str(row['ID'])
-        abritamr_file = os.path.join(project_dir, wgs_id, 'AMRFinder', f'{wgs_id}.abritamr.txt')
+        wgs_id = row['ID']
+        abritamr_file = os.path.join(project_dir, str(wgs_id), 'AMRFinder', f'{wgs_id}.abritamr.txt')
+        
         if os.path.exists(abritamr_file):
             try:
                 # Read abritamr file
@@ -82,7 +93,9 @@ def get_ar_tiers(project_dir, griphin_summary_file):
                         # Remove special characters like *, ^, etc. and format
                         cleaned_genes = []
                         for g in gene_list:
-                            clean_g = g.replace('*', '').replace('^', '').strip()
+                            #clean_g = g.replace('*', '').replace('^', '').strip()
+                            # only strip whitespace and kkep * and ^
+                            clean_g = g.strip()
                             if clean_g:
                                 formatted_g = f"{{{clean_g}}}" if clean_g in ex_gene else clean_g
                                 cleaned_genes.append(formatted_g)
@@ -97,6 +110,7 @@ def get_ar_tiers(project_dir, griphin_summary_file):
                 print(f"Error processing {abritamr_file}: {e}")
         else:
             print(f"File not found: {abritamr_file}")
+    
     return wgs_data
 
 if __name__ == "__main__":
