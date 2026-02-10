@@ -10,9 +10,10 @@ from datetime import date
 import logging
 import os, glob
 from ar_tiers_processor import get_ar_tiers
+from AMRFinder_ftsI_mutations_ID_Cov import get_ftsi_mutations
 
 ##CLIA WGS Run Summary generating script for CLIA Phoenix
-###11-18-2025
+###1-7-2026
 ###@author: Frank Bao
 ###email: dyp9@cdc.gov
 
@@ -27,6 +28,7 @@ def parse_args():
     parser.add_argument('--phx_version', dest="phx_version", type=str, help='Phoenix version', required=True)
     parser.add_argument('--amrfinder_version', dest="amrfinder_version", type=str, help='AMRFinderPlus version', required=True)
     parser.add_argument('--ar_database', dest="ar_database", type=str, help='AR Databased used with AMRFinderPlus.', required=True)
+    parser.add_argument('--abritamr_version', default='1.0.17', dest="abritamr_version", type=str, help='abritamr version.', required=False)
     parser.add_argument('--coverage', default=40, dest="coverage", type=str, help='Coverage cut off to use.', required=False)
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     opts = parser.parse_args()
@@ -51,6 +53,8 @@ BUSCO = 97
 FASTANI_MATCH = 95
 FASTANI_COVERAGE = 70
 KRAKEN_ASSEMBLY_GENUS = 70
+ftls_identity = 98
+ftls_coverage = 90
 
 #note_text1 = "Failed QC - Numbers below thresholds will be highlighted in red: <30x coverage; Assembly stdev >2.58; Min assembly length <1,000,000 bp; >500 scaffolds"
 note_text2 = f"QC Warning  - Numbers below thresholds will be highlighted in yellow: <{RAW_READ:,} total reads for raw and trimmed; % trimmed reads with Q30 average for R1 (<{R1_Q30_TRIM}%) and R2 (<{R2_Q30_TRIM}%)"
@@ -58,11 +62,14 @@ note_text4 = "Taxa ID Failed - Only Taxa IDed with FastANI are acceptable, all o
 note_text3 = f"Taxa ID QC Warning  - Numbers below thresholds will be highlighted in yellow: BUSCO ID <{BUSCO}%; FastANI match <{FASTANI_MATCH}%; FastANI coverage <{FASTANI_COVERAGE}%"
 note_text5 = "Assembly ratio and GC% STDev are NaN when there are <10 genomes as reference."
 note_text6 = "Identical amino-acid sequence found in the AMRFinder+ database, either EXACT(X/P) or ALLELE(X/P). The suffix indicates whether it was identified with a protein (P) or nucleotide translated (X)."
-note_text7 = "BLAST hits are hits that are < 100% identical to a database protein, but at coverage > 90%. The suffix indicates whether it was identified with a protein (P) or nucleotide translated (X)."
+note_text7 = "BLAST hits are hits that are < 100% identical to a database protein, but at coverage > 90%."
 #note_text8 = "Hits between 50-90% of the length of the database protein are called either PARTIAL if the hit is internal to a contig or PARTIAL_CONTIG_END if the gene could have been broken by a contig boundary. Assemblers can split genes over multiple contigs, genes that are PARTIAL_CONTIG_END are often full-length in reality."
 #note_text9 = "INTERNAL_STOP are genes that when translated from genomic sequence have a stop codon before the end of the database protein and are less likely to be functional."
 #note_text10 = "HMM-only hits don't meet the criteria for a BLAST and a HMM match is above the curated cutoff for an HMM that has been created for that gene or gene family. These will usually be distant relatives of known gene families and may be candidates for a new gene family. Occasionally, partial proteins that have diverged enough from known database proteins to not meet the BLAST cutoffs will show up as HMM-only hits."
 #note_text11 = "The suffix indicates whether it was identified with a protein (P) or nucleotide translated (X)."
+note_text10 = "Genes annotated with * indicate >90% coverage and > identity threshold < 100% identity."
+note_text8 = "Genes are categorized into tiers based on clinical significance. Genes in curly braces {{gene}} indicate exception genes."
+note_text9 = "Genes recovered with >50% but <90% coverage of a gene in the gene catalog will be annotated with ^"
 
 
 def check_time(start_time):
@@ -250,12 +257,104 @@ def clia_report(args):
         ar_tiers_df.to_csv(ar_tiers_csv_file, index=False)
         print(f"AR tiers data saved to: {ar_tiers_csv_file}")
 
-        taxa_columns_to_read = ['WGS_ID','Taxa_Source','FastANI_Organism','BUSCO_%Match','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
+        # Get ftsI mutation data
+        ftsI_data_df = get_ftsi_mutations(project_dir, matching_files[0], ftls_identity, ftls_coverage)
+
+        taxa_columns_to_read = ['WGS_ID','Taxa_Source','ShigaPass_Organism','FastANI_Organism','BUSCO_%Match','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
         taxa_df = pd.read_csv(matching_files[0],sep='\t', usecols=taxa_columns_to_read)
+        
+        # Remove extra notes at the end of the file - same as get_griphin_df
+        # Find first index where the entire row is NaN
+        nan_indices = taxa_df.index[taxa_df.isna().all(axis=1)]
+        if len(nan_indices) > 0:
+            idx = nan_indices[0]
+            # Keep everything *before* that row
+            taxa_df = taxa_df.loc[:idx-1]
+        
+        # Also remove rows where WGS_ID is NaN or empty
+        taxa_df = taxa_df[taxa_df['WGS_ID'].notna()]
+        taxa_df = taxa_df[taxa_df['WGS_ID'] != '']
+        
         taxa_df = taxa_df.rename(columns={'WGS_ID':'ID','FastANI_Organism':'FastANI_Organism', 'Taxa_Source':'Taxonomic ID Source', 'FastANI_%ID':'FastANI Match (%)','FastANI_%Coverage':'Bases Aligned to FastANI Taxon (%)',
                                             'BUSCO_%Match':'BUSCO Match (%)','Kraken_ID_WtAssembly_%':'Kraken Assembly (%)'})
-        # need update it based on some conditions
-        taxa_df.insert(1, 'Taxonomic QC', 'PASS')
+        # Add Taxonomic QC column based on multiple criteria
+        # Create a mapping from griphin_df QC status to taxa_df (before color formatting)
+        # Need to get the raw QC values before color formatting is applied
+        raw_griphin_df = pd.read_csv(matching_files[0], sep='\t', usecols=['WGS_ID', 'Minimum_QC_Check'])
+        qc_mapping = dict(zip(raw_griphin_df['WGS_ID'], raw_griphin_df['Minimum_QC_Check']))
+
+        def get_taxonomic_qc(row):
+            sample_id = row['ID']
+            qc_status = qc_mapping.get(sample_id, 'PASS')  # Default to PASS if not found
+            
+            # FAIL conditions (highest priority) - check these first
+            # Check if QC failed in griphin_df
+            if qc_status == 'FAIL':
+                return 'FAIL'
+            
+            # Check FastANI Match (%) < 95%
+            try:
+                fastani_match = row['FastANI Match (%)']
+                if pd.notna(fastani_match) and fastani_match != 'Unknown':
+                    fastani_match_val = float(str(fastani_match).replace(",", ""))
+                    if fastani_match_val < FASTANI_MATCH:  # 95%
+                        return 'FAIL'
+            except:
+                pass
+            
+            # Check FastANI Coverage < 70%
+            try:
+                fastani_coverage = row['Bases Aligned to FastANI Taxon (%)']
+                if pd.notna(fastani_coverage) and fastani_coverage != 'Unknown':
+                    fastani_coverage_val = float(str(fastani_coverage).replace(",", ""))
+                    if fastani_coverage_val < FASTANI_COVERAGE:  # 70%
+                        return 'FAIL'
+            except:
+                pass
+            
+            # WARNING conditions (lower priority) - only checked if no FAIL conditions met
+            # Check BUSCO Match (%) < 97%
+            try:
+                busco_match = row['BUSCO Match (%)']
+                if pd.notna(busco_match) and busco_match != 'Unknown':
+                    busco_match_val = float(str(busco_match).replace(",", ""))
+                    if busco_match_val < BUSCO:  # 97%
+                        return 'WARNING'
+            except:
+                pass
+            
+            # Check Kraken Assembly (%) - extract first value from parentheses
+            try:
+                kraken_assembly = row['Kraken Assembly (%)']
+                if pd.notna(kraken_assembly) and kraken_assembly != 'Unknown':
+                    # Extract the first percentage value from format like "Klebsiella (95.84) pneumoniae (93.58)"
+                    import re
+                    # Find all numbers in parentheses
+                    percentages = re.findall(r'\(([0-9]+\.?[0-9]*)\)', str(kraken_assembly))
+                    if percentages:
+                        kraken_val = float(percentages[0])  # Take the first percentage value (95.84)
+                        if kraken_val < KRAKEN_ASSEMBLY_GENUS:  # 50%
+                            return 'WARNING'
+            except:
+                pass
+            
+            # If no FAIL or WARNING conditions are met
+            return 'PASS'
+        
+        # Apply the function to create Taxonomic QC column
+        taxa_df['Taxonomic QC'] = taxa_df.apply(get_taxonomic_qc, axis=1)
+        
+        # Reorder columns to put Taxonomic QC after ID
+        cols = taxa_df.columns.tolist()
+        cols.remove('Taxonomic QC')
+        cols.insert(1, 'Taxonomic QC')
+        taxa_df = taxa_df[cols]
+        
+        # Apply color formatting to Taxonomic QC column
+        taxa_df['Taxonomic QC'] = taxa_df['Taxonomic QC'].apply(lambda x: 
+            f'<font style="background-color: lightcoral">{x}</font>' if x == 'FAIL' else
+            f'<font style="background-color: lightgoldenrodyellow">{x}</font>' if x == 'WARNING' else x)
+
         #unknowns
         taxa_df[['Kraken Assembly (%)']] = taxa_df[['Kraken Assembly (%)']].map(color_unknown_red)
         # Failures
@@ -276,6 +375,7 @@ def clia_report(args):
     stitle3 = "Predicted Organism and High Quality Resistance Genes Hits"
     stitle5 = "Lower Quality Resistance Genes Hits"
     stitle6 = "Antimicrobial Resistance Genes by Tier"
+    stitle7 = "ftsl Mutations for Escherichia coli"
     today = date.today().strftime("%m/%d/%Y")
     today_file_name = date.today().strftime("%Y-%m-%d")
     footer = "Research use only."
@@ -373,12 +473,19 @@ def clia_report(args):
         </p>
         <h2>{stitle6}</h2>
         {ar_tiers_df.to_html(index=False, escape=False, justify="left", classes = 'table table-bordered', border=1)}
-        <p style='font-size: 0.8em'>Genes are categorized into tiers based on clinical significance. Genes in curly braces {{gene}} indicate exception genes.</p>
+        <p style='font-size: 0.8em'>1. {note_text8}</br>
+        2. {note_text9}</br>
+        3. {note_text10}</br>
+        </p>
+        <h2>{stitle7}</h2>
+        {ftsI_data_df.to_html(index=False, escape=False, justify="left", classes = 'table table-bordered', border=1)}
+        <p style='font-size: 0.8em'>ftsl mutations identified based on AMRFinderPlus results with {ftls_identity}% identity and {ftls_coverage}% coverage.</p>
         </article>
         <hr>
         <footer>
         <p><i>This report was created using the PHoeNIx <a href="https://github.com/CDCgov/phoenix">{args.phx_version}</a> bioinformatics pipeline CLIA entry point.</br>
         AR genes were identified with AMRFinderPlus <a href="https://github.com/ncbi/amr">v{args.amrfinder_version}</a> using database version {ar_database}</br>
+        abriTAMR <a href="https://github.com/MDU-PHL/abritamr">v{args.abritamr_version}</a> is used to organize AMR genes into functionally relevant categories.</br>
         {footer}</i></p>
         </footer>
     </body>
