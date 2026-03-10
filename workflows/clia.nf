@@ -161,7 +161,7 @@ workflow CLIA_INTERNAL {
 
         // SUBWORKFLOW: Read in samplesheet/list, validate and stage input files
         INPUT_CHECK (
-            ch_input
+            ch_input, false
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
 
