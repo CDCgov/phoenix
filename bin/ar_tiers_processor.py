@@ -75,6 +75,11 @@ def get_ar_tiers(project_dir, griphin_summary_file):
                     
                     # Process each tier
                     tier_1_genes = process_tier_genes(tier_1_columns)
+                    # Move omp* genes from Tier 1 to other
+                    omp_genes = [g for g in tier_1_genes if g.lower().startswith('omp')]
+                    tier_1_genes = [g for g in tier_1_genes if not g.lower().startswith('omp')]
+                    
+
                     tier_2_genes = process_tier_genes(tier_2_columns)
                     tier_3_genes = process_tier_genes(tier_3_columns)
                     
@@ -84,7 +89,12 @@ def get_ar_tiers(project_dir, griphin_summary_file):
                     for col in data_row.index:
                         if col not in all_tier_columns and pd.notna(data_row[col]) and str(data_row[col]).strip():
                             genes = [g.strip() for g in str(data_row[col]).split(',') if g.strip()]
+                            # Remove genes starting with ftsI_ from 'other'
+                            genes = [g for g in genes if not g.startswith('ftsI_')]
                             other_genes.extend(genes)
+                    
+                    # Add omp genes moved from Tier 1 to other
+                    other_genes.extend(omp_genes)
                     
                     # Apply exception gene formatting and join with |
                     def format_genes(gene_list):
