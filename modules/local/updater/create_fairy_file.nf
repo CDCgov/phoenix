@@ -23,27 +23,50 @@ process CREATE_FAIRY_FILE {
     echo "PASSED: File ${prefix}_R1 is not corrupt." > ${prefix}_summary_old_2.txt
     echo "PASSED: File ${prefix}_R2 is not corrupt." >> ${prefix}_summary_old_2.txt
 
-    if [ -s "${parent_folder_name}/fastp_trimd/${prefix}_1.trim.fastq.gz" ] && [ -s "${parent_folder_name}/fastp_trimd/${prefix}_2.trim.fastq.gz" ]; then
-        count1=\$(zcat "${parent_folder_name}/fastp_trimd/${prefix}_1.trim.fastq.gz" | wc -l)
-        count2=\$(zcat "${parent_folder_name}/fastp_trimd/${prefix}_2.trim.fastq.gz" | wc -l)
-        if [ \$((count1 / 4)) -eq \$((count2 / 4)) ]; then
+    if [ -d "${parent_folder_name}/fastp_trimd" ]; then
+        if [ -s "${parent_folder_name}/fastp_trimd/${prefix}_1.trim.fastq.gz" ] && [ -s "${parent_folder_name}/fastp_trimd/${prefix}_2.trim.fastq.gz" ]; then
+            count1=\$(zcat "${parent_folder_name}/fastp_trimd/${prefix}_1.trim.fastq.gz" | wc -l)
+            count2=\$(zcat "${parent_folder_name}/fastp_trimd/${prefix}_2.trim.fastq.gz" | wc -l)
+            if [ \$((count1 / 4)) -eq \$((count2 / 4)) ]; then
+                echo "PASSED: Read pairs for ${prefix} are equal." >> ${prefix}_summary_old_2.txt
+                echo "PASSED: There are reads in ${prefix} R1/R2 after trimming." >> ${prefix}_summary_old_2.txt
+                if [ -s "${parent_folder_name}/assembly/${prefix}.filtered.scaffolds.fa.gz" ]; then
+                    echo "PASSED: More than 0 scaffolds in ${prefix} after filtering." >> ${prefix}_summary_old_2.txt
+                    mv ${prefix}_summary_old_2.txt ${prefix}_scaffolds_summary.txt
+                else
+                    echo "FAILED: No scaffolds in ${prefix} after filtering!" >> ${prefix}_summary_old_2.txt
+                    mv ${prefix}_summary_old_2.txt ${prefix}_scaffolds_summary.txt
+                fi
+            else
+                echo "FAILED: The number of reads in R1/R2 are NOT the same!" >> ${prefix}_summary_old_2.txt
+                mv ${prefix}_summary_old_2.txt ${prefix}_rawstats_summary.txt
+            fi
+        else
             echo "PASSED: Read pairs for ${prefix} are equal." >> ${prefix}_summary_old_2.txt
-            echo "PASSED: There are reads in ${prefix} R1/R2 after trimming." >> ${prefix}_summary_old_2.txt
-            if [ -s "${parent_folder_name}/assembly/${prefix}.filtered.scaffolds.fa.gz" ]; then
+            echo "FAILED: There are 0 reads in ${prefix} R1/R2 after trimming!" >> ${prefix}_summary_old_2.txt
+            mv ${prefix}_summary_old_2.txt ${prefix}_trimstats_summary.txt
+        fi
+    else
+        if [ -s "${parent_folder_name}/assembly/${prefix}.filtered.scaffolds.fa.gz" ]; then
+            echo "PASSED: Scaffolds only run, matching 0 reads." >> ${prefix}_summary_old_2.txt
+            echo "PASSED: Scaffolds only run, there are 0 reads in ${prefix}" >> ${prefix}_summary_old_2.txt
+            # Check if other reads only fodlers are missing.The missing fastp_trimd with an assembly file is a big clue.
+            if [ ! -d "${parent_folder_name}/kraken2_trimd" ] && [ ! -d "${parent_folder_name}/qc_stats" ] && [ ! -d "${parent_folder_name}/raw_stats" ] && [ ! -d "${parent_folder_name}/srst2" ]; then
+                echo "Detected certain scaffolds only run for ${prefix}."
                 echo "PASSED: More than 0 scaffolds in ${prefix} after filtering." >> ${prefix}_summary_old_2.txt
                 mv ${prefix}_summary_old_2.txt ${prefix}_scaffolds_summary.txt
             else
-                echo "FAILED: No scaffolds in ${prefix} after filtering!" >> ${prefix}_summary_old_2.txt
+                echo "Detected likely scaffolds only run for ${prefix}. Weird combination of missing folders, but still assuming run is still scaffolds only."
+                echo "PASSED: More than 0 scaffolds in ${prefix} after filtering." >> ${prefix}_summary_old_2.txt
                 mv ${prefix}_summary_old_2.txt ${prefix}_scaffolds_summary.txt
             fi
+        # No FASTP_trimd folder nor an assembly file...not a great sample
         else
-            echo "FAILED: The number of reads in R1/R2 are NOT the same!" >> ${prefix}_summary_old_2.txt
-            mv ${prefix}_summary_old_2.txt ${prefix}_rawstats_summary.txt
+            echo "PASSED: Read pairs for ${prefix} are equal." >> ${prefix}_summary_old_2.txt
+            echo "FAILED: There are 0 reads in ${prefix} R1/R2 after trimming!" >> ${prefix}_summary_old_2.txt
+            echo "FAILED: No scaffolds in ${prefix} after filtering!" >> ${prefix}_summary_old_2.txt
+            mv ${prefix}_summary_old_2.txt ${prefix}_trimstats_summary.txt
         fi
-    else
-        echo "PASSED: Read pairs for ${prefix} are equal." >> ${prefix}_summary_old_2.txt
-        echo "FAILED: There are 0 reads in ${prefix} R1/R2 after trimming!" >> ${prefix}_summary_old_2.txt
-        mv ${prefix}_summary_old_2.txt ${prefix}_trimstats_summary.txt
     fi
 
     cat <<-END_VERSIONS > versions.yml

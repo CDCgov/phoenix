@@ -6,7 +6,7 @@ process COLLECT_PROJECT_FILES {
     container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
-    tuple val(meta), path(griphin_excel), path(griphin_tsv), path(phoenix_tsv), path(pipeline_info)
+    tuple val(meta), path(griphin_excel), path(griphin_tsv), path(phoenix_tsv), path(pipeline_info), path(update_pipeline_info, stageAs: 'updater_input.yml')
     val(full_project_dir)
 
     output:
@@ -14,6 +14,7 @@ process COLLECT_PROJECT_FILES {
     tuple val(meta), path("*_old_GRiPHin.xlsx"),      emit: griphin_excel
     tuple val(meta), path("Phoenix_Summary_Old.tsv"), emit: phoenix_tsv
     tuple val(meta), path("*_software_versions.yml"), emit: software_versions_file
+    tuple val(meta), path("updater_versions.yml"),    emit: update_software_versions, optional: true
     path("versions.yml"),                             emit: versions
 
     script: 
@@ -24,11 +25,16 @@ process COLLECT_PROJECT_FILES {
     def project_dir = full_project_dir ? "${parentPath}" : "${meta.project_id}"
     """
 
-    if [ ! -e "software_versions.yml" ]; then
-        mv ./pipeline_info/software_versions.yml ${project_dir}_software_versions.yml
+    if [[ -f "${pipeline_info}/software_versions.yml" ]]; then
+        cp ${pipeline_info}/software_versions.yml ${project_dir}_software_versions.yml
     else
         mv software_versions.yml ${project_dir}_software_versions.yml
     fi
+
+    if [[ -f "./updater_input.yml" ]]; then
+        mv ./updater_input.yml updater_versions.yml
+    fi
+
     #remove the "summary" part of the name so that the output can be picked up correctly in the UPDATE_GRIPHIN process
     mv *_GRiPHin_Summary.xlsx ${project_dir}_old_GRiPHin.xlsx
     mv *_GRiPHin_Summary.tsv ${project_dir}_old_GRiPHin.tsv

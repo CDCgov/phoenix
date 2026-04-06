@@ -289,21 +289,23 @@ def combine_qc_dataframes(df1_qc, df2_qc):
         
     def clean_version(ver):
         if pd.isna(ver) or ver == "":
-            return (version.parse("0.0.0"), version.parse("0.0.0"))
+            return version.parse("0.0.0")
         
-        # Regex to find versions after specific labels
         base_match = re.search(r'BASE:\s*v?([\d\.]+)', str(ver))
-        upd_match = re.search(r'UPDATED:\s*v?([\d\.]+)', str(ver))
+        upd_match  = re.search(r'UPDATED:\s*v?([\d\.]+)', str(ver))
         
-        # If it's the old format (no BASE/UPDATED), treat it as the BASE version
+        # Old format - plain version string like "2.2.0"
         if not base_match and not upd_match:
-            # Fallback for old style "2.1.1"
-            return (version.parse(str(ver).strip() or "0.0.0"), version.parse("0.0.0"))
+            try:
+                return version.parse(str(ver).strip())
+            except:
+                return version.parse("0.0.0")
 
         v_base = version.parse(base_match.group(1)) if base_match else version.parse("0.0.0")
-        v_upd = version.parse(upd_match.group(1)) if upd_match else version.parse("0.0.0")
+        v_upd  = version.parse(upd_match.group(1))  if upd_match  else version.parse("0.0.0")
 
-        return (v_base, v_upd)
+        # Use the highest of the two as the effective version
+        return max(v_base, v_upd)
 
 
     # Track removed rows
@@ -477,6 +479,7 @@ def remove_dup_rows(old_griphin_df, new_griphin_df):
     #new_griphin_df["UNI"] = new_griphin_df["UNI"].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
     #remove dups
     old_griphin_df = old_griphin_df[~old_griphin_df['UNI'].isin(new_griphin_df['UNI'])]
+    print_df(old_griphin_df, "Old griphin df after removing dups", True)
     return old_griphin_df
 
 def backwards_compatibility(df, parent_folder, file_path):

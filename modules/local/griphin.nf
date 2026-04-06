@@ -19,6 +19,7 @@ process GRIPHIN {
     val(dont_publish)
     path(blind_list) // -b (mostly needed for PhyloPHoenix runs)
     val(old_phx_version)  // ADD THIS - version string instead of file
+    val(inferred_mode) // inferred mode from previous run for use with updater
 
     output:
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"),                         emit: griphin_report
@@ -47,7 +48,7 @@ process GRIPHIN {
 
     def blind_names   = blind_list ? "--blind_list ${blind_list}" : ""
     def phoenix_mode = phx_mode ? "" : "--phoenix"
-    def scaffolds = (params.mode_upper == "SCAFFOLDS" || params.mode_upper == "CDC_SCAFFOLDS") ? "--scaffolds" : "" 
+    def scaffolds = (params.mode_upper == "SCAFFOLDS" || params.mode_upper == "CDC_SCAFFOLDS" || inferred_mode == "SCAFFOLD_INFERRED") ? "--scaffolds" : "" 
     def shigapass = shigapass_detected ? "--shigapass" : ""
     def centar = centar_detected ? "--centar" : ""
     def updater = (params.mode_upper == "UPDATE_PHOENIX") ? "--updater" : "" 
