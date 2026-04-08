@@ -581,9 +581,9 @@ workflow CREATE_INPUT_CHANNELS {
                         .map{ meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info -> 
                             [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info ?: []] 
                         }
-                        .view { "BEFORE UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
+//                        .view { "BEFORE UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
                         .unique { it[0].project_id }
-                        .view { "AFTER UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
+//                        .view { "AFTER UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
 
             summary_files_ch.view { meta, excel, g_tsv, p_tsv, p_info, u_info ->
                 """
