@@ -48,28 +48,38 @@ def get_old_database_IDs(software_versions):
             old_gamma_ar_db = gamma_ar_data.get('Database', '')
             #gamma_ver = gamma_ar_data.get('gamma', '')
             #gamma_container = gamma_ar_data.get('gamma_container', '')
+        else:
+            old_gamma_ar_db = 'Missing'
         if 'GAMMA_PF' in yml_data:
             gamma_pf_data = yml_data['GAMMA_PF']
             # Extract values into variables
             old_gamma_pf_db = gamma_pf_data.get('Database', '')
             #gamma_ver = gamma_ar_data.get('gamma', '')
             #gamma_container = gamma_ar_data.get('gamma_container', '')
+        else:
+            old_gamma_pf_db = 'Missing'
         if 'MLST' in yml_data:
             mlst_data = yml_data['MLST']
             # Extract values into variables
             #mlst_ver = mlst_data.get('mlst', '')
             old_mlst_db = mlst_data.get('mlst_db', '')
             #mlst_container = mlst_data.get('mlst_container', '')
+        else:
+            old_mlst_db = 'Missing'
         if 'AMRFINDERPLUS_RUN' in yml_data:
             amrfinder_data = yml_data['AMRFINDERPLUS_RUN']
             # Extract values into variables
             #amrfinderplus_ver = amrfinder_data.get('amrfinderplus', '')
             old_amrfinderplus_db = amrfinder_data.get('amrfinderplus_db_version', '')
             #amrfinderplus_container = amrfinder_data.get('amrfinderplus_container', '')
+        else:
+            old_amrfinderplus_db = 'Missing'
         if 'Workflow' in yml_data:
             phoenix_data = yml_data['Workflow']
             # Extract values into variables
             phoenix_ver = phoenix_data.get('cdcgov/phoenix', '')
+        else:
+            phoenix_ver = 'Missing'
     return old_gamma_ar_db, old_mlst_db, old_amrfinderplus_db, phoenix_ver, old_gamma_pf_db
 
 def get_new_database_IDs(mlst_db, amrfinder_db):
