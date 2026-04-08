@@ -203,16 +203,23 @@ def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new
         tax_updated = old_tax + " --> " + new_tax
     # Convert date to string format
     date_string = date.today().strftime('%Y-%m-%d')
-    # Check if the file exists
-    if os.path.exists(sample_directory + "/"+ output):
-        # File exists, append a new line
+    
+    header = 'Date\tPhoenix_Version\tTaxa\tMLST_DB\tGAMMA_DB\tAMRFinderPlus_DB\tGAMMA_PF_DB\tAdded_GAMMA_AR_genes\tDropped/Changed_GAMMA_AR_genes\tAdded_NCBI_AR_genes\tDropped/Changed_NCBI_AR_genes\tAdded_PF_genes\tDropped/Changed_PF_genes\n'
+    new_line = date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + gamma_pf_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\t' + ','.join(added_pf_genes) + '\t' + ','.join(dropped_pf_genes) + '\n'
+
+    if os.path.exists(sample_directory + "/" + output):
+        # File exists, check if header matches
+        with open(output, 'r') as f:
+            existing_header = f.readline()
         with open(output, 'a') as f:
-            f.write(date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + ','.join(added_pf_genes) + '\t' + ','.join(dropped_pf_genes) + '\n')
+            if existing_header != header:
+                f.write('\n' + header)
+            f.write(new_line)
     else:
         # File doesn't exist, write header and new line
         with open(output, 'w') as f:
-            f.write('Date\tPhoenix_Version\tTaxa\tMLST_DB\tGAMMA_DB\tAMRFinderPlus_DB\tAdded_GAMMA_AR_genes\tDropped/Changed_GAMMA_AR_genes\tAdded_NCBI_AR_genes\tDropped/Changed_NCBI_AR_genes\tAdded_PF_genes\tDropped/Changed_PF_genes\n')
-            f.write(date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + ','.join(added_pf_genes) + '\t' + ','.join(dropped_pf_genes) +'\n')
+            f.write(header)
+            f.write(new_line)
 
 def compare_tax_files(old_tax_file, new_tax_file):
     # If tax files aren't provided, return empty strings
