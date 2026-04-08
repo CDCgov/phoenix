@@ -476,9 +476,9 @@ workflow UPDATE_PHOENIX_WF {
                 }
                 .map { meta, software, update_ids -> [[id:meta.id, project_id:meta.project_id], software] }
             , by: [[0][0],[0][1]], remainder: true)
-            .view { it -> log.info ">>> CHECKPOINT 14 after software join: ${it[0].id}" }
-            .view { it -> log.info ">>> PRE-FINAL-MAP size: ${it.size()} | types: ${it.collect { i -> i?.getClass()?.getSimpleName() }}" }
-            .view { it -> log.info ">>> PRE-PRE-FINAL-MAP full tuple: ${it}" }
+//            .view { it -> log.info ">>> CHECKPOINT 14 after software join: ${it[0].id}" }
+//            .view { it -> log.info ">>> PRE-FINAL-MAP size: ${it.size()} | types: ${it.collect { i -> i?.getClass()?.getSimpleName() }}" }
+//            .view { it -> log.info ">>> PRE-PRE-FINAL-MAP full tuple: ${it}" }
             .map { meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file, g_pf, gp, software ->
                 return [
                     meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file ?: [], g_pf, gp, software ?: []
