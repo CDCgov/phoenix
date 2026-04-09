@@ -28,22 +28,28 @@ class InputChannelUtils {
 
         
         if (mode_upper == "UPDATE_PHOENIX") {
-            def allFiles = (isList ? ar_file.flatten() : [ar_file])
-                .findAll { it != null }  // remove nulls
+            def allFiles = (isList ? ar_file.flatten() : [ar_file]).findAll { it != null }
 
+            // Define dated vs undated
             def datedFiles = allFiles.findAll { it.getName() =~ /\d{8}/ }
             def undatedFiles = allFiles.findAll { !(it.getName() =~ /\d{8}/) && it.getName() =~ /all_genes\.tsv$/ }
 
-            // For amrfinder, if no dated files exist fall back to undated file
-            def filesToProcess = (type == "amrfinder" && datedFiles.isEmpty()) ? undatedFiles : datedFiles
+            // Combine them, but prioritize dated files for the 'newest' check
+            // If it's amrfinder, we want to consider both in the pool
+            def filesToProcess = (type == "amrfinder") ? (datedFiles + undatedFiles) : datedFiles
 
             if (!filesToProcess) {
                 return [meta, null, forceUpdate as boolean]
             }
 
+            // Identify the file matching current DB
             def newestFile = filesToProcess.find { it.getName().contains(ardbDate) }
             def hasNewest = newestFile != null
-            def oldFiles = filesToProcess.findAll { !it.getName().contains(ardbDate) }
+            
+            // oldFiles should be everything EXCEPT the newest one
+            // We sort them so that the "next newest" is at the top if needed
+            def oldFiles = filesToProcess.findAll { newestFile == null || it != newestFile }
+                                        .sort { a, b -> b.getName() <=> a.getName() } // Basic sort to get most recent
 
             // For amrfinder, if all dated files are current and an undated file exists, use it as the old file
             if (type == "amrfinder" && oldFiles.isEmpty() && !undatedFiles.isEmpty()) {
