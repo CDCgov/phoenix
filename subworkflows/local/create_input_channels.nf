@@ -585,7 +585,7 @@ workflow CREATE_INPUT_CHANNELS {
                         .unique { it[0].project_id }
 //                        .view { "AFTER UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
 
-            summary_files_ch.view { meta, excel, g_tsv, p_tsv, p_info, u_info ->
+/*            summary_files_ch.view { meta, excel, g_tsv, p_tsv, p_info, u_info ->
                 """
                 DEBUG summary_files_ch:
                 Project ID: ${meta.project_id}
@@ -597,7 +597,7 @@ workflow CREATE_INPUT_CHANNELS {
                 -------------------------------------------
                 """
             }
-
+*/
             // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
                 summary_files_ch, Channel.value(false)
