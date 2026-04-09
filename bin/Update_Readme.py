@@ -105,90 +105,59 @@ def extract_gamma_gene_name(gene_string):
     return gene_string
 
 def compare_ar_files(old_file, new_file, file_type):
-    """Compare two AR files and identify added and dropped AR genes."""
-    # Read the files
     old_df = pd.read_csv(old_file, sep='\t')
     new_df = pd.read_csv(new_file, sep='\t')
-    # Determine gene column and extraction function based on file type
+
+    rename_map = {
+        'Gene_symbol': 'Element_symbol', 'Protein_identifier': 'Protein_id',
+        'Element_type': 'Type', 'Sequence_name': 'Element_name',
+        'HMM_id': 'HMM_accession',
+        '%_Coverage_of_reference_sequence': '%_Coverage_of_reference',
+        '%_Identity_to_reference_sequence': '%_Identity_to_reference',
+        'Element_subtype': 'Subtype',
+        'Accession_of_closest_sequence': 'Closest_reference_accession',
+        'Name_of_closest_sequence': 'Closest_reference_name'
+    }
+
     if file_type.lower() == "gamma":
         gene_column = "Gene"
         extract_gene_name = extract_gamma_gene_name
-        file_description = "gamma"
     elif file_type.lower() == "ncbi":
-        old_df.rename(columns={'Gene_symbol': 'Element_symbol', 'Protein_identifier': 'Protein_id', 'Element_type': 'Type', 'Sequence_name': 'Element_name', 'HMM_id': 'HMM_accession', '%_Coverage_of_reference_sequence': '%_Coverage_of_reference',
-                                '%_Identity_to_reference_sequence': '%_Identity_to_reference','Element_subtype': 'Subtype', 'Accession_of_closest_sequence': 'Closest_reference_accession', 'Name_of_closest_sequence': 'Closest_reference_name'}, inplace=True) 
+        old_df.rename(columns=rename_map, inplace=True)
+        new_df.rename(columns=rename_map, inplace=True)  # Fix: rename both
         gene_column = "Element_symbol"
-        extract_gene_name = lambda x: x  # NCBI files use the column value directly
-        file_description = "NCBI"
+        extract_gene_name = lambda x: x
     else:
         raise ValueError(f"Unsupported file_type: {file_type}. Must be 'gamma' or 'ncbi'")
-    added_ar_genes = []
-    dropped_ar_genes = []
-    
-    # Process old file genes
-    print(f"Processing old {file_description} file...")
-    for idx, old_row in old_df.iterrows():
-        old_gene_name = extract_gene_name(old_row[gene_column])
-        #print(f"Old gene: {old_gene_name}")
-        
-        # Find matching gene in new file
-        match_found = False
-        for new_idx, new_row in new_df.iterrows():
-            new_gene_name = extract_gene_name(new_row[gene_column])
-            
-            # Check if gene names match (substring matching)
-            if old_gene_name in new_gene_name or new_gene_name in old_gene_name:
-                match_found = True
-                # for debugging purposes, we can print that a match was found
-                #print(f"  Found match: {new_gene_name}")
-                
-                # Compare entire rows for differences (excluding gene column for exact comparison)
-                # We'll compare all columns except the gene column since we already know they might differ slightly
-                old_row_data = old_row.drop(gene_column).to_dict()
-                new_row_data = new_row.drop(gene_column).to_dict()
-                
-                if old_row_data != new_row_data:
-                    print(f"  Row differences found for {old_gene_name}")
-                    # Show the differences
-                    for col in old_row_data:
-                        if old_row_data[col] != new_row_data[col]:
-                            print(f"    {col}: {old_row_data[col]} -> {new_row_data[col]}")
-                    # Add to added_ar_genes if there are differences
-                    added_ar_genes.append(old_gene_name)
-                #else:
-                    #for debugging purposes, we can print that no differences were found
-                    #print(f"  No differences found for {old_gene_name}")
-                break
-        
-        if not match_found:
-            print(f"  No match found for {old_gene_name} - adding to dropped_ar_genes")
-            dropped_ar_genes.append(old_gene_name)
-    
-    # Process new file genes to find truly new genes
-    print(f"\nProcessing new {file_description} file for new genes...")
-    for idx, new_row in new_df.iterrows():
-        new_gene_name = extract_gene_name(new_row[gene_column])
-        # Check if this gene exists in old file
-        match_found = False
-        for old_idx, old_row in old_df.iterrows():
-            old_gene_name = extract_gene_name(old_row[gene_column])
-            # Check if gene names match (substring matching)
-            if new_gene_name in old_gene_name or old_gene_name in new_gene_name:
-                match_found = True
-                break
-        if not match_found:
-            print(f"New gene found: {new_gene_name} - adding to added_ar_genes")
-            added_ar_genes.append(new_gene_name)
-    
-    print(f"\nAdded AR Genes ({len(added_ar_genes)}):")
-    for gene in added_ar_genes:
-        print(f"  + {gene}")
 
-    print(f"\nDropped AR Genes ({len(dropped_ar_genes)}):")
-    for gene in dropped_ar_genes:
-        print(f"  - {gene}")
+    # Build dicts keyed by gene name for O(1) lookup
+    old_genes = {extract_gene_name(row[gene_column]): row.drop(gene_column).to_dict()
+                 for _, row in old_df.iterrows()}
+    new_genes = {extract_gene_name(row[gene_column]): row.drop(gene_column).to_dict()
+                 for _, row in new_df.iterrows()}
 
-    return added_ar_genes, dropped_ar_genes
+    added_or_changed = []
+    dropped = []
+
+    for gene, old_data in old_genes.items():
+        if gene not in new_genes:
+            print(f"Dropped: {gene}")
+            dropped.append(gene)
+        elif old_data != new_genes[gene]:
+            print(f"Changed: {gene}")
+            for col in old_data:
+                if old_data[col] != new_genes[gene].get(col):
+                    print(f"  {col}: {old_data[col]} -> {new_genes[gene][col]}")
+            added_or_changed.append(gene)
+
+    for gene in new_genes:
+        if gene not in old_genes:
+            print(f"Added: {gene}")
+            added_or_changed.append(gene)
+
+    print(f"\nAdded/Changed ({len(added_or_changed)}): {added_or_changed}")
+    print(f"Dropped ({len(dropped)}): {dropped}")
+    return added_or_changed, dropped
 
 def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new_amrfinderplus_db, output, phoenix_ver, sample_directory, current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes, new_tax, old_tax, old_pf, added_pf_genes, dropped_pf_genes, pf_db):
     Gamma_db_updated = old_gamma + " --> " + new_ar_db.strip()
@@ -203,20 +172,46 @@ def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new
         tax_updated = old_tax + " --> " + new_tax
     # Convert date to string format
     date_string = date.today().strftime('%Y-%m-%d')
-    
-    header = 'Date\tPhoenix_Version\tTaxa\tMLST_DB\tGAMMA_DB\tAMRFinderPlus_DB\tGAMMA_PF_DB\tAdded_GAMMA_AR_genes\tDropped/Changed_GAMMA_AR_genes\tAdded_NCBI_AR_genes\tDropped/Changed_NCBI_AR_genes\tAdded_PF_genes\tDropped/Changed_PF_genes\n'
+    # Check if the file exists
+
+    header = 'Date\tPhoenix_Version\tTaxa\tMLST_DB\tGAMMA_DB\tAMRFinderPlus_DB\tGAMMA_PF_DB\tAdded/Changed_GAMMA_AR_genes\tDropped_GAMMA_AR_genes\tAdded/Changed_NCBI_AR_genes\tDropped_NCBI_AR_genes\tAdded/Changed_PF_genes\tDropped_PF_genes\n'
+    canonical_cols = header.strip().split('\t')
+
     new_line = date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + gamma_pf_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\t' + ','.join(added_pf_genes) + '\t' + ','.join(dropped_pf_genes) + '\n'
 
+    # Build a single-row DataFrame for the new line explicitly by column name
+    new_row = pd.DataFrame([{
+        'Date':                          date_string,
+        'Phoenix_Version':               phx_versions,
+        'Taxa':                          tax_updated,
+        'MLST_DB':                       MLST_db_updated,
+        'GAMMA_DB':                      Gamma_db_updated,
+        'AMRFinderPlus_DB':              amrfinder_db_updated,
+        'GAMMA_PF_DB':                   gamma_pf_db_updated,
+        'Added/Changed_GAMMA_AR_genes':          ','.join(added_gamma_ar_genes),
+        'Dropped_GAMMA_AR_genes':','.join(dropped_gamma_ar_genes),
+        'Added/Changed_NCBI_AR_genes':           ','.join(added_ncbi_ar_genes),
+        'Dropped_NCBI_AR_genes': ','.join(dropped_ncbi_ar_genes),
+        'Added/Changed_PF_genes':                ','.join(added_pf_genes),
+        'Dropped_PF_genes':      ','.join(dropped_pf_genes),
+    }], dtype=str)
+
     if os.path.exists(sample_directory + "/" + output):
-        # File exists, check if header matches
-        with open(output, 'r') as f:
-            existing_header = f.readline()
-        with open(output, 'a') as f:
-            if existing_header != header:
-                f.write('\n' + header)
-            f.write(new_line)
+        # File exists — read, normalize columns, reindex, append new row, write back
+        df = pd.read_csv(output, sep='\t', dtype=str, on_bad_lines='warn', engine='python')
+
+        # Normalize column names to handle any case differences
+        col_map = {col: match for col in df.columns for match in canonical_cols if col.lower() == match.lower()}
+        df = df.rename(columns=col_map)
+
+        # Reindex to canonical columns, adding any missing ones as empty
+        df = df.reindex(columns=canonical_cols)
+
+        # Append new row and write back
+        df = pd.concat([df, new_row], ignore_index=True)
+        df.to_csv(output, sep='\t', index=False)
     else:
-        # File doesn't exist, write header and new line
+        # File doesn't exist — write header and new line directly
         with open(output, 'w') as f:
             f.write(header)
             f.write(new_line)
