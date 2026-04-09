@@ -124,7 +124,7 @@ while IFS= read -r line  || [ -n "$line" ]; do
 	arrLine=(${line})
 	# First element in array is the percent of reads identified as the current taxa
 	percent=${arrLine[0]}
-	# 3rd element is the taxon level classification
+	# 4th element is the taxon level classification
 	classification=${arrLine[3]}
 	# 2nd element is the actual read count identified as the current taxa
 	reads=${arrLine[1]}
@@ -147,7 +147,7 @@ while IFS= read -r line  || [ -n "$line" ]; do
 		classified_reads="${reads}"
 		root_percent="${percent}"
 	# Grabs all read info (identifier, reads and percent) for best domain level entry
-	elif [ "${classification}" = "D" ] && [ "${reads}" -gt "${domain_reads}" ]; then
+	elif [ "${classification}" = "R2" ] && [ "${reads}" -gt "${domain_reads}" ]; then
 		domain=${description^}
 		domain_percent=${percent}
 		domain_reads=${reads}
@@ -191,50 +191,13 @@ while IFS= read -r line  || [ -n "$line" ]; do
 	fi
 done < "${list_file}"
 
-#echo -e "Test: ${unclass_reads}-${unclass_percent}\n${classified_reads}-${root_percent}\n${domain_reads}-${domain_percent}-${domain_percent_total}\n${domain_reads}-${domain_percent}-${domain_percent_total}\n${phylum_reads}-${phylum_percent}-${phylum_percent_total}\n${class_reads}-${class_percent}-${class_percent_total}\n${order_reads}-${order_percent}-${order_percent_total}\n${family_reads}-${family_percent}-${family_percent_total}\n${genus_reads}-${genus_percent}-${genus_percent_total}\n${species_reads}-${species_percent}-${species_percent_total}\n"
 
-# ############ To BE determined as to exact naming conventions
-# if [[ "${list_file}" = *"/kraken2_asmbld_weighted/"* ]]; then
-# #	echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
-# 	total_percent=$(echo "${unclass_percent} + ${root_percent}" | bc)
-# 	unclass_percent=$(echo "${unclass_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# 	domain_percent=$(echo "${domain_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# 	phylum_percent=$(echo "${phylum_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# 	order_percent=$(echo "${order_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# 	class_percent=$(echo "${class_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# 	family_percent=$(echo "${family_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# 	genus_percent=$(echo "${genus_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# 	species_percent=$(echo "${species_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# #	echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
-# fi
-
-############################### NOT CURRENTLY IN USE ##########################################################################################
-
-# Calculate % of unclassified reads/contigs using sum of highest taxon level reads against total reads found in QC counts
-# Grabs total possible reads from preQC counts if kraken was used on reads (pre assembly)
 if [[ "${list_file}" = *"kraken2_trimd.summary.txt" ]]; then
 	echo "doing trimd"
-#	r1s=$(tail -n 1 "${read_file}" | cut -d'	' -f2)
-#	r2s=$(tail -n 1 "${read_file}" | cut -d'	' -f4)
-#	file_reads=$(( r1s + r2s ))
-	# Calculates the true count of unclassified reads/contigs rather than the reported value from kraken
-#	unclass_reads=$(( file_reads - classified_reads ))
-	# Calculates the percent of unclassified reads/contigs using the total possible reads
-#	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-# Grabs total possible bases from contigs in trimmed assembly (post assembly, using weighted kraken output)
 elif [[ "${list_file}" = *"kraken2_asmbld.summary.txt" ]]; then
 	echo "doing asmbld"
-	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
-#	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
-	# Calculates percent of classified reads as 100*classified reads/contigs
-#	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 elif [[ "${list_file}" = *".kraken2_wtasmbld.summary.txt" ]]; then
 	echo "doing weighted"
-	# Full length of assembly? Still not 100% sure how the kreport uses read lengths
-#	file_reads=$(head -n 14 "${read_file}" | tail -n1 | cut -d$'\t' -f2)
-	# Calculates percent of classified reads as 100*classified reads/contigs
-#	u_percent=$(echo "${unclass_reads} ${file_reads}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-	#echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
 	total_percent=$(echo "${unclass_percent} + ${root_percent}" | $bc_path)
 	unclass_percent=$(echo "${unclass_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	root_percent=$(echo "${root_percent} ${total_percent}" | awk '{ printf "%2.2f" , ($1*100)/$2 }' )
@@ -245,16 +208,11 @@ elif [[ "${list_file}" = *".kraken2_wtasmbld.summary.txt" ]]; then
 	family_percent=$(echo "${family_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	genus_percent=$(echo "${genus_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
 	species_percent=$(echo "${species_percent} ${total_percent}" | awk '{ printf "%2.2f", ($1*100)/$2 }' )
-	#echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
+#	 echo "${unclass_percent}:${root_percent}:${domain_percent}:${phylum_percent}:${class_percent}:${order_percent}:${family_percent}:${genus_percent}:${species_percent}"
 fi
 
-
-#Print out the best taxa for each level and its corresponding % of reads reported by kraken, % reads of total, taxon description
-# echo -e "U: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
-
-###With headers
+# Print out the best taxa for each level and its corresponding % of reads reported by kraken, % reads of total, taxon description
 echo -e "Taxon level	Match percentage	Taxa\nU: ${unclass_percent} unclassified\\nD: ${domain_percent} ${domain}\\nP: ${phylum_percent} ${phylum}\\nC: ${class_percent} ${class}\\nO: ${order_percent} ${order}\\nF: ${family_percent} ${family}\\nG: ${genus_percent} ${top_genus}\\ns: ${species_percent} ${species}" > "${sample_name}.summary.txt"
-
 
 #Script exited gracefully (unless something else inside failed)
 exit 0
