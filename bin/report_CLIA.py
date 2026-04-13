@@ -253,8 +253,8 @@ def clia_report(args):
         ar_tiers_df = get_ar_tiers(project_dir, matching_files[0])
         
         # Remove "other" column from ar_tiers_df if it exists
-        #if 'other' in ar_tiers_df.columns:
-        #    ar_tiers_df = ar_tiers_df.drop(columns=['other'])
+        if 'other' in ar_tiers_df.columns:
+            ar_tiers_df = ar_tiers_df.drop(columns=['other'])
         
         # Save AR tiers data to CSV for testing
         ar_tiers_csv_file = f"AR_tiers_output_{date.today().strftime('%Y-%m-%d')}.csv"
@@ -271,10 +271,7 @@ def clia_report(args):
         if 'ftsI_mutations' in ar_tiers_df.columns:
             ar_tiers_df['ftsI_mutations'] = ar_tiers_df['ftsI_mutations'].fillna('').replace('nan', '')
 
-        header_df = pd.read_csv(matching_files[0], sep='\t', nrows=0)
-        desired_taxa_columns = ['WGS_ID','Taxa_Source','ShigaPass_Organism','FastANI_Organism','BUSCO_%Match','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
-        taxa_columns_to_read = [col for col in desired_taxa_columns if col in header_df.columns]
-
+        taxa_columns_to_read = ['WGS_ID','Taxa_Source','ShigaPass_Organism','FastANI_Organism','BUSCO_%Match','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
         taxa_df = pd.read_csv(matching_files[0],sep='\t', usecols=taxa_columns_to_read)
         
         # Remove extra notes at the end of the file - same as get_griphin_df
