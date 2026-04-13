@@ -131,9 +131,11 @@ def convert_ecoli_to_shiga_or_update_shiga(shigapass_file, format_ani_file, ani_
     #step 1: update taxonomy file
     # Find species by checking file content once
     with open(shigapass_file) as f:
-            content = f.read()
-    for marker, sp in [("SS", "s:624\tsonnei\n"), ("SF1-5", "s:623\tflexneri\n"), ("SB", "s:621\tboydii\n"), ("SD", "s:622\tdysenteriae\n")]:
-        if marker in content:
+            second_line = f.readlines()[1]
+            Predicted_FlexSerotype = second_line.split(";")[7]
+    for marker, sp in [("SS", "s:624\tsonnei\n"), ("SF", "s:623\tflexneri\n"), ("SB", "s:621\tboydii\n"), ("SD", "s:622\tdysenteriae\n")]:
+        print(f"Checking for marker '{marker}' in tax file...")
+        if marker in Predicted_FlexSerotype:
             species = sp
             break
     # Write taxonomy file
@@ -141,7 +143,6 @@ def convert_ecoli_to_shiga_or_update_shiga(shigapass_file, format_ani_file, ani_
         f.write(f"ShigaPass\t{percent_id}\t{shigapass_file}\nK:2\tBacteria\nP:1224\tPseudomonadota\nC:1236\tGammaproteobacteria\nO:91347\tEnterobacterales\nF:543\tEnterobacteriaceae\nG:620\tShigella\n")
         if species:
             f.write(f"{species}\n")
-
 
 def convert_shiga_to_ecoli(format_ani_file, ani_file, tax_file):
     percent_id = update_ani_file(format_ani_file, ani_file, "Escherichia_coli")
@@ -214,8 +215,10 @@ if __name__ == '__main__':
     sample_id = args.shigapass_file.replace("_ShigaPass_summary.csv","")  # Extract sample ID from the file name
     diff_shiga, shiga_to_ecoli, ecoli_to_shiga = check_tax(args.shigapass_file, args.tax_file)
     if ecoli_to_shiga or diff_shiga:
+        print(f"{CRED}Taxa Identification changed from Escherichia coli to Shigella for sample {sample_id}.{CEND}")
         convert_ecoli_to_shiga_or_update_shiga(args.shigapass_file, args.format_ani_file, args.ani_file, args.tax_file)
     elif shiga_to_ecoli:
+        print(f"{CRED}Taxa Identification changed from Shigella to Escherichia coli for sample {sample_id}.{CEND}")
         convert_shiga_to_ecoli(args.format_ani_file, args.ani_file, args.tax_file)
     else:
         print("No updates needed for taxa identification.")

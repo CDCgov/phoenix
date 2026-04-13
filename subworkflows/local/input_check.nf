@@ -3,22 +3,45 @@
 //
 
 include { SAMPLESHEET_CHECK } from '../../modules/local/samplesheet_check'
+include { SAMPLESHEET_CHECK as SAMPLESHEET_CHECK_2 } from '../../modules/local/samplesheet_check'
 
 workflow INPUT_CHECK {
     take:
     samplesheet // file: /path/to/samplesheet.csv
+    update_griphin
 
     main:
-    SAMPLESHEET_CHECK ( samplesheet, true, false, false, [] ) // last [] used for --pipeline update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
-        .csv
-        .splitCsv ( header:true, sep:',' )
-        .map { create_fastq_channels(it) }
-        .set { reads }
+        if (update_griphin == false) {
+           reads = SAMPLESHEET_CHECK ( samplesheet, true, false, false, false, [] ) // last [] used for --pipeline update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
+                .csv.splitCsv ( header:true, sep:',' )
+                .map { create_fastq_channels(it) }
+            griphins = Channel.empty()
+        } else {
+            griphins = SAMPLESHEET_CHECK ( samplesheet, false, false, false, true, [] ).csv.splitCsv(header:false, sep:',')
+                .map{ row ->
+                    if (!file(row[0]).exists()) { 
+                        exit 1, "ERROR: Please check input samplesheet -> ${row[0]} does not exist!\n"
+                    } else { return row }}.collect()
+                .map{ rows ->
+                    if (rows.size() < 2) {
+                        exit 1, "ERROR: Need at least 2 rows in the griphin samplesheet, but found ${rows.size()}.\n"
+                    } else { return rows }}
+            reads = Channel.empty()
+        }
 
     emit:
-    reads                                     // channel: [ val(meta), [ reads ] ]
-    valid_samplesheet = SAMPLESHEET_CHECK.out.csv
-    versions          = SAMPLESHEET_CHECK.out.versions // channel: [ versions.yml ]
+        griphins          = griphins
+        reads             = reads                          // channel: [ val(meta), [ reads ] ]
+        valid_samplesheet = SAMPLESHEET_CHECK.out.csv
+        versions          = SAMPLESHEET_CHECK.out.versions // channel: [ versions.yml ]
+}
+
+def check_griphins_exist(List row) {
+    // Check if the file path exists
+    if (!file(row[0]).exists()) { 
+        exit 1, "ERROR: Please check input samplesheet -> ${row[0]} does not exist!\n"
+    }
+    return fileList
 }
 
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]

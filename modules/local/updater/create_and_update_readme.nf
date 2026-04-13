@@ -5,10 +5,20 @@ process CREATE_AND_UPDATE_README {
     container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
-    tuple val(meta), path(directory), path(pipeline_info), path(readme), path(old_gamma_ar), path(new_gamma_ar), path(old_ncbi_ar), path(new_ncbi_ar), path(old_tax), path(new_tax)
+    tuple val(meta), path(directory), path(pipeline_info), path(readme), 
+      path(old_gamma_ar, stageAs: 'old_gamma_ar/*'), 
+      path(new_gamma_ar, stageAs: 'new_gamma_ar/*'), 
+      path(old_ncbi_ar,  stageAs: 'old_ncbi_ar/*'), 
+      path(new_ncbi_ar,  stageAs: 'new_ncbi_ar/*'), 
+      path(old_tax,      stageAs: 'old_tax/*'), 
+      path(new_tax,      stageAs: 'new_tax/*'), 
+      path(old_pf,       stageAs: 'old_pf/*'), 
+      path(new_pf,       stageAs: 'new_pf/*'),
+      path(old_software_versions)
     val(current_phx_version)
     path(mlst_db)
     path(ar_db)
+    path(pf_db)
     path(amrfinder_db)
 
     output:
@@ -25,12 +35,13 @@ process CREATE_AND_UPDATE_README {
     // allowing for some optional parameters for -entry SCAFFOLDS/CDC_SCAFFOLDS nothing should be passed.
     def old_tax_file = old_tax ? "--old_tax ${old_tax}" : ""
     def new_tax_file = new_tax ? "--new_tax ${new_tax}" : ""
+    def old_updater_software_versions = old_software_versions ? "--old_software_version_file ${old_software_versions}" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}Update_Readme.py --mlst_db ${mlst_db} --amrfinder_db ${amrfinder_db} --ar_db ${ar_db} --old_gamma ${old_gamma_ar} --new_gamma ${new_gamma_ar} \\
-        --old_ncbi ${old_ncbi_ar} --new_ncbi ${new_ncbi_ar} ${old_tax_file} ${new_tax_file} \\
-        -p ${pipeline_info} -d ${directory}/${prefix} -v ${current_phx_version} -o ${prefix}_updater_log.tsv
+        --old_ncbi ${old_ncbi_ar} --new_ncbi ${new_ncbi_ar} ${old_tax_file} ${new_tax_file} --old_pf ${old_pf} --new_pf ${new_pf} \\
+        -p ${pipeline_info} -d ${directory}/${prefix} -v ${current_phx_version} -o ${prefix}_updater_log.tsv --pf_db ${pf_db} ${old_updater_software_versions}
 
     #move to output location for process to complete
     mkdir edited/

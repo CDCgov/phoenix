@@ -37,6 +37,7 @@ def parseArgs(args=None):
     parser.add_argument('-e', '--extended_qc', dest="extended_qc", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
     parser.add_argument('-o', '--out', required=True, help='output file name')
     parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
+    parser.add_argument('--old_phoenix_version', default="Unknown", required=False, dest='old_phoenix_version', help='The version of phx used to produce originalGRiPHin_Summary row for the sample. used during updater')
     parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
     return parser.parse_args()
 
@@ -304,8 +305,11 @@ def Get_Taxa_Source(taxa_file, fastani, shigapass):
                 elif line.split(";")[7] == 'EIEC':
                     shigapass_organism = line.split(";")[7].strip()
                 else:
-                    shigapass_dict = dict([("SS", "Shigella sonnei"), ("SF1-5", "Shigella flexneri"), ("SB", "Shigella boydii"), ("SD", "Shigella dysenteriae")])
-                    shigapass_organism = shigapass_dict.get(line.split(";")[7].strip())
+                    for marker, sp in [("SS", "sonnei"), ("SF", "flexneri"), ("SB", "boydii"), ("SD", "dysenteriae")]:
+                        if marker in line.split(";")[7].strip():
+                            shigapass_organism = "Shigella " + sp
+                    #shigapass_dict = dict([("SS", "Shigella sonnei"), ("SF", "Shigella flexneri"), ("SB", "Shigella boydii"), ("SD", "Shigella dysenteriae")])
+                    #shigapass_organism = shigapass_dict.get(line.split(";")[7].strip())
     else:
         shigapass_organism = ""
     return final_taxa, taxa_source, fastani_percent_match, fastani_organism, fastani_coverage, shigapass_organism
@@ -356,7 +360,7 @@ def Get_BUSCO_Gene_Count(stats):
     busco_file = True
     return busco_line, lineage, busco_file
 
-def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, wtasmbld_kraken, amr_file, pf_file, extended_qc, shigapass, phx_version):
+def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, wtasmbld_kraken, amr_file, pf_file, extended_qc, shigapass, phx_version, old_phoenix_version):
     try:
         plasmid_marker_list = Get_Plasmids(pf_file)
     except:
@@ -471,7 +475,12 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
         read_match = Get_Kraken_reads(trimd_kraken)
     except:
         read_match = "Unknown"
+    if old_phoenix_version == "Unknown":
+        phx_version = phx_version
+    else:
+        phx_version = "BASE: "+str(old_phoenix_version) + "; " + "UPDATED: "+str(phx_version)
     if busco_file == None and extended_qc == False:
+        print(shigapass_organism)
         Line = ID  + '\t' + phx_version + '\t' + QC_Outcome + '\t' + warning_count + '\t'  + Coverage + '\t' + Genome_Length + '\t' + Ratio + '\t' + Contigs + '\t' + GC + '\t' + final_taxa + '\t' + taxa_source + '\t' + fastani_organism + '\t' + fastani_percent_match + '\t' + fastani_coverage + '\t' + shigapass_organism + '\t' + read_match + '\t' + scaffold_match + '\t' + MLST_scheme_1 + '\t' + MLST_type_1 + '\t' + MLST_scheme_2 + '\t' + MLST_type_2 + '\t' + Bla + '\t' + Non_Bla + '\t' + point_mutations_list + '\t' + HV + '\t' + plasmid_marker_list + '\t' + Reason
         busco = False
     elif busco_file is not None or extended_qc == True:
@@ -479,9 +488,9 @@ def Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast
         busco = True
     return Line, busco, fastani
 
-def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, wtasmbld_kraken, mutations, pf_file, extended_qc, shigapass, phx_version):
+def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, out_file, stats, trimd_kraken, wtasmbld_kraken, mutations, pf_file, extended_qc, shigapass, phx_version, old_phx_version):
     with open(out_file, 'w') as f:
-        Line, busco, fastani = Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, wtasmbld_kraken, mutations, pf_file, extended_qc, shigapass, phx_version)
+        Line, busco, fastani = Isolate_Line(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, quast_file, gamma_ar, gamma_hv, stats, trimd_kraken, wtasmbld_kraken, mutations, pf_file, extended_qc, shigapass, phx_version, old_phx_version)
         if busco == True:
             f.write('WGS_ID\tPHX_Version\tAuto_QC_Outcome\tWarning_Count\tEstimated_Coverage\tGenome_Length\tAssembly_Ratio_(STDev)\t#_of_Scaffolds_>500bp\tGC_%\tBUSCO\tBUSCO_DB\tFinal_Taxa_ID\tTaxa_Source\tFastANI_Organism\tFastANI_%ID\tFastANI_%Coverage\tShigaPass_Organism\tKraken2_Trimd\tKraken2_Weighted\tMLST_Scheme_1\tMLST_1\tMLST_Scheme_2\tMLST_2\tGAMMA_Beta_Lactam_Resistance_Genes\tGAMMA_Other_AR_Genes\tAMRFinder_Point_Mutations\tHypervirulence_Genes\tPlasmid_Incompatibility_Replicons\tAuto_QC_Failure_Reason\n')
         else:
@@ -491,7 +500,7 @@ def Isolate_Line_File(Taxa, fastani, ID, trimmed_counts, ratio_file, MLST_file, 
 def main():
     args = parseArgs()
     # if the output file already exists remove it
-    Isolate_Line_File(args.taxa, args.fastani, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.wtasmbld_kraken, args.mutations, args.pf, args.extended_qc, args.shigapass, args.phx_version)
+    Isolate_Line_File(args.taxa, args.fastani, args.name, args.trimmed, args.ratio, args.mlst, args.quast, args.ar, args.vir, args.out, args.stats, args.trimd_kraken, args.wtasmbld_kraken, args.mutations, args.pf, args.extended_qc, args.shigapass, args.phx_version, args.old_phoenix_version)
 
 if __name__ == '__main__':
     main()

@@ -18,11 +18,14 @@ process GRIPHIN {
     val(filter_var) // needed for species specific mode
     val(dont_publish)
     path(blind_list) // -b (mostly needed for PhyloPHoenix runs)
+    val(old_phx_version)  // ADD THIS - version string instead of file
+    val(inferred_mode) // inferred mode from previous run for use with updater
 
     output:
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"),                         emit: griphin_report
     tuple path("full_path_file.txt"), path("*_GRiPHin*.xlsx"), path("*_GRiPHin*.tsv"), emit: griphins
     path("*_GRiPHin*.tsv"),                                                            emit: griphin_tsv_report
+    path("*_GRiPHin*.xlsx"),                                                           emit: griphin_excel_report
     path("Directory_samplesheet.csv"), optional:true,                                  emit: converted_samplesheet //the only time this isn't made is with --centar with --samplesheet
     path("versions.yml"),                                                              emit: versions
 
@@ -30,9 +33,22 @@ process GRIPHIN {
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
+    // Find the pipeline_info file from the input path list
+    // 1. Flatten the list and take the first match explicitly
+    //def old_software_file = [griphin_files].flatten().find { it.name.contains("software_versions.yml") }
+    // 2. Ensure we convert the name to a String explicitly
+    def old_software_arg = (old_phx_version && old_phx_version != "" && old_phx_version != "null") ? 
+    "--old_software_version ${old_phx_version}" : ""
+
+    // Debug output
+    def debug_info = """
+        echo "DEBUG: old_phx_version = '${old_phx_version}'" >&2
+        echo "DEBUG: old_software_arg = '${old_software_arg}'" >&2
+    """
+
     def blind_names   = blind_list ? "--blind_list ${blind_list}" : ""
     def phoenix_mode = phx_mode ? "" : "--phoenix"
-    def scaffolds = (params.mode_upper == "SCAFFOLDS" || params.mode_upper == "CDC_SCAFFOLDS") ? "--scaffolds" : "" 
+    def scaffolds = (params.mode_upper == "SCAFFOLDS" || params.mode_upper == "CDC_SCAFFOLDS" || inferred_mode == "SCAFFOLD_INFERRED") ? "--scaffolds" : "" 
     def shigapass = shigapass_detected ? "--shigapass" : ""
     def centar = centar_detected ? "--centar" : ""
     def updater = (params.mode_upper == "UPDATE_PHOENIX") ? "--updater" : "" 
@@ -47,6 +63,7 @@ process GRIPHIN {
         metas.collect { "mv ${it.filenames.join(' ')} ${prefix}/${it.id}" }
     ].flatten().join(" && ")
     """
+    ${debug_info}
     ${stage_files}
 
     # Get full path to outdir for parent folder and data location columns in griphin
@@ -56,7 +73,7 @@ process GRIPHIN {
     echo \$full_path > full_path_file.txt
 
     ${ica}GRiPHin.py -d \$full_path -a $db --output ${output_prefix} --bldb ${bldb} --phx_version ${phx_version} ${filter}\
-        --coverage ${coverage} ${phoenix_mode} ${shigapass} ${centar} ${scaffolds} --samplesheet ${original_samplesheet} ${updater} ${blind_names}
+        --coverage ${coverage} ${phoenix_mode} ${shigapass} ${centar} ${scaffolds} --samplesheet ${original_samplesheet} ${updater} ${blind_names} ${old_software_arg}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

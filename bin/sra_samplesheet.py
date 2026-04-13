@@ -42,11 +42,15 @@ def get_metadata():
     for filename in glob.glob('*_sra_metadata.csv'):
         #get sra number aka the run 
         sra_number = filename.replace("_sra_metadata.csv","")
-        df = pd.read_csv(filename, header=0, dtype='str')
-        # when there are duplicate samples names this can mean there is multiple runs that show up in the metadata, but we only want the one row
-        df = df.loc[df['Run'] == sra_number]
-        df_less = df[['Run','SampleName']] # reduce dataframe to only the information we need
+        try:
+            df = pd.read_csv(filename, header=0, dtype='str')
+            # when there are duplicate samples names this can mean there is multiple runs that show up in the metadata, but we only want the one row
+            df = df.loc[df['Run'] == sra_number]
+            df_less = df[['Run','SampleName']] # reduce dataframe to only the information we need
+        except:
+            df_less[['Run','SampleName']] = sra_number
         metadata_df = pd.concat([metadata_df, df_less], axis=0, ignore_index=True)
+    print(metadata_df)
     duplicates = metadata_df['SampleName'].duplicated().any()
     return metadata_df,duplicates
 

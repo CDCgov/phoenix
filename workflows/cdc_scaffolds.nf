@@ -549,7 +549,7 @@ workflow SCAFFOLDS_EXQC {
             griphin_inputs_ch.map { it.files }.collect(),
             outdir_path,
             workflow.manifest.version,
-            params.coverage, true, shigapass_var, centar_var, params.bldb, false, false, []
+            params.coverage, true, shigapass_var, centar_var, params.bldb, false, false, [], "", "" //Add empty string to show there is no old_version_info, and a second to show it did not need to infer old run type (for updater only)
         )
         ch_versions = ch_versions.mix(GRIPHIN.out.versions)
 

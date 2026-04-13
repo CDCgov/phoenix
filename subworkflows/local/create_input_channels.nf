@@ -15,6 +15,11 @@ include { CREATE_FAIRY_FILE     }                           from '../../modules/
 def orange = '\033[38;5;208m'
 def reset = '\033[0m'
 
+// Add this outside your workflow block
+def check_update(meta, file, db, type, mode, needsUpdate = false) {
+    return InputChannelUtils.previous_updater_check(meta, file, db, type, mode, needsUpdate)
+}
+
 workflow CREATE_INPUT_CHANNELS {
     take:
         indir        // params.indir
@@ -22,6 +27,7 @@ workflow CREATE_INPUT_CHANNELS {
         centar       // true when centar is run
 
     main:
+
         ch_versions = Channel.empty() // Used to collect the software versions
 
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
@@ -33,36 +39,34 @@ workflow CREATE_INPUT_CHANNELS {
                     .findAll { it.isDirectory() && it.listFiles().any{ file -> file.name.endsWith('_summaryline.tsv') } }}.flatten().map{dir -> dir.getName().replaceFirst(pattern, '').replaceFirst("/", '')}.collect() // Filter only directories and Filter out excluded directories
 
             //get list of all samples in the folder - just using the file_integrity file to check that samples that failed are removed from pipeline
-            def file_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
+            def file_integrity_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
             // create a channel with the ids of the samples that failed the file integrity checks to print a warning for the user
-            failed_fairy_ids_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_failed_samples(it)}.filter{ it != null }.ifEmpty([])
+            failed_fairy_ids_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> InputChannelUtils.get_failed_samples(it)}.filter{ it != null }.ifEmpty([])
             failed_fairy_ids_ch.subscribe { result -> if (!result.isEmpty()) { def flat_results = result.flatten().unique().collect() // Check if the channel is empty and print warning for user as this is required for the pipeline
                 println("${orange}Warning: The following files failed file integrity checks by phoenix and will not be included in this analysis ${flat_results}. ${reset}")}}
 
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
-            passed_id_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_only_passing_samples(it)}.filter{ it != null }.ifEmpty([])
+            passed_id_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> InputChannelUtils.get_only_passing_samples(it)}.filter{ it != null }.ifEmpty([])
 
             // find the samples that do not have a fairy file and create them
             no_fairy_file_id_ch = passed_id_ch.toList().combine(dir_names_ch.toList()).combine(failed_fairy_ids_ch.toList()).map{ passed_ids, dir_names, failed_ids -> dir_names - failed_ids - passed_ids}.ifEmpty([])
 
             // print out the samples that did not have a fairy file yet - we will also add in files that have the v2.1.1 style of fairy file
-            old_style_fairy_file_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> get_old_fairy_samples(it)}.filter{ it != null }.ifEmpty([])
+            old_style_fairy_file_ch = Channel.fromPath(file_integrity_glob).collect().map{ it -> InputChannelUtils.get_old_fairy_samples(it)}.filter{ it != null }.ifEmpty([])
             no_fairy_file_id_ch.combine(old_style_fairy_file_ch.toList()).subscribe { result -> if (!result.isEmpty()) { def flat_results = result.flatten().unique().collect() // Check if the channel is empty and print warning for user as this is required for the pipeline
                 println("${orange}Warning: There are no files in */file_integrity/*_summary.txt for ${flat_results}. This/These file(s) is required so we will make it.${reset}")}}
 
             // Fallback to dir_names_ch if passed_id_channel is empty -- need to get all sample ids
-            //passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().unique().collect()
             passed_id_channel = passed_id_ch.concat(dir_names_ch).flatten().flatten().unique().collect().toList()
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
             // Collect all ids and combine with indir -- issue here!!
-            isolates_that_need_file_integrity_ch = indir.map{ it -> get_ids(it) }.flatten().combine(indir).combine(no_fairy_file_id_ch.toList()).map{ tuple -> def (old_meta, indir, no_fairy_file_id) = tuple  // Safely destructure the combined tuple
+            isolates_that_need_file_integrity_ch = indir.map{ it -> InputChannelUtils.get_ids(it) }.flatten().combine(indir).combine(no_fairy_file_id_ch.toList()).map{ tuple -> def (old_meta, indir, no_fairy_file_id) = tuple  // Safely destructure the combined tuple
                 def meta = [:]
                 meta.id = old_meta
                 def cleanPath = indir.toString().startsWith('./') ? indir.toString()[2..-1] : indir.toString()
                 def cleanerPath = cleanPath.toString().split('/')[-1]
                 meta.project_id = cleanerPath
-                //def cleaned_path = new File(cleanerPath).getAbsolutePath()
                 def cleaned_path = new File(indir.toString()).getAbsolutePath()
                 def file_integrity_exists = !(no_fairy_file_id ?: []).contains(meta.id) // Check if the sample is in has no fairy file
                 return [ meta, cleaned_path, file_integrity_exists ]}.filter{ meta, dir, file_integrity_exists -> file_integrity_exists == false } // Filter out samples that already have a fairy file
@@ -74,10 +78,10 @@ workflow CREATE_INPUT_CHANNELS {
             ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
 
             // get file_integrity file for MLST updating
-            def scaffolds_integrity_glob = append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
+            def scaffolds_integrity_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/file_integrity/*_summary.txt')
            //create file_integrity file channel with meta information -- need to pass to DO_MLST subworkflow
             glob_file_integrity_ch = Channel.fromPath(scaffolds_integrity_glob) // use created regrex to get samples
-                    .map{ it -> create_meta(it, "_summary.txt", params.indir.toString(), true)}
+                    .map{ it -> InputChannelUtils.create_meta(it, "_summary.txt", params.indir.toString(), true)}
                     .combine(passed_id_channel).filter{ meta, file_integrity, passed_id_channel -> passed_id_channel.contains(meta.id)} // check if passed_id_channel contains the id value from the file_integrity file
                     .map{ meta, file_integrity, passed_id_channel -> [meta, file_integrity]} //remove id_channel from output
 
@@ -85,12 +89,12 @@ workflow CREATE_INPUT_CHANNELS {
             file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(glob_file_integrity_ch.ifEmpty([])).flatten().unique().buffer(size:2)
 
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
-            all_passed_id_channel = file_integrity_ch.map{meta, dir -> dir}.collect().map{ it -> get_only_passing_samples(it)}.filter { it != null }.toList()
+            all_passed_id_channel = file_integrity_ch.map{meta, dir -> dir}.collect().map{ it -> InputChannelUtils.get_only_passing_samples(it)}.filter { it != null }.toList()
 
             /////////////////////////// COLLECT ISOLATE LEVEL FILES ///////////////////////////////
 
-            //make relative path full and get 
-            directory_ch = all_passed_id_channel.flatten().combine(indir.map{ dir -> 
+            //make relative path full and get
+            directory_ch = all_passed_id_channel.flatten().combine(indir.map{ dir ->
                 def cleanPath = dir.toString().startsWith('./') ? dir.toString()[2..-1] : dir.toString()
                 return new File(cleanPath.toString()).getAbsolutePath()})
                 .map{ id, dir ->
@@ -99,463 +103,574 @@ workflow CREATE_INPUT_CHANNELS {
                         meta.project_id = dir.toString().split('/')[-1]
                         return [meta, dir]} //even though there is only one directory we have to add this so the code works for indir and input
 
-            // Get reads -- tuple -> def (old_meta, indir, passed_ids) = tuple
-            def r1_glob = append_to_path(params.indir.toString(),'*/fastp_trimd/*_1.trim.fastq.gz')
-            def r2_glob = append_to_path(params.indir.toString(),'*/fastp_trimd/*_2.trim.fastq.gz')
+            // Get reads
+            def r1_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/fastp_trimd/*_1.trim.fastq.gz')
+            def r2_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/fastp_trimd/*_2.trim.fastq.gz')
             //create reads channel with meta information
-            filtered_r1_reads_ch = Channel.fromPath(r1_glob).map{ it -> create_meta(it, "_1.trim.fastq.gz", params.indir.toString(),false)}
+            filtered_r1_reads_ch = Channel.fromPath(r1_glob).map{ it -> InputChannelUtils.create_meta(it, "_1.trim.fastq.gz", params.indir.toString(),false)}
                 .combine(all_passed_id_channel).filter{ meta, read_1, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}
                 .map{ meta, read_1, all_passed_id_channel -> [meta, read_1]} //remove all_passed_id_channel from output
-            filtered_r2_reads_ch = Channel.fromPath(r2_glob).map{ it -> create_meta(it, "_2.trim.fastq.gz", params.indir.toString(),false)}
+            filtered_r2_reads_ch = Channel.fromPath(r2_glob).map{ it -> InputChannelUtils.create_meta(it, "_2.trim.fastq.gz", params.indir.toString(),false)}
                 .combine(all_passed_id_channel).filter{ meta, read_2, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}
                 .map{ meta, read_2, all_passed_id_channel -> [meta, read_2]} //remove all_passed_id_channel from output
             // combine reads into one channel
             combined_reads_ch = filtered_r1_reads_ch.join(filtered_r2_reads_ch, by: [0]).map{ meta, read_1, read_2 -> [meta, [read_1, read_2]]}
 
             // Get scaffolds
-            def scaffolds_glob = append_to_path(params.indir.toString(),'*/assembly/*.filtered.scaffolds.fa.gz')
-            //create scaffolds channel with meta information -- annoying, but you have to keep this in the brackets instead of having it once outside.
-            scaffolds_ch = Channel.fromPath(scaffolds_glob).map{ it -> create_meta(it, ".filtered.scaffolds.fa.gz", params.indir.toString(),false)} // use created regrex to get samples
+            def scaffolds_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/assembly/*.filtered.scaffolds.fa.gz')
+            //create scaffolds channel with meta information
+            scaffolds_ch = Channel.fromPath(scaffolds_glob).map{ it -> InputChannelUtils.create_meta(it, ".filtered.scaffolds.fa.gz", params.indir.toString(),false)} // use created regrex to get samples
             // Checking regrex has correct extension
-            filtered_scaffolds_ch = scaffolds_ch.map{ it -> check_scaffolds(it) } // create meta for sample
+            filtered_scaffolds_ch = scaffolds_ch.map{ it -> InputChannelUtils.check_scaffolds(it) } // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, scaffolds, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} // Filter other channels based on meta.id
                 .map{ meta, scaffolds, all_passed_id_channel -> [meta, scaffolds]} //remove all_passed_id_channel from output
 
             // Get renamed scaffolds
-            def renamed_scaffolds_glob = append_to_path(params.indir.toString(),'*/assembly/*.renamed.scaffolds.fa.gz')
-            //create scaffolds channel with meta information -- annoying, but you have to keep this in the brackets instead of having it once outside.
-            renamed_scaffolds_ch = Channel.fromPath(renamed_scaffolds_glob).map{ it -> create_meta(it, ".renamed.scaffolds.fa.gz", params.indir.toString(),false)} // use created regrex to get samples
+            def renamed_scaffolds_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/assembly/*.renamed.scaffolds.fa.gz')
+            //create scaffolds channel with meta information
+            renamed_scaffolds_ch = Channel.fromPath(renamed_scaffolds_glob).map{ it -> InputChannelUtils.create_meta(it, ".renamed.scaffolds.fa.gz", params.indir.toString(),false)} // use created regrex to get samples
             // Checking regrex has correct extension
-            filtered_renamed_scaffolds_ch = renamed_scaffolds_ch.map{ it -> check_scaffolds(it) } // create meta for sample
+            filtered_renamed_scaffolds_ch = renamed_scaffolds_ch.map{ it -> InputChannelUtils.check_scaffolds(it) } // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, renamed_scaffolds, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} // Filter other channels based on meta.id
                 .map{ meta, renamed_scaffolds, all_passed_id_channel -> [meta, renamed_scaffolds]} //remove all_passed_id_channel from output
 
             // get .tax files for MLST updating
-            def taxa_glob = append_to_path(params.indir.toString(),'*/*.tax')
-            //create .tax file channel with meta information 
+            def taxa_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*.tax')
+            //create .tax file channel with meta information
             filtered_taxonomy_ch = Channel.fromPath(taxa_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".tax", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".tax", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, taxa, all_passed_id_channel-> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, taxa, all_passed_id_channel -> [meta, taxa]} //remove all_passed_id_channel from output
 
             // get _raw_read_counts.txt files
-            def raw_stats_glob = append_to_path(params.indir.toString(),'*/raw_stats/*_raw_read_counts.txt')
-            //create .tax file channel with meta information 
+            def raw_stats_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/raw_stats/*_raw_read_counts.txt')
+            //create .tax file channel with meta information
             filtered_raw_stats_ch = Channel.fromPath(raw_stats_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_raw_read_counts.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_raw_read_counts.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, raw_stats, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, raw_stats, all_passed_id_channel -> [meta, raw_stats]} //remove all_passed_id_channel from output
 
             // get .tax files for MLST updating
-            def trimmed_stats_glob = append_to_path(params.indir.toString(),'*/qc_stats/*_trimmed_read_counts.txt')
-            //create .tax file channel with meta information 
+            def trimmed_stats_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/qc_stats/*_trimmed_read_counts.txt')
+            //create .tax file channel with meta information
             filtered_trimmed_stats_ch = Channel.fromPath(trimmed_stats_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_trimmed_read_counts.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_trimmed_read_counts.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, trimmed_stats, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, trimmed_stats, all_passed_id_channel -> [meta, trimmed_stats]} //remove all_passed_id_channel from output
 
             // get *.top_kraken_hit.txt files for MLST updating
-            def trimd_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.top_kraken_hit.txt')
-            //create *.top_kraken_hit.txt file channel with meta information 
+            def trimd_kraken_bh_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.top_kraken_hit.txt')
+            //create *.top_kraken_hit.txt file channel with meta information
             filtered_trimd_kraken_bh_ch = Channel.fromPath(trimd_kraken_bh_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".kraken2_trimd.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".kraken2_trimd.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
 
             // get *.summary.txt files
-            def trimd_kraken_report_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.summary.txt')
-            //create *.summary.txt file channel with meta information 
+            def trimd_kraken_report_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_trimd/*.kraken2_trimd.summary.txt')
+            //create *.summary.txt file channel with meta information
             filtered_trimd_kraken_report_ch = Channel.fromPath(trimd_kraken_report_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".kraken2_trimd.summary.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".kraken2_trimd.summary.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_report, all_passed_id_channel -> [meta, kraken_report]} //remove all_passed_id_channel from output
 
             // get *_trimd.html files
-            def trimd_kraken_krona_glob = append_to_path(params.indir.toString(),'*/kraken2_trimd/krona/*_trimd.html')
-            //create *_trimd.html file channel with meta information 
+            def trimd_kraken_krona_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_trimd/krona/*_trimd.html')
+            //create *_trimd.html file channel with meta information
             filtered_trimd_krona_ch = Channel.fromPath(trimd_kraken_krona_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_trimd.html", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_trimd.html", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, krona, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, krona, all_passed_id_channel -> [meta, krona]} //remove all_passed_id_channel from output
 
-            // get *.top_kraken_hit.txt 
-            def asmbld_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld/*.kraken2_asmbld.top_kraken_hit.txt')
-            //create *.top_kraken_hit.txt file channel with meta information 
+            // get *.top_kraken_hit.txt
+            def asmbld_kraken_bh_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_asmbld/*.kraken2_asmbld.top_kraken_hit.txt')
+            //create *.top_kraken_hit.txt file channel with meta information
             filtered_asmbld_kraken_bh_ch = Channel.fromPath(asmbld_kraken_bh_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".kraken2_asmbld.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".kraken2_asmbld.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
 
             // get *.summary.txt files
-            def asmbld_kraken_report_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld/*.kraken2_asmbld.summary.txt')
-            //create *.summary.txt file channel with meta information 
+            def asmbld_kraken_report_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_asmbld/*.kraken2_asmbld.summary.txt')
+            //create *.summary.txt file channel with meta information
             filtered_asmbld_kraken_report_ch = Channel.fromPath(asmbld_kraken_report_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".kraken2_asmbld.summary.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".kraken2_asmbld.summary.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_report, all_passed_id_channel -> [meta, kraken_report]} //remove all_passed_id_channel from output
-        
+
             // get *_asmbld.html files
-            def asmbld_kraken_krona_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld/krona/*_asmbld.html')
-            //create *_asmbld.html file channel with meta information 
+            def asmbld_kraken_krona_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_asmbld/krona/*_asmbld.html')
+            //create *_asmbld.html file channel with meta information
             filtered_asmbld_krona_ch = Channel.fromPath(asmbld_kraken_krona_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_asmbld.html", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_asmbld.html", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, krona, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, krona, all_passed_id_channel -> [meta, krona]} //remove all_passed_id_channel from output
 
             // get short_summary.specific.*.<sample_id>.filtered.scaffolds.fa.txt
-            def busco_glob = append_to_path(params.indir.toString(),'*/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt')
+            def busco_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/BUSCO/short_summary.specific.*.filtered.scaffolds.fa.txt')
             Channel.fromPath(busco_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".filtered.scaffolds.fa.txt", params.indir.toString(),false)}
-            //create short_summary.specific.*.<sample_id>.filtered.scaffolds.fa.txt file channel with meta information 
+                .map{ it -> InputChannelUtils.create_meta(it, ".filtered.scaffolds.fa.txt", params.indir.toString(),false)}
+            //create short_summary.specific.*.<sample_id>.filtered.scaffolds.fa.txt file channel with meta information
             filtered_busco_short_summary_ch = Channel.fromPath(busco_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".filtered.scaffolds.fa.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".filtered.scaffolds.fa.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, short_summary, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, short_summary, all_passed_id_channel -> [meta, short_summary]} //remove all_passed_id_channel from output
 
-            // get *.top_kraken_hit.txt 
-            def wtasmbld_kraken_bh_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.top_kraken_hit.txt')
-            //create *.top_kraken_hit.txt file channel with meta information 
+            // get *.top_kraken_hit.txt
+            def wtasmbld_kraken_bh_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.top_kraken_hit.txt')
+            //create *.top_kraken_hit.txt file channel with meta information
             filtered_wtasmbld_kraken_bh_ch = Channel.fromPath(wtasmbld_kraken_bh_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".kraken2_wtasmbld.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".kraken2_wtasmbld.top_kraken_hit.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_bh, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_bh, all_passed_id_channel -> [meta, kraken_bh]} //remove all_passed_id_channel from output
 
             // get *.summary.txt files
-            def wtasmbld_kraken_report_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.summary.txt')
-            //create *.summary.txt file channel with meta information 
+            def wtasmbld_kraken_report_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/*.kraken2_wtasmbld.summary.txt')
+            //create *.summary.txt file channel with meta information
             filtered_wtasmbld_kraken_report_ch = Channel.fromPath(wtasmbld_kraken_report_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, ".kraken2_wtasmbld.summary.txt", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, ".kraken2_wtasmbld.summary.txt", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, kraken_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, kraken_report, all_passed_id_channel -> [meta, kraken_report]} //remove all_passed_id_channel from output
-        
+
             // get *_wtasmbld.html files
-            def wtasmbld_kraken_krona_glob = append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/krona/*_wtasmbld.html')
-            //create *_wtasmbld.html file channel with meta information 
+            def wtasmbld_kraken_krona_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/kraken2_asmbld_weighted/krona/*_wtasmbld.html')
+            //create *_wtasmbld.html file channel with meta information
             filtered_wtasmbld_krona_ch = Channel.fromPath(wtasmbld_kraken_krona_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_wtasmbld.html", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_wtasmbld.html", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, krona, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, krona, all_passed_id_channel -> [meta, krona]} //remove all_passed_id_channel from output
 
-            // get .gamma files for gamma HV updating
-            def gamma_hv_glob = append_to_path(params.indir.toString(),'*/gamma_hv/*.gamma')
-            //create .tax file channel with meta information 
-            filtered_gamma_hv_ch = Channel.fromPath(gamma_hv_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, gamma_hv, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, gamma_hv, all_passed_id_channel -> [meta, gamma_hv]} //remove all_passed_id_channel from output
-
-            // get .gamma files for MLST updating
-            def gamma_pf_glob = append_to_path(params.indir.toString(),'*/gamma_pf/*.gamma')
-            //create .gamma file channel with meta information 
-            filtered_gamma_pf_ch = Channel.fromPath(gamma_pf_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, gamma_pf, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, gamma_pf, all_passed_id_channel -> [meta, gamma_pf]} //remove all_passed_id_channel from output
-
-             // get srst2 files for AR updating
-            def srst2_ar_glob = append_to_path(params.indir.toString(),'*/srst2/*_srst2__results.txt')
-            //create .gamma file channel with meta information, filter at the end is to handle the case where updater has already been run on the sample
-            filtered_srst2_ar_ch = Channel.fromPath(srst2_ar_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, srst2_ar, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}
-                .map{ meta, srst2_ar, all_passed_id_channel -> [meta, srst2_ar]}
-                .combine(Channel.fromPath(params.ardb))
-                .map{ meta, srst2_ar, ardb ->
-                    def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
-                    def matchingFile //define to make global
-                    if (params.mode_upper == "UPDATE_PHOENIX"){
-                        matchingFile = !srst2_ar.getName().contains(ardbDate[0][1]) ?  srst2_ar : null
-                    } else {
-                        matchingFile = srst2_ar.getName().contains(ardbDate[0][1]) ?  srst2_ar : null
-                    }
-                    if (params.mode_upper == "UPDATE_PHOENIX") {
-                        if (srst2_ar.getName().contains(ardbDate[0][1])) {
-                            def cleanedFilename = srst2_ar.toString().split('/').last().replace("_srst2__results.txt", "").replace(meta.id.toString()+"_", "")
-                            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}__fullgenes__ResGANNCBI_${ardbDate[0][1]}_srst2__results.txt will be overwritten.${reset}")
-                        }
-                    }
-                    return [meta, matchingFile] }.filter{ meta, srst2_ar -> srst2_ar != null }
-
-            // get .gamma files for AR updating
-            def gamma_ar_glob = append_to_path(params.indir.toString(),'*/gamma_ar/*.gamma')
-            //create .gamma file channel with meta information, filter at the end is to handle the case where updater has already been run on the sample
-            filtered_gamma_ar_ch = Channel.fromPath(gamma_ar_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, gamma_ar, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, gamma_ar, all_passed_id_channel -> [meta, gamma_ar]}//.view {"GAR map2 OUT - ${it}"} //remove all_passed_id_channel from output
-                .combine(Channel.fromPath(params.ardb))
-                .map{ meta, gamma_ar, ardb ->
-                        def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
-                        def matchingFile //define to make global
-                    if (params.mode_upper == "UPDATE_PHOENIX"){
-                        matchingFile = !gamma_ar.getName().contains(ardbDate[0][1]) ?  gamma_ar : null
-                    } else {
-                        matchingFile = gamma_ar.getName().contains(ardbDate[0][1]) ?  gamma_ar : null
-                    }
-                    if (params.mode_upper == "UPDATE_PHOENIX") {
-                        if (gamma_ar.getName().contains(ardbDate[0][1])) {
-                            def cleanedFilename = gamma_ar.toString().split('/').last().replace(".gamma", "").replace(meta.id.toString()+"_", "")
-                            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_ResGANNCBI_${ardbDate[0][1]}_srst2.gamma will be overwritten.${reset}")
-                        }
-                    }
-                    return [meta, matchingFile] }.filter{ meta, gamma_ar -> gamma_ar != null }
-
-            // get amrfinder files for AR updating
-            def armfinder_glob = append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
-            //create .gamma file channel with meta information 
-            filtered_amrfinder_ch = Channel.fromPath(armfinder_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, ncbi_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, ncbi_report, all_passed_id_channel -> [meta, ncbi_report]} //remove all_passed_id_channel from output
-                .combine(Channel.fromPath(params.amrfinder_db))
-                .map{ meta, ncbi_report, ardb ->
-                    def ardbDate = ardb.getName() =~ /amrfinderdb_v\d{1}.\d{1}_(\d{8}).\d{1}\.tar.gz/
-                    def matchingFile //define to make global
-                    if (params.mode_upper == "UPDATE_PHOENIX"){
-                        matchingFile = !ncbi_report.getName().contains(ardbDate[0][1]) ?  ncbi_report : null
-                    } else {
-                        matchingFile = ncbi_report.getName().contains(ardbDate[0][1]) ?  ncbi_report : null
-                    }
-                    if (params.mode_upper == "UPDATE_PHOENIX") {
-                        if (ncbi_report.getName().contains(ardbDate[0][1])) {
-                            def cleanedFilename = ncbi_report.toString().split('/').last().replace("amrfinderdb_", "").replace(".tar.gz", "")
-                            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${meta.id}_all_genes_${ardbDate[0][1]}.tsv will be overwritten.${reset}")
-                        }
-                    }
-                    return [meta, matchingFile] }.filter{ meta, ncbi_report -> ncbi_report != null }
-
             // get quast files for MLST updating
-            def quast_glob = append_to_path(params.indir.toString(),'*/quast/*_summary.tsv')
-            //create .tax file channel with meta information 
+            def quast_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/quast/*_summary.tsv')
+            //create .tax file channel with meta information
             filtered_quast_ch = Channel.fromPath(quast_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_summary.tsv", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_summary.tsv", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, quast_report, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, quast_report, all_passed_id_channel -> [meta, quast_report]} //remove all_passed_id_channel from output
 
             // get .tax files for MLST updating
-            def ani_glob = append_to_path(params.indir.toString(),'*/ANI/*.ani.txt')
-            //create .tax file channel with meta information 
+            def ani_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/ANI/*.ani.txt')
+            //create .tax file channel with meta information
             filtered_ani_ch = Channel.fromPath(ani_glob) // use created regrex to get samples
-                .map{ it -> create_meta_with_wildcard(it, ".ani.txt", params.indir.toString())} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta_with_wildcard(it, ".ani.txt", params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, ani, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, ani, all_passed_id_channel -> [meta, ani]} //remove all_passed_id_channel from output
 
             // get .fastANI.txt
-            def fastani_glob = append_to_path(params.indir.toString(),'*/ANI/*.fastANI.txt')
-            //create .tax file channel with meta information 
-            filtered_ani_best_hit_ch = Channel.fromPath(fastani_glob) // use created regrex to get samples
-                .map{ it -> create_meta_with_wildcard(it, ".fastANI.txt", params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, ani_best_hit, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, ani_best_hit, all_passed_id_channel -> [meta, ani_best_hit]} //remove all_passed_id_channel from output
-
-            def assembly_ratio_glob = append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
-            //create _Assembly_ratio_*.txt file channel with meta information 
-            filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())}
-                .combine(all_passed_id_channel).filter{ meta, assembly_ratio, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}//.view {"ASS comb - ${it}"} //filtering out failured samples
-                .map{ meta, assembly_ratio, all_passed_id_channel -> [meta, assembly_ratio]} 
-                .combine(Channel.fromPath(params.ncbi_assembly_stats))
-                .map{ meta, assembly_ratio, refdb ->
-                    def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
-                    def matchingFile //define to make global
-                    if (params.mode_upper == "UPDATE_PHOENIX"){
-                        matchingFile = !assembly_ratio.getName().contains(refdbdate[0][1]) ?  assembly_ratio : null
-                    } else {
-                        matchingFile = assembly_ratio.getName().contains(refdbdate[0][1]) ?  assembly_ratio : null
+            def fastani_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/ANI/*.fastANI.txt')
+            filtered_ani_best_hit_ch = Channel.fromPath(fastani_glob)
+                .map{ it -> InputChannelUtils.create_meta_with_wildcard(it, ".fastANI.txt", params.indir.toString())}
+                .combine(all_passed_id_channel)
+                .filter{ meta, ani_best_hit, ids -> ids.contains(meta.id) }
+                .map{ meta, ani_best_hit, ids -> [meta, ani_best_hit] }
+                .groupTuple(by: 0)
+                .map{ meta, files ->
+                    def fileList = files.flatten()
+                    if (fileList.size() > 1) {
+                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Found ${fileList.size()} files: ${fileList.collect { it.getName() }}"
                     }
-                    if (params.mode_upper == "UPDATE_PHOENIX") {
-                        if (assembly_ratio.getName().contains(refdbdate[0][1])) {
-                            def cleanedFilename = assembly_ratio.toString().split('/').last().replace("_Assembly_ratio_", "")
-                            println("${orange}WARNING: ${meta.id} already had updater run with Stats db date ${cleanedFilename}, ${meta.id}_Assembly_ratio_${refdbdate[0][1]}.txt will be overwritten.${reset}")
-                        }
+                    def sortedFiles = fileList.sort { a, b ->
+                        def dateA = (a.getName() =~ /\d{8}/) ? (a.getName() =~ /\d{8}/)[0].toInteger() : 0
+                        def dateB = (b.getName() =~ /\d{8}/) ? (b.getName() =~ /\d{8}/)[0].toInteger() : 0
+                        return dateB <=> dateA
                     }
-                    return [meta, matchingFile] }.filter{ meta, assembly_ratio -> assembly_ratio != null }
-
-            def gc_content_glob = append_to_path(params.indir.toString(),'*/*_GC_content_*.txt')
-            //create _GC_content_*.txt file channel with meta information 
-            filtered_gc_content_ch = Channel.fromPath(gc_content_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, gc_content, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, gc_content, all_passed_id_channel -> [meta, gc_content]} 
-                .combine(Channel.fromPath(params.ncbi_assembly_stats))
-                .map{ meta, gc_content, refdb ->
-                    def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
-                    def matchingFile //define to make global
-                    if (params.mode_upper == "UPDATE_PHOENIX"){
-                        //if running updater check if the gc file does NOT match the assembly stats date, if it does NOT match then use it, else null
-                        // if it doesn't exist or if it does match the date then it will be null
-                        matchingFile = !gc_content.getName().contains(refdbdate[0][1]) ?  gc_content : null
-                    } else {
-                        //if species specific check if gc file does match the assembly stats date and if so keep it. else null 
-                        matchingFile = gc_content.getName().contains(refdbdate[0][1]) ?  gc_content : null
+                    def newest_file = sortedFiles[0]
+                    if (fileList.size() > 1) {
+                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Selected Newest: ${newest_file.getName()}"
                     }
-                    if (params.mode_upper == "UPDATE_PHOENIX") {
-                        // if gc file matches the date then warn user it will be overwritten
-                        if (gc_content.getName().contains(refdbdate[0][1])) {
-                            def cleanedFilename = gc_content.toString().split('/').last().replace("_GC_content_", "").replace(".msh.xz", "")
-                            println("${orange}WARNING: ${meta.id} already had updater run with Stats db date ${cleanedFilename}, ${meta.id}_GC_content_${refdbdate[0][1]}.txt will be overwritten.${reset}")
-                        }
-                    }
-                    return [meta, matchingFile] }.filter{ meta, gc_content -> gc_content != null } //filter out nulls
+                    return [meta, newest_file]
+                }
 
             // get prokka files
-            def prokka_gff_glob = append_to_path(params.indir.toString(),'*/annotation/*.gff')
-            //create .gff and .faa files channel with meta information 
-            filtered_gff_ch = Channel.fromPath(prokka_gff_glob) // use created regrex to get samples 
-                .map{ it -> create_meta_non_extension(it,params.indir.toString())} // create meta for sample
+            def prokka_gff_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/annotation/*.gff')
+            //create .gff and .faa files channel with meta information
+            filtered_gff_ch = Channel.fromPath(prokka_gff_glob) // use created regrex to get samples
+                .map{ it -> InputChannelUtils.create_meta_non_extension(it,params.indir.toString())} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, gff, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, gff, all_passed_id_channel -> [meta, gff]} //remove all_passed_id_channel from output
 
-            def prokka_faa_glob = append_to_path(params.indir.toString(),'*/annotation/*.faa')
+            def prokka_faa_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/annotation/*.faa')
             filtered_faa_ch = Channel.fromPath(prokka_faa_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())}
+                .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
                 .combine(all_passed_id_channel).filter{ meta, faa, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, faa, all_passed_id_channel -> [meta, faa]} //remove all_passed_id_channel from output
 
-            def line_summary_glob = append_to_path(params.indir.toString(),'*/*_summaryline.tsv')
+            def line_summary_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_summaryline.tsv')
             line_summary_ch = Channel.fromPath(line_summary_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_summaryline.tsv", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_summaryline.tsv", params.indir.toString(),false)} // create meta for sample
 
             //////////////////////////// FOR CENTAR ///////////////////////////////////////
 
-            // get files for MLST updating 
-            def combined_mlst_glob = append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
+            // get files for MLST updating
+            def combined_mlst_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/mlst/*_combined.tsv')
 
-            //create .tax file channel with meta information 
+            //create .tax file channel with meta information
             filtered_combined_mlst_ch = Channel.fromPath(combined_mlst_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_combined.tsv", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_combined.tsv", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, combined_mlst, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
                 .map{ meta, combined_mlst, all_passed_id_channel -> [meta, combined_mlst]} //remove all_passed_id_channel from output
 
             /////////////////////////// COLLECT SPECIES SPECIFIC FILES /////////////////////////////
 
-            // get files for MLST updating 
-            def shigapass_glob = append_to_path(params.indir.toString(),'*/ANI/*_ShigaPass_summary.csv')
+            // get files for MLST updating
+            def shigapass_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/ANI/*_ShigaPass_summary.csv')
 
-            //collect .tax file channel with meta information 
+            //collect .tax file channel with meta information
             shigapass_files_ch = Channel.fromPath(shigapass_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_ShigaPass_summary.csv", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_ShigaPass_summary.csv", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, shiapass_files, all_passed_id -> all_passed_id.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
                 .map{ meta, shiapass_files, all_passed_id -> [meta, shiapass_files]} //remove all_passed_id_channel from output'
 
-            // get CENTAR files
-            def centar_glob = append_to_path(params.indir.toString(),'*/CENTAR/*_centar_output.tsv')
 
-            //collect .tax file channel with meta information 
+            //Will need to add in HV to the check eventually, but not today
+            def gamma_hv_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_hv/*.gamma')
+            //create .tax file channel with meta information
+            filtered_gamma_hv_ch = Channel.fromPath(gamma_hv_glob) // use created regrex to get samples
+                .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())} // create meta for sample
+                .combine(all_passed_id_channel).filter{ meta, gamma_hv, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
+                .map{ meta, gamma_hv, all_passed_id_channel -> [meta, gamma_hv]} //remove all_passed_id_channel from output
+
+            // get .gamma files for AR updating
+            def gamma_ar_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_ar/*ResGANNCBI*.gamma')
+
+            if (params.mode_upper == "UPDATE_PHOENIX") {
+                // 1. THE CANARY
+                gamma_ar_with_flag = Channel.fromPath(gamma_ar_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, gamma_ar, ids -> ids.contains(meta.id)}
+                    .map{ meta, gamma_ar, ids -> [meta, gamma_ar]}
+                    .groupTuple()
+                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .combine(Channel.fromPath(params.ardb))
+                    .map{ meta, gamma_ar, ardb -> check_update(meta, gamma_ar, ardb, "gamma", params.mode_upper) }
+                    .multiMap { meta, file, flag ->
+                        files: [meta, file]
+                        flags: [meta, flag]
+                    }
+
+                filtered_gamma_ar_ch = gamma_ar_with_flag.files
+                sample_needs_update_ch = gamma_ar_with_flag.flags
+
+                // AMRFinder
+                def armfinder_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
+                filtered_amrfinder_ch = Channel.fromPath(armfinder_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
+                    .map{ meta, f, ids -> [meta, f]}
+                    .groupTuple()
+                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.amrfinder_db))
+                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "amrfinder", params.mode_upper, needsUpdate) }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // Assembly Ratio
+                def assembly_ratio_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
+                filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
+                    .map{ meta, f, ids -> [meta, f]}
+                    .groupTuple()
+                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
+                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "ncbi_stats_ratio", params.mode_upper, needsUpdate) }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // GC Content
+                def gc_content_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_GC_content_*.txt')
+                filtered_gc_content_ch = Channel.fromPath(gc_content_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
+                    .map{ meta, f, ids -> [meta, f]}
+                    .groupTuple()
+                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
+                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "ncbi_stats_gc", params.mode_upper, needsUpdate) }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // SRST2
+                def srst2_ar_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/srst2/*_srst2__results.txt')
+                filtered_srst2_ar_ch = Channel.fromPath(srst2_ar_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
+                    .map{ meta, f, ids -> [meta, f]}
+                    .groupTuple()
+                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.ardb))
+                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "srst2", params.mode_upper, needsUpdate) }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // Gamma PF
+                def gamma_pf_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_pf/*PF-Replicons*.gamma')
+                filtered_gamma_pf_ch = Channel.fromPath(gamma_pf_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
+                    .map{ meta, f, ids -> [meta, f]}
+                    .groupTuple()
+                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.gamdbpf))
+                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "gamma_pf", params.mode_upper, needsUpdate) }
+                    .map{ meta, file, flag -> [meta, file] }
+
+            } else {
+                // existing else branch - keep all the old logic unchanged
+                filtered_gamma_ar_ch = Channel.fromPath(gamma_ar_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, gamma_ar, ids -> ids.contains(meta.id)}
+                    .map{ meta, gamma_ar, ids -> [meta, gamma_ar]}
+                    .combine(Channel.fromPath(params.ardb))
+                    .map{ meta, gamma_ar, ardb ->
+                        def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
+                        def matchingFile = gamma_ar.getName().contains(ardbDate[0][1]) ? gamma_ar : null
+                        return [meta, matchingFile] }
+                    .filter{ meta, gamma_ar -> gamma_ar != null }
+                    .groupTuple()
+                    .map { meta, files ->
+                        def selected_file = files instanceof List ? files.sort().last() : files
+                        return [ meta, selected_file ]
+                    }
+
+                def gamma_pf_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_pf/*PF-Replicons*.gamma')
+                filtered_gamma_pf_ch = Channel.fromPath(gamma_pf_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, gamma_pf, ids -> ids.contains(meta.id)}
+                    .map{ meta, gamma_pf, ids -> [meta, gamma_pf]}
+                    .combine(Channel.fromPath(params.gamdbpf))
+                    .map{ meta, gamma_pf, pfdb ->
+                        def pfdbDate = pfdb.getName() =~ /PF-Replicons_(\d{8})\.fasta/
+                        def matchingFile = gamma_pf.getName().contains(pfdbDate[0][1]) ? gamma_pf : null
+                        return [meta, matchingFile] }
+                    .filter{ meta, gamma_pf -> gamma_pf != null }
+
+                def srst2_ar_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/srst2/*_srst2__results.txt')
+                filtered_srst2_ar_ch = Channel.fromPath(srst2_ar_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, srst2_ar, ids -> ids.contains(meta.id)}
+                    .map{ meta, srst2_ar, ids -> [meta, srst2_ar]}
+                    .combine(Channel.fromPath(params.ardb))
+                    .map{ meta, srst2_ar, ardb ->
+                        def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
+                        def matchingFile = srst2_ar.getName().contains(ardbDate[0][1]) ? srst2_ar : null
+                        return [meta, matchingFile] }
+                    .filter{ meta, srst2_ar -> srst2_ar != null }
+
+                def armfinder_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
+                filtered_amrfinder_ch = Channel.fromPath(armfinder_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
+                    .map{ meta, f, ids -> [meta, f]}
+                    .combine(Channel.fromPath(params.amrfinder_db))
+                    .map{ meta, ncbi_report, ardb ->
+                        def ardbDate = ardb.getName() =~ /amrfinderdb_v\d+\.\d+_(\d{8})\.\d+\.tar\.gz/
+                        def matchingFile = ncbi_report.getName().contains(ardbDate[0][1]) ? ncbi_report : null
+                        return [meta, matchingFile] }
+                    .filter{ meta, ncbi_report -> ncbi_report != null }
+
+                def assembly_ratio_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
+                filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, ratio, ids -> ids.contains(meta.id)}
+                    .map{ meta, ratio, ids -> [meta, ratio]}
+                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
+                    .map{ meta, ratio, refdb ->
+                        def refdbdate = (refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/)[0][1]
+                        def matchingFile = ratio.getName().contains(refdbdate) ? ratio : null
+                        return [meta, matchingFile] }
+                    .filter{ meta, ratio -> ratio != null }
+                    .groupTuple(by: 0)
+                    .map{ meta, files ->
+                        def newest_file = files.flatten().sort { a, b ->
+                            def dateA = (a.getName() =~ /\d{8}/) ? (a.getName() =~ /\d{8}/)[0].toInteger() : 0
+                            def dateB = (b.getName() =~ /\d{8}/) ? (b.getName() =~ /\d{8}/)[0].toInteger() : 0
+                            return dateB <=> dateA
+                        }[0]
+                        return [meta, newest_file]
+                    }
+
+                def gc_content_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_GC_content_*.txt')
+                filtered_gc_content_ch = Channel.fromPath(gc_content_glob)
+                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
+                    .combine(all_passed_id_channel).filter{ meta, gc_content, ids -> ids.contains(meta.id)}
+                    .map{ meta, gc_content, ids -> [meta, gc_content]}
+                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
+                    .map{ meta, gc_content, refdb ->
+                        def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
+                        def matchingFile = gc_content.getName().contains(refdbdate[0][1]) ? gc_content : null
+                        return [meta, matchingFile] }
+                    .filter{ meta, gc_content -> gc_content != null }
+            }
+
+
+            // get CENTAR files
+            def centar_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/CENTAR/*_centar_output.tsv')
+
+            //collect .tax file channel with meta information
             centar_files_ch = Channel.fromPath(centar_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_centar_output.tsv", params.indir.toString(),false)} // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_centar_output.tsv", params.indir.toString(),false)} // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, centar_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
                 .map{ meta, centar_files, all_passed_id_channel -> [meta, centar_files]}.ifEmpty( [[id: "", project_id: ""], []] ) //remove all_passed_id_channel from output
 
             /////////////////////////// COLLECT README FOR UPDATER ///////////////////////////////
-            def readme_glob = append_to_path(params.indir.toString(),'*/*_updater_log.tsv')
-
-            /*Channel.fromPath(readme_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_updater_log.tsv", params.indir.toString(), false)}.ifEmpty( [[id: "", project_id: ""], []] ) // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, readme_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}.ifEmpty( [[id: "", project_id: ""], [], []] )
-                .map{ meta, readme_files, all_passed_id_channel -> [meta, readme_files]}.view()*/
+            def readme_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_updater_log.tsv')
 
             readme_files_ch = Channel.fromPath(readme_glob) // use created regrex to get samples
-                .map{ it -> create_meta(it, "_updater_log.tsv", params.indir.toString(), false)}.ifEmpty( [[id: "", project_id: ""], []] )  // create meta for sample
+                .map{ it -> InputChannelUtils.create_meta(it, "_updater_log.tsv", params.indir.toString(), false)}.ifEmpty( [[id: "", project_id: ""], []] )  // create meta for sample
                 .combine(all_passed_id_channel).filter{ meta, readme_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}.ifEmpty( [[id: "", project_id: ""], [], []] ) //filtering out failed samples - keep those in all_passed_id_channel
                 .map{ meta, readme_files, all_passed_id_channel -> [meta, readme_files]} //remove all_passed_id_channel from output
 
             /////////////////////////// COLLECT PROJECT LEVEL FILES ///////////////////////////////
 
-            def synopsis_glob = append_to_path(params.indir.toString(),'*/*.synopsis')
+            def synopsis_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*.synopsis')
             synopsis_ch = Channel.fromPath(synopsis_glob) // use created regrex to get samples
-                .map{ it -> create_meta_non_extension(it, params.indir.toString())} // create meta for sample and adding group ID
+                .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())} // create meta for sample and adding group ID
             //filtering out failured samples
             filtered_synopsis_ch = synopsis_ch.filter{ meta, synopsis -> all_passed_id_channel.contains(meta.id)}
 
             // use created regrex to get samples
-            def griphin_excel_glob = append_to_path(params.indir.toString(),'*_GRiPHin_Summary.xlsx')
-            all_griphin_excel_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(griphin_excel_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())}
-                //.map{ it -> modifiedFileChannel(it, "_GRiPHin_Summary","_old_GRiPHin") }
+            def griphin_excel_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*_GRiPHin_Summary.xlsx')
+            all_griphin_excel_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(griphin_excel_glob)).map{ it -> InputChannelUtils.create_groups_and_id(it, params.indir.toString())}
             //create regrex, get files in dir, add in meta information, change name
-            def griphin_tsv_glob = append_to_path(params.indir.toString(),'*_GRiPHin_Summary.tsv')
-            all_griphin_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(griphin_tsv_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} 
-                //.map{ it -> modifiedFileChannel(it, "_GRiPHin_Summary","_old_GRiPHin") }
-            def phoenix_tsv_glob = append_to_path(params.indir.toString(),'Phoenix_Summary.tsv')
-            all_phoenix_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(phoenix_tsv_glob)).map{ it -> create_groups_id_and_busco(it, params.indir.toString())}
-                //.map{ it -> modifiedFileChannel(it, "_Summary","_Summary_Old") }
-            def pipeline_info_glob = append_to_path(params.indir.toString(),'pipeline_info/software_versions.yml')
-            all_pipeline_info_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(pipeline_info_glob)).map{ it -> create_groups_and_id(it, params.indir.toString())} // use created regrex to get samples
+            def griphin_tsv_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*_GRiPHin_Summary.tsv')
+            all_griphin_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(griphin_tsv_glob)).map{ it -> InputChannelUtils.create_groups_and_id(it, params.indir.toString())}
+            def phoenix_tsv_glob = InputChannelUtils.append_to_path(params.indir.toString(),'Phoenix_Summary.tsv')
+            all_phoenix_tsv_ch = all_passed_id_channel.flatten().combine(Channel.fromPath(phoenix_tsv_glob)).map{ it -> InputChannelUtils.create_groups_id_and_busco(it, params.indir.toString())}
+            def pipeline_info_glob = InputChannelUtils.append_to_path(params.indir.toString(),'pipeline_info/software_versions.yml')
+            // Keep the original logic for the Project-level tools
+            all_pipeline_info_ch = all_passed_id_channel.flatten()
+                .combine(Channel.fromPath(pipeline_info_glob))
+                .map{ it -> InputChannelUtils.create_groups_and_id(it, params.indir.toString())}
 
-            // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
-            //if (centar == true) {
-                //get valid samplesheet for griphin step in cdc_scaffolds
-                CREATE_SAMPLESHEET (
-                    indir
-                )
-                ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
-                
-                valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
-            /*} else {
-                //get valid samplesheet for griphin step in cdc_scaffolds
-                CREATE_SAMPLESHEET (
-                    indir
-                )
-                ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
+            // 1. First, define where the update info should be
+            def update_info_path = "${params.indir}/update_pipeline_info/software_versions.yml"
+            def update_file = file(update_info_path)
 
-                valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
-            }*/
+            // 2. Explicitly create the channel so it EXISTS for the join
+            // If the file is there, use it; if not, send an empty list
+            update_pipeline_info_ch = all_passed_id_channel
+                .map { id -> 
+                    def meta = [project_id: params.indir.toString().split('/')[-1]]
+                    return [ meta, update_file.exists() ? update_file : [] ]
+                }
+                .unique()
+
+            CREATE_SAMPLESHEET (
+                indir
+            )
+            ch_versions = ch_versions.mix(CREATE_SAMPLESHEET.out.versions)
+
+            valid_samplesheet = CREATE_SAMPLESHEET.out.samplesheet
+
+            summary_files_ch = valid_samplesheet.flatten().splitCsv( header:true, sep:',' )
+                .map{ it -> InputChannelUtils.create_summary_files_channels(it) }
+                .map{ meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info -> 
+                    [[project_id: meta.project_id], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info ?: []]
+                }
+                .unique()
+                .collect()
 
             // combining all summary files into one channel
             summary_files_ch = all_griphin_excel_ch.map{            meta, griphin_excel -> [[project_id:meta.project_id], griphin_excel]}
-                                    .join(all_griphin_tsv_ch.map{   meta, griphin_tsv   -> [[project_id:meta.project_id], griphin_tsv]},   by: [0])
-                                    .join(all_phoenix_tsv_ch.map{   meta, phoenix_tsv   -> [[project_id:meta.project_id], phoenix_tsv]},   by: [0])
-                                    .join(all_pipeline_info_ch.map{ meta, pipeline_info -> [[project_id:meta.project_id], pipeline_info]}, by: [0])
-                                    .map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
+                        .join(all_griphin_tsv_ch.map{   meta, griphin_tsv   -> [[project_id:meta.project_id], griphin_tsv]},   by: [0])
+                        .join(all_phoenix_tsv_ch.map{   meta, phoenix_tsv   -> [[project_id:meta.project_id], phoenix_tsv]},   by: [0])
+                        .join(all_pipeline_info_ch.map{ meta, pipeline_info -> [[project_id:meta.project_id], pipeline_info]}, by: [0])
+                        .join(update_pipeline_info_ch.map{ meta, update_info -> [[project_id:meta.project_id], update_info]}, by: [0], remainder: true)
+                        .map{ meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info -> 
+                            [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info ?: []] 
+                        }
+//                        .view { "BEFORE UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
+                        .unique { it[0].project_id }
+//                        .view { "AFTER UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
 
-            // pulling all the necessary project level files into channels - need to do this for the name change (*adding _old_ to the name to get make edits to )
+/*            summary_files_ch.view { meta, excel, g_tsv, p_tsv, p_info, u_info ->
+                """
+                DEBUG summary_files_ch:
+                Project ID: ${meta.project_id}
+                Excel:      ${excel.name}
+                Griphin TSV:${g_tsv.name}
+                Phoenix TSV:${p_tsv.name}
+                P-Info:     ${p_info.name}
+                U-Info:     ${u_info ? u_info.name : 'EMPTY'}
+                -------------------------------------------
+                """
+            }
+*/
+            // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
-                summary_files_ch, false
+                summary_files_ch, Channel.value(false)
             )
             ch_versions = ch_versions.mix(COLLECT_PROJECT_FILES.out.versions)
 
+            // 2. Assign the project-level variables FIRST
+            pipeline_info_ch        = COLLECT_PROJECT_FILES.out.software_versions_file
+            update_pipeline_info_ch = COLLECT_PROJECT_FILES.out.update_software_versions
+
+            // Correcting the structure so it's [ [meta], file ] 
+            // instead of [ id, [meta], file ]
+            // Fix for Closure 163 (Pipeline Info)
+            isolate_version_broadcast_ch = all_passed_id_channel.flatten()
+                .combine(pipeline_info_ch) 
+                .map { id, project_meta, file -> 
+                    // Merge the ID into the project meta map
+                    def new_meta = project_meta + [id: id]
+                    return [ new_meta, file ] 
+                }
+
+            isolate_update_broadcast_ch = all_passed_id_channel.flatten()
+                .combine(update_pipeline_info_ch)
+                .map { id, project_meta, file -> 
+                    def new_meta = project_meta + [id: id]
+                    return [ new_meta, file ] 
+                }
+
             griphin_excel_ch = COLLECT_PROJECT_FILES.out.griphin_excel
             griphin_tsv_ch = COLLECT_PROJECT_FILES.out.griphin_tsv
-            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> add_entry_meta(it)}
+            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> InputChannelUtils.add_entry_meta(it)}
             pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
+            sample_pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
+            update_pipeline_info_ch = COLLECT_PROJECT_FILES.out.update_software_versions
             samplesheet_meta_ch = Channel.empty().ifEmpty([]) // No multiple samplesheets meta channel for indir
 
         } else if (samplesheet != null) {
-            meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ create_samplesheet_meta(it) }.unique()
 
-            //if (centar == true) { // this if/else is only here to make sure the output goes to the correct output folder as its different for each in the modules.config.
-                SAMPLESHEET_CHECK (
-                    samplesheet, false, false, true, meta_ch
-                )
-                ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
+            def ensureSingle = { meta, files ->
+                if (files instanceof List) {
+                    if (files.size() == 0) return [meta, []]
+                    def single = files.flatten().sort { a, b ->
+                        def dA = (a.name =~ /\d{8}/) ? (a.name =~ /\d{8}/)[0].toInteger() : 0
+                        def dB = (b.name =~ /\d{8}/) ? (b.name =~ /\d{8}/)[0].toInteger() : 0
+                        return dB <=> dA
+                    }[0]
+                    return [meta, single]
+                }
+                return [meta, files]
+            }
 
-                samplesheet = SAMPLESHEET_CHECK.out.csv.first()
-                samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
-            /*} else {
-                // get meta to be project_id:Project_id, full_project_id:$FULL_PATH/Project_id in meta_ch
-                // if a samplesheet was passed then use that to create the channel
-                SAMPLESHEET_CHECK (
-                    samplesheet, false, false, true, meta_ch
-                )
-                ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
+            meta_ch = Channel.fromPath(samplesheet).splitCsv( header:true, sep:',' ).map{ InputChannelUtils.create_samplesheet_meta(it) }.unique()
 
-                //if there are multiple dirs in --input samplesheet then several sheets come out here and it increases downstream processes... so only unique go forward
-                samplesheet = SAMPLESHEET_CHECK.out.csv.first() 
-                samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> transformSamplesheets(it)}
-            }*/
+            SAMPLESHEET_CHECK (
+                samplesheet, false, false, true, false, meta_ch
+            )
+            ch_versions = ch_versions.mix(SAMPLESHEET_CHECK.out.versions)
+
+            samplesheet = SAMPLESHEET_CHECK.out.csv.first()
+            samplesheet_meta_ch = SAMPLESHEET_CHECK.out.csv_by_dir.flatten().map{ it -> InputChannelUtils.transformSamplesheets(it)}
 
             // To make things backwards compatible we need to check if the file_integrity sample is there and if not create it.
-            file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> check_file_integrity(it) }.filter{meta, clean_path, fairy_exists -> fairy_exists == false }
+            file_integrity_exists = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> InputChannelUtils.check_file_integrity(it) }.filter{meta, clean_path, fairy_exists -> fairy_exists == false }
 
             CREATE_FAIRY_FILE (
                 file_integrity_exists, false
-            ) 
+            )
             ch_versions = ch_versions.mix(CREATE_FAIRY_FILE.out.versions)
 
-            directory_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> create_dir_channels(it) }
+            directory_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> InputChannelUtils.create_dir_channels(it) }
 
-            //adding meta.id to end of dir - otherwise too many files are copied and it takes forever. 
-            sample_directory_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> create_sample_dir_channels(it) }
+            //adding meta.id to end of dir - otherwise too many files are copied and it takes forever.
+            sample_directory_ch = samplesheet.splitCsv( header:true, sep:',' ).map{ it -> InputChannelUtils.create_sample_dir_channels(it) }
 
             // pulling all the necessary sample level files into channels
             COLLECT_SAMPLE_FILES (
@@ -563,8 +678,9 @@ workflow CREATE_INPUT_CHANNELS {
             )
             ch_versions = ch_versions.mix(COLLECT_SAMPLE_FILES.out.versions)
 
+            
+
             //collect all fairy files and then recreate meta groups with flatten and buffer.
-            // Was having issues with this first version not cutting files returned to a single file causing cname collisons in GRiPHiN.
             file_integrity_ch = CREATE_FAIRY_FILE.out.created_fairy_file.collect().ifEmpty([]).combine(COLLECT_SAMPLE_FILES.out.fairy_summary.collect().ifEmpty([])).flatten().buffer(size:2)
 
             //combine reads to get into one channel
@@ -577,26 +693,93 @@ workflow CREATE_INPUT_CHANNELS {
             line_summary_ch               = COLLECT_SAMPLE_FILES.out.summary_line
             filtered_synopsis_ch          = COLLECT_SAMPLE_FILES.out.synopsis
             filtered_taxonomy_ch          = COLLECT_SAMPLE_FILES.out.tax
-            filtered_gamma_pf_ch          = COLLECT_SAMPLE_FILES.out.gamma_pf
             filtered_gamma_hv_ch          = COLLECT_SAMPLE_FILES.out.gamma_hv
             if (params.mode_upper == "UPDATE_PHOENIX") {
-                filtered_gamma_ar_ch  = COLLECT_SAMPLE_FILES.out.gamma_ar.combine(Channel.fromPath(params.ardb))
-                                            .map{ meta, gamma_ar, ardb -> previous_updater_check(meta, gamma_ar, ardb, "gamma") }
-                filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report.combine(Channel.fromPath(params.amrfinder_db))
-                                            .map{ meta, amrfinder_report, amrfinder_db -> previous_updater_check(meta, amrfinder_report, amrfinder_db, "amrfinder") }
-                filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.combine(Channel.fromPath(params.ncbi_assembly_stats))
-                                            .map{ meta, assembly_ratio, ncbi_stats -> previous_updater_check(meta, assembly_ratio, ncbi_stats, "ncbi_stats_ratio") }
-                filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content.combine(Channel.fromPath(params.ncbi_assembly_stats))
-                                            .map{ meta, gc_content, ncbi_stats -> previous_updater_check(meta, gc_content, ncbi_stats, "ncbi_stats_gc") }
-                filtered_srst2_ar_ch = COLLECT_SAMPLE_FILES.out.srst2_ar.combine(Channel.fromPath(params.ardb))
-                                            .map{ meta, srst2_ar, ardb -> previous_updater_check(meta, srst2_ar, ardb, "srst2") }
-            } else {
-                // in normal mode we just take all the files
-                filtered_gamma_ar_ch  = COLLECT_SAMPLE_FILES.out.gamma_ar
+                // 1. THE CANARY: Run the check for Gamma
+                gamma_ar_with_flag = COLLECT_SAMPLE_FILES.out.gamma_ar
+                    .combine(Channel.fromPath(params.ardb))
+                    .map{ meta, gamma_ar, ardb -> 
+                        check_update(meta, gamma_ar, ardb, "gamma", params.mode_upper) 
+                    }
+                    .multiMap { meta, file, flag ->
+                        files: [meta, file]
+                        flags: [meta, flag]
+                    }
+
+                filtered_gamma_ar_ch = gamma_ar_with_flag.files
+
+                sample_needs_update_ch = gamma_ar_with_flag.flags
+                    .map{ meta, flag ->
+//                        System.err.println ">>> FLAG KEY [${meta.id}]: project_id=${meta.project_id} flag=${flag}"
+                        [meta, flag]
+                    }
+
+/*                COLLECT_SAMPLE_FILES.out.amrfinder_report.map { meta, f ->
+                    log.info ">>> AMRFINDER_REPORT: id=${meta.id} | file=${f}"
+                    [meta, f]
+                }
+
+                sample_needs_update_ch.map { meta, flag ->
+                    log.info ">>> SAMPLE_NEEDS_UPDATE: id=${meta.id} | flag=${flag}"
+                    [meta, flag]
+                }
+*/
+                 // AMRFinder
                 filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report
+                    .map{ meta, f -> 
+//                        System.err.println ">>> AMRFINDER KEY [${meta.id}]: project_id=${meta.project_id}"
+                        [meta, f] 
+                    }
+                    .join(sample_needs_update_ch) 
+                    .combine(Channel.fromPath(params.amrfinder_db))
+                    .map{ meta, f, needsUpdate, db -> 
+                        check_update(meta, f, db, "amrfinder", params.mode_upper, needsUpdate) 
+                    }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // Assembly Ratio
                 filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
+                    .map{ meta, f, needsUpdate, db -> 
+                        check_update(meta, f, db, "ncbi_stats_ratio", params.mode_upper, needsUpdate) 
+                    }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // GC Content
                 filtered_gc_content_ch = COLLECT_SAMPLE_FILES.out.gc_content
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
+                    .map{ meta, f, needsUpdate, db -> 
+                        check_update(meta, f, db, "ncbi_stats_gc", params.mode_upper, needsUpdate) 
+                    }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // SRST2
                 filtered_srst2_ar_ch = COLLECT_SAMPLE_FILES.out.srst2_ar
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.ardb))
+                    .map{ meta, f, needsUpdate, db -> 
+                        check_update(meta, f, db, "srst2", params.mode_upper, needsUpdate) 
+                    }
+                    .map{ meta, file, flag -> [meta, file] }
+
+                // Gamma PF
+                filtered_gamma_pf_ch = COLLECT_SAMPLE_FILES.out.gamma_pf
+                    .join(sample_needs_update_ch)
+                    .combine(Channel.fromPath(params.gamdbpf))
+                    .map{ meta, f, needsUpdate, db -> 
+                        check_update(meta, f, db, "gamma_pf", params.mode_upper, needsUpdate) 
+                    }
+                    .map{ meta, file, flag -> [meta, file] }          
+
+            } else {
+                filtered_gamma_ar_ch       = COLLECT_SAMPLE_FILES.out.gamma_ar.map{ m, f -> ensureSingle(m, f) }
+                filtered_amrfinder_ch      = COLLECT_SAMPLE_FILES.out.amrfinder_report.map{ m, f -> ensureSingle(m, f) }
+                filtered_assembly_ratio_ch = COLLECT_SAMPLE_FILES.out.assembly_ratio.map{ m, f -> ensureSingle(m, f) }
+                filtered_gc_content_ch     = COLLECT_SAMPLE_FILES.out.gc_content.map{ m, f -> ensureSingle(m, f) }
+                filtered_srst2_ar_ch       = COLLECT_SAMPLE_FILES.out.srst2_ar.map{ m, f -> ensureSingle(m, f) }
+                filtered_gamma_pf_ch       = COLLECT_SAMPLE_FILES.out.gamma_pf.map{ m, f -> ensureSingle(m, f) }
             }
             filtered_trimd_kraken_bh_ch        = COLLECT_SAMPLE_FILES.out.trimd_kraken_bh
             filtered_trimd_krona_ch            = COLLECT_SAMPLE_FILES.out.trimd_kraken_krona
@@ -612,7 +795,7 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_raw_stats_ch              = COLLECT_SAMPLE_FILES.out.raw_stats
             filtered_quast_ch                  = COLLECT_SAMPLE_FILES.out.quast_report
             filtered_ani_ch                    = COLLECT_SAMPLE_FILES.out.ani
-            filtered_ani_best_hit_ch           = COLLECT_SAMPLE_FILES.out.ani_best_hit
+            filtered_ani_best_hit_ch           = COLLECT_SAMPLE_FILES.out.ani_best_hit.map{ m, f -> ensureSingle(m, f) }
             filtered_combined_mlst_ch          = COLLECT_SAMPLE_FILES.out.combined_mlst
 
             //species specific files
@@ -621,38 +804,62 @@ workflow CREATE_INPUT_CHANNELS {
             //readme files
             readme_files_ch = COLLECT_SAMPLE_FILES.out.readme
 
-            summary_files_ch = samplesheet.flatten().splitCsv( header:true, sep:',' ).map{ it -> create_summary_files_channels(it) }
-                                .map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
+            summary_files_ch = samplesheet.flatten().splitCsv( header:true, sep:',' )
+                .map{ it -> InputChannelUtils.create_summary_files_channels(it) }
+                .map{ meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info -> 
+                    [[project_id: meta.project_id], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info ?: []]
+                }
+                .unique()
 
-                                //.map{meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info]}.unique()
-
-            // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
-                summary_files_ch, true
+                summary_files_ch, Channel.value(true)
             )
             ch_versions = ch_versions.mix(COLLECT_PROJECT_FILES.out.versions)
 
             griphin_excel_ch = COLLECT_PROJECT_FILES.out.griphin_excel
             griphin_tsv_ch = COLLECT_PROJECT_FILES.out.griphin_tsv
-            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> add_entry_meta(it)}
+            phoenix_tsv_ch = COLLECT_PROJECT_FILES.out.phoenix_tsv.map{it -> InputChannelUtils.add_entry_meta(it)}
             pipeline_info_ch = COLLECT_PROJECT_FILES.out.software_versions_file
+            update_pipeline_info_ch = COLLECT_PROJECT_FILES.out.update_software_versions
 
-            valid_samplesheet = samplesheet // still need to check this file
+            valid_samplesheet = samplesheet
+
+            isolate_version_broadcast_ch = filtered_scaffolds_ch
+                .map { meta, files -> [[project_id: meta.project_id], meta] }
+                .combine(pipeline_info_ch.map { meta, file -> [[project_id: meta.project_id], file] }, by: 0)
+                .map { project_key, sample_meta, pipeline_info -> [sample_meta, pipeline_info] }
+
+            sample_pipeline_info_ch = filtered_scaffolds_ch
+                .map { meta, files -> [[project_id: meta.project_id], meta] }
+                .combine(pipeline_info_ch.map { meta, file -> [[project_id: meta.project_id], file] }, by: 0)
+                .map { project_meta, sample_meta, pipeline_info -> [sample_meta, pipeline_info] }
+
+            isolate_update_broadcast_ch = filtered_scaffolds_ch
+                .map { meta, files -> [[project_id: meta.project_id], meta] }
+                .combine(update_pipeline_info_ch.map { meta, file -> [[project_id: meta.project_id], file] }, by: 0)
+                .map { project_key, sample_meta, update_pipeline_info -> [sample_meta, update_pipeline_info] }
+
+            sample_update_pipeline_info_ch = filtered_scaffolds_ch
+                .map { meta, files -> [[project_id: meta.project_id], meta] }
+                .combine(update_pipeline_info_ch.map { meta, file -> [[project_id: meta.project_id], file] }, by: 0)
+                .map { project_meta, sample_meta, update_pipeline_info -> [sample_meta, update_pipeline_info] }
 
         } else {
-            exit 1, 'You need EITHER an input directory samplesheet (using --input) or a single sample directory (using --indir)!' 
+            exit 1, 'You need EITHER an input directory samplesheet (using --input) or a single sample directory (using --indir)!'
         }
 
     emit:
         //project level summary files
-        griphin_excel_ch   = griphin_excel_ch
-        griphin_tsv_ch     = griphin_tsv_ch
-        phoenix_tsv_ch     = phoenix_tsv_ch
-        pipeline_info_ch   = pipeline_info_ch
-        directory_ch       = directory_ch
-        valid_samplesheet  = valid_samplesheet
-        versions           = ch_versions
-        pipeline_info      = pipeline_info_ch
+        griphin_excel_ch      = griphin_excel_ch
+        griphin_tsv_ch        = griphin_tsv_ch
+        phoenix_tsv_ch        = phoenix_tsv_ch
+        pipeline_info_ch      = pipeline_info_ch
+        directory_ch          = directory_ch
+        valid_samplesheet     = valid_samplesheet
+        versions              = ch_versions
+        pipeline_info         = pipeline_info_ch
+        update_pipeline_info  = update_pipeline_info_ch
+
 
         //species specific files
         centar             = centar_files_ch
@@ -694,370 +901,7 @@ workflow CREATE_INPUT_CHANNELS {
         raw_stats              = filtered_raw_stats_ch
         quast_report           = filtered_quast_ch
         combined_mlst          = filtered_combined_mlst_ch // for centar entry
-
-}
-
-/*========================================================================================
-    GROOVY FUNCTIONS
-========================================================================================
-*/
-
-/*def previous_updater_check(meta, in_file, db, type) {
-    println("Checking previous updater run for ${meta.id} with ${in_file} and ${db} and ${type}")
-    //if you run updater with the same AR db as was run before you will get a file name collision in the CREATE_AND_UPDATE_README step
-    // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
-    def orange = '\033[38;5;208m'
-    def reset  = '\033[0m'
-
-    // patterns used to extract the DB date from the *db* filename
-    def patterns = [
-        gamma           : /ResGANNCBI_(\d{8})_srst2\.fasta/,
-        amrfinder       : /amrfinderdb_v\d+\.\d+_(\d{8})\.\d+\.tar\.gz/,
-        refseq_sketch_as: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/,
-        refseq_sketch_gc: /REFSEQ_(\d{8})_Bacteria_complete\.msh\.xz/,
-        ncbi_stats_ratio: /_Assembly_stats_(\d{8})\.txt/,
-        ncbi_stats_gc   : /_Assembly_stats_(\d{8})\.txt/,
-        srst2           : /__fullgenes__ResGANNCBI_(\d{8})__srst2__results\.txt/
-    ]
-
-    // Decide list/single up front
-    def isList = (in_file instanceof List)
-
-    // Try to extract the DB date from the db filename
-    def m = (db.getName() =~ patterns[type])
-    if (!m.find()) {
-        // Can't extract a date → nothing to filter; just pass through
-        return [ meta, in_file ]
-    }
-    def dbDate = m.group(1)
-
-    // Filter out files that already contain the dbDate
-    def matchingFiles = isList
-        ? in_file.findAll { !it.getName().contains(dbDate) }
-        : (!in_file.getName().contains(dbDate) ? in_file : null)
-
-    // Build a list form for logging convenience
-    def filteredList = isList ? matchingFiles : (matchingFiles ? [matchingFiles] : [])
-
-    if (filteredList) {
-        def cleanedFilename = filteredList[0].toString().split('/').last()
-        def replacements = [ gamma: [".gamma", "${meta.id}_"], amrfinder: ["amrfinderdb_", ".tar.gz"], ncbi_stats_ratio: ["_Assembly_stats_", ".txt"], ncbi_stats_gc: ["_GC_content_", ".txt"], srst2: ["__fullgenes__ResGANNCBI_", "__srst2__results.txt"] , refseq_sketch_as: ["REFSEQ_", "_Bacteria_complete.msh.xz"], refseq_sketch_gc: ["REFSEQ_", "_Bacteria_complete.msh.xz"] ]
-        replacements[type].each { cleanedFilename = cleanedFilename.replace(it, "") }
-        def outputFiles = [ gamma: "${meta.id}_ResGANNCBI_${dbDate}_srst2.gamma", amrfinder: "${meta.id}_all_genes_${dbDate}.tsv", refseq_sketch_as: "${meta.id}_Assembly_ratio_${dbDate}.txt", refseq_sketch_gc: "${meta.id}_GC_content_${dbDate}.txt", ncbi_stats_ratio: "${meta.id}_Assembly_stats_${dbDate}.txt", ncbi_stats_gc: "${meta.id}_GC_content_${dbDate}.txt", srst2: "${meta.id}__fullgenes__ResGANNCBI_${ardbDate}__srst2__results.txt"]
-        println("${orange}WARNING: ${meta.id} already had updater run with DB date ${cleanedFilename}, ${outputFiles[type]} will be overwritten.${reset}")
-    }
-
-    // Return null when nothing remains after filtering
-    if (!isList && matchingFiles == null) return null
-    if (isList && !matchingFiles) return null
-//    return [meta, isList ? matchingFiles : matchingFiles][0]
-    return [meta, isList && matchingFiles.size() == 1 ? matchingFiles[0] : matchingFiles]
-}*/
-
-def previous_updater_check(meta, ar_file, ardb, type) {
-    //if you run updater with the same AR db as was run before you will get a file name collision in the CREATE_AND_UPDATE_README step
-    // this function will filter out the files that have already been processed with the same AR db date to keep the file name collision from happening
-    def orange = '\033[38;5;208m'
-    def reset = '\033[0m'
-    def patterns = [ gamma: /ResGANNCBI_(\d{8})_srst2\.fasta/, amrfinder: /amrfinderdb_v\d{1}\.\d{1}_(\d{8})\.\d{1}\.tar\.gz/, ncbi_stats_ratio: /_Assembly_stats_(\d{8})\.txt/ , ncbi_stats_gc: /_Assembly_stats_(\d{8})\.txt/, srst2: /ResGANNCBI_(\d{8})_srst2\.fasta/ ]
-    def ardbDate = (ardb.getName() =~ patterns[type])[0][1] // get ar date
-    def isList = ar_file instanceof List // check if the input is a list or a single file
-    // Filter to keep only gamma/amrfinder files that do not contain the extracted date
-    def matchingFiles = isList ? ar_file.findAll { !it.getName().contains(ardbDate) } : (!ar_file.getName().contains(ardbDate) ? ar_file : null)
-    def filteredFiles = isList ? ar_file.findAll { it.getName().contains(ardbDate) } : (ar_file.getName().contains(ardbDate) ? ar_file : null)
-    //print warning if the file has already been processed with the same AR db date
-    if (params.mode_upper == "UPDATE_PHOENIX") {
-        if (filteredFiles) {
-            def cleanedFilename = filteredFiles[0].toString().split('/').last()
-            def replacements = [ gamma: [".gamma", "${meta.id}_"], amrfinder: ["amrfinderdb_", ".tar.gz"], ncbi_stats_ratio: ["_Assembly_stats_", ".txt"], ncbi_stats_gc: ["_GC_content_", ".txt"], srst2: ["__fullgenes__ResGANNCBI_", "__srst2__results.txt"]]
-            replacements[type].each { cleanedFilename = cleanedFilename.replace(it, "") }
-            def outputFiles = [ gamma: "${meta.id}_ResGANNCBI_${ardbDate}_srst2.gamma", amrfinder: "${meta.id}_all_genes_${ardbDate}.tsv", ncbi_stats_ratio: "${meta.id}_Assembly_ratio_${ardbDate}.txt", ncbi_stats_gc: "${meta.id}_GC_content_${ardbDate}.txt", srst2: "${meta.id}__fullgenes__ResGANNCBI_${ardbDate}_srst2__results.txt"]
-            println("${orange}WARNING: ${meta.id} already had updater run with AR db date ${cleanedFilename}, ${outputFiles[type]} will be overwritten.${reset}")
-        return [meta, isList && matchingFiles.size() == 1 ? matchingFiles[0] : matchingFiles]
-        } else {
-            return [meta, isList && filteredFiles.size() == 1 ? matchingFiles[0] : matchingFiles]
-        }
-    }
-}
-
-// Function to get list of [sample:, directory: ] or [ meta, [ fastq_1, fastq_2 ] ] to [ project_id: full_project_id:]
-def create_samplesheet_meta(LinkedHashMap row) {
-    def meta = [:]
-    if (row.directory) { //[sample:, directory: ] 
-        // Use directory-based logic
-        meta.project_id      = row.directory.toString().split('/')[-2]
-        meta.full_project_id = new File(row.directory).getParent().replace("[", "")
-    } else if (row.fastq_1) {  //[ meta, [ fastq_1, fastq_2 ] ] 
-        // Use fastq_1-based logic
-        meta.full_project_id = new File(row.fastq_1).parent
-        meta.project_id      = new File(row.fastq_1).parentFile.name
-    }
-    return meta 
-}
-
-def transformSamplesheets(input_ch) {
-    def meta = [:] // create meta array
-    def matcher = input_ch.name =~ /valid_(.+)\.csv$/ // Extract project_id from filename pattern: everything between valid_ and .csv
-    meta.project_id = matcher ? matcher[0][1] : "unknown"
-    return [meta, input_ch]
-}
-
-def check_file_integrity(LinkedHashMap row) {
-    def meta = [:] // create meta array
-    meta.id = row.sample
-    //meta.project_id = row.directory.toString().split('/')[-2]
-    //meta.project_id = row.directory
-    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
-    meta.project_id = new File(clean_path).getParent()
-    def pattern = "*_summary.txt"
-    // Convert the wildcard pattern to regex: "*_summary.txt" to ".*_summary\.txt"
-    def regexPattern = pattern.replace("*", ".*").replace("?", ".")
-    File dir = new File(clean_path + "/file_integrity/")
-    // List files matching the regex pattern
-    def files = dir.listFiles { file -> file.name ==~ /${regexPattern}/ }
-    //if (files && files.length > 0) {
-    if (files) {
-        /*files.each { file ->
-            def lines = file.readLines()
-            if (lines.size() != 5) {
-                exit 1, "ERROR: File '${file.name}' in '${file.parent}' has ${lines.size()} lines instead of 5, this will cause errors downstream, please rerun with phx >2.2.0 and rerun."
-            }
-        }*/
-        return [ meta, clean_path, true ]
-    } else {
-        return [ meta, clean_path, false ]
-    }
-}
-
-def get_ids(dir) {
-    // Initialize an empty list to store directory names
-    List<String> dirNames = []
-
-    // Check if the path is indeed a directory
-    if (dir.isDirectory()) {
-        // Collect only first-level subdirectories
-        dir.eachFile { file ->
-            if (file.isDirectory()) {
-                // Add directory name if it's not in the exclude list
-                if (file.listFiles().any { it.name.endsWith('_summaryline.tsv')}) {
-                    dirNames << file.name
-                }
-            }
-        }
-    return dirNames
-    }
-}
-
-def modifiedFileChannel(input_ch, old_string, new_string) {
-    def newFileName = input_ch[1].getName().replaceAll(old_string, new_string)
-    def newFilePath = input_ch[1].getParent() ? input_ch[1].getParent().resolve(newFileName) : newFileName
-    return [ input_ch[0], newFilePath ]
-}
-
-// Function to get list of [ meta, [ directory ] ]
-def create_summary_files_channels(LinkedHashMap row) {
-    def meta = [:] // create meta array
-    meta.id = row.sample
-    def project_id = row.directory.toString().split('/')[-2]
-    //meta.project_id = row.directory
-    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
-    def cleaned_path = new File(clean_path).getParent()
-    meta.project_id = cleaned_path
-    def software_versions = cleaned_path + "/pipeline_info/"
-    def griphin_summary_tsv = cleaned_path + "/" + project_id + "_GRiPHin_Summary.tsv"
-    def griphin_summary_excel = cleaned_path + "/" + project_id +  "_GRiPHin_Summary.xlsx"
-    def phx_summary = cleaned_path + "/Phoenix_Summary.tsv"
-    return [ meta, griphin_summary_excel, griphin_summary_tsv, phx_summary, software_versions ]
-}
-
-// Function to get list of [ meta, [ directory ] ]
-def create_dir_channels(LinkedHashMap row) {
-    def meta = [:] // create meta array
-    meta.id = row.sample
-    //meta.project_id = row.directory.toString().split('/')[-2]
-    //meta.project_id = row.directory
-    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
-    def cleaned_path = new File(clean_path).getParent()
-    meta.project_id = cleaned_path
-    return [ meta, cleaned_path ]
-}
-
-def add_entry_meta(input_ch){
-    """samples needed to be grouped by their project directory for editing summary files."""
-    def meta = [:] // create meta array
-    //meta.id = input_ch[0].id
-    meta.project_id = input_ch[0].project_id
-    // Use file object to read the first line of the file
-    def file = input_ch[1]
-    //def firstLine = file.text.split('\n')[0]
-    meta.entry = file.text.contains('BUSCO')
-    return [meta, input_ch[1]]
-}
-
-def create_groups_id_and_busco(input_ch, project_folder){
-    """samples needed to be grouped by their project directory for editing summary files."""
-    def meta = [:] // create meta array
-    //meta.id = input_ch[0]
-    meta.project_id = project_folder.toString().split('/')[-1]
-    //def firstLine = input_ch[1].text.split('\n')[0]
-    meta.entry = input_ch[1].text.contains('BUSCO')
-    return [meta, input_ch[1]]
-}
-
-// Function to get list of [ meta, [ directory ] ]
-def create_sample_dir_channels(LinkedHashMap row) {
-    def meta = [:] // create meta array
-    meta.id = row.sample
-    //meta.project_id = row.directory.toString().split('/')[-2]
-    //meta.project_id = row.directory
-    def clean_path = row.directory.toString().endsWith("/") ? row.directory.toString()[0..-2] : row.directory.toString()
-    meta.project_id = new File(clean_path).getParent()
-    return [ meta, clean_path ]
-}
-
-def create_groups_and_id(input_ch, project_folder){
-    """samples needed to be grouped by their project directory for editing summary files."""
-    def meta = [:] // create meta array
-    meta.id = input_ch[0]
-    meta.project_id = project_folder.toString().split('/')[-1]
-    return [meta, input_ch[1]]
-}
-
-def create_groups(input_ch, project_folder){
-    """samples needed to be grouped by their project directory for editing summary files."""
-    def meta = [:] // create meta array
-    meta.id = input_ch[0]
-    meta.project_id = project_folder.toString()
-    return [meta, project_folder]
-}
-
-// Function to filter files and parse their names
-def get_only_passing_samples(filePaths) {
-    def passingFiles = [] // Initialize an empty list to store passing file names
-    filePaths.each { filePath ->
-        // Exclude file paths containing ".nextflow"
-        if (filePath.toString().contains('.nextflow')) {
-            println("Skipping: ${filePath} (contains .nextflow dir).")
-            return  // Skip this iteration
-        }
-        def fileObj = new File(filePath.toString())
-        if (!fileObj.text.contains('FAILED') || fileObj.text.contains('End_of_File')) { // Check if the file does not contain 'FAILED' or contains 'End_of_File'. End_of_File happens with a spades failure.
-            // Get the file name by removing the path and extension
-            def fileName = filePath.getFileName().toString().split('/')[-1]
-            // Remove everything after the regex '_*_summary.txt'
-            def passing_file1 = fileName.replaceAll(/_scaffolds_summary\.txt/, '').replaceAll(/_rawstats_summary\.txt/, '').replaceAll(/_corruption_summary\.txt/, '').replaceAll(/_trimstats_summary\.txt/, '')
-            def passing_file2 = passing_file1.replaceAll(/_summary\.txt/, '')
-            passingFiles << passing_file2 // Add the passing file name to the list
-        }
-    }
-    return passingFiles
-}
-
-def get_old_fairy_samples(filePaths) {
-    def passingFiles = [] // Initialize an empty list to store passing file names
-    filePaths.each { filePath ->
-        // Exclude file paths containing ".nextflow"
-        if (filePath.toString().contains('.nextflow')) {
-            println("Skipping: ${filePath} (contains .nextflow dir).")
-            return  // Skip this iteration
-        }
-        def fileObj = new File(filePath.toString())
-        if (fileObj.exists() && fileObj.readLines().size() >= 5) { // Check if the file does not contain 'FAILED' or contains 'End_of_File'. End_of_File happens with a spades failure.
-            // Get the file name by removing the path and extension
-            def fileName = filePath.getFileName().toString().split('/')[-1]
-            // Remove everything after the regex '_*_summary.txt'
-            def passing_file1 = fileName.replaceAll(/_scaffolds_summary\.txt/, '').replaceAll(/_rawstats_summary\.txt/, '').replaceAll(/_corruption_summary\.txt/, '').replaceAll(/_trimstats_summary\.txt/, '')
-            def passing_file2 = passing_file1.replaceAll(/_summary\.txt/, '')
-            passingFiles << passing_file2 // Add the passing file name to the list
-        }
-    }
-    return passingFiles
-}
-
-// Function to filter files and parse their names - get failed samples
-def get_failed_samples(filePaths) {
-    def failedFiles = [] // Initialize an empty list to store passing file names
-    filePaths.each { filePath ->
-        // Exclude file paths containing ".nextflow"
-        if (filePath.toString().contains('.nextflow')) {
-            println("Skipping: ${filePath} (contains .nextflow dir).")
-            return  // Skip this iteration
-        }
-        def fileObj = new File(filePath.toString())
-        if (fileObj.text.contains('FAILED') || fileObj.text.contains('End_of_File')) {
-            // Get the file name by removing the path and extension
-            def fileName = filePath.getFileName().toString().split('/')[-1]
-            // Remove everything after the regex '_*_summary.txt'
-            def failed_file1 = fileName.replaceAll(/_scaffolds_summary\.txt/, '').replaceAll(/_rawstats_summary\.txt/, '').replaceAll(/_corruption_summary\.txt/, '').replaceAll(/_trimstats_summary\.txt/, '')
-            def failed_file2 = failed_file1.replaceAll(/_summary\.txt/, '')
-            failedFiles << failed_file2 // Add the failed file name to the list
-        }
-    }
-    return failedFiles
-}
-
-def append_to_path(full_path, string) {
-    if (full_path.toString().endsWith('/')) {
-        return full_path.toString() + string
-    } else {
-        return full_path.toString() + '/' + string
-    }
-}
-
-def create_meta_with_wildcard(sample, file_extension, indir){
-    '''Creating meta: [[id:sample1], $PATH/sample1_REFSEQ_20240124.fastANI.txt]'''
-    def meta = [:] // create meta array
-    meta.id = sample.getName().replaceAll(file_extension, "").split('_REFSEQ_\\d{8}')[0] // get file name without extention
-    meta.project_id = indir.toString().split('/')[-1]
-    return [ meta, sample ]
-}
-
-def create_meta(sample, file_extension, indir, extra_check){
-    '''Creating meta: [[id:sample1], $PATH/sample1.filtered.scaffolds.fa.gz]'''
-    def meta = [:] // create meta array
-    meta.id = sample.getName().replaceAll(file_extension, "") // get file name without extention
-    if (extra_check==true){
-        full_ext1 =  "_scaffolds" + file_extension
-        full_ext2 = "_corruption" + file_extension
-        full_ext3 = "_trimstats" + file_extension
-        full_ext4 = "_rawstats" + file_extension
-        meta.id = sample.getName().replaceAll(full_ext1, "").replaceAll(full_ext2, "").replaceAll(full_ext3, "").replaceAll(full_ext4, "").replaceAll(file_extension, "")
-    } else {
-        meta.id = sample.getName().replaceAll(file_extension, "") // get file name without extention
-        if ( file_extension == ".filtered.scaffolds.fa.txt" ) { // Used to handle the odd naming structure of the busco short summary files
-            meta.id = meta.id.tokenize('.').last()
-        }
-    }
-    meta.project_id = indir.toString().split('/')[-1]
-    return [ meta, sample ]
-}
-
-def create_meta_non_extension(sample, indir) {
-    '''Creating meta: [[id:sample1], $PATH/sample1.filtered.scaffolds.fa.gz]'''
-    def meta = [:] // create meta array
-    meta.id = sample.getSimpleName()//.split('_')[0] // get the last string after the last backslash
-    // Regex patterns to match _HyperVirulence_YYYYMMDD and _PF-Replicons_YYYYMMDD
-    def hyperVirulencePattern = /_HyperVirulence_\d{8}/
-    def pfRepliconsPattern = /_PF-Replicons_\d{8}/
-    def assemblyratioPattern = /_Assembly_ratio_\d{8}/
-    def gcPattern = /_GC_content_\d{8}/
-    def arPattern = /_ResGANNCBI_\d{8}_srst2/
-    def amrfinderPattern = /_all_genes/
-    def srst2Pattern = /__fullgenes___results/ // Remainder after other trims will be applied to srst2 files
-
-    // Check if the id contains either of the patterns
-    if (meta.id =~ hyperVirulencePattern || meta.id =~ pfRepliconsPattern || meta.id =~ assemblyratioPattern || meta.id =~ gcPattern || meta.id =~ arPattern || meta.id =~ amrfinderPattern) {
-        // Remove the pattern if it matches
-        meta.id = meta.id.replaceAll(hyperVirulencePattern, '').replaceAll(pfRepliconsPattern, '').replaceAll(assemblyratioPattern, '').replaceAll(gcPattern, '').replaceAll(arPattern, '').replaceAll(amrfinderPattern, '').replaceAll(srst2Pattern, '').trim() // Trim any trailing or leading spaces
-    }
-    meta.project_id = indir.toString().split('/')[-1]
-    return [ meta, sample ]
-}
-
-def check_scaffolds(scaffold_channel) {
-    if (scaffold_channel[1].toString().endsWith(".fasta.gz") || scaffold_channel[1].toString().endsWith(".fa.gz") ) {
-        return scaffold_channel
-    } else {
-        exit 1, "ERROR: No scaffolds found in '${scaffold_channel[1].toString()}'. Either your scaffold regrex is off (scaffolds files should end in either '.fa.gz' or '.fasta.gz') or the directory provided doesn't contain assembly files." 
-    }
+        pipeline_info_isolate  = isolate_version_broadcast_ch // Use this for summary lines
+        update_pipeline_info_isolate = isolate_update_broadcast_ch
+        sample_needs_update_ch  // already exists, just needs to be added to emit block
 }

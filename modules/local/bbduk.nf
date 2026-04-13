@@ -35,7 +35,7 @@ process BBDUK {
     #adding path for running bbmap on terra
     $terra
 
-    maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g')
+    maxmem=\$(echo \"$maxmem GB\"| sed 's/ GB/g/g' | sed 's/-//g') # ensure maxmem is in correct format for bbmap -Xmx argument
     bbduk.sh \\
         -Xmx\$maxmem \\
         $raw \\

@@ -10,133 +10,116 @@ include { CHECK_MLST_WITH_SRST2          } from '../../modules/local/check_mlst_
 
 workflow DO_MLST {
     take:
-        trimmed_assembly     // channel: tuple val(meta), path(assembly): BBMAP_REFORMAT.out.filtered_scaffolds
+        trimmed_assembly     // channel: tuple val(meta), path(assembly)
         scaffold_count_check // SCAFFOLD_COUNT_CHECK.out.outcome
-        paired_reads         // channel: tuple val(meta), path(reads), path(paired_reads): FASTP_TRIMD.out.reads.map
-        taxonomy             // channel: tuple val(meta), path(taxonomy): DETERMINE_TAXA_ID.out.taxonomy
-        mlst_db              // MLST DB to use with torstens MLST program
-        do_srst2_mlst        //
-        run_type             // either "update" or "original"
+        paired_reads         // channel: tuple val(meta), path(reads)
+        taxonomy             // channel: tuple val(meta), path(taxonomy)
+        mlst_db              // MLST DB
+        do_srst2_mlst        // Boolean
+        run_type             // "update" or "original"
 
     main:
-        ch_versions = Channel.empty() // Used to collect the software versions
+        ch_versions = Channel.empty()
 
-        // Creating channel to ensure ID is paired with matching trimmed assembly
-        if (run_type=="original") {
-
-            mlst_ch = trimmed_assembly.map{                           meta, fasta         -> [[id:meta.id], fasta]}\
-            .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
-            .filter { meta, reads, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
-            .join(taxonomy.map{meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0])
-            .map{ meta, fasta, fairy_outcome, taxonomy -> return [meta, fasta, taxonomy] }
-
-        } else if (run_type=="update") {
-            /*mlst_ch = trimmed_assembly.map{meta, fasta         -> [[id:meta.id, project_id:meta.project_id], fasta]}\
-            .join(scaffold_count_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, project_id:meta.project_id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [[0][0],[0][1]])\
-            .join(taxonomy.map{             meta, taxonomy      -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])*/
-
-            mlst_ch = trimmed_assembly.map{meta, fasta -> [[id:meta.id, project_id:meta.project_id], fasta]}
-                        .join(scaffold_count_check.map{ meta, fairy_outcome ->
-                            // Read the content of the fairy_outcome file to check for FAILED
-                            def content = file(fairy_outcome.toString()).text
-                            def passed = !content.contains("FAILED")
-                            [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
-                        .filter{ meta, fasta, fairy_data -> 
-                            fairy_data[1] == true // Keep only entries where passed is true (no FAILED found)
-                        }.map{ meta, fasta, fairy_data -> return [meta, fasta] }
-                        .join(taxonomy.map{meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]])
+        // 1. Prepare input for standard MLST
+        if (run_type == "original") {
+            mlst_ch = trimmed_assembly.map{ meta, fasta -> [[id:meta.id], fasta] }
+                .join(scaffold_count_check.splitCsv(strip:true, by:5).map{ meta, f -> [[id:meta.id], [f[0][0], f[1][0], f[2][0], f[3][0], f[4][0]]] }, by: [0])
+                .filter { meta, fasta, f -> f[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering." }
+                .join(taxonomy.map{ meta, tax -> [[id:meta.id], tax] }, by: [0])
+                .map{ meta, fasta, f, tax -> [meta, fasta, tax] }
+        } else {
+            mlst_ch = trimmed_assembly.map{ meta, fasta -> [[id:meta.id, project_id:meta.project_id], fasta] }
+                .join(scaffold_count_check.map{ meta, outcome ->
+                    def content = file(outcome.toString()).text
+                    def passed = !content.contains("FAILED")
+                    [[id:meta.id, project_id:meta.project_id], [outcome, passed]]
+                }, by: [[0][0],[0][1]])
+                .filter{ meta, fasta, data -> data[1] == true }
+                .map{ meta, fasta, data -> [meta, fasta] }
+                .join(taxonomy.map{ meta, tax -> [[id:meta.id, project_id:meta.project_id], tax] }, by: [[0][0],[0][1]])
         }
 
-        // Running standard mlst tool (torstens) on assembly file using provided mlst database location for scemes, profiles, and allele definitions
-        MLST (
-            mlst_ch
-        )
+        // 2. Run Standard MLST
+        MLST ( mlst_ch )
         ch_versions = ch_versions.mix(MLST.out.versions)
 
-        // Creating a channel to pair up the tsv output to the matching taxonomy file, linked on metadata ID
-        if (run_type=="original") {
-            check_main_mlst_ch = MLST.out.tsv.map{meta, tsv      -> [[id:meta.id], tsv]}\
-            .join(taxonomy.map{                   meta, taxonomy -> [[id:meta.id], taxonomy]}, by: [0]).combine(mlst_db)
-        } else if (run_type=="update") {
-            check_main_mlst_ch = MLST.out.tsv.map{meta, tsv      -> [[id:meta.id, project_id:meta.project_id], tsv]}\
-            .join(taxonomy.map{                   meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]]).combine(mlst_db)
+        // 3. Run Standard Checker
+        if (run_type == "original") {
+            check_main_mlst_ch = MLST.out.tsv.map{ meta, tsv -> [[id:meta.id], tsv] }
+                .join(taxonomy.map{ meta, tax -> [[id:meta.id], tax] }, by: [0]).combine(mlst_db)
+        } else {
+            check_main_mlst_ch = MLST.out.tsv.map{ meta, tsv -> [[id:meta.id, project_id:meta.project_id], tsv] }
+                .join(taxonomy.map{ meta, tax -> [[id:meta.id, project_id:meta.project_id], tax] }, by: [[0][0],[0][1]]).combine(mlst_db)
         }
 
-        // Checks to see if multiple schemes were found in the sample. Will create _combined.tsv with one ST profile found per line
-        CHECK_MLST (
-            check_main_mlst_ch
-        )
+        CHECK_MLST ( check_main_mlst_ch )
         ch_versions = ch_versions.mix(CHECK_MLST.out.versions)
 
-        // if cdc_phoenix, we want to do srst2 if the standard mlst has reported out as novel_allele, otherwise just skip. 
-        // Novel_Profile will not trigger this anymore as no real-time mlst database updates are performed in the CHECK_MLST_WITH_SRST2 process
+        // 4. Handle SRST2 Logic with Fallback
         if (do_srst2_mlst == true) {
-            if (run_type=="original") {
-                pre_GET_MLST_SRST2_ch = taxonomy.map                {meta, taxonomy -> [[id:meta.id], taxonomy]}\
-                .join(CHECK_MLST.out.status.splitCsv(strip:true).map{meta, status   -> [[id:meta.id], status]},  by: [0]).combine(mlst_db)
-            } else if (run_type=="update") {
-                pre_GET_MLST_SRST2_ch = taxonomy.map                {meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy]}\
-                .join(CHECK_MLST.out.status.splitCsv(strip:true).map{meta, status   -> [[id:meta.id, project_id:meta.project_id], status]},  by: [[0][0],[0][1]]).combine(mlst_db)
-            }
-            // Runs the getMLST portion of the srst2 mlst script to create the required file for srst2 mlst to run. Defines the filesnames and paths to look for in the given database path
-            GET_MLST_SRST2 (
-                pre_GET_MLST_SRST2_ch
-            )
-            ch_versions = ch_versions.mix(GET_MLST_SRST2.out.versions)
-
-            // Takes the check statuses from get_MLST step on whether this step has the required files to actually proceed, or should proceed
-            if (run_type=="original") {
-                mid_srst2_ch = paired_reads.map{                     meta, reads    -> [[id:meta.id], reads]}\
-                .join(GET_MLST_SRST2.out.getMLSTs_checker.map{       meta, getMLSTs -> [[id:meta.id], getMLSTs]}, by: [0])\
-                .join(GET_MLST_SRST2.out.fastas_checker.map{         meta, fastas   -> [[id:meta.id], fastas]},   by: [0])\
-                .join(GET_MLST_SRST2.out.profiles_checker.map{       meta, profiles -> [[id:meta.id], profiles]}, by: [0])\
-                .join(CHECK_MLST.out.status.splitCsv(strip:true).map{meta, status   -> [[id:meta.id], status]},   by: [0])
-            } else if (run_type=="update") {
-                mid_srst2_ch = paired_reads.map{                     meta, reads    -> [[id:meta.id, project_id:meta.project_id], reads]}\
-                .join(GET_MLST_SRST2.out.getMLSTs_checker.map{       meta, getMLSTs -> [[id:meta.id, project_id:meta.project_id], getMLSTs]}, by: [[0][0],[0][1]])\
-                .join(GET_MLST_SRST2.out.fastas_checker.map{         meta, fastas   -> [[id:meta.id, project_id:meta.project_id], fastas]},   by: [[0][0],[0][1]])\
-                .join(GET_MLST_SRST2.out.profiles_checker.map{       meta, profiles -> [[id:meta.id, project_id:meta.project_id], profiles]}, by: [[0][0],[0][1]])\
-                .join(CHECK_MLST.out.status.splitCsv(strip:true).map{meta, status   -> [[id:meta.id, project_id:meta.project_id], status]},   by: [[0][0],[0][1]])
+            if (run_type == "original") {
+                pre_get_ch = taxonomy.map{ m, t -> [[id:m.id], t] }.join(CHECK_MLST.out.status.splitCsv(strip:true).map{ m, s -> [[id:m.id], s] }, by: [0]).combine(mlst_db)
+            } else {
+                pre_get_ch = taxonomy.map{ m, t -> [[id:m.id, project_id:m.project_id], t] }.join(CHECK_MLST.out.status.splitCsv(strip:true).map{ m, s -> [[id:m.id, project_id:m.project_id], s] }, by: [[0][0],[0][1]]).combine(mlst_db)
             }
 
-            // Identifying mlst genes in trimmed reads
-            SRST2_MLST (
-                mid_srst2_ch
-            )
-            ch_versions = ch_versions.mix(SRST2_MLST.out.versions)
-
-            if (run_type=="original") {
-                combined_mlst_ch = MLST.out.tsv.map{                        meta, tsv               -> [[id:meta.id], tsv]}\
-                .join(SRST2_MLST.out.mlst_results_temp.map{                 meta, mlst_results_temp -> [[id:meta.id], mlst_results_temp]}, by: [0])\
-                .join(taxonomy.map{                                         meta, taxonomy          -> [[id:meta.id], taxonomy]},          by: [0])\
-                .join(SRST2_MLST.out.empty_checker.splitCsv(strip:true).map{meta, empty_checker     -> [[id:meta.id], empty_checker]},     by: [0]).combine(mlst_db)
-            } else if (run_type=="update") {
-                combined_mlst_ch = MLST.out.tsv.map{                        meta, tsv               -> [[id:meta.id, project_id:meta.project_id], tsv]}\
-                .join(SRST2_MLST.out.mlst_results_temp.map{                 meta, mlst_results_temp -> [[id:meta.id, project_id:meta.project_id], mlst_results_temp]}, by: [[0][0],[0][1]])\
-                .join(taxonomy.map{                                         meta, taxonomy          -> [[id:meta.id, project_id:meta.project_id], taxonomy]},          by: [[0][0],[0][1]])\
-                .join(SRST2_MLST.out.empty_checker.splitCsv(strip:true).map{meta, empty_checker     -> [[id:meta.id, project_id:meta.project_id], empty_checker]},     by: [[0][0],[0][1]]).combine(mlst_db)
+            GET_MLST_SRST2 ( pre_get_ch )
+            
+            if (run_type == "original") {
+                mid_srst2_ch = paired_reads.map{ m, r -> [[id:m.id], r] }
+                    .join(GET_MLST_SRST2.out.getMLSTs_checker.map{ m, f -> [[id:m.id], f] }, by: [0])
+                    .join(GET_MLST_SRST2.out.fastas_checker.map{ m, f -> [[id:m.id], f] }, by: [0])
+                    .join(GET_MLST_SRST2.out.profiles_checker.map{ m, f -> [[id:m.id], f] }, by: [0])
+                    .join(CHECK_MLST.out.status.splitCsv(strip:true).map{ m, s -> [[id:m.id], s] }, by: [0])
+            } else {
+                mid_srst2_ch = paired_reads.map{ m, r -> [[id:m.id, project_id:m.project_id], r] }
+                    .join(GET_MLST_SRST2.out.getMLSTs_checker.map{ m, f -> [[id:m.id, project_id:m.project_id], f] }, by: [[0][0],[0][1]])
+                    .join(GET_MLST_SRST2.out.fastas_checker.map{ m, f -> [[id:m.id, project_id:m.project_id], f] }, by: [[0][0],[0][1]])
+                    .join(GET_MLST_SRST2.out.profiles_checker.map{ m, f -> [[id:m.id, project_id:m.project_id], f] }, by: [[0][0],[0][1]])
+                    .join(CHECK_MLST.out.status.splitCsv(strip:true).map{ m, s -> [[id:m.id, project_id:m.project_id], s] }, by: [[0][0],[0][1]])
             }
 
-            // Checks to see if multiple schemes were found in the sample. Will create _combined.tsv with one ST profile found per line. Will consolidate if srst2 and standard outputs report the same Types
-            CHECK_MLST_WITH_SRST2 (
-                combined_mlst_ch
-            )
+            SRST2_MLST ( mid_srst2_ch )
+
+            if (run_type == "original") {
+                combined_mlst_ch = MLST.out.tsv.map{ m, t -> [[id:m.id], t] }
+                    .join(SRST2_MLST.out.mlst_results_temp.map{ m, f -> [[id:m.id], f] }, by: [0])
+                    .join(taxonomy.map{ m, t -> [[id:m.id], t] }, by: [0])
+                    .join(SRST2_MLST.out.empty_checker.splitCsv(strip:true).map{ m, e -> [[id:m.id], e] }, by: [0]).combine(mlst_db)
+            } else {
+                combined_mlst_ch = MLST.out.tsv.map{ m, t -> [[id:m.id, project_id:m.project_id], t] }
+                    .join(SRST2_MLST.out.mlst_results_temp.map{ m, f -> [[id:m.id, project_id:m.project_id], f] }, by: [[0][0],[0][1]])
+                    .join(taxonomy.map{ m, t -> [[id:m.id, project_id:m.project_id], t] }, by: [[0][0],[0][1]])
+                    .join(SRST2_MLST.out.empty_checker.splitCsv(strip:true).map{ m, e -> [[id:m.id, project_id:m.project_id], e] }, by: [[0][0],[0][1]]).combine(mlst_db)
+            }
+
+            CHECK_MLST_WITH_SRST2 ( combined_mlst_ch )
             ch_versions = ch_versions.mix(CHECK_MLST_WITH_SRST2.out.versions)
-            if (run_type=="original") {
-                checked_mlst_ch = CHECK_MLST_WITH_SRST2.out.checked_MLSTs.map{meta, checked_MLSTs -> [[id:meta.id], checked_MLSTs]}
-            } else if (run_type=="update") {
-                checked_mlst_ch = CHECK_MLST_WITH_SRST2.out.checked_MLSTs.map{meta, checked_MLSTs -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]}
-            }
+
+            // --- THE BULLETPROOF FALLBACK ---
+            def assembly_only = CHECK_MLST.out.checked_MLSTs.map{ meta, f -> [meta.id, meta, f] }
+            def srst2_checked = CHECK_MLST_WITH_SRST2.out.checked_MLSTs.map{ meta, f -> [meta.id, meta, f] }
+
+            checked_mlst_ch = assembly_only.join(srst2_checked, remainder: true)
+                .map { it ->
+                    // it[0] is the ID
+                    // it[1] is meta_asm, it[2] is file_asm
+                    // it[3] is meta_srst2, it[4] is file_srst2
+                    
+                    def final_meta = it.size() > 3 && it[3] != null ? it[3] : it[1]
+                    def final_file = it.size() > 4 && it[4] != null ? it[4] : it[2]
+                    
+                    return [ final_meta, final_file ]
+                }
 
         } else {
-            if (run_type=="original") {
-                checked_mlst_ch = CHECK_MLST.out.checked_MLSTs.map{meta, checked_MLSTs -> [[id:meta.id], checked_MLSTs]}
-            } else if (run_type=="update") {
-                checked_mlst_ch = CHECK_MLST.out.checked_MLSTs.map{meta, checked_MLSTs -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]}
-            }
+            // Standard Path if do_srst2 is false
+            checked_mlst_ch = CHECK_MLST.out.checked_MLSTs
         }
 
     emit:
         checked_MLSTs = checked_mlst_ch
-        versions      = ch_versions // channel: [ versions.yml ]
+        //checked_MLSTs = checked_mlst_ch.view { "DEBUG DO_MLST EMIT: $it" }
+        versions      = ch_versions
 }

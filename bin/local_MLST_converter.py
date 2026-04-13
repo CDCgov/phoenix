@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This script is designed to convert general genus species taxonomy to the correct name format to allow access for mlst and srst2_mlst 
 # Updated 05-12-2023
@@ -711,7 +711,6 @@ def gs_to_lookup_tax(genus, species):
         'Klebsiella quasivariicola' : 'Klebsiella pneumoniae',
         'Klebsiella africana' : 'Klebsiella pneumoniae',
         'Klebsiella pneumoniae' : 'Klebsiella pneumoniae',
-        'Klebsiella pneumoniae' : 'Klebsiella pneumoniae',
         'Kudoa septempunctata' : 'Kudoa septempunctata',
         'Lactobacillus salivarius' : 'Lactobacillus salivarius',
         'Lactococcus garvieae' : 'Lactococcus garvieae',
@@ -912,7 +911,7 @@ def convert(to_convert):
         'Kingella kingae' : 'kkingae',
         'Klebsiella oxytoca' : 'koxytoca',
         'Klebsiella aerogenes' : 'kaerogenes',
-        'Klebsiella pneumoniae' : 'kpneumoniae',
+        'Klebsiella pneumoniae' : 'klebsiella',
         'Kudoa septempunctata' : 'kseptempunctata',
         'Lactobacillus salivarius' : 'lsalivarius',
         'Lactococcus garvieae' : 'lgarvieae',
@@ -960,6 +959,7 @@ def convert(to_convert):
         'Rhodococcus spp.' : 'rhodococcus',
         'Salmonella spp.' : 'salmonella_Achtman,salmonella_Oxford',
         'Saprolegnia parasitica' : 'sparasitica',
+        'Serratia spp.' : 'serratia',
         'Shewanella spp.' : 'shewanella',
         'Sinorhizobium spp.' : 'sinorhizobium',
         'Staphylococcus aureus' : 'saureus',

@@ -23,14 +23,12 @@ process UPDATE_GRIPHIN {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${params.bin_dir}" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def project_path = file(full_project_id).parent // only removed the last dir, but gives the full path otherwise
-    def project_id = full_project_id.split('/')[-1] // just the last dir name 
+    def project_id = full_project_id.toString().split('/')[-1] // just the last dir name 
     // passing in either two files or a list of files
     def griphin_input = griphins_excel.size() == 2 ? "-g1 ${griphins_excel[0]} -g2 ${griphins_excel[1]}" : "--griphin_list"
     // file name handling

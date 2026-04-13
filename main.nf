@@ -159,7 +159,7 @@ workflow SRA {
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
-                if (!sraNumber.startsWith("SRR")) {
+                if (!sraNumber.startsWith("SRR") & !sraNumber.startsWith("ERR")) {
                     exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for --mode SRA, but found: $sraNumber"
                 }
             }
@@ -213,7 +213,7 @@ workflow CDC_SRA {
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
-                if (!sraNumber.startsWith("SRR")) {
+                if (!sraNumber.startsWith("SRR") & !sraNumber.startsWith("ERR")) {
                     exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for --mode CDC_SRA, but found: $sraNumber"
                 }
             }
@@ -462,11 +462,11 @@ workflow COMBINE_GRIPHINS {
     }
 
     //no griphins to start - they should be in the input samplesheet
-    input_griphins_ch = null
+    //input_griphins_ch = null
     //input_griphins_tsv_ch = null
 
     main:
-        COMBINE_GRIPHINS_WF ( input_griphins_ch, ch_input, outdir, ch_versions )
+        COMBINE_GRIPHINS_WF ( ch_input, ch_versions )
 
 }
 
