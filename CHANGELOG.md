@@ -337,7 +337,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - MLST database is now created using pubMLST API and merged with the unique schemes available on pasteur and enterobase sites
    - Numerous new schemes were added including a significant group that now contain more than a single scheme for an organism
  
-## [v2.2.1](https://github.com/CDCgov/phoenix/releases/tag/v2.2.1) (XX/XX/2026)
+## [v2.2.1](https://github.com/CDCgov/phoenix/releases/tag/v2.2.1) (04/13/2026)
 
 **Fixed Bugs:**  
 
@@ -352,7 +352,5 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Implemented Enhancements:** 
 - `--mode SRA` and `--mode CDC_SRA` allow ERR numbers as well as SRR.  
 - Added `--mode COMBINE_GRIPHINS` to pass several griphin scripts to the pipeline to combine into one griphin report. 
-- Creation of `--mode CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
-- `--centar` parameter can be passed when running `--mode PHOENIX` or `--mode CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki]() for full documentation.
 - Added gamma plasmidfinder to tools run during -mode update_phoenix.
 - Added better version tracking and gamma plasmidFinder changes to the updater_log in -mode update_phoenix
