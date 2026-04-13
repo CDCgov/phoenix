@@ -302,7 +302,7 @@ workflow RUN_CENTAR {
                 params.coverage,
                 // Fix once implemented, for now its hard-coded
                 CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{meta, tsv -> tsv.readLines().first().contains('BUSCO')}, 
-                false, true, params.bldb, false, false, [], "" //Add empty string to show there is no old_version_info
+                false, true, params.bldb, false, false, [], "", "" //Add empty string to show there is no old_version_info, and a second to show run type is not inferred (for updater only)
             )
             ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
@@ -367,8 +367,8 @@ workflow RUN_CENTAR {
                 GRIPHIN_NO_PUBLISH (
                     params.ardb,                                   // path(db)
                     combined_ch.map { it[3] },                     // path(original_samplesheet)
-                    combined_ch.map { it[0] },  // val(metas): list of [id:<sid>, filenames:[...]]
-                    combined_ch.map { it[1] }, // path(griphin_files): flattened file list
+                    combined_ch.map { it[0] },                     // val(metas): list of [id:<sid>, filenames:[...]]
+                    combined_ch.map { it[1] },                     // path(griphin_files): flattened file list
                     combined_ch.map { it[2] },                     // path(outdir): full_project_id
                     workflow.manifest.version,                     // val(phx_version)
                     params.coverage,                               // val(coverage)
@@ -377,9 +377,11 @@ workflow RUN_CENTAR {
                     true,                                          // val(centar_detected)
                     params.bldb,                                   // path(bldb)
                     true,                                          // val(filter_var)
-                    true,                                           // val(dont_publish)
-                    [],
-                    "" //Add empty string to show there is no old_version_info
+                    true,                                          // val(dont_publish)
+                    [],                                            // path(blind_list)
+                    "",                                            // val(old_phx_version)
+                    ""                                             // val(inferred_mode)
+
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
 
@@ -440,7 +442,7 @@ workflow RUN_CENTAR {
                     workflow.manifest.version,
                     params.coverage,
                     busco_boolean,
-                    false, true, params.bldb, true, false, [], "" //Add empty string to show there is no old_version_info
+                    false, true, params.bldb, true, false, [], "", "" //Add empty string to show there is no old_version_info, and a second to show run type is not inferred (for updater only)
                 )
                 ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 

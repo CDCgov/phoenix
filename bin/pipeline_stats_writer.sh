@@ -852,7 +852,6 @@ if [[ -f "${assembly_ratio_file}" ]]; then
 	assembly_ratio=$(tail -n1 "${assembly_ratio_file}" | cut -d' ' -f2)
 	stdev_line=$(head -n4 "${assembly_ratio_file}" | tail -n1)
 	species_stdev_line=$(head -n3 "${assembly_ratio_file}" | tail -n1)
-	gc_content=$(head  )
 	if [[ "${stdev_line}" = "Isolate_St.Devs: N/A" ]]; then
 		st_dev="N/A"
 	else
