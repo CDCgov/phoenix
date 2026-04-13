@@ -352,5 +352,5 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Implemented Enhancements:** 
 - `--mode SRA` and `--mode CDC_SRA` allow ERR numbers as well as SRR.  
 - Added `--mode COMBINE_GRIPHINS` to pass several griphin scripts to the pipeline to combine into one griphin report. 
-- Added gamma plasmidfinder to tools run during -mode update_phoenix.
-- Added better version tracking and gamma plasmidFinder changes to the updater_log in -mode update_phoenix
+- Added gamma plasmidfinder to tools run during `--mode update_phoenix`.
+- Added better version tracking and gamma plasmidFinder changes to the updater_log in `--mode update_phoenix`
