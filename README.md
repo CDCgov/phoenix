@@ -36,7 +36,7 @@ The SHARE IT Act is a federal law that says government agencies like CDC must be
 
 # Quick Start
 
-1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`). 
+1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=25.10.2`). 
 
    There are several options for install if you do not already have it on your system:
 
