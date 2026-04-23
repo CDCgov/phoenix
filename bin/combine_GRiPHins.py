@@ -479,7 +479,7 @@ def remove_dup_rows(old_griphin_df, new_griphin_df):
     #new_griphin_df["UNI"] = new_griphin_df["UNI"].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
     #remove dups
     old_griphin_df = old_griphin_df[~old_griphin_df['UNI'].isin(new_griphin_df['UNI'])]
-    print_df(old_griphin_df, "Old griphin df after removing dups", True)
+#    print_df(old_griphin_df, "Old griphin df after removing dups", True)
     return old_griphin_df
 
 def backwards_compatibility(df, parent_folder, file_path):
@@ -627,7 +627,6 @@ def main():
         # Derive output file name from input file name
         output_file = args.griphin_new.replace("_GRiPHin_Summary.xlsx", "")
     # checking what the input type is
-    print(args.old_phx_version)
     if args.griphin_old != None and args.griphin_new != None: # only two files being combined
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(args.griphin_old, args.griphin_new, args.samplesheet, args.remove_dups, args.parent_folder)
     else:

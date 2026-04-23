@@ -4,6 +4,90 @@
 
 class InputChannelUtils {
 
+    
+    /**
+    * debugChannel
+    *
+    * A non-destructive, null-safe channel debug utility for use in a Nextflow lib file.
+    * Uses .map() to inspect each item as it flows through, so it won't hang on
+    * incomplete/lazy channels like joins that are waiting on missing keys.
+    *
+    * @param ch      The channel to inspect (returned untouched)
+    * @param limit   The number of items you're expecting — flags a warning if not met per item
+    * @param label   A descriptive label so you know which step/context you're debugging
+    *
+    * Usage:
+    *   def line_step3 = debugChannel(line_step2, 13, "post gamma_hv join")
+    *       .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{...}, by: [...])
+    */
+    static def debugChannel(ch, int limit, String label) {
+        return ch.map { items ->
+            def meta      = items[0]
+            def values    = items.drop(1)
+            def nullSlots = values.withIndex()
+                                .findAll { v, i -> v == null }
+                                .collect { v, i -> i + 1 }  // 1-based slot index
+
+            def divider = "=" * 60
+            def subDiv  = "-" * 60
+
+            def itemLines = values.withIndex()
+                                .collect { v, i -> "  [${i + 1}] ${v == null ? 'NULL ⚠' : v}" }
+                                .join('\n')
+
+            def nullWarn  = nullSlots ? "\n  ⚠ NULL slots : ${nullSlots}" : ""
+            def countWarn = values.size() != limit
+                                ? "\n  ⚠ Item count (${values.size()}) does not match expected (${limit})"
+                                : ""
+
+            println """
+        ${divider}
+        [DEBUG CHANNEL] :: ${label}
+        ${subDiv}
+        meta.id      : ${meta?.id}
+        meta keys    : ${meta?.keySet()?.join(', ')}
+        Slot count   : ${values.size()}
+        Expecting    : ${limit}${nullWarn}${countWarn}
+        ${subDiv}
+        Values:
+        ${itemLines}
+        ${divider}
+        """.stripIndent()
+
+                items // pass through untouched
+            }
+    }
+
+    static def detect_entry_type(sample_dir) {
+        def all_files = []
+        sample_dir.eachFileRecurse { all_files << it.name }
+        
+        def has_centar   = all_files.any { it.endsWith("_centar_output.tsv") }
+//      def has_pegasus  = all_files.any { it.endsWith("_pegasus_output.tsv") } --- IGNORE ---
+//      def has_sphinx   = all_files.any { it.endsWith("_sphinx_output.tsv") } --- IGNORE ---
+//      def has_neptune  = all_files.any { it.endsWith("_neptune_output.tsv") } --- IGNORE ---
+        def has_busco    = all_files.any { it.contains("short_summary") }
+        def has_reads = all_files.any { it.endsWith("_1.trim.fastq.gz") } && 
+                all_files.any { it.endsWith("_2.trim.fastq.gz") }
+        def has_assembly = all_files.any { it.endsWith(".filtered.scaffolds.fa.gz") || it.endsWith(".renamed.scaffolds.fa.gz") }
+
+        def base_type
+        if (has_reads && has_busco)         base_type = 'CDC_PHOENIX'
+        else if (has_reads && !has_busco)   base_type = 'PHOENIX'
+        else if (has_assembly && has_busco) base_type = 'CDC_SCAFFOLDS'
+        else if (has_assembly)              base_type = 'SCAFFOLDS'
+        else                                base_type = 'unknown'
+
+        return [
+            base:   base_type,
+            centar: has_centar,
+            // future subworkflows just get added here as flags
+            // pegasus: has_pegasus,
+            // sphinx: has_sphinx,
+            // neptune: has_neptune,
+        ]
+    }
+
     static Object previous_updater_check(meta, ar_file, db_path, type, mode_upper, Object forceUpdate = false) {
         def isList = ar_file instanceof List
         def patterns = [

@@ -35,6 +35,7 @@ include { SHIGAPASS                            } from '../modules/local/shigapas
 include { CHECK_SHIGAPASS_TAXA                 } from '../modules/local/check_shigapass_taxa'
 include { CALCULATE_ASSEMBLY_RATIO             } from '../modules/local/assembly_ratio'
 include { GAMMA as GAMMA_AR                    } from '../modules/local/gamma'
+include { GAMMA as GAMMA_HV                    } from '../modules/local/gamma'
 include { GAMMA_S as GAMMA_PF                  } from '../modules/local/gammas'
 include { GET_TAXA_FOR_AMRFINDER               } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN                    } from '../modules/local/run_amrfinder'
@@ -340,6 +341,11 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
+        // Running gamma to identify AR genes in scaffolds
+        GAMMA_HV (
+            filtered_scaffolds_ch, params.hvgamdb
+        )
+        ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
         
         // Running gamma to identify AR genes in scaffolds
         GAMMA_PF (
@@ -420,10 +426,6 @@ workflow UPDATE_PHOENIX_WF {
                 "DEBUG ISOLATE: Tuple Size=${it.size()} | ID=${meta?.id} | File=${fileObj instanceof List ? 'LIST: ' + fileObj : fileObj}" 
             }
 
-        GAMMA_AR.out.gamma.view { meta, gamma -> 
-           ">>> GAMMA_AR OUTPUT: ${meta.id} | ${gamma}" 
-        }
-
         CREATE_INPUT_CHANNELS.out.update_pipeline_info_isolate
     .view { meta, software -> log.info ">>> update_pipeline_info_isolate meta: ${meta}" }
 */
@@ -468,6 +470,10 @@ workflow UPDATE_PHOENIX_WF {
 //            .view { it -> log.info ">>> CHECKPOINT 12 after gamma_pf join: ${it[0].id}" }
             .join(GAMMA_PF.out.gamma.map{                              meta, g_pf        -> [[id:meta.id, project_id:meta.project_id], g_pf]},        by: [[0][0],[0][1]])
 //            .view { it -> log.info ">>> CHECKPOINT 13 after GAMMA_PF.out join: ${it[0].id}" }
+            .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{              meta, gamma_hv    -> [[id:meta.id, project_id:meta.project_id], gamma_hv]},    by: [[0][0],[0][1]])
+//            .view { it -> log.info ">>> CHECKPOINT 14 after gamma_pf join: ${it[0].id}" }
+            .join(GAMMA_HV.out.gamma.map{                              meta, g_hv        -> [[id:meta.id, project_id:meta.project_id], g_hv]},        by: [[0][0],[0][1]])
+//            .view { it -> log.info ">>> CHECKPOINT 15 after GAMMA_HV.out join: ${it[0].id}" }
             .join(CREATE_INPUT_CHANNELS.out.update_pipeline_info_isolate
                 .combine(update_needed_ids)
                 .filter { meta, software, update_ids -> 
@@ -476,18 +482,16 @@ workflow UPDATE_PHOENIX_WF {
                 }
                 .map { meta, software, update_ids -> [[id:meta.id, project_id:meta.project_id], software] }
             , by: [[0][0],[0][1]], remainder: true)
-//            .view { it -> log.info ">>> CHECKPOINT 14 after software join: ${it[0].id}" }
-//            .view { it -> log.info ">>> PRE-FINAL-MAP size: ${it.size()} | types: ${it.collect { i -> i?.getClass()?.getSimpleName() }}" }
-//            .view { it -> log.info ">>> PRE-PRE-FINAL-MAP full tuple: ${it}" }
-            .map { meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file, g_pf, gp, software ->
+//            .view { it -> log.info ">>> CHECKPOINT 16 after software join: ${it[0].id}" }
+//            .view { it -> log.info ">>> PRE-PRE-FINAL-MAP full tuple: ${it}" | ${it.size()} | types: ${it.collect { i -> i?.getClass()?.getSimpleName() }}" }
+            .map { meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file, g_pf, gp, g_hv, gh, software ->
                 return [
-                    meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file ?: [], g_pf, gp, software ?: []
+                    meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file ?: [], g_pf, gp, g_hv, gh, software ?: []
                 ]
             }
-/*            .view { it -> log.info ">>> PRE-FINAL-MAP full tuple: ${it}" }
-            .view { it -> log.info ">>> CHECKPOINT 15 final channel built: ${it[0].id}" }
+//            .view { it -> log.info ">>> PRE-FINAL-MAP full tuple: ${it}" }
 
-        files_to_update_ch.view { meta, dir, pipeline, readme, g_ar, g_ar_out, ncbi, amr, tax, s_tax, g_pf, g_pf_out, software_versions ->
+/*        files_to_update_ch.view { meta, dir, pipeline, readme, g_ar, g_ar_out, ncbi, amr, tax, s_tax, g_pf, g_pf_out, g_hv, g_hv_out,software_versions ->
             """
             CHECKING INPUTS FOR SAMPLE: ${meta.id}
             ------------------------------------
@@ -502,7 +506,9 @@ workflow UPDATE_PHOENIX_WF {
             Tax File (Input 10):                  ${s_tax} (Type: ${s_tax?.getClass()?.getSimpleName() ?: 'Null'})
             Gamma PF (Input 11):                  ${g_pf} (Type: ${g_pf?.getClass()?.getSimpleName() ?: 'Null'})
             Gamma PF Out (Input 12):              ${g_pf_out} (Type: ${g_pf_out?.getClass()?.getSimpleName() ?: 'Null'})
-            Updater Software Versions (Input 13): ${software_versions} (Type: ${software_versions?.getClass()?.getSimpleName() ?: 'Null'})
+            Gamma HV (Input 13):                  ${g_hv} (Type: ${g_hv?.getClass()?.getSimpleName() ?: 'Null'})
+            Gamma HV Out (Input 14):              ${g_hv_out} (Type: ${g_hv_out?.getClass()?.getSimpleName() ?: 'Null'})
+            Updater Software Versions (Input 15): ${software_versions} (Type: ${software_versions?.getClass()?.getSimpleName() ?: 'Null'})
             ------------------------------------
             """.stripIndent()
         }
@@ -512,14 +518,13 @@ workflow UPDATE_PHOENIX_WF {
             it
         }
 */
-//            Updater Software Versions (Input 13): ${software_versions} (Type: ${software_versions?.getClass()?.getSimpleName() ?: 'Null'})
-
         CREATE_AND_UPDATE_README (
             files_to_update_ch,
             workflow.manifest.version,
             params.custom_mlstdb,
             params.ardb,
             params.gamdbpf,
+            params.hvgamdb,
             params.amrfinder_db
         )
         ch_versions = ch_versions.mix(CREATE_AND_UPDATE_README.out.versions)
@@ -532,7 +537,7 @@ workflow UPDATE_PHOENIX_WF {
         GENERATE_PIPELINE_STATS_WF (
             CREATE_INPUT_CHANNELS.out.raw_stats,
             CREATE_INPUT_CHANNELS.out.fastp_total_qc,
-            SRST2_AR.out.fullgene_results,
+            SRST2_AR.out.fullgene_results.concat(CREATE_INPUT_CHANNELS.out.srst2_ar).unique{ meta, file -> [meta.id, meta.project_id] },
             CREATE_INPUT_CHANNELS.out.k2_trimd_report,
             CREATE_INPUT_CHANNELS.out.k2_trimd_krona,
             CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary,
@@ -560,7 +565,7 @@ workflow UPDATE_PHOENIX_WF {
 
         //get back project_id info
         pipeline_stats_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] }
-                                    .join(GAMMA_AR.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma, meta.project_id]}, by: [0]).map{ meta, pipeline_stats, gamma, project_id -> [[id:meta.id, project_id:project_id], pipeline_stats]}.view { "STEP 0 (PS): ${it[0].id}, ${it[1]}" }
+                                    .join(GAMMA_AR.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma, meta.project_id]}, by: [0]).map{ meta, pipeline_stats, gamma, project_id -> [[id:meta.id, project_id:project_id], pipeline_stats]} //.view { "STEP 0 (PS): ${it[0].id}, ${it[1]}" }
 
 
 /*        CREATE_INPUT_CHANNELS.out.filtered_scaffolds
@@ -587,81 +592,83 @@ workflow UPDATE_PHOENIX_WF {
 
 
         // Combining output based on meta.id to create summary by sample
-        def line_step1 = CREATE_INPUT_CHANNELS.out.fastp_total_qc
-            .filter{ meta, f -> f != null }
+        def summary_line_ch = CREATE_INPUT_CHANNELS.out.filtered_scaffolds
             .combine(update_needed_ids)
             .filter{ meta, f, update_ids -> update_ids.contains(meta.id) }
-            .map{    meta, f, update_ids -> [[id:meta.id, project_id:meta.project_id], f] } //.map { it -> log.info "STEP 1 (fastp): ${it[0].id}, ${it[1]}"; it}
-        def line_step2 = line_step1.join(DO_MLST.out.checked_MLSTs.map{meta, checked_MLSTs -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 2 (MLST): ${it[0].id}, ${it[2]}"; it}
-        def line_step3 = line_step2.join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{meta, gamma_hv -> [[id:meta.id, project_id:meta.project_id], gamma_hv]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 3 (gamma_hv): ${it[0].id}, ${it[3]}"; it}
-        def line_step4 = line_step3.join(GAMMA_AR.out.gamma.map{meta, gamma -> [[id:meta.id, project_id:meta.project_id], gamma]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 4 (gamma): ${it[0].id}, ${it[4]}"; it}
-        def line_step5 = line_step4.join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{meta, gamma_pf -> [[id:meta.id, project_id:meta.project_id], gamma_pf]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 5 (gamma_pf): ${it[0].id}, ${it[5]}"; it}
-        def line_step6 = line_step5.join(CREATE_INPUT_CHANNELS.out.quast_report.map{meta, quast_report -> [[id:meta.id, project_id:meta.project_id], quast_report]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 6 (quast_report): ${it[0].id}, ${it[6]}"; it}
-        def line_step7 = line_step6.join(CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta, file -> [meta.id, meta.project_id] }.map{meta, assembly_ratio -> [[id:meta.id, project_id:meta.project_id], assembly_ratio]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 7 (assembly_ratio): ${it[0].id}, ${it[7]}"; it}
-        def line_step8 = line_step7.join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] }.map{meta, synopsis -> [[id:meta.id, project_id:meta.project_id], synopsis]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 8 (synopsis): ${it[0].id}, ${it[8]}"; it}
-        def line_step9 = line_step8.join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy).unique{ meta, file -> [meta.id, meta.project_id] }.map{meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 9 (taxonomy): ${it[0].id}, ${it[9]}"; it}
-        def line_step10 = line_step9.join(CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary.map{meta, k2_trimd_bh_summary -> [[id:meta.id, project_id:meta.project_id], k2_trimd_bh_summary]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 10 (k2_trimd_bh_summary): ${it[0].id}, ${it[10]}"; it}
-        def line_step11 = line_step10.join(CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary.map{meta, k2_wtasmbld_bh_summary -> [[id:meta.id, project_id:meta.project_id], k2_wtasmbld_bh_summary]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 11 (k2_wtasmbld_bh_summary): ${it[0].id}, ${it[11]}"; it}
-        def line_step12 = line_step11.join(AMRFINDERPLUS_RUN.out.report.map{meta, report -> [[id:meta.id, project_id:meta.project_id], report]}, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 12 (report): ${it[0].id}, ${it[12]}"; it}
-        def line_step13 = line_step12.join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta, file -> [meta.id, meta.project_id] }.map{ meta, ani_best_hit -> [[id:meta.id, project_id:meta.project_id], ani_best_hit] }, by: [[0][0],[0][1]]) //.map { it -> log.info "STEP 13 (ani_best_hit): ${it[0].id}, ${it[13]}"; it }
-        def line_step14 = line_step13.join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate.filter{ meta, pipeline_info -> pipeline_info != null }
-            .map{ meta, pipeline_info -> 
-                def content = pipeline_info.text     
-                def version = "unknown"
-                if (content =~ /(?m)cdcgov\/phoenix:\s*(.+)/) {
-                    version = (content =~ /(?m)cdcgov\/phoenix:\s*(.+)/)[0][1].trim()
-                } else if (content =~ /(?m)version:\s*(.+)/) {
-                    version = (content =~ /(?m)version:\s*(.+)/)[0][1].trim()
-                } else if (content =~ /(?m)phoenix:\s*(.+)/) {
-                    version = (content =~ /(?m)phoenix:\s*(.+)/)[0][1].trim()
-                }
-                [[id:meta.id, project_id:meta.project_id], version]}, by: [[0][0],[0][1]])// .map { it -> log.info "STEP 14 (VERSION): ${it[0].id}, ${it[14]}"; it}
+            .map{    meta, f, update_ids -> [[id:meta.id, project_id:meta.project_id], f] }
+            .join(CREATE_INPUT_CHANNELS.out.fastp_total_qc
+                .concat(CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{ meta, f -> [meta, []] })
+                .unique{ meta, f -> [meta.id, meta.project_id] }
+                .map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] },                                                by: [[0][0],[0][1]])
+            .join(DO_MLST.out.checked_MLSTs.map{                    meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{           meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]])
+            .join(GAMMA_AR.out.gamma.map{                           meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{           meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.quast_report.map{       meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]])
+            .join(CALCULATE_ASSEMBLY_RATIO.out.ratio
+                .concat(CREATE_INPUT_CHANNELS.out.assembly_ratio)
+                .unique{ meta, f -> [meta.id, meta.project_id] }
+                .map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] },                                                by: [[0][0],[0][1]])
+            .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats
+                .concat(CREATE_INPUT_CHANNELS.out.synopsis)
+                .unique{ meta, f -> [meta.id, meta.project_id] }
+                .map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] },                                                by: [[0][0],[0][1]])
+            .join(CHECK_SHIGAPASS_TAXA.out.tax_file
+                .concat(CREATE_INPUT_CHANNELS.out.taxonomy)
+                .unique{ meta, f -> [meta.id, meta.project_id] }
+                .map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] },                                                by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary
+                .concat(CREATE_INPUT_CHANNELS.out.filtered_scaffolds.map{ meta, f -> [meta, []] })
+                .unique{ meta, f -> [meta.id, meta.project_id] }
+                .map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] },                                                by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary.map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]])
+            .join(AMRFINDERPLUS_RUN.out.report.map{                 meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]])
+            .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit
+                .concat(CREATE_INPUT_CHANNELS.out.ani_best_hit)
+                .unique{ meta, f -> [meta.id, meta.project_id] }
+                .map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] },                                                by: [[0][0],[0][1]])
+            .join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate
+                .filter{ meta, pipeline_info -> pipeline_info != null }
+                .map{ meta, pipeline_info ->
+                    def content = pipeline_info.text
+                    def version = "unknown"
+                    if (content =~ /(?m)cdcgov\/phoenix:\s*(.+)/) {
+                        version = (content =~ /(?m)cdcgov\/phoenix:\s*(.+)/)[0][1].trim()
+                    } else if (content =~ /(?m)version:\s*(.+)/) {
+                        version = (content =~ /(?m)version:\s*(.+)/)[0][1].trim()
+                    } else if (content =~ /(?m)phoenix:\s*(.+)/) {
+                        version = (content =~ /(?m)phoenix:\s*(.+)/)[0][1].trim()
+                    }
+                    [[id:meta.id, project_id:meta.project_id], version] },                                                       by: [[0][0],[0][1]])
+            .map{ key, scaffolds, fastp, mlst, hv, ar, pf, quast, ratio, synopsis, tax, trimd_ks, wtasmbld_ks, amr, ani, version ->
+                [key, fastp, mlst, hv, ar, pf, quast, ratio, synopsis, tax, trimd_ks, wtasmbld_ks, amr, ani, version]
+            }
 
-        line_summary_ch = line_step14
-
-/*        line_step1.view  { it -> log.info ">>> ALIVE step1:  ${it[0].id}" }
-        line_step2.view  { it -> log.info ">>> ALIVE step2:  ${it[0].id}" }
-        line_step3.view  { it -> log.info ">>> ALIVE step3:  ${it[0].id}" }
-        line_step4.view  { it -> log.info ">>> ALIVE step4:  ${it[0].id}" }
-        line_step5.view  { it -> log.info ">>> ALIVE step5:  ${it[0].id}" }
-        line_step6.view  { it -> log.info ">>> ALIVE step6:  ${it[0].id}" }
-        line_step7.view  { it -> log.info ">>> ALIVE step7:  ${it[0].id}" }
-        line_step8.view  { it -> log.info ">>> ALIVE step8:  ${it[0].id}" }
-        line_step9.view  { it -> log.info ">>> ALIVE step9:  ${it[0].id}" }
-        line_step10.view { it -> log.info ">>> ALIVE step10: ${it[0].id}" }
-        line_step11.view { it -> log.info ">>> ALIVE step11: ${it[0].id}" }
-        line_step12.view { it -> log.info ">>> ALIVE step12: ${it[0].id}" }
-        line_step13.view { it -> log.info ">>> ALIVE step13: ${it[0].id}" }
-        line_step14.view { it -> log.info ">>> ALIVE step14: ${it[0].id}" }
-
-        line_summary_ch.view { it ->
+/*        summary_line_ch.view { it ->
             def meta = it[0]
             return """
             ====================================================
             SURVIVOR FOUND: ${meta.id}
             Total elements in tuple: ${it.size()}
-            Step 12 result check: ${it[-1]} 
+            Last element check: ${it[-1]}
             ====================================================
             """.stripIndent()
-        }
-        // This will fire if the channel is completely empty
-        line_summary_ch.ifEmpty { "!!! LOG ALERT: No samples survived the line_step joins !!!" }.view()                    
-*/
-        // First, check if SHIGAPASS.out.summary is empty and create appropriate channel - for cases where isolate set has no e.coli or shigella
+        } */
+        summary_line_ch.ifEmpty { "!!! LOG ALERT: No samples survived MEGA-JOIN to create channel for CREATE_SUMMARY_LINES !!!" }.view()
+
+        // First, check if SHIGAPASS.out.summary is empty and create appropriate channel
         shigapass_ch = SHIGAPASS.out.summary.mix(CREATE_INPUT_CHANNELS.out.shigapass)
 
-        // Extract [id, project_id] pairs for all isolates in line_summary_ch channel for joining // If shigapass_files is null (no match), replace with empty list
-        all_id_pairs_ch = line_summary_ch.join(shigapass_ch, by: [[0][0],[0][1]], remainder: true).filter{ it[1] != null }
-            .map{ meta, fastp_total_qc, checked_MLSTs, gamma_hv, gamma, gamma_pf, quast_report, assembly_ratio, synopsis, taxonomy, k2_trimd_bh_summary, k2_wtasmbld_bh_summary, report, ani_best_hit, old_version, shigapass_file ->
-            def sp = (shigapass_file == null || shigapass_file == []) ? [] : shigapass_file
-            return [meta, fastp_total_qc, checked_MLSTs, gamma_hv, gamma, gamma_pf, quast_report, assembly_ratio, synopsis, taxonomy, k2_trimd_bh_summary, k2_wtasmbld_bh_summary, report, ani_best_hit, sp, old_version]
+        // Join shigapass and handle null/empty
+        all_id_pairs_ch = summary_line_ch.join(shigapass_ch, by: [[0][0],[0][1]], remainder: true).filter{ it[1] != null }
+            .map{ meta, fastp, mlst, hv, ar, pf, quast, ratio, synopsis, tax, trimd_ks, wtasmbld_ks, amr, ani, version, shigapass_file ->
+                def sp = (shigapass_file == null || shigapass_file == []) ? [] : shigapass_file
+                return [meta, fastp, mlst, hv, ar, pf, quast, ratio, synopsis, tax, trimd_ks, wtasmbld_ks, amr, ani, sp, version]
             }
-        // rename to line_summary_ch --> just to keep the naming consistent with the original workflow
-        line_summary_ch = all_id_pairs_ch
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
-            line_summary_ch, false, workflow.manifest.version
+            all_id_pairs_ch, false, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
@@ -825,7 +832,8 @@ workflow UPDATE_PHOENIX_WF {
                 GAMMA_AR.out.gamma,
                 GAMMA_PF.out.gamma,
                 //CREATE_INPUT_CHANNELS.out.gamma_pf,
-                CREATE_INPUT_CHANNELS.out.gamma_hv,
+                //CREATE_INPUT_CHANNELS.out.gamma_hv,
+                GAMMA_HV.out.gamma,
                 CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(CREATE_INPUT_CHANNELS.out.ani_best_hit).unique{ meta, file -> [meta.id, meta.project_id] },
                 pipeline_stats_ch.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] },
                 SHIGAPASS.out.summary.concat(CREATE_INPUT_CHANNELS.out.shigapass).unique{ meta, file -> [meta.id, meta.project_id] },
@@ -914,7 +922,7 @@ workflow UPDATE_PHOENIX_WF {
                 .unique()
                 .collectFile(name: 'collated_versions.yml')
                 .ifEmpty { 
-                    log.info ">>> ch_collated_versions was empty, using fallback"
+//                    log.info ">>> ch_collated_versions was empty, using fallback"
                     Channel.fromPath("${workflow.projectDir}/assets/nf-core_version.yml")
                 }
                 

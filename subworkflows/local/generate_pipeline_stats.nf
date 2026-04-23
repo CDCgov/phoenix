@@ -68,24 +68,18 @@ workflow GENERATE_PIPELINE_STATS_WF {
             asmbld_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
-        if (fastp_raw_qc == []) { // for --mode SCAFFOLDS and CDC_SCAFFOLDS
-            // just grabbing the meta.id from the incoming file to create [ meta.id, [] ]
-            fastp_raw_qc = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            fastp_total_qc = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            trimd_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            trimd_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
-        }
+        fastp_raw_qc       = fastp_raw_qc.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        fastp_total_qc     = fastp_total_qc.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        fullgene_results   = fullgene_results.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        trimd_report       = trimd_report.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        trimd_krona_html   = trimd_krona_html.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        trimd_k2_bh_summary = trimd_k2_bh_summary.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
 
-        if (gamma_ar == []) { // for --mode CLIA
-            // just grabbing the meta.id from the incoming file to create [ meta.id, [] ]
-            gamma_hv = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            gamma_ar = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            gamma_pf = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            mlst = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
-        }
+        gamma_hv = gamma_hv.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        gamma_ar = gamma_ar.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        gamma_pf = gamma_pf.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        mlst     = mlst.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        fullgene_results = fullgene_results.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
 
         if (params.mode_upper == "UPDATE_PHOENIX") {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
@@ -143,6 +137,8 @@ workflow GENERATE_PIPELINE_STATS_WF {
                 .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [[id:meta.id],amr_point_mutations]},    by: [0])\
                 .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])
         }
+
+        pipeline_stats_ch.view { it -> log.info ">>> pipeline_stats_ch emitting: ${it[0].id} | size: ${it.size()}" }
 
         GENERATE_PIPELINE_STATS (
             pipeline_stats_ch, params.coverage

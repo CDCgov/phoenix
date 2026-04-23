@@ -24,10 +24,13 @@ def parseArgs(args=None):
     parser.add_argument('-a', '--amrfinder_db', dest="amrfinder_db", required=True, help='New AMRFinder database')
     parser.add_argument('-g', '--ar_db', dest="ar_db",required=True, help='New combined AR db')
     parser.add_argument('--pf_db', dest="pf_db",required=True, help='New PF-Replicons database')
+    parser.add_argument('--hv_db', dest="hv_db",required=True, help='New HyperVirulence database')
     parser.add_argument('--old_gamma', dest="old_gamma",required=True, help='Old <sample_id>_ResGANNCBI_<date>_srst2.gamma file.')
     parser.add_argument('--new_gamma', dest="new_gamma",required=True, help='New <sample_id>_ResGANNCBI_<date>_srst2.gamma file.')
     parser.add_argument('--old_pf', dest="old_pf",required=True, help='Old <sample_id>_PF-Replicons_<date>.gamma file.')
     parser.add_argument('--new_pf', dest="new_pf",required=True, help='New <sample_id>_PF-Replicons_<date>.gamma file.')
+    parser.add_argument('--old_hv', dest="old_hv",required=True, help='Old <sample_id>_HyperVirulence_<date>.gamma file.')
+    parser.add_argument('--new_hv', dest="new_hv",required=True, help='New <sample_id>_HyperVirulence_<date>.gamma file.')
     parser.add_argument('--old_ncbi', dest="old_ncbi",required=True, help='Old <sample_id>_<date>_all_genes.tsv file.')
     parser.add_argument('--new_ncbi', dest="new_ncbi",required=True, help='New <sample_id>_<date>_all_genes.tsv file.')
     parser.add_argument('--old_tax', dest="old_tax",required=False, help='Old <sample_id>.tax file.')
@@ -66,6 +69,14 @@ def get_old_database_IDs(software_versions):
             #mlst_container = mlst_data.get('mlst_container', '')
         else:
             old_mlst_db = 'Missing'
+        if 'GAMMA_HV' in yml_data:
+            gamma_hv_data = yml_data['GAMMA_HV']
+            # Extract values into variables
+            #amrfinderplus_ver = amrfinder_data.get('amrfinderplus', '')
+            old_hv_db = gamma_hv_data.get('Database', '')
+            #amrfinderplus_container = amrfinder_data.get('amrfinderplus_container', '')
+        else:
+            old_hv_db = 'Missing'
         if 'AMRFINDERPLUS_RUN' in yml_data:
             amrfinder_data = yml_data['AMRFINDERPLUS_RUN']
             # Extract values into variables
@@ -80,7 +91,7 @@ def get_old_database_IDs(software_versions):
             phoenix_ver = phoenix_data.get('cdcgov/phoenix', '')
         else:
             phoenix_ver = 'Missing'
-    return old_gamma_ar_db, old_mlst_db, old_amrfinderplus_db, phoenix_ver, old_gamma_pf_db
+    return old_gamma_ar_db, old_mlst_db, old_amrfinderplus_db, phoenix_ver, old_gamma_pf_db, old_hv_db
 
 def get_new_database_IDs(mlst_db, amrfinder_db):
     # Use regular expression to extract the date part from the filename
@@ -159,9 +170,10 @@ def compare_ar_files(old_file, new_file, file_type):
     print(f"Dropped ({len(dropped)}): {dropped}")
     return added_or_changed, dropped
 
-def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new_amrfinderplus_db, output, phoenix_ver, sample_directory, current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes, new_tax, old_tax, old_pf, added_pf_genes, dropped_pf_genes, pf_db):
+def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new_amrfinderplus_db, output, phoenix_ver, sample_directory, current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes, new_tax, old_tax, old_pf, added_pf_genes, dropped_pf_genes, pf_db, old_hv, added_hv_genes, dropped_hv_genes, hv_db):
     Gamma_db_updated = old_gamma + " --> " + new_ar_db.strip()
     gamma_pf_db_updated = old_pf + " --> " + pf_db.strip()
+    gamma_hv_db_updated = old_hv + " --> " + hv_db.strip()
     amrfinder_db_updated = old_amrfinder + " --> " + new_amrfinderplus_db.strip()
     MLST_db_updated = old_mlst + " --> " + new_mlst_db.strip()
     phx_versions = phoenix_ver + " --> " + current_phx_version.strip()
@@ -174,10 +186,10 @@ def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new
     date_string = date.today().strftime('%Y-%m-%d')
     # Check if the file exists
 
-    header = 'Date\tPhoenix_Version\tTaxa\tMLST_DB\tGAMMA_DB\tAMRFinderPlus_DB\tGAMMA_PF_DB\tAdded/Changed_GAMMA_AR_genes\tDropped_GAMMA_AR_genes\tAdded/Changed_NCBI_AR_genes\tDropped_NCBI_AR_genes\tAdded/Changed_PF_genes\tDropped_PF_genes\n'
+    header = 'Date\tPhoenix_Version\tTaxa\tMLST_DB\tGAMMA_DB\tAMRFinderPlus_DB\tGAMMA_PF_DB\tHyperVirulence_DB\tAdded/Changed_GAMMA_AR_genes\tDropped_GAMMA_AR_genes\tAdded/Changed_NCBI_AR_genes\tDropped_NCBI_AR_genes\tAdded/Changed_PF_genes\tDropped_PF_genes\tAdded/Changed_HV_genes\tDropped_HV_genes\n'
     canonical_cols = header.strip().split('\t')
 
-    new_line = date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + gamma_pf_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\t' + ','.join(added_pf_genes) + '\t' + ','.join(dropped_pf_genes) + '\n'
+    new_line = date_string + "\t" + phx_versions + "\t" + tax_updated + "\t" + MLST_db_updated + "\t" + Gamma_db_updated + "\t" + amrfinder_db_updated + '\t' + gamma_pf_db_updated + '\t' + gamma_hv_db_updated + '\t' + ','.join(added_gamma_ar_genes) + '\t' + ','.join(dropped_gamma_ar_genes) + '\t' + ','.join(added_ncbi_ar_genes) + '\t' + ','.join(dropped_ncbi_ar_genes) + '\t' + ','.join(added_pf_genes) + '\t' + ','.join(dropped_pf_genes) + '\t' + ','.join(added_hv_genes) + '\t' + ','.join(dropped_hv_genes) + '\n'
 
     # Build a single-row DataFrame for the new line explicitly by column name
     new_row = pd.DataFrame([{
@@ -188,12 +200,15 @@ def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new
         'GAMMA_DB':                      Gamma_db_updated,
         'AMRFinderPlus_DB':              amrfinder_db_updated,
         'GAMMA_PF_DB':                   gamma_pf_db_updated,
+        'HyperVirulence_DB':             gamma_hv_db_updated,
         'Added/Changed_GAMMA_AR_genes':          ','.join(added_gamma_ar_genes),
         'Dropped_GAMMA_AR_genes':','.join(dropped_gamma_ar_genes),
         'Added/Changed_NCBI_AR_genes':           ','.join(added_ncbi_ar_genes),
         'Dropped_NCBI_AR_genes': ','.join(dropped_ncbi_ar_genes),
         'Added/Changed_PF_genes':                ','.join(added_pf_genes),
         'Dropped_PF_genes':      ','.join(dropped_pf_genes),
+        'Added/Changed_HV_genes':                ','.join(added_hv_genes),
+        'Dropped_HV_genes':      ','.join(dropped_hv_genes),
     }], dtype=str)
 
     if os.path.exists(sample_directory + "/" + output):
@@ -242,17 +257,18 @@ def compare_tax_files(old_tax_file, new_tax_file):
 def main():
     args = parseArgs()
     if args.old_software_version_file:
-        old_gamma, old_mlst, old_amrfinder, phoenix_ver, old_pf = get_old_database_IDs(args.old_software_version_file)
+        old_gamma, old_mlst, old_amrfinder, phoenix_ver, old_pf, old_hv = get_old_database_IDs(args.old_software_version_file)
     elif args.pipeline_info:
-        old_gamma, old_mlst, old_amrfinder, phoenix_ver, old_pf = get_old_database_IDs(args.pipeline_info)
+        old_gamma, old_mlst, old_amrfinder, phoenix_ver, old_pf, old_hv = get_old_database_IDs(args.pipeline_info)
     else:
         print("No software_versions.yml file provided, cannot extract old database versions. Please provide a software_versions.yml file using the -p argument or an intermediate software version file using --old_software_version_file.")
     new_mlst_db, new_amrfinderplus_db = get_new_database_IDs(args.mlst_db, args.amrfinder_db)
     added_gamma_ar_genes, dropped_gamma_ar_genes = compare_ar_files(args.old_gamma, args.new_gamma, file_type="gamma")
     added_ncbi_ar_genes, dropped_ncbi_ar_genes = compare_ar_files(args.old_ncbi, args.new_ncbi, file_type="ncbi")
     added_pf_genes, dropped_pf_genes = compare_ar_files(args.old_pf, args.new_pf, file_type="gamma")
+    added_hv_genes, dropped_hv_genes = compare_ar_files(args.old_hv, args.new_hv, file_type="gamma")
     new_tax, old_tax = compare_tax_files(args.old_tax, args.new_tax)
-    write_readme(old_gamma, old_mlst, old_amrfinder, args.ar_db, new_mlst_db, new_amrfinderplus_db, args.output, phoenix_ver, args.sample_directory, args.current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes, new_tax, old_tax, old_pf, added_pf_genes, dropped_pf_genes, args.pf_db)
+    write_readme(old_gamma, old_mlst, old_amrfinder, args.ar_db, new_mlst_db, new_amrfinderplus_db, args.output, phoenix_ver, args.sample_directory, args.current_phx_version, added_gamma_ar_genes, dropped_gamma_ar_genes, added_ncbi_ar_genes, dropped_ncbi_ar_genes, new_tax, old_tax, old_pf, added_pf_genes, dropped_pf_genes, args.pf_db, old_hv, added_hv_genes, dropped_hv_genes, args.hv_db)
 
 
 if __name__ == '__main__':

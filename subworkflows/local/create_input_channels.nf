@@ -20,6 +20,20 @@ def check_update(meta, file, db, type, mode, needsUpdate = false) {
     return InputChannelUtils.previous_updater_check(meta, file, db, type, mode, needsUpdate)
 }
 
+def newest_by_embedded_date = { ch ->
+    ch.groupTuple(by: 0)
+        .map { meta, files ->
+            def newest = files.flatten().sort { a, b ->
+                def da = (a.getName() =~ /\d{8}/) ? (a.getName() =~ /\d{8}/)[0].toInteger() : 0
+                def db = (b.getName() =~ /\d{8}/) ? (b.getName() =~ /\d{8}/)[0].toInteger() : 0
+                db <=> da
+            }[0]
+            [meta, newest]
+        }
+}
+
+
+
 workflow CREATE_INPUT_CHANNELS {
     take:
         indir        // params.indir
@@ -91,6 +105,55 @@ workflow CREATE_INPUT_CHANNELS {
             // loop through files and identify those that don't have "FAILED" in them and then parse file name and return those ids that pass
             all_passed_id_channel = file_integrity_ch.map{meta, dir -> dir}.collect().map{ it -> InputChannelUtils.get_only_passing_samples(it)}.filter { it != null }.toList()
 
+            def passed_files = { glob ->
+                Channel.fromPath(glob)
+                    .map { it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString()) }
+                    .combine(all_passed_id_channel)
+                    .filter { meta, f, ids -> ids.contains(meta.id) }
+                    .map { meta, f, ids -> [meta, f] }
+            }
+
+            def update_checked = { glob, dbParam, type, updateFlags = sample_needs_update_ch ->
+                passed_files(glob)
+                    .groupTuple()
+                    .map { meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .join(updateFlags, by: [0])
+                    .combine(Channel.fromPath(dbParam))
+                    .map { meta, files, needsUpdate, db -> check_update(meta, files, db, type, params.mode_upper, needsUpdate) }
+                    .map { meta, file, flag -> [meta, file] }
+            }
+
+            def update_checked_with_flags = { glob, dbParam, type ->
+                passed_files(glob)
+                    .groupTuple()
+                    .map { meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
+                    .combine(Channel.fromPath(dbParam))
+                    .map { meta, files, db -> check_update(meta, files, db, type, params.mode_upper) }
+                    .multiMap { meta, file, flag ->
+                        files: [meta, file]
+                        flags: [meta, flag]
+                    }
+            }
+
+            def current_db_match = { glob, dbParam, date_regex ->
+                passed_files(glob)
+                    .combine(Channel.fromPath(dbParam))
+                    .map { meta, f, db ->
+                        def m = db.getName() =~ date_regex
+                        def dbDate = m ? m[0][1] : null
+                        [meta, dbDate && f.getName().contains(dbDate) ? f : null]
+                    }
+                    .filter { meta, f -> f != null }
+            }
+
+            def current_db_match_grouped = { glob, dbParam, date_regex ->
+                current_db_match(glob, dbParam, date_regex)
+                    .groupTuple(by: 0)
+                    .map { meta, files ->
+                        [meta, files instanceof List ? files.sort().last() : files]
+                    }
+            }
+
             /////////////////////////// COLLECT ISOLATE LEVEL FILES ///////////////////////////////
 
             //make relative path full and get
@@ -150,7 +213,6 @@ workflow CREATE_INPUT_CHANNELS {
                 .combine(all_passed_id_channel).filter{ meta, raw_stats, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
                 .map{ meta, raw_stats, all_passed_id_channel -> [meta, raw_stats]} //remove all_passed_id_channel from output
 
-            // get .tax files for MLST updating
             def trimmed_stats_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/qc_stats/*_trimmed_read_counts.txt')
             //create .tax file channel with meta information
             filtered_trimmed_stats_ch = Channel.fromPath(trimmed_stats_glob) // use created regrex to get samples
@@ -251,10 +313,27 @@ workflow CREATE_INPUT_CHANNELS {
             // get .tax files for MLST updating
             def ani_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/ANI/*.ani.txt')
             //create .tax file channel with meta information
-            filtered_ani_ch = Channel.fromPath(ani_glob) // use created regrex to get samples
-                .map{ it -> InputChannelUtils.create_meta_with_wildcard(it, ".ani.txt", params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, ani, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, ani, all_passed_id_channel -> [meta, ani]} //remove all_passed_id_channel from output
+            filtered_ani_ch = Channel.fromPath(ani_glob)
+                .map{ it -> InputChannelUtils.create_meta_with_wildcard(it, ".ani.txt", params.indir.toString())}
+                .combine(all_passed_id_channel).filter{ meta, ani, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}
+                .map{ meta, ani, all_passed_id_channel -> [meta, ani]}
+                .groupTuple(by: 0)
+                .map{ meta, files ->
+                    def fileList = files.flatten()
+                    if (fileList.size() > 1) {
+                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Found ${fileList.size()} files: ${fileList.collect { it.getName() }}"
+                    }
+                    def sortedFiles = fileList.sort { a, b ->
+                        def dateA = (a.getName() =~ /\d{8}/) ? (a.getName() =~ /\d{8}/)[0].toInteger() : 0
+                        def dateB = (b.getName() =~ /\d{8}/) ? (b.getName() =~ /\d{8}/)[0].toInteger() : 0
+                        return dateB <=> dateA
+                    }
+                    def newest_file = sortedFiles[0]
+                    if (fileList.size() > 1) {
+                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Selected Newest: ${newest_file.getName()}"
+                    }
+                    return [meta, newest_file]
+                }
 
             // get .fastANI.txt
             def fastani_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/ANI/*.fastANI.txt')
@@ -321,187 +400,73 @@ workflow CREATE_INPUT_CHANNELS {
                 .combine(all_passed_id_channel).filter{ meta, shiapass_files, all_passed_id -> all_passed_id.contains(meta.id)} //filtering out failured samples - keep those in all_passed_id_channel
                 .map{ meta, shiapass_files, all_passed_id -> [meta, shiapass_files]} //remove all_passed_id_channel from output'
 
-
-            //Will need to add in HV to the check eventually, but not today
-            def gamma_hv_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_hv/*.gamma')
-            //create .tax file channel with meta information
-            filtered_gamma_hv_ch = Channel.fromPath(gamma_hv_glob) // use created regrex to get samples
-                .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())} // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, gamma_hv, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)} //filtering out failured samples
-                .map{ meta, gamma_hv, all_passed_id_channel -> [meta, gamma_hv]} //remove all_passed_id_channel from output
-
             // get .gamma files for AR updating
             def gamma_ar_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_ar/*ResGANNCBI*.gamma')
+            def gamma_hv_glob        = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_hv/*.gamma')
+            def armfinder_glob       = InputChannelUtils.append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
+            def assembly_ratio_glob  = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
+            def gc_content_glob      = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_GC_content_*.txt')
+            def srst2_ar_glob        = InputChannelUtils.append_to_path(params.indir.toString(),'*/srst2/*_srst2__results.txt')
+            def gamma_pf_glob        = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_pf/*PF-Replicons*.gamma')
 
             if (params.mode_upper == "UPDATE_PHOENIX") {
-                // 1. THE CANARY
-                gamma_ar_with_flag = Channel.fromPath(gamma_ar_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, gamma_ar, ids -> ids.contains(meta.id)}
-                    .map{ meta, gamma_ar, ids -> [meta, gamma_ar]}
-                    .groupTuple()
-                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
-                    .combine(Channel.fromPath(params.ardb))
-                    .map{ meta, gamma_ar, ardb -> check_update(meta, gamma_ar, ardb, "gamma", params.mode_upper) }
-                    .multiMap { meta, file, flag ->
-                        files: [meta, file]
-                        flags: [meta, flag]
-                    }
 
-                filtered_gamma_ar_ch = gamma_ar_with_flag.files
+                gamma_ar_with_flag = update_checked_with_flags(gamma_ar_glob, params.ardb, "gamma")
+                filtered_gamma_ar_ch   = gamma_ar_with_flag.files
                 sample_needs_update_ch = gamma_ar_with_flag.flags
 
-                // AMRFinder
-                def armfinder_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
-                filtered_amrfinder_ch = Channel.fromPath(armfinder_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
-                    .map{ meta, f, ids -> [meta, f]}
-                    .groupTuple()
-                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
-                    .join(sample_needs_update_ch)
-                    .combine(Channel.fromPath(params.amrfinder_db))
-                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "amrfinder", params.mode_upper, needsUpdate) }
-                    .map{ meta, file, flag -> [meta, file] }
-
-                // Assembly Ratio
-                def assembly_ratio_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
-                filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
-                    .map{ meta, f, ids -> [meta, f]}
-                    .groupTuple()
-                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
-                    .join(sample_needs_update_ch)
-                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
-                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "ncbi_stats_ratio", params.mode_upper, needsUpdate) }
-                    .map{ meta, file, flag -> [meta, file] }
-
-                // GC Content
-                def gc_content_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_GC_content_*.txt')
-                filtered_gc_content_ch = Channel.fromPath(gc_content_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
-                    .map{ meta, f, ids -> [meta, f]}
-                    .groupTuple()
-                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
-                    .join(sample_needs_update_ch)
-                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
-                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "ncbi_stats_gc", params.mode_upper, needsUpdate) }
-                    .map{ meta, file, flag -> [meta, file] }
-
-                // SRST2
-                def srst2_ar_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/srst2/*_srst2__results.txt')
-                filtered_srst2_ar_ch = Channel.fromPath(srst2_ar_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
-                    .map{ meta, f, ids -> [meta, f]}
-                    .groupTuple()
-                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
-                    .join(sample_needs_update_ch)
-                    .combine(Channel.fromPath(params.ardb))
-                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "srst2", params.mode_upper, needsUpdate) }
-                    .map{ meta, file, flag -> [meta, file] }
-
-                // Gamma PF
-                def gamma_pf_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_pf/*PF-Replicons*.gamma')
-                filtered_gamma_pf_ch = Channel.fromPath(gamma_pf_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
-                    .map{ meta, f, ids -> [meta, f]}
-                    .groupTuple()
-                    .map{ meta, files -> [meta, files instanceof List ? files.flatten() : [files]] }
-                    .join(sample_needs_update_ch)
-                    .combine(Channel.fromPath(params.gamdbpf))
-                    .map{ meta, f, needsUpdate, db -> check_update(meta, f, db, "gamma_pf", params.mode_upper, needsUpdate) }
-                    .map{ meta, file, flag -> [meta, file] }
+                filtered_gamma_hv_ch = update_checked(gamma_hv_glob, params.hvgamdb, "gamma_hv")
+                filtered_amrfinder_ch = update_checked(armfinder_glob, params.amrfinder_db, "amrfinder")
+                filtered_assembly_ratio_ch = update_checked(assembly_ratio_glob, params.ncbi_assembly_stats, "ncbi_stats_ratio")
+                filtered_gc_content_ch = update_checked(gc_content_glob, params.ncbi_assembly_stats, "ncbi_stats_gc")
+                filtered_srst2_ar_ch = update_checked(srst2_ar_glob, params.ardb, "srst2")
+                filtered_gamma_pf_ch = update_checked(gamma_pf_glob, params.gamdbpf, "gamma_pf")
 
             } else {
-                // existing else branch - keep all the old logic unchanged
-                filtered_gamma_ar_ch = Channel.fromPath(gamma_ar_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, gamma_ar, ids -> ids.contains(meta.id)}
-                    .map{ meta, gamma_ar, ids -> [meta, gamma_ar]}
-                    .combine(Channel.fromPath(params.ardb))
-                    .map{ meta, gamma_ar, ardb ->
-                        def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
-                        def matchingFile = gamma_ar.getName().contains(ardbDate[0][1]) ? gamma_ar : null
-                        return [meta, matchingFile] }
-                    .filter{ meta, gamma_ar -> gamma_ar != null }
-                    .groupTuple()
-                    .map { meta, files ->
-                        def selected_file = files instanceof List ? files.sort().last() : files
-                        return [ meta, selected_file ]
-                    }
 
-                def gamma_pf_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/gamma_pf/*PF-Replicons*.gamma')
-                filtered_gamma_pf_ch = Channel.fromPath(gamma_pf_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, gamma_pf, ids -> ids.contains(meta.id)}
-                    .map{ meta, gamma_pf, ids -> [meta, gamma_pf]}
-                    .combine(Channel.fromPath(params.gamdbpf))
-                    .map{ meta, gamma_pf, pfdb ->
-                        def pfdbDate = pfdb.getName() =~ /PF-Replicons_(\d{8})\.fasta/
-                        def matchingFile = gamma_pf.getName().contains(pfdbDate[0][1]) ? gamma_pf : null
-                        return [meta, matchingFile] }
-                    .filter{ meta, gamma_pf -> gamma_pf != null }
+                filtered_gamma_ar_ch = current_db_match_grouped(
+                    gamma_ar_glob,
+                    params.ardb,
+                    /ResGANNCBI_(\d{8})_srst2\.fasta/
+                )
 
-                def srst2_ar_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/srst2/*_srst2__results.txt')
-                filtered_srst2_ar_ch = Channel.fromPath(srst2_ar_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, srst2_ar, ids -> ids.contains(meta.id)}
-                    .map{ meta, srst2_ar, ids -> [meta, srst2_ar]}
-                    .combine(Channel.fromPath(params.ardb))
-                    .map{ meta, srst2_ar, ardb ->
-                        def ardbDate = ardb.getName() =~ /ResGANNCBI_(\d{8})_srst2\.fasta/
-                        def matchingFile = srst2_ar.getName().contains(ardbDate[0][1]) ? srst2_ar : null
-                        return [meta, matchingFile] }
-                    .filter{ meta, srst2_ar -> srst2_ar != null }
+                filtered_gamma_hv_ch = current_db_match(
+                    gamma_hv_glob,
+                    params.hvgamdb,
+                    /HyperVirulence_(\d{8})\.fasta/
+                )
 
-                def armfinder_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/AMRFinder/*_all_genes{,_*}.tsv')
-                filtered_amrfinder_ch = Channel.fromPath(armfinder_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, f, ids -> ids.contains(meta.id)}
-                    .map{ meta, f, ids -> [meta, f]}
-                    .combine(Channel.fromPath(params.amrfinder_db))
-                    .map{ meta, ncbi_report, ardb ->
-                        def ardbDate = ardb.getName() =~ /amrfinderdb_v\d+\.\d+_(\d{8})\.\d+\.tar\.gz/
-                        def matchingFile = ncbi_report.getName().contains(ardbDate[0][1]) ? ncbi_report : null
-                        return [meta, matchingFile] }
-                    .filter{ meta, ncbi_report -> ncbi_report != null }
+                filtered_gamma_pf_ch = current_db_match(
+                    gamma_pf_glob,
+                    params.gamdbpf,
+                    /PF-Replicons_(\d{8})\.fasta/
+                )
 
-                def assembly_ratio_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_Assembly_ratio_*.txt')
-                filtered_assembly_ratio_ch = Channel.fromPath(assembly_ratio_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, ratio, ids -> ids.contains(meta.id)}
-                    .map{ meta, ratio, ids -> [meta, ratio]}
-                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
-                    .map{ meta, ratio, refdb ->
-                        def refdbdate = (refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/)[0][1]
-                        def matchingFile = ratio.getName().contains(refdbdate) ? ratio : null
-                        return [meta, matchingFile] }
-                    .filter{ meta, ratio -> ratio != null }
-                    .groupTuple(by: 0)
-                    .map{ meta, files ->
-                        def newest_file = files.flatten().sort { a, b ->
-                            def dateA = (a.getName() =~ /\d{8}/) ? (a.getName() =~ /\d{8}/)[0].toInteger() : 0
-                            def dateB = (b.getName() =~ /\d{8}/) ? (b.getName() =~ /\d{8}/)[0].toInteger() : 0
-                            return dateB <=> dateA
-                        }[0]
-                        return [meta, newest_file]
-                    }
+                filtered_srst2_ar_ch = current_db_match(
+                    srst2_ar_glob,
+                    params.ardb,
+                    /ResGANNCBI_(\d{8})_srst2\.fasta/
+                )
 
-                def gc_content_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_GC_content_*.txt')
-                filtered_gc_content_ch = Channel.fromPath(gc_content_glob)
-                    .map{ it -> InputChannelUtils.create_meta_non_extension(it, params.indir.toString())}
-                    .combine(all_passed_id_channel).filter{ meta, gc_content, ids -> ids.contains(meta.id)}
-                    .map{ meta, gc_content, ids -> [meta, gc_content]}
-                    .combine(Channel.fromPath(params.ncbi_assembly_stats))
-                    .map{ meta, gc_content, refdb ->
-                        def refdbdate = refdb.getName() =~ /_Assembly_stats_(\d{8})\.txt/
-                        def matchingFile = gc_content.getName().contains(refdbdate[0][1]) ? gc_content : null
-                        return [meta, matchingFile] }
-                    .filter{ meta, gc_content -> gc_content != null }
+                filtered_amrfinder_ch = current_db_match(
+                    armfinder_glob,
+                    params.amrfinder_db,
+                    /amrfinderdb_v\d+\.\d+_(\d{8})\.\d+\.tar\.gz/
+                )
+
+                filtered_assembly_ratio_ch = newest_by_embedded_date(
+                    current_db_match(
+                        assembly_ratio_glob,
+                        params.ncbi_assembly_stats,
+                        /_Assembly_stats_(\d{8})\.txt/
+                    )
+                )
+
+                filtered_gc_content_ch = current_db_match(
+                    gc_content_glob,
+                    params.ncbi_assembly_stats,
+                    /_Assembly_stats_(\d{8})\.txt/
+                )
             }
 
 
@@ -585,19 +550,11 @@ workflow CREATE_INPUT_CHANNELS {
                         .unique { it[0].project_id }
 //                        .view { "AFTER UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
 
-/*            summary_files_ch.view { meta, excel, g_tsv, p_tsv, p_info, u_info ->
-                """
-                DEBUG summary_files_ch:
-                Project ID: ${meta.project_id}
-                Excel:      ${excel.name}
-                Griphin TSV:${g_tsv.name}
-                Phoenix TSV:${p_tsv.name}
-                P-Info:     ${p_info.name}
-                U-Info:     ${u_info ? u_info.name : 'EMPTY'}
-                -------------------------------------------
-                """
+            // indir branch
+            entry_type_ch = directory_ch.map { meta, dir ->
+                [meta, InputChannelUtils.detect_entry_type(file("${dir}/${meta.id}"))]
             }
-*/
+
             // pulling all the necessary project level files into channels
             COLLECT_PROJECT_FILES (
                 summary_files_ch, Channel.value(false)
@@ -710,24 +667,24 @@ workflow CREATE_INPUT_CHANNELS {
 
                 sample_needs_update_ch = gamma_ar_with_flag.flags
                     .map{ meta, flag ->
-//                        System.err.println ">>> FLAG KEY [${meta.id}]: project_id=${meta.project_id} flag=${flag}"
                         [meta, flag]
                     }
 
-/*                COLLECT_SAMPLE_FILES.out.amrfinder_report.map { meta, f ->
-                    log.info ">>> AMRFINDER_REPORT: id=${meta.id} | file=${f}"
-                    [meta, f]
-                }
+                // GAMMA HV
+                filtered_gamma_hv_ch = COLLECT_SAMPLE_FILES.out.gamma_hv
+                    .map{ meta, f -> 
+                        [meta, f] 
+                    }
+                    .join(sample_needs_update_ch) 
+                    .combine(Channel.fromPath(params.hvgamdb))
+                    .map{ meta, f, needsUpdate, db -> 
+                        check_update(meta, f, db, "gamma_hv", params.mode_upper, needsUpdate) 
+                    }
+                    .map{ meta, file, flag -> [meta, file] }
 
-                sample_needs_update_ch.map { meta, flag ->
-                    log.info ">>> SAMPLE_NEEDS_UPDATE: id=${meta.id} | flag=${flag}"
-                    [meta, flag]
-                }
-*/
-                 // AMRFinder
+                // AMRFinder
                 filtered_amrfinder_ch = COLLECT_SAMPLE_FILES.out.amrfinder_report
                     .map{ meta, f -> 
-//                        System.err.println ">>> AMRFINDER KEY [${meta.id}]: project_id=${meta.project_id}"
                         [meta, f] 
                     }
                     .join(sample_needs_update_ch) 
@@ -794,7 +751,7 @@ workflow CREATE_INPUT_CHANNELS {
             filtered_trimmed_stats_ch          = COLLECT_SAMPLE_FILES.out.trimmed_stats
             filtered_raw_stats_ch              = COLLECT_SAMPLE_FILES.out.raw_stats
             filtered_quast_ch                  = COLLECT_SAMPLE_FILES.out.quast_report
-            filtered_ani_ch                    = COLLECT_SAMPLE_FILES.out.ani
+            filtered_ani_ch                    = COLLECT_SAMPLE_FILES.out.ani.map{ m, f -> ensureSingle(m, f) }
             filtered_ani_best_hit_ch           = COLLECT_SAMPLE_FILES.out.ani_best_hit.map{ m, f -> ensureSingle(m, f) }
             filtered_combined_mlst_ch          = COLLECT_SAMPLE_FILES.out.combined_mlst
 
@@ -810,6 +767,11 @@ workflow CREATE_INPUT_CHANNELS {
                     [[project_id: meta.project_id], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info ?: []]
                 }
                 .unique()
+
+            // Function to detect what the original run type was based on what files are present in the directory
+            entry_type_ch = directory_ch.map { meta, dir ->
+                [meta, InputChannelUtils.detect_entry_type(file("${dir}/${meta.id}"))]
+            }
 
             COLLECT_PROJECT_FILES (
                 summary_files_ch, Channel.value(true)
@@ -903,5 +865,6 @@ workflow CREATE_INPUT_CHANNELS {
         combined_mlst          = filtered_combined_mlst_ch // for centar entry
         pipeline_info_isolate  = isolate_version_broadcast_ch // Use this for summary lines
         update_pipeline_info_isolate = isolate_update_broadcast_ch
-        sample_needs_update_ch  // already exists, just needs to be added to emit block
+        sample_needs_update_ch
+        entry_type = entry_type_ch  
 }
