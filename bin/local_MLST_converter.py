@@ -926,7 +926,7 @@ def convert(to_convert):
         'Moraxella catarrhalis' : 'mcatarrhalis',
         'Morganella morganii' : 'mmorganii',
         'Mycobacteria spp.' : 'mycobacteria',
-        'Mycobacteroides abscessus' : 'mycobacterium,mabscessus',
+        'Mycobacteroides abscessus' : 'mycobacteria,mabscessus',
         'Mycoplasma agalactiae' : 'magalactiae',
         'Mycoplasma anserisalpingitidis' : 'manserisalpingitidis',
         'Mycoplasma bovis' : 'mbovis',
