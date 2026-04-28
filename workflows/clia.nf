@@ -461,16 +461,16 @@ workflow CLIA_INTERNAL {
         GENERATE_PIPELINE_STATS_WF (
             GET_RAW_STATS.out.combined_raw_stats, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
-            [], \
+            Channel.empty(), \
             KRAKEN2_TRIMD.out.report, \
             KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
             BBMAP_REFORMAT.out.filtered_scaffolds, \
-            [], \
-            [], \
-            [], \
-            [], \
+            Channel.empty(), \
+            Channel.empty(), \
+            Channel.empty(), \
+            Channel.empty(), \
             QUAST.out.report_tsv, \
             BUSCO.out.short_summaries_specific_txt, \
             KRAKEN2_ASMBLD.out.report, \
@@ -488,12 +488,12 @@ workflow CLIA_INTERNAL {
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
-        shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
-                            .map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.collect().sum().map{ it -> it[0] > 0 }
+        shigapass_var = Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+                            .map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.collect().sum().map{ it -> it[0] > 0 }.ifEmpty(false)
 
         //pull all fairy files together
-        fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
-                            .concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
+        fairy_files_ch = Channel.empty().mix(SCAFFOLD_COUNT_CHECK.out.outcome, SPADES_WF.out.fairy_outcome, SPADES_WF.out.spades_outcome,
+                            GET_TRIMD_STATS.out.outcome, GET_RAW_STATS.out.outcome, CORRUPTION_CHECK.out.outcome)
 
         griphin_inputs_ch = Channel.empty()
             .mix(
@@ -506,11 +506,11 @@ workflow CLIA_INTERNAL {
                 QUAST.out.report_tsv,
                 fairy_files_ch,
                 SPADES_WF.out.taxonomy,
-                CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
+                Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
                 CALCULATE_ASSEMBLY_RATIO.out.ratio,
                 CALCULATE_ASSEMBLY_RATIO.out.gc_content,
                 AMRFINDERPLUS_RUN.out.report,
-                CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] },
+                Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.ani_best_hit, FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] },
                 SHIGAPASS.out.summary,
                 BUSCO.out.short_summaries_specific_txt
             )
