@@ -4,6 +4,11 @@ import pandas as pd
 import sys
 import argparse
 import re
+import math
+
+def truncate2(val):
+    """Truncate to 2 decimal places without rounding."""
+    return math.floor(val * 100) / 100
 
 def get_ani_targets(project_dir, ani_cutoff, coverage_cutoff=70.0):
     """
@@ -105,10 +110,12 @@ def get_ani_targets(project_dir, ani_cutoff, coverage_cutoff=70.0):
                         additional_df = max_df.iloc[1:]  # Skip first row (best match)
                         entries = []
                         for _, row in additional_df.iterrows():
+                            ani_val = truncate2(row['ANI'])
                             if pd.notna(row.get('Coverage')):
-                                entries.append(f"{row['SpeciesName']}({row['ANI']:.2f}%; {row['Coverage']:.2f}%)")
+                                cov_val = truncate2(row['Coverage'])
+                                entries.append(f"{row['SpeciesName']}({ani_val}%; {cov_val}%)")
                             else:
-                                entries.append(f"{row['SpeciesName']}({row['ANI']:.2f}%)")
+                                entries.append(f"{row['SpeciesName']}({ani_val}%)")
                         species_str = "|".join(entries)
                     else:
                         # Only one species found (the top hit) — nothing additional to report
