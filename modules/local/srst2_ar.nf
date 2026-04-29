@@ -5,7 +5,7 @@ process SRST2_AR {
     container 'quay.io/jvhagey/srst2@sha256:d4a68baf84c8818b59f334989ccbeea044baf14a79aaf1bd95a1f24f69d0dc5b'
 
     input:
-    tuple val(meta), path(fastq_s), val(fairy_outcome)
+    tuple val(meta), path(fastq_s)
     val(database_type)
     path(db)
 
@@ -16,10 +16,6 @@ process SRST2_AR {
     tuple val(meta), path("*.pileup")                            , optional:true, emit: pileup
     tuple val(meta), path("*.sorted.bam")                        , optional:true, emit: sorted_bam
     path("versions.yml")                                         ,                emit: versions
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[3]}" == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."
 
     script:
     // options for running

@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #set +e
 #
 # Description: script to check for file integrity and log errors 
@@ -26,7 +26,7 @@ show_help () {
 
 # Parse command line options
 options_found=0
-while getopts ":1?r:p:b:f:V" option; do
+while getopts ":1?r:p:b:f:v:V" option; do
 	options_found=$(( options_found + 1 ))
 	case "${option}" in
 		\?)
@@ -46,6 +46,9 @@ while getopts ":1?r:p:b:f:V" option; do
     r)
       echo "Option -r triggered"
       input_read=${OPTARG};;
+    v)
+      echo "Option -v triggered"
+      phx_version=${OPTARG};;
     V)
       show_version="True";;
     :)
@@ -95,17 +98,17 @@ fi
 
 if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
 	#prefix=${prefix%%_*}
-	echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE ${prefix}_${read} FOR CORRUPTION!" >> ${prefix}_summary.txt
-	
+	echo "FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. CHECK FASTQ FILE ${prefix}_${read} FOR CORRUPTION!" >> ${prefix}_corruption_summary.txt
+
 	#error warning for line_summary channel
 	if [[ "${busco}" == "true" ]]; then
-		echo "ID	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	BUSCO	BUSCO_DB	Species	Taxa_Confidence	Taxa_Coverage	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline.tsv
+		echo "WGS_ID	PHX_Version	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	BUSCO	BUSCO_DB	Final_Taxa_ID	Taxa_Source	FastANI_Organism	FastANI_%ID	FastANI_%Coverage	ShigaPass_Organism	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline.tsv
 		#file contents
-		echo "${prefix}	FAIL	0	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	CANNOT UNZIP FASTQ ${prefix}_${read} FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" | tr -d '\n' >> ${prefix}_summaryline.tsv
+		echo "${prefix}	${phx_version}	FAIL	0	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	CANNOT UNZIP FASTQ ${prefix}_${read} FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" | tr -d '\n' >> ${prefix}_summaryline.tsv
 	else
-		echo "ID	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Species	Taxa_Confidence	Taxa_Coverage	Taxa_Source	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline.tsv
+		echo "WGS_ID	PHX_Version	Auto_QC_Outcome	Warning_Count	Estimated_Coverage	Genome_Length	Assembly_Ratio_(STDev)	#_of_Scaffolds_>500bp	GC_%	Final_Taxa_ID	Taxa_Source	FastANI_Organism	FastANI_%ID	FastANI_%Coverage	ShigaPass_Organism	Kraken2_Trimd	Kraken2_Weighted	MLST_Scheme_1	MLST_1	MLST_Scheme_2	MLST_2	GAMMA_Beta_Lactam_Resistance_Genes	GAMMA_Other_AR_Genes	AMRFinder_Point_Mutations	Hypervirulence_Genes	Plasmid_Incompatibility_Replicons	Auto_QC_Failure_Reason" > ${prefix}_summaryline.tsv
 		#file contents
-		echo "${prefix}	FAIL	0	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	CANNOT UNZIP FASTQ ${prefix}_${read} FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" | tr -d '\n' >> ${prefix}_summaryline.tsv
+		echo "${prefix}	${phx_version}	FAIL	0	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	Unknown	CANNOT UNZIP FASTQ ${prefix}_${read} FILE. CHECK FASTQ FILE(S) FOR CORRUPTION!" | tr -d '\n' >> ${prefix}_summaryline.tsv
 	fi
 	#create synopsis file
 	sample_name=${prefix}
@@ -176,6 +179,6 @@ if grep -q -e "error" -e "unexpected" ${prefix}.txt; then
 	echo "WARNINGS: out of line with what is expected and MAY cause problems downstream."  >> "${sample_name}.synopsis"
 	echo "ALERT: something to note, does not mean it is a poor-quality assembly."  >> "${sample_name}.synopsis"
 else
-	echo "PASSED: File ${prefix}_${read} is not corrupt." >> ${prefix}_summary.txt
+	echo "PASSED: File ${prefix}_${read} is not corrupt." >> ${prefix}_corruption_summary.txt
 	echo "PASSED: File ${prefix}_${read} is not corrupt."
 fi

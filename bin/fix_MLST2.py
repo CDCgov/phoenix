@@ -1,630 +1,725 @@
 #!/usr/bin/env python3
 
-#
-# Description: Script to go through an isolates MLST output and check and reformat any instances of partial or multiple profiles found. SUB for profile or allele means that there is
-#	   a novel allele or the profile has not been assigned yet, hence something needs to be submitted to pubmlst. AU (Allele Unknown) implies that an allele can not be determined
-#	   no profile can be determined from the current assembly/qc_reads
-#
-# Usage: is python3 ./fix_MLST.py [-i input_torsten_MLST_file] [-s input_srst2_mlst_file] -t taxonomy_file
-#
-# Modules required: None
-#
-# v3 (05/08/2023)
-#
-# Created by Nick Vlachos (nvx4@cdc.gov)
-#
-
-#from asyncio.windows_events import NULL
-from locale import currency
-import sys
-#disable cache usage in the Python so __pycache__ isn't formed. If you don't do this using 'nextflow run cdcgov/phoenix...' a second time will causes and error
-sys.dont_write_bytecode = True
-import os
 import copy
-import argparse
 import collections
-#from pathlib import Path
-#import local_MLST_converter
-import xml.dom.minidom as xml
-#from urlparse import urlparse # this is for python2 line below is updated package for python3, Python3 needed for terra
-from urllib.parse import urlparse
-#import urllib.request
-from datetime import datetime
-from os import path
+import argparse
+from pathlib import Path
+from typing import List, Dict, Tuple, Optional
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Process MLST results from assembly and read-based typing'
+    )
+    parser.add_argument(
+        '-i', '--input',
+        required=True,
+        help='MLST output file from mlst tool (assembly-based)'
+    )
+    parser.add_argument(
+        '-s', '--srst2',
+        help='SRST2 output file (read-based, optional)'
+    )
+    parser.add_argument(
+        '-t', '--taxonomy',
+        required=True,
+        help='Taxonomy file (.tax format)'
+    )
+    parser.add_argument(
+        '-d', '--mlst_database',
+        required=True,
+        help='Path to MLST database directory'
+    )
+    parser.add_argument(
+        '-o', '--output',
+        help='Output file prefix (default: derived from taxonomy file)'
+    )
+    parser.add_argument(
+        '-v','--version', 
+        action='version',
+        version=f'%(prog)s {get_version()}'
+    )
+    
+    return parser.parse_args()
+
+
+def read_taxonomy(taxonomy_file: str) -> Tuple[str, str]:
+    """Extract genus and species from taxonomy file."""
+    genus = "Unknown"
+    species = "Unknown"
+    
+    try:
+        with open(taxonomy_file, 'r') as f:
+            for line in f:
+                units = line.strip().replace("\t", "|").split("|")
+                if len(units) < 2:
+                    continue
+                    
+                tier, info = units[0], units[1]
+                if tier == "G:":
+                    genus = info
+                elif tier == "s:":
+                    species = info
+                    print(f"Taxonomy: {genus} {species}")
+                    break
+    except FileNotFoundError:
+        print(f"Warning: Taxonomy file not found: {taxonomy_file}")
+    
+    return genus, species
 
 # Function to get the script version
 def get_version():
-    return "3.0.0"
+	return "4.0.0"
 
-def parseArgs(args=None):
-	parser = argparse.ArgumentParser(description='Script to check MLST types for duplicate alleles and implications on final typing')
-	parser.add_argument('-i', '--input', required=False, help='input mlst filename')
-	parser.add_argument('-s', '--srst2', required=False, help='srst2 input file')
-	parser.add_argument('-t', '--taxonomy', required=True, help='Location of taxonomy file to pull right scheme')
-	parser.add_argument('-d', '--mlst_database', required=True, help='Path to mlst db of db/pubmlst/schemes/ format')
-	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
-	return parser.parse_args()
-
-
-# main function that looks if all MLST types are defined for an outptu mlst file
-def do_MLST_check(input_MLST_line_tuples, taxonomy_file, mlst_db_path):
-	#location="/".join(taxonomy_file.split("/")[0:-1])+"/mlst"
-	#print taxonomy_file
-	isolate_name = taxonomy_file.split(".")[:-1]
-	isolate_name = ".".join(isolate_name)
-	tax_file = open(taxonomy_file, 'r')
-	# Create default taxonomy values in case they cant be determined later
-	genus="Unknown"
-	species="Unknown"
-	# Changing from real-time to set pull date
-	#today=datetime.today().strftime('%Y-%m-%d')
-	with open(mlst_db_path+'/db_version') as f:
-		pull_date = f.readline().strip('\n')
-	for line in tax_file:
-		units=line.replace("\n", "").replace("\t","|").split("|")
-		#print(len(units), units)
-		if len(units) == 1:
-			continue
-		#print(line)
-		tier=units[0]
-		info=units[1]
-		if tier == "G:":
-			genus = info
-		elif tier == "s:":
-			species = info
-			print("Taxonomy:",genus,species)
-			break
-	tax_file.close()
-
-	print(input_MLST_line_tuples)
-
-	original_schemes = []
-	checked_schemes = []
-	sample="None"
-	db_name="None"
-	original_type="Introvert"
-
-	### Creates a list of all schemes found in all files from the MLST_file_list
-	for input_MLST_line in input_MLST_line_tuples:
-		#MLST_file = open(input_MLST_line[2],'r')
-		MLST_line = input_MLST_line[0]
-		MLST_filetype = input_MLST_line[1]
-		original_line=MLST_line.strip()
-		if original_line is not None and original_line != '':
-			allele_list=[]
-			expanded_allele_list=[]
-			allele_names=[]
-			print(original_line)
-			original_items=original_line.split("\t")
-			print("Array of original itmes","\n".join(original_items))
-
-			if MLST_filetype == "mlst":
-				sample=original_items[0]
-				db_name=original_items[1]
-				original_type=original_items[2]
-
-				# Default list size in case it is Empty
-				list_size=0
-
-				# Create a list of pertinent info and make a list of 'sets' of alleles
-				if len(original_items) > 4:
-					for allele in range(3, len(original_items)):
-	#					   print(":", original_items[allele])
-						allele_Identifier=original_items[allele].split("(")[0]
-						alleles=original_items[allele].split("(")[1].split(")")[0].split(",")
-						if len(alleles) > 1:
-							original_type="-"
-						allele_names.append(allele_Identifier)
-						allele_list.append(alleles)
-
-					# Create a template to build Scheme array
-					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "assembly", pull_date])
-
-					# Test first parse
-	#				   print("e:",expanded_allele_list)
-	#				   print("o:", allele_list)
-
-					# Expand allele/scheme list if any multiples are encountered to make one list entry per possible scheme
-					for allele in allele_list:
-						if len(allele) == 1:
-							for i in expanded_allele_list:
-								print(i, allele, allele[0])
-								i[5].append(allele[0])
-						else:
-							temp_allele_list=copy.deepcopy(expanded_allele_list)
-							print("More than one found for ", allele, "template=", temp_allele_list)
-							for i in range(len(allele)):
-								if i == 0:
-	#								   print("0 - Going to add:", allele[i])
-									for j in expanded_allele_list:
-	#									   print("to - ", j)
-										j[5].append(allele[i])
-	#									   print("After adding - ", j)
-								else:
-									temp2_allele_list=copy.deepcopy(temp_allele_list)
-	#								   print(temp2_allele_list)
-	#								   print(i,"- Going to add:", allele[i])
-									for j in temp2_allele_list:
-	#									   print("to - ", j)
-										j[5].append(allele[i])
-	#									   print("After adding - ", j)
-									expanded_allele_list.append(copy.deepcopy(temp2_allele_list)[0])
-	#					   print(expanded_allele_list)
-				else:
-					#expanded_allele_list.append([sample,db_name, "-", 7, ["-","-","-","-","-","-","-"], ["-","-","-","-","-","-","-"], "assembly"])
-					expanded_allele_list.append([sample,db_name, "-", 1, ["-"], ["-"], "assembly", pull_date])
+def get_pull_date(mlst_db_path: str) -> str:
+    """Read database version/pull date."""
+    try:
+        with open(f"{mlst_db_path}/db_version", 'r') as f:
+            return f.readline().strip()
+    except FileNotFoundError:
+        print(f"Warning: db_version file not found at {mlst_db_path}")
+        return "Unknown"
 
 
-			#allele_list=[['1'], ['3'], ['189','3'], ['2'], ['2'], ['96','107'], ['3']]
-			elif MLST_filetype == "srst2":
-				print(original_items,len(original_items))
-				sample=original_items[0]
-				db_name=original_items[1]
-				if db_name == "No match found":
-					continue
-				original_type=original_items[2]
-				if len(original_items) > 7:
-					print("Has # items:", len(original_items))
-					for allele in range(7, len(original_items)):
-						print(allele, original_items[allele])
-						allele_Identifier=original_items[allele].split("(")[0]
-						alleles=original_items[allele].split("(")[1].split(")")[0].split(",")
-						if len(alleles) > 1:
-							original_type="-"
-						allele_names.append(allele_Identifier)
-						allele_list.append(alleles)
-
-					expanded_allele_list.append([sample,db_name, original_type, len(allele_names), allele_names, [], "reads", pull_date])
-
-					for allele in allele_list:
-						if len(allele) == 1:
-							for i in expanded_allele_list:
-								print(i, allele, allele[0])
-								i[5].append(allele[0])
-						else:
-							temp_allele_list=copy.deepcopy(expanded_allele_list)
-							print("More than one found for ", allele, "template=", temp_allele_list)
-							for i in range(len(allele)):
-								if i == 0:
-	#								   print("0 - Going to add:", allele[i])
-									for j in expanded_allele_list:
-	#									   print("to - ", j)
-										j[5].append(allele[i])
-	#									   print("After adding - ", j)
-								else:
-									temp2_allele_list=copy.deepcopy(temp_allele_list)
-	#								   print(temp2_allele_list)
-	#								   print(i,"- Going to add:", allele[i])
-									for j in temp2_allele_list:
-	#									   print("to - ", j)
-										j[5].append(allele[i])
-	#									   print("After adding - ", j)
-									expanded_allele_list.append(copy.deepcopy(temp2_allele_list)[0])
-						print(expanded_allele_list)
-				else:
-					expanded_allele_list.append([sample,db_name, "-", 1, ["-"], ["-"], "reads", pull_date])
-
-			else:
-				print("Unknown MLST filetype, can not continue")
-				exit()
-			#original_line=MLST_file.readline().strip("	 ")
-			original_schemes.append(expanded_allele_list)
-
-		#MLST_file.close()
-
-	### Shows the list of what schemes were found
-	print("Schemes found:", len(original_schemes))
-	catted_scheme_list=[]
-	for oscheme in original_schemes:
-		print(oscheme)
-		for profile in oscheme:
-			#print profile
-			catted_scheme_list.append(profile)
-
-	print("# of catted schemes found:", len(catted_scheme_list))
-	for i in range(0, len(catted_scheme_list)):
-		print(i, catted_scheme_list[i])
-
-	dupes = []
-	for i in range(0,len(catted_scheme_list)):
-		for j in range(0,len(catted_scheme_list)):
-			if i == j:
-				continue
-	#		   print("Checking:", catted_scheme_list[i][5], catted_scheme_list[j][5])
-			#print catted_scheme_list[i],catted_scheme_list[j]
-			if collections.Counter(catted_scheme_list[i][5]) == collections.Counter(catted_scheme_list[j][5]):
-				print("SAME!!!!", i, j)
-				if catted_scheme_list[min(i,j)][6] != catted_scheme_list[max(i,j)][6]:
-					print("a")
-					if catted_scheme_list[min(i,j)][6] == "assembly":
-						print("b")
-						if catted_scheme_list[max(i,j)][6] == "reads":
-							print("c")
-							#catted_scheme_list[min(i,j)][4] = catted_scheme_list[max(i,j)][4]
-							catted_scheme_list[min(i,j)][6] = "assembly/reads"
-							dupes.append(max(i,j))
-						elif catted_scheme_list[max(i,j)][6] == "assembly/reads":
-							print("d")
-							dupes.append(min(i,j))
-					elif catted_scheme_list[min(i,j)][6] == "reads":
-						print("e")
-						if catted_scheme_list[max(i,j)][6] == "assembly":
-							print("f")
-							#catted_scheme_list[max(i,j)][4] = catted_scheme_list[min(i,j)][4]
-							catted_scheme_list[max(i,j)][6] = "assembly/reads"
-							dupes.append(min(i,j))
-						elif catted_scheme_list[max(i,j)][6] == "assembly/reads":
-							print("g")
-							dupes.append(min(i,j))
-					elif catted_scheme_list[min(i,j)][6] == "assembly/reads":
-						print("h")
-						dupes.append(max(i,j))
-					else:
-						print("i")
-						print("Should never have something that is not assembly, reads, or assembly/reads")
-				else:
-					if catted_scheme_list[min(i,j)][1] != catted_scheme_list[max(i,j)][1]:
-						print("Different dbs")
-					else:
-						if max(i,j) not in dupes:
-							print("j")
-							dupes.append(max(i,j))
-						else:
-							print("Index already Found")
-				print(dupes)
-			else:
-	#			   print(catted_scheme_list[i][5], "does not equal", catted_scheme_list[i][5])
-				continue
-		dedupped_dupes=list(set(dupes))
-	dedupped_dupes.sort(reverse=True)
-
-	for k in dedupped_dupes:
-		catted_scheme_list.pop(k)
-
-	print("Trimmed catted: ", catted_scheme_list)
-
-	### Begin checking list for completeness/errors
-	if len(original_schemes) == 0:
-		print("No profiles found")
-
-	#######
-		### Print out empty file
-	#######
-
-	else:
-		for original_scheme in catted_scheme_list:
-			current_type = original_scheme[2]
-			current_alleles = original_scheme[5]
-			print(current_type, current_alleles)
-			check = False
-			bad_types = ["*", "?", "NF", "~"]
-			if any(ext in current_type for ext in bad_types):
-				original_scheme[2] = "Novel_profile"
-				print("Marking", original_scheme, "as needing investigation.")
-				check = True
-			elif current_type == "-":
-				if original_scheme[3] > 1:
-					original_scheme[2] = "Novel_profile"
-					check = True
-				else:
-					original_scheme[2] = "-"
-					check = False
-			elif current_type == "failed":
-				if original_scheme[3] > 1:
-					original_scheme[2] = "Failed"
-				check=False
-			else:
-				current_type = int(current_type)
-				#print("Current MLST type:", current_type)
-				#list_size=original_scheme[3]
-				#print("Allele_names:", original_scheme[4])
-				#print("Alleles_found:", original_scheme[5])
-				check = False
-				print("Adding ", original_scheme, "to check_schemes")
-				print("B",checked_schemes)
-				checked_schemes.append(original_scheme)
-				print("A",checked_schemes)
-			if check:
-				print("About to look into", original_scheme)
-				bad_alleles = 0
-				lookup_allele_profile = True
-				for allele in original_scheme[5]:
-					# Definitions
-					#	   MLST
-					#	   ~ : full length novel allele
-					#	   ? : partial match (>min_cov & > min_ID). Default min_cov = 10, Default min_ID=95%
-					#	   - : Allele is missing
-					#
-					#	   reads
-					#	   * : Full length match with 1+ SNP. Novel
-					#	   ? : edge depth is below N or average depth is below X. Default edge_depth = 2, Default average_depth = 5
-					#	   - : No allele assigned, usually because no alleles achieved >90% coverage
+def parse_alleles(items: List[str], start_col: int) -> Tuple[List[str], List[List[str]], bool]:
+    """
+    Parse allele information from MLST output.
+    
+    Returns:
+        allele_names: List of locus names
+        allele_options: List of possible alleles for each locus
+        has_multiple: Whether any locus has multiple alleles
+    """
+    allele_names = []
+    allele_options = []
+    has_multiple = False
+    
+    for col in range(start_col, len(items)):
+        if "(" not in items[col]:
+            continue
+            
+        locus_name = items[col].split("(")[0]
+        alleles = items[col].split("(")[1].split(")")[0].split(",")
+        
+        if len(alleles) > 1:
+            has_multiple = True
+        
+        allele_names.append(locus_name)
+        allele_options.append(alleles)
+    
+    return allele_names, allele_options, has_multiple
 
 
-
-					if '*' in allele or '?' in allele or '~' in allele:
-						original_scheme[2] = "Novel_allele"
-						bad_alleles += 1
-						lookup_allele_profile = False
-					elif '-' in allele:
-						original_scheme[2] = "Missing_allele"
-						bad_alleles += 1
-						lookup_allele_profile = False
-				## Reapply dash showing no db or proximal scheme was ever found
-				if collections.Counter(original_scheme[5]) == collections.Counter(["-","-","-","-","-","-","-"]) or collections.Counter(original_scheme[5]) == collections.Counter(["-","-","-","-","-","-","-","-"]) or collections.Counter(original_scheme[5]) == collections.Counter(["-"]):
-					original_scheme[2] = "-"
-				db_name = original_scheme[1]
-				if "(" in db_name:
-					new_db_name = db_name.split("(")[0]
-				if lookup_allele_profile:
-					#new_db_name=convert_mlst_to_pubMLST.convert(db_name)
-					#unicode_name_for_lookup=bytestring.decode(new_db_name)
-					#print("Downloading profile file for:", new_db_name)
-					#profile_file = download_MLST_files(new_db_name, docFile)
-					profile_file = mlst_db_path+"/pubmlst/"+db_name+"/"+db_name+".txt"
-					print("Looking up:", current_alleles, "in", profile_file)
-					db_file = open(profile_file,'r')
-					db_line=db_file.readline().strip()
-					while db_line is not None and db_line != '':
-						db_alleles = db_line.split("\t")
-						match = False
-						db_type = db_alleles[0]
-						for i in range(0,len(current_alleles)):
-							#print(i, len(db_alleles), len(current_alleles))
-							if db_alleles[i+1] == current_alleles[i]:
-								match = True
-							else:
-								match = False
-								break
-						if match is False:
-							db_line = db_file.readline().strip()
-						else:
-							print("matched:", db_line)
-							original_scheme[2] = db_type
-							break
-				print("Expecting to add: ", original_scheme)
-				print("B",checked_schemes)
-				checked_schemes.append(original_scheme)
-				print("A",checked_schemes)
-			print("222-",original_scheme)
-	for i in checked_schemes:
-		print(i)
-
-	checked_schemes.sort(reverse=True, key = lambda x: x[2])
-
-	for i in checked_schemes:
-		#print(i[1], i[5][2])
-		if i[1] == "abaumannii" or i[1] == "abaumannii(Oxford)" or i[1] == "Acinetobacter_baumannii#1":
-			if len(i[5]) > 1:
-				if str(i[5][2]) == "182" or str(i[5][2]) == "189":
-					print("FAKE NEWS!!!")
-					i[2] = str(i[2])+"-PARALOG"
-			i[1] = "abaumannii(Oxford)"
-		elif i[1] == "abaumannii_2" or i[1] == "Acinetobacter_baumannii#2":
-			i[1] = "abaumannii(Pasteur)"
-		# I know this looks backwards....its not
-		elif i[1] == "ecoli" or i[1] == "ecoli_achtman_4":
-			i[1] = "ecoli(Achtman)"
-		elif i[1] == "ecoli_2" or i[1] == "Escherichia_coli#2":
-			i[1] = "ecoli_2(Pasteur)"
+def expand_allele_combinations(template: List, allele_options: List[List[str]]) -> List[List]:
+    """
+    Generate all possible combinations of alleles (Cartesian product).
+    
+    Args:
+        template: Base profile structure [sample, db, type, count, names, [], source, date]
+        allele_options: List of allele choices for each locus
+        
+    Returns:
+        List of all possible allele combinations
+    """
+    if not allele_options:
+        return [template]
+    
+    expanded = [copy.deepcopy(template)]
+    
+    for locus_alleles in allele_options:
+        new_expanded = []
+        for allele_value in locus_alleles:
+            # Copy all current combinations
+            current_combos = copy.deepcopy(expanded)
+            # Add this allele to each combination
+            for combo in current_combos:
+                combo[5].append(allele_value)
+            new_expanded.extend(current_combos)
+        expanded = new_expanded
+    
+    return expanded
 
 
-	# Print and check sets manually
-	for i in checked_schemes:
-		print("x",i)
+def parse_mlst_line(items: List[str], source_type: str, pull_date: str) -> List[List]:
+    """
+    Parse a single MLST line and expand into all possible profiles.
+    
+    Args:
+        items: Split line from MLST output
+        source_type: "assembly" or "reads"
+        pull_date: Database pull date
+        
+    Returns:
+        List of expanded profiles
+    """
+    sample = items[0]
+    db_name = items[1]
+    
+    # Determine starting column based on source type
+    if source_type == "assembly":
+        st_type = items[2]
+        start_col = 3
+    else:  # reads/srst2
+        if db_name == "No match found":
+            return []
+        st_type = items[2]
+        start_col = 7
+    
+    # Check if we have alleles
+    if len(items) <= start_col:
+        return [[sample, db_name, "-", 1, ["-"], ["-"], source_type, pull_date]]
+    
 
-	# Consolidate identical novel allele sets (This is not capable of doing more than 2 right now....but I dont see that eevr happening, so)
-	checked_and_deduped_schemes=[]
-	novel_allele_sets=[]
-	for i in checked_schemes:
-		if i[2] != "Novel_allele" and i[2] != "Missing_allele":
-			#print("Not novel found:", i)
-			checked_and_deduped_schemes.append(i)
-		else:
-			novel_allele_sets.append(i)
-	if len(novel_allele_sets) == 1:
-				print("Only one, moving to approved list")
-				checked_and_deduped_schemes.append(novel_allele_sets[0])
-				novel_allele_sets.pop(0)
-	elif len(novel_allele_sets) > 1:
-		i = len(novel_allele_sets)-1
-		while i >= 0:
-		#for i in range(len(novel_allele_sets)-1,0,-1):
-			print(len(novel_allele_sets), "NAS", novel_allele_sets, i)
-			primary_db = novel_allele_sets[i][1]
-			primary_alleles = []
-			primary_source = novel_allele_sets[i][6]
-			match_found=False
-			for allele in novel_allele_sets[i][5]:
-				if '*' in allele or '?' in allele or '~' in allele: # or '-' in allele:
-					# Mark allele as found, but a mismatch
-					raw_1_allele=allele.replace('*','').replace('?','').replace('~','')
-					primary_alleles.append('Mismatch-'+str(raw_1_allele))
-				elif '-' in allele:
-					# Mark allele as not found
-					primary_alleles.append('Not Found')
-				else:
-					# Mark allele as found and complete
-					primary_alleles.append('Complete')
-			j = len(novel_allele_sets)-1
-			while j >= 0:
-			#for j in range(len(novel_allele_sets)-1,0,-1):
-				if i == j:
-					next
-				else:
-					if primary_db == novel_allele_sets[j][1]:
-						#print("dbs match, should the be joined?")
-						secondary_alleles=[]
-						secondary_source = novel_allele_sets[j][6]
-						primary_is_srst2=False
-						secondary_is_srst2=False
-						for allele in novel_allele_sets[j][5]:
-							if '*' in allele or '?' in allele or '~' in allele: # or '-' in allele:
-								# Mark allele as found, but a mismatch
-								raw_2_allele=allele.replace('*','').replace('?','').replace('~','')
-								secondary_alleles.append('Mismatch,'+str(raw_2_allele))
-							elif '-' in allele:
-								# Mark allele as not found
-								secondary_alleles.append('Not Found')
-							else:
-								# Mark allele as found and complete
-								secondary_alleles.append('Complete')
-						if primary_alleles == secondary_alleles:
-							#print("alleles match", primary_alleles, secondary_alleles)
-							new_source="unset"
-							if primary_source == "assembly":
-								#primary_is_srst2=False
-								#secondary_is_srst2=False
-								if secondary_source == "assembly":
-									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST")
-									# Not as weird, contamination testing this comes up, so a good way to catch?
-									new_source="assembly"
-								elif secondary_source == "assembly/reads":
-									print("Weird, shouldnt have both novel allele sets in one database come from assembly MLST (plus a confirmation srst2)")
-									# Not as weird, contamination testing this comes up, so a good way to catch?
-									new_source="assembly/reads"
-								elif secondary_source == "reads":
-									new_source = "assembly/reads"
-									secondary_is_srst2=True
-								else:
-									print("Weird, phx doesn't know what the secondary source is")
-								#primary_is_srst2=True
-							elif primary_source == "reads":
-								primary_is_srst2=True
-								if secondary_source == "assembly":
-									new_source = "assembly/reads"
-								elif secondary_source == "assembly/reads":
-									print("Weird, shouldnt have both novel allele sets in one database come from srst2 MLST (plus a confirmation assembly MLST)")
-									# Not as weird, contamination testing this comes up, so a good way to catch?
-									new_source="assembly/reads"
-								elif secondary_source == "reads":
-									print("Weird, shouldnt have both novel allele sets in one database come from srst2")
-									# Not as weird, contamination testing this comes up, so a good way to catch?
-									new_source="reads"
-								else:
-									print("Weird, dont know what the secondary source is")
-								#secondary_is_srst2=True
-							new_allele_list=[]
-							for k in range(0,len(primary_alleles)):
-								if primary_alleles[k] == 'Mismatch':
-									#print("mismatch:",novel_allele_sets[i][5][k],novel_allele_sets[j][5][k])
-									if novel_allele_sets[i][5][k] == novel_allele_sets[j][5][k]:
-										new_allele_list.append(novel_allele_sets[i][5][k])
-									else:
-										if primary_is_srst2:
-											new_allele_list.append('^'+novel_allele_sets[i][5][k]+','+novel_allele_sets[j][5][k])
-										elif secondary_is_srst2:
-											new_allele_list.append(novel_allele_sets[i][5][k]+',^'+novel_allele_sets[j][5][k])
-										else:
-											print("Weird, there is no srst2 found when comparing....these are all assembly MLSTs")
-								else:
-									new_allele_list.append(novel_allele_sets[i][5][k])
-							new_entry = [novel_allele_sets[i][0], novel_allele_sets[i][1],novel_allele_sets[i][2],novel_allele_sets[i][3],novel_allele_sets[i][4],new_allele_list,new_source,novel_allele_sets[i][7]]
-							checked_and_deduped_schemes.append(new_entry)
-							if i>j:
-								#print("pop1")
-								novel_allele_sets.pop(i)
-								novel_allele_sets.pop(j)
-								i=i-1
-								j=j-1
-							if j>i:
-								#print("pop2")
-								novel_allele_sets.pop(j)
-								novel_allele_sets.pop(i)
-								i=i-1
-								j=j-1
-							match_found=True
-						#print(i, "CADD", checked_and_deduped_schemes)
-					else:
-						# Databases do not match, dont want to consolidate novel allele sets fron different DBs
-						next
-				j-=1
-			if not match_found:
-				#print("Unique found, adding:", novel_allele_sets[i])
-				checked_and_deduped_schemes.append(novel_allele_sets[i])
-				novel_allele_sets.pop(i)
-			i-=1
+    # Parse alleles
+    allele_names, allele_options, has_multiple = parse_alleles(items, start_col)
 
-	all_Types_are_complete="unknown"
-	outfile=isolate_name+"_combined.tsv"
-	print(outfile)
-	with open(outfile,'w') as writer:
-		writer.write("Sample\tSource\tPulled_on\tDatabase\tST\tlocus_1\tlocus_2\tlocus_3\tlocus_4\tlocus_5\tlocus_6\tlocus_7\tlocus_8\tlocus_9\tlocus_10\n")
-		if len(checked_and_deduped_schemes) == 0:
-			print("No schemes found")
-			writer.write(isolate_name+"\tNone-"+genus+" "+species+"\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-")
-			all_Types_are_complete="False"
-		else:
-			for i in checked_and_deduped_schemes:
-				print(i)
-				allele_section=""
-				print(i[3],i[4][0],i[5][0])
-				if i[3] == 1:
-					if i[4][0] == "-":
-						allele_section="-\n"
-					else:
-						allele_section=""+str(i[4][0])+"("+str(i[5][0])+")\n"
-						#print("AS:", allele_section)
-				else:
-					for j in range (0,len(i[4])):
-						if len(i[4][j].split("_")) > 1:
-							gene_id=i[4][j].split("_")[1]
-						else:
-							gene_id=i[4][j]
-						allele_section=allele_section+gene_id+"("+i[5][j]+")	"
-					allele_section.strip()
-					allele_section=allele_section+"\n"
-				# Checks if current ST is either a number, has '-PARALOG' in it and that all previous ST types have completed
-				if (i[2].isnumeric() or "-PARALOG" in i[2] or "Novel_profile" in i[2]) and i[2] != "-" and all_Types_are_complete != "False":
-					#print(i[2], "= good")
-					all_Types_are_complete = "True"
-				else:
-					#print(i[2], "= bad")
-					all_Types_are_complete = "False"
-				writer.write(isolate_name+"\t"+i[6]+"\t"+i[7]+"\t"+i[1]+"\t"+i[2]+"\t"+allele_section)
-	status_file=isolate_name+"_status.txt"
-	with open(status_file,'w') as writer:
-		writer.write(all_Types_are_complete+"\n")
+    print("allele names:", allele_names, "options:", allele_options, "multiple:", has_multiple)
+    
+    if not allele_names:
+        return [[sample, db_name, "-", 1, ["-"], ["-"], source_type, pull_date]]
+    
+    # Create template
+    template = [sample, db_name, st_type, len(allele_names), allele_names, [], source_type, pull_date]
+    
+    # Mark as novel profile if multiple alleles detected
+    if has_multiple:
+        template[2] = "-"
+    
+    # Expand combinations
+    return expand_allele_combinations(template, allele_options)
 
+
+def merge_duplicate_profiles(profiles: List[List]) -> List[List]:
+    """
+    Find and merge duplicate profiles from different sources.
+    
+    Profiles with identical alleles are merged, with source updated to
+    "assembly/reads" if they come from different sources.
+    """
+    seen_indices = set()
+    merged = []
+    
+    for i in range(len(profiles)):
+        if i in seen_indices:
+            continue
+            
+        current = profiles[i]
+        current_alleles = current[5]
+        current_source = current[6]
+        
+        # Look for duplicates
+        for j in range(i + 1, len(profiles)):
+            if j in seen_indices:
+                continue
+                
+            other = profiles[j]
+            other_alleles = other[5]
+            other_source = other[6]
+            
+            # Check if alleles match (order-independent)
+            if collections.Counter(current_alleles) != collections.Counter(other_alleles):
+                continue
+            
+            # Same database?
+            if current[1] != other[1]:
+                continue
+            
+            # Merge sources
+            if current_source != other_source:
+                sources = {current_source, other_source}
+                if sources == {"assembly", "reads"}:
+                    current[6] = "assembly/reads"
+                elif "assembly/reads" in sources:
+                    current[6] = "assembly/reads"
+            
+            seen_indices.add(j)
+        
+        merged.append(current)
+    
+    return merged
+
+
+def classify_profile_type(profile: List, mlst_db_path: str) -> str:
+    """
+    Determine the ST type by checking alleles against database.
+    
+    Returns:
+        ST number or status (Novel_allele, Missing_allele, Novel_profile, etc.)
+    """
+    database = profile[1]
+    st_type = profile[2]
+    alleles = profile[5]
+    source = profile[6]
+
+    print("classifying profile:", profile, database, st_type, alleles)
+    
+    # Check for special characters indicating issues, this should only be occuring in srst2 profiles, so imma edit somee
+#    bad_markers = ["*", "?", "~", "NF"]
+#    if any(marker in st_type for marker in bad_markers):
+#        return "Novel_profile"
+
+    # Handle dash
+    if (database == "-" and int(profile[3]) == 1) or (database.startswith("No match found for") and int(profile[3]) == 1):
+#        return "Novel_profile" if profile[3] > 1 else "-"
+        return "-" 
+    
+    if st_type == "failed":
+        return "Failed" if profile[3] > 1 else "failed"
+    
+    # Check if ST is already a valid number
+    try:
+        int(st_type)
+        return st_type  # Already validated
+    except ValueError:
+        pass
+    
+    # Check alleles for issues
+    has_novel = False
+    has_missing = False
+
+    print(alleles)
+    
+    for allele in alleles:
+        if any(marker in allele for marker in ['*', '?', '~']):
+            has_novel = True
+        elif '-' in allele:
+            has_missing = True
+    
+    if has_missing:
+        return "Missing_allele"
+    if has_novel:
+        return "Novel_allele"
+    
+    # Check if all alleles are dashes
+    if all(a == "-" for a in alleles):
+        return "-"
+    
+    # Look up in database
+    db_name = profile[1].split("(")[0]  # Remove any suffix
+    profile_file = Path(mlst_db_path) / "pubmlst" / db_name / f"{db_name}.txt"
+    
+    if not profile_file.exists():
+        print(f"Warning: Profile file not found: {profile_file}")
+        return "File_not_Found"
+    
+    try:
+        with open(profile_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                parts = line.split("\t")
+                if len(parts) < len(alleles) + 1:
+                    continue
+                
+                db_st = parts[0]
+                db_alleles = parts[1:len(alleles) + 1]
+                
+                if db_alleles == alleles:
+                    return db_st
+    except Exception as e:
+        print(f"Error reading profile file: {e}")
+    
+    return "Novel_profile"
+
+
+def standardize_database_name(db_name: str) -> str:
+    """Standardize database names to consistent format."""
+    name_map = {
+        "abaumannii": "abaumannii(Oxford)",
+        "abaumannii(Oxford)": "abaumannii(Oxford)",
+        "Acinetobacter_baumannii#1": "abaumannii(Oxford)",
+        "abaumannii_2": "abaumannii(Pasteur)",
+        "Acinetobacter_baumannii#2": "abaumannii(Pasteur)",
+        "ecoli": "ecoli(Achtman)",
+        "ecoli_achtman_4": "ecoli(Achtman)",
+        "ecoli_2": "ecoli_2(Pasteur)",
+        "Escherichia_coli#2": "ecoli_2(Pasteur)",
+        "aparagallinarum_Ghanem": "aparagallinarum(Ghanem)",
+        "aparagallinarum_Guo": "aparagallinarum(Guo)",
+        # None for 'regular' efaecium
+        "efaecium_Bezdicek": "efaecium(Bezdicek)",
+        "salmonella_Oxford": "salmonella(Oxford)",
+        "salmonella_Achtman": "salmonella(Achtman)",
+        "mgallisepticum_Ghanem": "mgallisepticum(Ghanem)",
+        "mgallisepticum_Beko": "mgallisepticum(Beko)",
+        "pmultocida_multihost": "pmultocida(multihost)",
+        "pmultocida_rirdc": "pmultocida(rirdc)",
+        # None for 'regular' mbovis
+        "mbovis_legacy": "mbovis(legacy)",
+        "smutans_Do": "smutans(Do)",
+        "smutans_Kakano": "smutans(Kakano)",
+        "tpallidum_Grillova": "tpallidum(Grillova)",
+        "tpallidum_Pla-Diaz": "tpallidum(Pla-Diaz)"
+    }
+    
+    return name_map.get(db_name, db_name)
+
+
+def detect_paralogs(profile: List) -> bool:
+    """Check for known paralog markers in A. baumannii."""
+    db_name = profile[1]
+    alleles = profile[5]
+    
+    # Only check A. baumannii Oxford scheme
+    if not any(x in db_name for x in ["abaumannii", "abaumannii(Oxford)", "Acinetobacter_baumannii#1"]):
+        return False
+    
+    # Check third allele for known paralog values
+    if len(alleles) > 2:
+        if str(alleles[2]) in ["182", "189"]:
+            return True
+    
+    return False
+
+
+def consolidate_novel_alleles(profiles: List[List]) -> List[List]:
+    """
+    Consolidate novel allele profiles that can be combined.
+    
+    Novel allele profiles from assembly and reads that have compatible
+    alleles (same or complementary mismatches) are merged.
+    """
+    # Separate profiles by type
+    complete = []
+    novel = []
+    
+    for profile in profiles:
+        if profile[2] not in ["Novel_allele", "Missing_allele"]:
+            complete.append(profile)
+        else:
+            novel.append(profile)
+    
+    # If 0 or 1 novel profiles, nothing to consolidate
+    if len(novel) <= 1:
+        return complete + novel
+    
+    # Try to consolidate novel profiles
+    consolidated = complete
+    processed = set()
+    
+    for i in range(len(novel)):
+        if i in processed:
+            continue
+        
+        primary = novel[i]
+        primary_db = primary[1]
+        primary_source = primary[6]
+        primary_alleles = primary[5]
+        
+        # Classify primary alleles
+        primary_status = []
+        for allele in primary_alleles:
+            if any(m in allele for m in ['*', '?', '~']):
+                clean = allele.replace('*', '').replace('?', '').replace('~', '')
+                primary_status.append(('mismatch', clean))
+            elif '-' in allele:
+                primary_status.append(('missing', None))
+            else:
+                primary_status.append(('complete', allele))
+        
+        # Look for compatible profiles
+        merged = False
+        for j in range(i + 1, len(novel)):
+            if j in processed:
+                continue
+            
+            secondary = novel[j]
+            
+            # Must be same database
+            if secondary[1] != primary_db:
+                continue
+            
+            secondary_alleles = secondary[5]
+            
+            # Classify secondary alleles
+            secondary_status = []
+            for allele in secondary_alleles:
+                if any(m in allele for m in ['*', '?', '~']):
+                    clean = allele.replace('*', '').replace('?', '').replace('~', '')
+                    secondary_status.append(('mismatch', clean))
+                elif '-' in allele:
+                    secondary_status.append(('missing', None))
+                else:
+                    secondary_status.append(('complete', allele))
+            
+            # Check if compatible
+            if not are_alleles_compatible(primary_status, secondary_status):
+                continue
+            
+            # Merge
+            new_alleles = []
+            for k in range(len(primary_alleles)):
+                p_status, p_val = primary_status[k]
+                s_status, s_val = secondary_status[k]
+                
+                if p_status == 'complete' or s_status == 'complete':
+                    # Use the complete one
+                    new_alleles.append(p_val if p_status == 'complete' else s_val)
+                elif p_status == 'mismatch' and s_status == 'mismatch':
+                    if p_val == s_val:
+                        new_alleles.append(primary_alleles[k])
+                    else:
+                        # Different mismatches - annotate
+                        new_alleles.append(f"{primary_alleles[k]},{secondary_alleles[k]}")
+                else:
+                    # One is missing - use the other
+                    new_alleles.append(primary_alleles[k] if p_status != 'missing' else secondary_alleles[k])
+            
+            # Determine new source
+            sources = {primary_source, secondary[6]}
+            if sources == {"assembly", "reads"}:
+                new_source = "assembly/reads"
+            else:
+                new_source = list(sources)[0]
+            
+            # Create merged profile
+            merged_profile = [
+                primary[0], primary[1], primary[2], primary[3],
+                primary[4], new_alleles, new_source, primary[7]
+            ]
+            consolidated.append(merged_profile)
+            
+            processed.add(i)
+            processed.add(j)
+            merged = True
+            break
+        
+        if not merged:
+            consolidated.append(primary)
+            processed.add(i)
+    
+    return consolidated
+
+
+def are_alleles_compatible(status1: List[Tuple], status2: List[Tuple]) -> bool:
+    """Check if two allele status lists can be merged."""
+    if len(status1) != len(status2):
+        return False
+    
+    for (s1, v1), (s2, v2) in zip(status1, status2):
+        # Complete alleles must match
+        if s1 == 'complete' and s2 == 'complete':
+            if v1 != v2:
+                return False
+        # Mismatches must have same base value or be complementary
+        elif s1 == 'mismatch' and s2 == 'mismatch':
+            # Allow different markers on same base
+            continue
+        # Complete + mismatch is compatible
+        elif (s1 == 'complete' and s2 == 'mismatch') or (s1 == 'mismatch' and s2 == 'complete'):
+            continue
+        # Missing can be filled by anything
+        elif 'missing' in (s1, s2):
+            continue
+        else:
+            return False
+    
+    return True
+
+
+def write_output_file(profiles: List[List], isolate_name: str, genus: str, species: str):
+    """Write final MLST results to TSV file."""
+    outfile = f"{isolate_name}_combined.tsv"
+    all_complete = "unknown"
+    
+    with open(outfile, 'w') as f:
+        # Write header
+        f.write("WGS_ID\tSource\tPulled_on\tDatabase\tST\t")
+        f.write("\t".join([f"locus_{i+1}" for i in range(10)]))
+        f.write("\n")
+        
+        if not profiles:
+            f.write(f"{isolate_name}\tNone-{genus} {species}\t-\t-\t-\t")
+            f.write("\t".join(["-"] * 10) + "\n")
+            all_complete = "False"
+        else:
+            # Track if all STs are valid
+            all_complete = "True"
+            
+            for profile in profiles:
+                sample, db_name, st_type, num_loci, loci_names, alleles, source, date = profile
+                
+                # Build allele section
+                if num_loci == 1 and loci_names[0] == "-":
+                    allele_section = "-"
+                else:
+                    allele_parts = []
+                    for locus, allele in zip(loci_names, alleles):
+                        # Strip prefix if present
+                        locus_name = locus.split("_")[1] if "_" in locus else locus
+                        allele_parts.append(f"{locus_name}({allele})")
+                    allele_section = "\t".join(allele_parts)
+                
+                # Check if ST is valid
+                invalid_markers = ["Novel_allele", "Missing_allele", "Novel_profile", "-", "failed", "Failed"]
+                if st_type in invalid_markers or (not st_type.isnumeric() and "-PARALOG" not in st_type):
+                    all_complete = "False"
+                
+                # Write line
+                f.write(f"{sample}\t{source}\t{date}\t{db_name}\t{st_type}\t{allele_section}\n")
+    
+    # Write status file
+    status_file = f"{isolate_name}_status.txt"
+    with open(status_file, 'w') as f:
+        f.write(f"{all_complete}\n")
+    
+    print(f"Output written to: {outfile}")
+    return outfile, all_complete
+
+
+def read_mlst_file(filepath: str) -> List[Tuple[str, str]]:
+    """Read MLST output file and return list of (line, type) tuples."""
+    results = []
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    results.append((line, "mlst"))
+    except FileNotFoundError:
+        print(f"Warning: MLST file not found: {filepath}")
+    
+    return results
+
+
+def read_srst2_file(filepath: str) -> List[Tuple[str, str]]:
+    """Read SRST2 output file and return list of (line, type) tuples."""
+    results = []
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and not line.startswith("Sample\tdatabase\tST"):
+                    results.append((line, "srst2"))
+    except FileNotFoundError:
+        print(f"Warning: SRST2 file not found: {filepath}")
+    
+    return results
+
+
+def do_MLST_check(input_MLST_line_tuples: List[Tuple], taxonomy_file: str, mlst_db_path: str, output_prefix: Optional[str] = None):
+    """
+    Main function to process MLST results and generate combined output.
+    
+    Args:
+        input_MLST_line_tuples: List of (line, type) tuples from MLST tools
+        taxonomy_file: Path to taxonomy file
+        mlst_db_path: Path to MLST database directory
+        output_prefix: Optional output file prefix
+    """
+    # Extract sample name
+    if output_prefix:
+        isolate_name = output_prefix
+    else:
+        isolate_name = ".".join(Path(taxonomy_file).stem.split(".")[:-1]) if "." in Path(taxonomy_file).stem else Path(taxonomy_file).stem
+    
+    # Read taxonomy
+    genus, species = read_taxonomy(taxonomy_file)
+    
+    # Get database pull date
+    pull_date = get_pull_date(mlst_db_path)
+    
+    # Parse all MLST lines and expand combinations
+    all_profiles = []
+    
+    for mlst_line, file_type in input_MLST_line_tuples:
+        line = mlst_line.strip()
+        print(line)
+        if not line or line == "source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 locus_9  locus_10" or line == "source_file  Database  ST  locus_1 locus_2 locus_3 locus_4 locus_5 locus_6 locus_7 locus_8 lous_9  locus_10":
+            continue
+        
+        items = line.split("\t")
+        
+        if file_type == "mlst":
+            profiles = parse_mlst_line(items, "assembly", pull_date)
+        elif file_type == "srst2":
+            profiles = parse_mlst_line(items, "reads", pull_date)
+        else:
+            print(f"Unknown MLST filetype: {file_type}")
+            continue
+        
+        all_profiles.extend(profiles)
+    
+    if not all_profiles:
+        print("No MLST profiles found")
+        write_output_file([], isolate_name, genus, species)
+        return
+    
+    print(f"Found {len(all_profiles)} profile combinations")
+    
+    # Merge duplicates from different sources
+    merged_profiles = merge_duplicate_profiles(all_profiles)
+    print(f"After merging duplicates: {len(merged_profiles)} profiles")
+    
+    # Classify each profile
+    for profile in merged_profiles:
+        print("about to classify profile", profile)
+        profile[2] = classify_profile_type(profile, mlst_db_path)
+        
+        # Check for paralogs
+        if detect_paralogs(profile):
+            profile[2] = f"{profile[2]}-PARALOG"
+        
+        print("classified profile as", profile[2])
+
+        # Standardize database name
+        profile[1] = standardize_database_name(profile[1])
+    
+    # Consolidate novel alleles
+    final_profiles = consolidate_novel_alleles(merged_profiles)
+    print(f"Final profiles: {len(final_profiles)}")
+    
+    # Sort by ST type (reverse to put numbers first)
+    final_profiles.sort(key=lambda x: str(x[2]), reverse=True)
+    
+    # Write output
+    write_output_file(final_profiles, isolate_name, genus, species)
 
 
 def main():
-	args = parseArgs()
-	profile_lines=[]
-	if args.input is not None:
-		if os.stat(args.input).st_size > 0:
-			#input_files=[[args.input , "assembly"]]
-			reg_file = open(args.input, 'r')
-			### No headers complicate the difference between reg and srst2
-			counter = 0
-			for line in reg_file:
-				print("reg:"+str(counter), line.replace("\n", ""))
-				if counter > 0:
-					print("appending -", line.replace("\n",""))
-					profile_lines.append([line.replace("\n", ""), "mlst", args.input])
-				counter+=1
-		else:
-			print("Input mlst file is empty")
-	else:
-		print("No regular mlst input file provided")
-	if args.srst2 is not None:
-		if os.stat(args.srst2).st_size > 0:
-			srst2_file = open(args.srst2, 'r')
-			counter = 0
-			for line in srst2_file:
-				print("reads:"+str(counter), line.replace("\n", ""))
-				if counter > 0:
-					print("appending -", line.replace("\n",""))
-					profile_lines.append([line.replace("\n", ""), "srst2", args.srst2])
-				counter+=1
-		else:
-			print("Input SRST2 mlst file is empty")
-	else:
-		print("No srst2 input file provided")
-	if len(profile_lines) > 0 and args.taxonomy is not None:
-		do_MLST_check(profile_lines, args.taxonomy, args.mlst_database)
-	else:
-		print("No mlst files to check and fix")
+    """Main entry point for command line usage."""
+    args = parse_args()
 
-if __name__ == '__main__':
-	main()
+    print(f"MLST Profile Processor")
+    print(f"=" * 60)
+    print(f"MLST file: {args.input}")
+    if args.srst2:
+        print(f"SRST2 file: {args.srst2}")
+    print(f"Taxonomy: {args.taxonomy}")
+    print(f"Database: {args.mlst_database}")
+    print(f"=" * 60)
+    print()
+    
+    # Read input files
+    input_lines = []
+    
+    # Read MLST file
+    mlst_lines = read_mlst_file(args.input)
+    input_lines.extend(mlst_lines)
+    print(f"Read {len(mlst_lines)} lines from MLST file")
+    
+    # Read SRST2 file if provided
+    if args.srst2:
+        srst2_lines = read_srst2_file(args.srst2)
+        input_lines.extend(srst2_lines)
+        print(f"Read {len(srst2_lines)} lines from SRST2 file")
+    
+    if not input_lines:
+        print("Error: No MLST data found in input files")
+        return 1
+    
+    print()
+    
+    # Process MLST data
+    do_MLST_check(input_lines, args.taxonomy, args.mlst_database, args.output)
+    
+    print()
+    print("Processing complete!")
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

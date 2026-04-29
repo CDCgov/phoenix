@@ -12,6 +12,13 @@
             "description": "Define where the pipeline should find input data and save output data.",
             "required": [],
             "properties": {
+                "mode": {
+                    "type": "string",
+                    "description": "Which entry point (aka 'mode') to run. Can be upper or lower case.",
+                    "help_text": "Which entry point to run. Can be upper or lower case. Pick one of the following modes: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, or UPDATE_PHOENIX.",
+                    "fa_icon": "fas fa-keyboard",
+                    "default": "PHOENIX"
+                },
                 "input": {
                     "type": "string",
                     "format": "file-path",
@@ -31,7 +38,7 @@
             }
         },
         "Optional_scaffold_options": {
-            "title": "Options for -entry SCAFFOLDS and CDC_SCAFFOLDS",
+            "title": "Options for --mode SCAFFOLDS and CDC_SCAFFOLDS",
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input scaffolds.",
@@ -51,7 +58,7 @@
             }
         },
         "Required_sra_options": {
-            "title": "Options for -entry SRA and CDC_SRA",
+            "title": "Options for --mode SRA and CDC_SRA",
             "type": "object",
             "fa_icon": "fas fa-file-csv",
             "description": "Define where the pipeline should find input scaffolds.",
@@ -70,6 +77,26 @@
                 }
             }
         },
+        "Species_Specific_Workflows_Options": { 
+            "title": "Species Specific Optional options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "properties": {
+                "centar": { 
+                    "type": "boolean",
+                    "description": "***Still undergoing validation, will be released in v2.3.0***. Pass --centar if you want additional information (Toxin A/B Variants, Other Toxins and C. difficile Specific AR Mutations) on C. diff isolates.",
+                    "default": "False",
+                    "fa_icon": "fas fa-hashtag"
+                },
+                "griphin_out": { 
+                    "type": "string",
+                    "description": "***Still undergoing validation, will be released in v2.3.0***. Path to the output directory where the griphin summary files will be saved. Using this parameter, CENTAR files for isolates will be saved to their project directory.",
+                    "default": "${launchDir}",
+                    "fa_icon": "fas fa-keyboard"
+                }
+            }
+        },
         "Optional_options": {
             "title": "Optional options",
             "type": "object",
@@ -83,21 +110,21 @@
                     "fa_icon": "fas fa-folder-open"
                 },
                 "coverage": {
-                    "type": "string",
+                    "type": "integer",
                     "description": "If you want to increase the coverage cut off >30x use --coverage (ex. --coverage 40)",
-                    "default": "30",
+                    "default": 30,
                     "fa_icon": "fas fa-hashtag"
                 },
                 "busco_db_path": {
                     "type": "string",
                     "fa_icon": "fas fa-keyboard",
-                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with -entry CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
+                    "description": "Path (full or relative) for where BUSCO files are if you want to run in offline mode. The database is ~250GB if you download it from https://busco-data.ezlab.org/v5/data/lineages/ . Use only with --mode CDC_PHOENIX, CDC_SCAFFOLDS or CDC_SRA.",
                     "default": "Doesn't run in offline mode and connects to the V5 BUSCO database at https://busco-data.ezlab.org/v5/data/lineages/ ."
                 },
                 "create_ncbi_sheet": {
                     "type": "boolean",
                     "fa_icon": "fas fa-keyboard",
-                    "description": "Pass this argument to generate partially filled out excel sheets required for NCBI upload. This should still be reviewed PRIOR to upload. Only use with -entry CDC_PHOENIX and -entry PHOENIX. As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov.",
+                    "description": "Pass this argument to generate partially filled out excel sheets required for NCBI upload. This should still be reviewed PRIOR to upload. Only use with --mode CDC_PHOENIX and --mode PHOENIX. As a reminder, please do not submit raw sequencing data to the CDC HAI-Seq BioProject (531911) unless you are a state public health laboratory, a CDC partner or have been directed to do so by DHQP. The BioProject accession IDs in this file are specifically designated for domestic HAI bacterial pathogen sequencing data, including from the Antimicrobial Resistance Laboratory Network (AR Lab Network), state public health labs, surveillance programs, and outbreaks. For inquiries about the appropriate BioProject location for your data, please contact HAISeq@cdc.gov.",
                     "default": "False"
                 },
                 "email": {

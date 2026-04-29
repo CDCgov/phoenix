@@ -32,9 +32,15 @@ include { CONFIRM_DUPS                   } from '../subworkflows/local/confirm_d
 def add_meta(folder) {
     def meta = [:] // create meta array
     meta.id = folder.toString().substring(folder.toString().lastIndexOf("/") + 1) - "_Folder" // This gets the metadata sample name from the SRA, the +1 removes the /
-    output_array = [ meta, folder]
+    def output_array = [ meta, folder]
     return output_array
 }
+
+/*
+========================================================================================
+    RUN MAIN WORKFLOW
+========================================================================================
+*/
 
 workflow SRA_PREP {
     take:

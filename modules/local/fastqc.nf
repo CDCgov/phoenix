@@ -5,11 +5,7 @@ process FASTQC {
     container 'staphb/fastqc@sha256:f5d8f72753269e0cee071fe198c89a59a1f8071445739b3398f7818f7cb039ae'
 
     input:
-    tuple val(meta), path(reads), val(fairy_outcome)
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[3]}" == "PASSED: There are reads in ${meta.id} R1/R2 after trimming."
+    tuple val(meta), path(reads)
 
     output:
     tuple val(meta), path("*.html"), emit: html

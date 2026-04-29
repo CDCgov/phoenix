@@ -1,8 +1,8 @@
 process CALCULATE_ASSEMBLY_RATIO {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 27)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 27)!!!
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(taxa_file), path(quast_report)
@@ -15,16 +15,12 @@ process CALCULATE_ASSEMBLY_RATIO {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths
-    if (params.terra==false) { terra = "" }
-    else if (params.terra==true) { terra = "-t terra" } 
-    else { error "Please set params.terra to either \"true\" or \"false\"" }
+    def terra = params.terra ? "-t terra" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "bash ${workflow.launchDir}/bin/" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    def ica = params.ica ? "bash ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     ${ica}calculate_assembly_ratio.sh -d $ncbi_database -q $quast_report -x $taxa_file -s ${prefix} $terra

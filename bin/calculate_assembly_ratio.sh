@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 
 #
 # Description: script to Compare local assembly to the expected assembly size based upon taxonomy file in directory or directly given
@@ -95,6 +95,7 @@ assembly_length='NA'
 expected_length='NA'
 total_tax='NA'
 taxid='NA'
+sample_gc_percent='NA'
 
 # Accounts for manual entry or passthrough situations
 if [[ -f "${db_path}" ]]; then
@@ -104,13 +105,28 @@ if [[ -f "${db_path}" ]]; then
 	sed -i 's/\]//' db_path_update.txt
 	NCBI_ratio=db_path_update.txt
 	NCBI_ratio_date=$(echo "${db_path}" | rev | cut -d'_' -f1 | cut -d'.' -f2 | rev) #expects date
-#	NCBI_ratio_date="20210819"
 else
-	echo "No ratio DB, exiting"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
-	echo -e "Tax: No genus Found	No species found\nNCBI_TAXID: No Match Found\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
-	exit
+	NCBI_ratio_date="19991231"
 fi
+#	NCBI_ratio_date="20210819"
+# else
+# 	echo "No ratio DB, exiting"
+# 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_19991231.txt"
+# 	echo "Checking if quast Assembly_stats exists: ${quast_report}"
+# 	if [[ -f "${quast_report}" ]]; then
+# 		assembly_length=$(sed -n '16p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+# 		sample_gc_percent=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
+# 		echo "Quast exists, printing GC even though ratio file doesnt exist"
+# 		echo -e "Tax: No genus Found	No species found\nNCBI_TAXID: No Match Found\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: ${sample_gc_percent}" >  "${sample_name}_GC_content_19991231.txt"
+# 		exit
+# 	# Another method if we start seeing too many failures with main method
+# 	#elif
+# 	else
+# 		echo "No quast exists, cannot continue"
+# 		echo -e "Tax: No genus Found	No species found\nNCBI_TAXID: No Match Found\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_19991231.txt"
+# 		exit
+# 	fi
+#fi
 
 # Checks for correct parameter s and sets appropriate outdatadirs
 #if [[ ! -z "${epath}" ]]; then
@@ -136,8 +152,8 @@ echo "Checking if quast Assembly_stats exists: ${quast_report}"
 if [[ -f "${quast_report}" ]]; then
 	assembly_length=$(sed -n '16p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
 	sample_gc_percent=$(sed -n '17p' "${quast_report}" | sed -r 's/[\t]+/ /g' | cut -d' ' -f3)
-# Another method if we start seeing too many failures with main method
-#elif
+# # Another method if we start seeing too many failures with main method
+# #elif
 else
 	echo "No quast exists, cannot continue"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: ${stdevs}\nActual_length: ${assembly_length}\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
@@ -146,6 +162,7 @@ else
 fi
 counter=0
 
+# Dont know if we even use this anymore, could break if used though
 if [[ ! "${force}" ]]; then
 	echo "Checking if Tax summary exists: ${tax_file}"
 	if  [[ -f "${tax_file}" ]]; then
@@ -155,15 +172,15 @@ if [[ ! "${force}" ]]; then
 			genus="No genus found"
 		fi
 		species=$(head -n8 "${tax_file}" | tail -n1 | cut -d'	' -f2)
-		# handling species with sp in the name.
-		if [[ $species == *sp.* ]]; then
-			# If yes, remove a space after "sp."
-			species="${species/sp. /sp.}"
-			#make sure the letters after sp. are in caps
-			species=$(echo "$species" | sed -E 's/(sp\.)([a-zA-Z]+)/\1\U\2/')
-			#change spaces to - to be inline with how the NCBI assembly stats file is made
-			species="${species// /-}"
-		fi
+#		# Testing removal of this formatting since we handle species taxonomy in other places now
+#		if [[ $species == *sp.* ]]; then
+#			# If yes, remove a space after "sp."
+#			species="${species/sp. /sp.}"
+#			#make sure the letters after sp. are in caps
+#			species=$(echo "$species" | sed -E 's/(sp\.)([a-zA-Z]+)/\1\U\2/')
+#			#change spaces to - to be inline with how the NCBI assembly stats file is made
+#			species="${species// /-}"
+#		fi
 		if [[ "${species}" = "" ]]; then
 			species="No species found"
 		fi
@@ -179,11 +196,16 @@ else
 	total_tax="${genus} ${species}	(selected manually)"
 fi
 
-
+# set first to true so we skip that line
+first=true
 while IFS='' read -r line; do
+    if $first; then
+        first=false
+        continue
+    fi
 	IFS=$'\t' read -a arr_line <<< "$line"
 	#echo "${arr_line}"
-	#echo  "${genus} ${species} vs ${arr_line[0]}"
+	echo  "|${genus} ${species}| vs |${arr_line[0]}|"
 	# convert all variables to all lowercase for a case agnostic search
 	if [[ "${genus,,} ${species,,}" = "${arr_line[0],,}" ]]; then
 		# if sp. is in the name then 
@@ -196,6 +218,7 @@ while IFS='' read -r line; do
 		expected_length=$(echo "scale=0; 1000000 * ${arr_line[4]} / 1 " | $bc_path | cut -d'.' -f1)
 		reference_count="${arr_line[6]}"
 		stdev=$(echo "scale=4; 1000000 * ${arr_line[5]} /1 " | $bc_path | cut -d"." -f1)
+		echo "${arr_line[@]} - ${expected_length} - ${stdev} - ${reference_count}"
 		if [[ "${reference_count}" -lt 10 ]]; then
 			stdev="Not calculated on species with n<10 references"
 			stdevs="NA"
@@ -231,17 +254,17 @@ while IFS='' read -r line; do
 done < "${NCBI_ratio}"
 #echo "looked in ${NCBI_ratio}"
 
-#echo "${expected_length}-${assembly_length}"
+echo "${expected_length}-${assembly_length}"
 
 if [[ ${expected_length} = "NA" ]] || [[ -z ${expected_length} ]]; then
 	echo "No expected length was found to compare to"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: NA\nIsolate_St.Devs: NA\nActual_length: ${assembly_length}\nExpected_length: NA\nRatio: -1" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: No Match Found" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: No Match Found\nSpecies_GC_Min: No Match Found\nSpecies_GC_Max: No Match Found\nSpecies_GC_Mean: No Match Found\nSpecies_GC_Count: No Match Found\nSample_GC_Percent: ${sample_gc_percent}" > "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 elif [[ ${assembly_length} = "NA" ]] || [[ -z ${assembly_length} ]]; then
 	echo "No assembly length was found to compare with"
 	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_StDev: ${stdev}\nIsolate_St.Devs: NA\nActual_length: NA\nExpected_length: ${expected_length}\nRatio: -2" >  "${sample_name}_Assembly_ratio_${NCBI_ratio_date}.txt"
-	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}\nSample_GC_Percent: NA" >  "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
+	echo -e "Tax: ${total_tax}\nNCBI_TAXID: ${taxid}\nSpecies_GC_StDev: ${gc_stdev}\nSpecies_GC_Min: ${gc_min}\nSpecies_GC_Max: ${gc_max}\nSpecies_GC_Mean: ${gc_mean}\nSpecies_GC_Count: ${gc_count}\nSample_GC_Percent: NA" > "${sample_name}_GC_content_${NCBI_ratio_date}.txt"
 	exit
 fi
 

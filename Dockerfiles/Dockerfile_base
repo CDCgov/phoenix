@@ -1,31 +1,47 @@
 # base image
-FROM ubuntu:jammy
+FROM ubuntu:noble
 
 # for easy upgrade later. ARG variables only persist during image build time
-ARG PHX_VER="2.0.0"
+ARG PHX_VER="2.2.0"
 
 # metadata
-LABEL base.image="ubuntu:jammy"
+LABEL base.image="ubuntu:noble"
 LABEL dockerfile.version="2"
 LABEL software="PhoeNIx"
-LABEL software.version="v2.0.0"
+LABEL software.version="v2.2.0"
 LABEL description="Basic Linux for Running PHoeNIx bash scripts"
 LABEL website="https://github.com/cdcgov/phoenix"
 LABEL license="Apache 2.0"
 LABEL maintainer="Jill Hagey"
 LABEL maintainer.email="qpk9@cdc.gov"
 
+# need ths to install specific version of python that is lower than what is in the base image apt-get
+#RUN apt update
+#RUN apt install software-properties-common -y
+#RUN add-apt-repository ppa:deadsnakes/ppa
+#RUN apt install python3.7 -y
+
 # prevents having to enter commands during apt-get install
 ENV DEBIAN_FRONTEND=noninteractive
 
 # install dependencies (pigz needed for nf-core modules, bc and rsync needed for post gamma steps in PHoeNIx)
-RUN apt-get update && apt-get -y --no-install-recommends install \
-    ca-certificates \
+RUN apt-get update && apt-get -y --no-install-recommends install ca-certificates ubuntu-keyring \
+    #python3.7 \
+    #python3-pip \
+    python3-dev \
+    #python-is-python3 \
+    bsdextrautils \
+    util-linux \
     libssl-dev \
     zlib1g-dev \
     libbz2-dev \
     libreadline-dev \
     libsqlite3-dev \
+    libgobject-2.0-0 \
+    libxml2-dev \
+    libxslt-dev \
+    libcairo2-dev \
+    libpango1.0 \
     make \
     llvm \
     libncurses5-dev \
@@ -42,31 +58,41 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
     tar \
     gzip \
     curl \
+    git \
+    procps \
     wget && \
     apt-get autoclean && \
     rm -rf /var/lib/apt/lists/*
 
-# using pyenv to set up an environment for python v3.7.12 to match what is required for the terra container
 RUN mkdir /pyenv && git clone https://github.com/pyenv/pyenv.git /pyenv
 ENV PYENV_ROOT=/pyenv
-RUN /pyenv/bin/pyenv install 3.7.12
-RUN eval "$(/pyenv/bin/pyenv init -)" && /pyenv/bin/pyenv local 3.7.12
-RUN /pyenv/bin/pyenv global 3.7.12
+RUN /pyenv/bin/pyenv install 3.12.3
+RUN eval "$(/pyenv/bin/pyenv init -)" && /pyenv/bin/pyenv local 3.12.3
+RUN /pyenv/bin/pyenv global 3.12.3
 
-RUN apt-get update && apt-get -y --no-install-recommends install python3-pip
+#RUN apt-get update && apt-get -y --no-install-recommends install pip
 
 ENV PATH=/pyenv/bin:/pyenv/shims:${PATH}
+RUN pyenv local 3.12.3 && pip install --upgrade pip
 
-#install biopython and other required modules
-RUN pip3 install biopython \
+#install biopython
+RUN pyenv local 3.12.3 && pip3 install biopython \
     glob2 \
+    weasyprint \
     argparse \
     unidecode \
-    pandas \
-    numpy \
+    pandas==2.3.3 \
+    numpy==2.3.5 \
     regex \
     times \
-    xlsxwriter \
-    cryptography==36.0.2 \
+    xlsxwriter==3.2.9 \
+    cryptography \
     pytest-shutil \
-    openpyxl 
+    openpyxl \
+    pyyaml \
+    pyre2-updated \
+    polars
+
+#install weasyprint
+#RUN pyenv local 3.12.3 && python3-pip libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 libharfbuzz-subset0 libffi-dev libjpeg-dev libopenjp2-7-dev
+#RUN pyenv local 3.12.3 && pip3 install weasyprint

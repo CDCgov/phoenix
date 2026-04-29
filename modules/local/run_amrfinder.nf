@@ -1,20 +1,22 @@
 process AMRFINDERPLUS_RUN {
     tag "$meta.id"
     label 'process_medium'
-    // 3.12.8-2024-01-31.1 - new
-    container 'staphb/ncbi-amrfinderplus@sha256:45863da98b042fffc17b91d8a42bb7094509c154409da7747b6ba509bca7cdc2'
+    if (params.mode_upper == "CLIA") {
+        //3.12.8-2024-07-22.1
+        container 'staphb/ncbi-amrfinderplus@sha256:ddabe0c55de98554de0b913ebbe8d68860a5de14b0059f5a6971178a1c72657b'
+    } else {
+        //4.2.5-2025-12-03.1
+        container 'staphb/ncbi-amrfinderplus@sha256:1c1773e3ed3f96a577418945523ef4e97d1f7f0d63534530336c6f65c9d007ed'
+    }
 
     input:
     tuple val(meta), path(nuc_fasta), val(organism_param), path(pro_fasta), path(gff)
     path(db)
 
     output:
-    tuple val(meta), path("${meta.id}_all_genes.tsv"),                    emit: report
-    tuple val(meta), path("${meta.id}_all_mutations.tsv"), optional:true, emit: mutation_report
-    path("versions.yml")                                 ,                emit: versions
-
-    when:
-    task.ext.when == null || task.ext.when
+    tuple val(meta), path("${meta.id}_all_genes_*.tsv"),                    emit: report
+    tuple val(meta), path("${meta.id}_all_mutations_*.tsv"), optional:true, emit: mutation_report
+    path("versions.yml"),                                                   emit: versions
 
     script:
     // use --organism
@@ -36,7 +38,8 @@ process AMRFINDERPLUS_RUN {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def container = task.container.toString() - "staphb/ncbi-amrfinderplus@"
     //get name of amrfinder database file
-    db_name = db.toString() - '.tar.gz'
+    def db_name = db.toString() - '.tar.gz'
+    def db_date = db_name.find(/\d{8}/)
     """
     #adding python path for running srst2 on terra
     $terra
@@ -56,13 +59,13 @@ process AMRFINDERPLUS_RUN {
         --protein $pro_fasta \\
         --gff $gff \\
         --annotation_format prokka \\
-        --mutation_all ${prefix}_all_mutations.tsv \\
+        --mutation_all ${prefix}_all_mutations_${db_date}.tsv \\
         $organism \\
         --plus \\
         --database $db_name \\
-        --threads $task.cpus > ${prefix}_all_genes.tsv
+        --threads $task.cpus > ${prefix}_all_genes_${db_date}.tsv
 
-    sed -i '1s/ /_/g' ${prefix}_all_genes.tsv
+    sed -i '1s/ /_/g' ${prefix}_all_genes_${db_date}.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

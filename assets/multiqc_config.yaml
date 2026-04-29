@@ -72,6 +72,10 @@ extra_fn_clean_exts:
   - "_singles"
   - "_R1_001"
   - "_R2_001"
+  - "_R1"
+  - "_R2"
+  - "_r1"
+  - "_r2"
 
 max_table_rows: 10000
 

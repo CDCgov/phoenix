@@ -70,6 +70,9 @@ def check_samplesheet(file_in, file_out):
         sample_name_list = [] # used to check if sample name has been used before
         Read_list = []
         for line in fin:
+            # Handle empty lines in samplesheet
+            if not line.strip():
+                continue  # Skip empty or whitespace-only lines
             lspl = [x.strip().strip('"') for x in line.strip().split(",")]
 
             # Check for duplicate sample names
@@ -86,21 +89,23 @@ def check_samplesheet(file_in, file_out):
             # Check for duplicate R1 and R2 files being run
             sample_R1 = line.split(",")[1].split("/")[-1]
             if sample_R1 in Read_list:
-                print_error(
-                    "The forward read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R1),
-                    "Line",
-                    line,
-                )
+                #print_error(
+                #    "The forward read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R1),
+                #    "Line",
+                #    line,
+                #)
+                print("WARNING: The forward read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue. Line: '{}'".format(sample_R2, line.strip()))
             else:
                 Read_list.append(sample_R1)
 
             sample_R2 = line.split(",")[2].split("/")[-1].strip("\n")
             if sample_R2 in Read_list:
-                print_error(
-                    "The reverse read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R2),
-                    "Line",
-                    line,
-                )
+                #print_error(
+                #    "The reverse read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue.".format(sample_R2),
+                #    "Line",
+                #    line,
+                #)
+                print("WARNING: The reverse read file {} is used multiple times in the same run! We assume you didn't want to do this, but if there is some need for this open a github issue. Line: '{}'".format(sample_R2, line.strip()))
             else:
                 Read_list.append(sample_R2)
 

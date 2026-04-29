@@ -26,7 +26,6 @@ workflow KRAKEN2_WF {
     qc_stats        //GATHERING_READ_QC_STATS.out.fastp_total_qc
     quast           //QUAST.out.report_tsv --> only for wtasmbld and asmbld
     kraken2_db_path
-    seq_type        // either "scaffolds" or "reads"
 
     main:
     ch_versions     = Channel.empty() // Used to collect the software versions
@@ -34,16 +33,14 @@ workflow KRAKEN2_WF {
     if (type=="trimd") {
         // add in fairy to confirm reads are uncorrupted and correct
         fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])\
-        .combine(kraken2_db_path)
+            .filter { meta, reads, fairy_outcome -> fairy_outcome[3] == "PASSED: There are reads in ${meta.id} R1/R2 after trimming." }
+            .map{ meta, reads, fairy_outcome -> return [meta, reads ] }.combine(kraken2_db_path)
+
     } else if(type=="asmbld" || type=="wtasmbld") {
-        // add in scaffold_count_check so its confirmed that there are scaffolds in file post filtering
-        if (seq_type =="scaffolds") {
-            fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:meta.single_end], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])\
-            .combine(kraken2_db_path)
-        } else if(seq_type =="reads"){
-            fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])\
-            .combine(kraken2_db_path)
-        }
+
+        fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])\
+            .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering." || fairy_outcome[4][0] == "End_of_File" }
+            .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds ] }.combine(kraken2_db_path)
     }
 
     if(type =="trimd") {

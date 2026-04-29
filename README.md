@@ -1,8 +1,11 @@
 # :fire::bird::fire: PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens
 
-<!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->
+PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality Promotion (DHQP)](https://www.cdc.gov/ncezid/dhqp/index.html) to standardize genomic analysis of bacterial pathogens causing healthcare-associated infections, with a focus on antimicrobial resistance (AR). The pipeline supports the aims of the Antimicrobial Resistance Laboratory Network (AR Lab Network) to rapidly detect emerging and novel AR threats.  
 
-[![DOI](https://zenodo.org/badge/490844937.svg)](https://zenodo.org/badge/latestdoi/490844937)  
+<!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->  
+
+[![DOI](https://zenodo.org/badge/490844937.svg)](https://doi.org/10.5281/zenodo.7702319)
+
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
@@ -12,29 +15,36 @@
 
 #### Metrics
 
-[![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcdcgov%2Fphoenix&count_bg=%233DC8A9&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Page+Hits&edge_flat=false)](https://hits.seeyoufarm.com)
+<!--- [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcdcgov%2Fphoenix&count_bg=%233DC8A9&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Page+Hits&edge_flat=false)](https://hits.seeyoufarm.com)--->
 
 <!--- ![GitHub Clones](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Clones-)  --->
 
-[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%20262-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)  
+[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%2011655-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)   
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
+# SHARE IT Act Compliance  
+Organization: CDC/NCEZID/DHQP/CEMB  
+Contact email: ncezid_shareit@cdc.gov  
+
+Description: PHoeNIx (Portable Healthcare Nextgen Informatics pipeline) is a standardized, containerized Nextflow pipeline developed and maintained by CDC’s Division of Healthcare Quality Promotion (DHQP) to support genomic surveillance of healthcare-associated bacterial pathogens. Designed for public health laboratories, the pipeline processes sequencing data to perform quality control, taxonomic confirmation, genome assembly, sequence typing (MLST), plasmid detection, and identification of antimicrobial resistance and hypervirulence genes. PHoeNIx provides reproducible, portable analyses that generate outputs compatible with downstream investigations such as outbreak detection and molecular epidemiology, supporting the CDC AR Lab Network mission to rapidly detect emerging antimicrobial resistance threats.
+
+Languages: Python, Nextflow, Shell, Other
+
+Purpose of the SHARE IT Act:  
+The SHARE IT Act is a federal law that says government agencies like CDC must be more transparent about the software we build using federal funds. It CDC publishes a public list that describes what custom-developed software we’ve created. This helps other agencies know what exists so we’re not reinventing the wheel.   
+
 # Quick Start
 
-1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`). 
+1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=25.10.2`). 
 
    There are several options for install if you do not already have it on your system:
 
-   * Install into conda environment, which will require a version of Anaconda to be installed on your system.
+   * Install into conda environment, which will require a version of Anaconda to be installed on your system. For example use the following command.
 
        ```console
-       mamba create -n nextflow -c bioconda nextflow=21.10.6  
+       mamba create -n nextflow -c bioconda nextflow
        ```
-
-      <!---```console
-       mamba create -n nextflow -c bioconda -c conda-forge nf-core=2.2 nextflow=21.10.6 git=2.35.0 openjdk=8.0.312 graphviz
-       ```--->
 
    * If you prefer a to use `curl` or `wget` for install see the [Nextflow Documentation](https://www.nextflow.io/docs/latest/getstarted.html) 
 
@@ -51,8 +61,10 @@ For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/
 5. Run PHoeNIx on a test sample loaded with the package with a single command:
 
     ```console
-    nextflow run cdcgov/phoenix -r v2.0.0 -profile <singularity/docker/custom>,test -entry PHOENIX --kraken2db $PATH_TO_DB
+    nextflow run cdcgov/phoenix -profile <singularity/docker/custom>,test --mode PHOENIX --kraken2db $PATH_TO_DB
     ```
+
+    This command will pull the latest version of the pipeline by default. If you want to run a specific version add `-r <version>`
 
 Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcgov/phoenix`. See [wiki](https://github.com/CDCgov/phoenix/wiki/Dependencies-and-Install#run-phoenix) for how to clone and have the software downloaded to a different location. 
 
@@ -62,7 +74,7 @@ Note that this command clones (downloading) the repo to `~/.nextflow/assets/cdcg
 6. Start running your own analysis with a [samplesheet](https://github.com/cdcent/phoenix/wiki/Running-PHoeNIx#samplesheet-input)!
 
     ```console
-    nextflow run cdcgov/phoenix -r v2.0.0 -profile <singularity/docker/custom> -entry PHOENIX --input <path_to_samplesheet.csv> --kraken2db $PATH_TO_DB
+    nextflow run cdcgov/phoenix -profile <singularity/docker/custom> --mode PHOENIX --input <path_to_samplesheet.csv> --kraken2db $PATH_TO_DB
     ```
 
 # CDCgov GitHub Organization Open Source Project
