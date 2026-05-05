@@ -356,3 +356,23 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - `--centar` parameter can be passed when running `--mode PHOENIX` or `--mode CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki]() for full documentation.
 - Added gamma plasmidfinder to tools run during -mode update_phoenix.
 - Added better version tracking and gamma plasmidFinder changes to the updater_log in -mode update_phoenix
+
+## [v2.3.0](https://github.com/CDCgov/phoenix/releases/tag/v2.3.0) (05/XX/2026)
+**Fixed Bugs:**  
+- MLST Fixes  
+   - Corrected Mycobacterium abscessus linkage for SRST2 lookup
+
+**Database Updates:**
+- Hypervirulence database underwent a major overhaul. Add details HERE
+- Updated remaining databases as usual -  
+   ResGANNCBI:     20260430 for gamma_AR and srst2_AR  
+   amrfinderdb:    20260324 for amrfinder+  
+   MLST:           20260504 for MLST and SRST2_MLST  
+   PF_Replicons:   20260430 for gamma_PF  
+   Assembly_stats: 20260430 for assembly_ratio and gc_content  
+   names & nodes:  20260430 for kraken2 and determine_taxid  
+
+**Implemented Enhancements:** 
+- `--mode update_phoenix' now properly handles when previous runs were of the scaffold/cdc_scaffold types
+- Added gamma hypervirulence to tools run during `--mode update_phoenix`.
+
