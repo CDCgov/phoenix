@@ -29,7 +29,8 @@ process GENERATE_PIPELINE_STATS {
     path(fastANI_formatted), \
     path(assembly_ratio), \
     path(amr_report), \
-    path(gc_content)
+    path(gc_content),
+    val(run_type)
     val(coverage)
 
     output:
@@ -56,14 +57,12 @@ process GENERATE_PIPELINE_STATS {
     def assembly_ratio_file    = assembly_ratio ? "-r $assembly_ratio" : ""
     def gc_content_file        = gc_content ? "-c $gc_content" : ""
     def fastANI_formatted_file = fastANI_formatted ? "-t $fastANI_formatted" : ""
-
     def k2_asmbld_report       = kraken2_asmbld_report ? "-j $kraken2_asmbld_report" : ""
     def k2_asmbld_summary      = kraken2_asmbld_summary ? "-k $kraken2_asmbld_summary" : ""
     def krona_asmbld           = krona_asmbld ? "-l $krona_asmbld" : ""
     def k2_wtasmbld_report     = kraken2_weighted_report ? "-m $kraken2_weighted_report" : ""
     def k2_wtasmbld_summary    = kraken2_weighted_summary ? "-n $kraken2_weighted_summary" : ""
     def krona_wtasmbld         = krona_weighted ? "-o $krona_weighted" : ""
-    
     def ar_gamma_file          = ar_gamma ? "-u $ar_gamma" : ""
     def amr_file               = amr_report ? "-4 $amr_report" : ""
     def pf_gamma_file          = pf_gamma ? "-v $pf_gamma" : ""
@@ -71,6 +70,7 @@ process GENERATE_PIPELINE_STATS {
     def busco_summary          = busco_specific_short_summary ? "-s $busco_specific_short_summary" : ""
     def srst_fullgenes_file    = srst_fullgenes ? "-x $srst_fullgenes" : ""
     def extended_qc            = busco_specific_short_summary ? "-3" : ""
+    def scaffold_flag          = (run_type == "SCAFFOLDS" || run_type == "CDC_SCAFFOLDS") ? "-z" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
@@ -103,6 +103,7 @@ process GENERATE_PIPELINE_STATS {
         $amr_file \\
         -5 $coverage \\
         $extended_qc \\
+        $scaffold_flag \\        
         $terra
 
     script_version=\$(${ica}pipeline_stats_writer.sh -V)

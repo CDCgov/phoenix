@@ -40,51 +40,162 @@ workflow GENERATE_PIPELINE_STATS_WF {
         assembly_ratio
         amr_point_mutations    // channel: tuple val(meta), path(report): AMRFINDERPLUS_RUN.out.report
         gc_content             // CALCULATE_ASSEMBLY_RATIO.out.gc_content
-        //in_extended_qc            // true for internal phoenix and false otherwise
+        run_type               // Easy enough for standard modes. Updater will provide the preivous run_type through the create_input_channels variable
+        //in_extended_qc       // true for internal phoenix and false otherwise
 
     main:
         ch_versions = Channel.empty() // Used to collect the software versions
-        def pipeline_stats_ch // make a global variable to hold the joined channel
+        def pipeline_stats_ch
 
-        if (params.mode_upper == "UPDATE_PHOENIX") {
-            // make this work for cdc versions as well as regular phoenix
-            fullgene_results = fullgene_results.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-            busco = busco.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] } // ensure busco has all samples even if empty
-            asmbld_report = asmbld_report.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-            asmbld_krona_html = asmbld_krona_html.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-            asmbld_k2_bh_summary = asmbld_k2_bh_summary.concat(fastp_raw_qc.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        } else if(fullgene_results == [] && params.mode_upper != "CDC_SCAFFOLDS") {
-            // make this work for cdc versions as well as regular phoenix
-            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            busco = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            asmbld_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            asmbld_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            asmbld_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
-        } else if(params.mode_upper == "CDC_SCAFFOLDS") {
-            // make this work for cdc versions as well as regular phoenix
-            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            asmbld_report = wtasmbld_report.map{ it -> create_empty_ch(it) }
-            asmbld_krona_html = wtasmbld_report.map{ it -> create_empty_ch(it) }
+        // Null-guard all inputs — replace null with empty channel
+        if (wtasmbld_report == null)      wtasmbld_report      = Channel.empty()
+        if (run_type == null)             run_type             = Channel.empty()
+        if (fastp_raw_qc == null)         fastp_raw_qc         = Channel.empty()
+        if (renamed_fastas == null)       renamed_fastas       = Channel.empty()
+        if (filtered_fastas == null)      filtered_fastas      = Channel.empty()
+        if (mlst == null)                 mlst                 = Channel.empty()
+        if (busco == null)                busco                = Channel.empty()
+        if (asmbld_report == null)        asmbld_report        = Channel.empty()
+        if (asmbld_krona_html == null)    asmbld_krona_html    = Channel.empty()
+        if (asmbld_k2_bh_summary == null) asmbld_k2_bh_summary = Channel.empty()
+        if (fullgene_results == null)     fullgene_results     = Channel.empty()
+
+        def add_padding = { ch, id_ch ->
+            ch.mix(
+                wtasmbld_report
+                    .map { meta, report -> tuple(meta.id, meta, report) }
+                    .join(id_ch, by: 0)
+                    .map { id, meta, report, flag -> [meta, []] }
+            )
+            .unique { row -> [row[0].id, row[0].project_id] }
+        }
+
+        wtasmbld_report_with_rt = wtasmbld_report
+            .join(run_type, by: [0])  // emits [meta, report, rt]
+
+        // Collect sample IDs that need fullgene/SRST2 padding (everything except CDC_PHOENIX)
+        no_fullgene_ids = wtasmbld_report_with_rt
+            .filter { meta, report, rt ->
+                rt.base == "PHOENIX" || rt.base == "SCAFFOLDS" || rt.base == "CDC_SCAFFOLDS"
+            }
+            .map { meta, report, rt -> tuple(meta.id, true) }
+
+        // Collect sample IDs that need asmbld/busco padding (PHOENIX and SCAFFOLDS only)
+        no_asmbld_kraken_ids = wtasmbld_report_with_rt
+            .filter { meta, report, rt ->
+                rt.base == "PHOENIX" || rt.base == "SCAFFOLDS"
+            }
+            .map { meta, report, rt -> tuple(meta.id, true) }
+
+        // Collect scaffold-origin sample IDs that need reads/trimd padding (SCAFFOLDS and CDC_SCAFFOLDS)
+        scaffold_origin_ids = wtasmbld_report_with_rt
+            .filter { meta, report, rt ->
+                rt.base == "SCAFFOLDS" || rt.base == "CDC_SCAFFOLDS"
+            }
+            .map { meta, report, rt -> tuple(meta.id, true) }
+
+        // Strip run_type back off after identifying scaffold-origin samples
+        wtasmbld_report = wtasmbld_report_with_rt
+            .map { meta, report, rt ->
+                [meta, report]
+            }
+
+        wtasmbld_report.view { ">>> wtasmbld_report shape: ${it}" }
+        scaffold_origin_ids.view { ">>> scaffold_origin_ids: ${it}" }
+
+        if (params.mode_upper == "SCAFFOLDS") {
+            // All samples are scaffold-based — pad all trimmed read channels wholesale
+            fastp_raw_qc        = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fastp_total_qc      = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fullgene_results    = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_report        = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_krona_html    = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            // Add these:
+            busco                = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_report        = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_krona_html    = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
-        fastp_raw_qc       = fastp_raw_qc.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        fastp_total_qc     = fastp_total_qc.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        fullgene_results   = fullgene_results.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        trimd_report       = trimd_report.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        trimd_krona_html   = trimd_krona_html.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        trimd_k2_bh_summary = trimd_k2_bh_summary.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        if (params.mode_upper == "CDC_SCAFFOLDS") {
+            // All samples are scaffold-based — pad all trimmed read channels wholesale
+            fastp_raw_qc        = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fastp_total_qc      = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fullgene_results    = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_report        = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_krona_html    = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
+        }
 
-        gamma_hv = gamma_hv.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        gamma_ar = gamma_ar.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        gamma_pf = gamma_pf.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        mlst     = mlst.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
-        fullgene_results = fullgene_results.concat(wtasmbld_report.map{ it -> create_empty_ch(it) }).unique{ meta -> [meta[0], meta[1]] }
+        if (params.mode_upper == "PHOENIX" ) {
+            busco            = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_report    = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_krona_html    = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            asmbld_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
+        }
+
+        if (params.mode_upper == "UPDATE_PHOENIX") {
+            fastp_raw_qc         = add_padding(fastp_raw_qc,         scaffold_origin_ids)
+            fastp_total_qc       = add_padding(fastp_total_qc,        scaffold_origin_ids)
+            trimd_report         = add_padding(trimd_report,          scaffold_origin_ids)
+            trimd_krona_html     = add_padding(trimd_krona_html,      scaffold_origin_ids)
+            trimd_k2_bh_summary  = add_padding(trimd_k2_bh_summary,  scaffold_origin_ids)
+            fullgene_results     = add_padding(fullgene_results,      no_fullgene_ids)
+            busco                = add_padding(busco,                 no_asmbld_kraken_ids)
+            asmbld_report        = add_padding(asmbld_report,         no_asmbld_kraken_ids)
+            asmbld_krona_html    = add_padding(asmbld_krona_html,     no_asmbld_kraken_ids)
+            asmbld_k2_bh_summary = add_padding(asmbld_k2_bh_summary, no_asmbld_kraken_ids)
+            mlst                 = add_padding(mlst,                  scaffold_origin_ids)
+            gamma_hv             = add_padding(gamma_hv,              scaffold_origin_ids)
+            gamma_ar             = add_padding(gamma_ar,              scaffold_origin_ids)
+            gamma_pf             = add_padding(gamma_pf,              scaffold_origin_ids)
+            renamed_fastas       = add_padding(renamed_fastas,        scaffold_origin_ids)
+            filtered_fastas      = add_padding(filtered_fastas,       scaffold_origin_ids)
+        }
+
+        if (params.mode_upper == "CLIA") {
+            // CLIA mode has no gamma/MLST/SRST2
+            gamma_hv         = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            gamma_ar         = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            gamma_pf         = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            mlst             = wtasmbld_report.map{ it -> create_empty_ch(it) }
+            fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
+        }
+
+        fastp_raw_qc.count().view            { it -> log.info ">>> JOIN INPUT fastp_raw_qc count: ${it}" }
+        fastp_total_qc.count().view          { it -> log.info ">>> JOIN INPUT fastp_total_qc count: ${it}" }
+        fullgene_results.count().view        { it -> log.info ">>> JOIN INPUT fullgene_results count: ${it}" }
+        trimd_report.count().view            { it -> log.info ">>> JOIN INPUT trimd_report count: ${it}" }
+        trimd_krona_html.count().view        { it -> log.info ">>> JOIN INPUT trimd_krona_html count: ${it}" }
+        trimd_k2_bh_summary.count().view     { it -> log.info ">>> JOIN INPUT trimd_k2_bh_summary count: ${it}" }
+        renamed_fastas.count().view          { it -> log.info ">>> JOIN INPUT renamed_fastas count: ${it}" }
+        filtered_fastas.count().view         { it -> log.info ">>> JOIN INPUT filtered_fastas count: ${it}" }
+        mlst.count().view                    { it -> log.info ">>> JOIN INPUT mlst count: ${it}" }
+        gamma_hv.count().view                { it -> log.info ">>> JOIN INPUT gamma_hv count: ${it}" }
+        gamma_ar.count().view                { it -> log.info ">>> JOIN INPUT gamma_ar count: ${it}" }
+        gamma_pf.count().view                { it -> log.info ">>> JOIN INPUT gamma_pf count: ${it}" }
+        quast_report.count().view            { it -> log.info ">>> JOIN INPUT quast_report count: ${it}" }
+        busco.count().view                   { it -> log.info ">>> JOIN INPUT busco count: ${it}" }
+        asmbld_report.count().view           { it -> log.info ">>> JOIN INPUT asmbld_report count: ${it}" }
+        asmbld_krona_html.count().view       { it -> log.info ">>> JOIN INPUT asmbld_krona_html count: ${it}" }
+        asmbld_k2_bh_summary.count().view    { it -> log.info ">>> JOIN INPUT asmbld_k2_bh_summary count: ${it}" }
+        wtasmbld_krona_html.count().view     { it -> log.info ">>> JOIN INPUT wtasmbld_krona_html count: ${it}" }
+        wtasmbld_report.count().view         { it -> log.info ">>> JOIN INPUT wtasmbld_report count: ${it}" }
+        wtasmbld_k2_bh_summary.count().view  { it -> log.info ">>> JOIN INPUT wtasmbld_k2_bh_summary count: ${it}" }
+        taxa_id.count().view                 { it -> log.info ">>> JOIN INPUT taxa_id count: ${it}" }
+        format_ani.count().view              { it -> log.info ">>> JOIN INPUT format_ani count: ${it}" }
+        assembly_ratio.count().view          { it -> log.info ">>> JOIN INPUT assembly_ratio count: ${it}" }
+        amr_point_mutations.count().view     { it -> log.info ">>> JOIN INPUT amr_point_mutations count: ${it}" }
+        gc_content.count().view              { it -> log.info ">>> JOIN INPUT gc_content count: ${it}" }
+        wtasmbld_report_with_rt.count().view { it -> log.info ">>> JOIN INPUT wtasmbld_report_with_rt count: ${it}" }
 
         if (params.mode_upper == "UPDATE_PHOENIX") {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
             pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id, project_id:meta.project_id],fastp_raw_qc]}\
                 .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id, project_id:meta.project_id],fastp_total_qc]},         by: [0])\
+                .view { it -> log.info ">>> STATS JOIN 1 (after fastp_total_qc): ${it[0]}" }\
                 .join(fullgene_results.map{           meta, fullgene_results       -> [[id:meta.id, project_id:meta.project_id],fullgene_results]},       by: [0])\
                 .join(trimd_report.map{               meta, report                 -> [[id:meta.id, project_id:meta.project_id],report]},                 by: [0])\
                 .join(trimd_krona_html.map{           meta, trimd_krona_html       -> [[id:meta.id, project_id:meta.project_id],trimd_krona_html]},       by: [0])\
@@ -107,8 +218,8 @@ workflow GENERATE_PIPELINE_STATS_WF {
                 .join(format_ani.map{                 meta, format_ani             -> [[id:meta.id, project_id:meta.project_id],format_ani]},             by: [0])\
                 .join(assembly_ratio.map{             meta, assembly_ratio         -> [[id:meta.id, project_id:meta.project_id],assembly_ratio]},         by: [0])\
                 .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [[id:meta.id, project_id:meta.project_id],amr_point_mutations]},    by: [0])\
-                .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id, project_id:meta.project_id],gc_content]},             by: [0])
-
+                .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id, project_id:meta.project_id],gc_content]},             by: [0])\
+                .join(wtasmbld_report_with_rt.map{    meta, report, rt             -> [[id:meta.id, project_id:meta.project_id], rt.base] },              by: [0])
         } else {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
             pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]}\
@@ -135,10 +246,9 @@ workflow GENERATE_PIPELINE_STATS_WF {
                 .join(format_ani.map{                 meta, format_ani             -> [[id:meta.id],format_ani]},             by: [0])\
                 .join(assembly_ratio.map{             meta, assembly_ratio         -> [[id:meta.id],assembly_ratio]},         by: [0])\
                 .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [[id:meta.id],amr_point_mutations]},    by: [0])\
-                .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])
+                .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])\
+                .join(wtasmbld_report_with_rt.map{    meta, report, rt             -> [[id:meta.id], rt.base] },              by: [0])
         }
-
-        pipeline_stats_ch.view { it -> log.info ">>> pipeline_stats_ch emitting: ${it[0].id} | size: ${it.size()}" }
 
         GENERATE_PIPELINE_STATS (
             pipeline_stats_ch, params.coverage
