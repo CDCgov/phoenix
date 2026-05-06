@@ -155,7 +155,7 @@ workflow SRA {
         //Check that SRR numbers are passed not SRX
         if (ch_input) {
             // Read the contents of the file
-            def sraNumbers = ch_input.text.readLines()
+            def sraNumbers = ch_input.readLines().findAll { it.trim() }
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
@@ -168,7 +168,10 @@ workflow SRA {
 
     main:
         // pull data and create samplesheet for it.
-        SRA_PREP ( ch_input )
+        def cleaned_sra_file = file("${workflow.workDir}/cleaned_sra_list.txt")
+        cleaned_sra_file.text = file(params.input_sra).readLines().findAll { it.trim() }.join('\n')
+        //SRA_PREP ( ch_input )
+        SRA_PREP ( cleaned_sra_file )
         // pass samplesheet to PHOENIX
         PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false, params.centar )
 
@@ -209,7 +212,7 @@ workflow CDC_SRA {
         //Check that SRR numbers are passed not SRX
         if (ch_input) {
             // Read the contents of the file
-            def sraNumbers = ch_input.text.readLines()
+            def sraNumbers = ch_input.readLines().findAll { it.trim() }
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
@@ -221,8 +224,10 @@ workflow CDC_SRA {
     } else { exit 1, 'For --mode CDC_SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
 
     main:
-        // pull data and create samplesheet for it.
-        SRA_PREP ( ch_input )
+        def cleaned_sra_file = file("${workflow.workDir}/cleaned_sra_list.txt")
+        cleaned_sra_file.text = file(params.input_sra).readLines().findAll { it.trim() }.join('\n')
+        //SRA_PREP ( ch_input )
+        SRA_PREP ( cleaned_sra_file )
         // pass samplesheet to PHOENIX
         PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false, params.centar )
 
