@@ -822,7 +822,6 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name,ar_gene_thres
 def get_novel_big5_alert(gamma_ar_file, big5_keep_extended, big5_oxa_keep):
     combo_list = big5_oxa_keep + big5_keep_extended
     genes_to_check = ['bla' + g for g in combo_list]
-    print(genes_to_check)
     gamma_df = pd.read_csv(gamma_ar_file, sep='\t', header=0)
     results = []
     for _, row in gamma_df.iterrows():
@@ -1531,7 +1530,7 @@ def big5_check(final_ar_df, is_combine, BLDB):
     else:
         final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1, errors='ignore')
     all_genes = final_ar_df.columns.tolist()
-    big5_keep, big5_oxa_keep = find_big_5(BLDB)
+    big5_keep, big5_oxa_keep, big5_keep_extended = find_big_5(BLDB)
     for gene in all_genes:
         if gene == 'No_AR_Genes_Found': continue
         # Split header into gene name and drug info

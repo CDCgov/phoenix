@@ -151,6 +151,8 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
         # Use vectorized operations for speed to get UNI column
         df['UNI'] = df['Parent_Folder'] + '/' + df['Data_Location'] + '/' + df['WGS_ID']
         df = df[['UNI'] + [col for col in df.columns if col != 'UNI']]
+        #rename columns for backwards compatibility
+        df = df.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path}")
     # check that we have the files from the same entry # set that its a CDC PHOENIX run
@@ -409,12 +411,16 @@ def split_centar_df(centar, excel, sample_names):
         converters={'CEMB RT Crosswalk': str},
         header=[0, 1],    # Use the 2nd row as the header
         skipfooter=footer_lines1,engine='openpyxl')
+    #rename columns for backwards compatibility
+    df = df.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
     if centar == True:
         df_1 = pd.read_excel(excel,
             converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1 ,engine='openpyxl', dtype={'WGS_ID': str,'Parent_Folder': str,'Data_Location': str}) # Specifying dtypes prevents pandas from using more memory than necessary for each column.
+        #rename columns for backwards compatibility
+        df_1 = df_1.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
         # Use vectorized operations for speed to creating UNI column for speed and lower memory usage
         df_1['UNI'] = df_1['Parent_Folder'] + '/' + df_1['Data_Location'] + '/' + df_1['WGS_ID']
         df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
