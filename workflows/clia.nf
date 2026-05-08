@@ -458,6 +458,9 @@ workflow CLIA_INTERNAL {
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
 
+        // Synthesize run_type channel in the format the subworkflow expects: [meta, rt_map]
+        run_type_ch = KRAKEN2_WTASMBLD.out.report.map{ meta, report -> [ meta, [base: params.mode_upper] ] }
+
         GENERATE_PIPELINE_STATS_WF (
             GET_RAW_STATS.out.combined_raw_stats, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
@@ -483,7 +486,8 @@ workflow CLIA_INTERNAL {
             FORMAT_ANI.out.ani_best_hit, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
-            CALCULATE_ASSEMBLY_RATIO.out.gc_content
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
+            run_type_ch
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
