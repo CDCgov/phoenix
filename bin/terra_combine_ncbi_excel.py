@@ -15,14 +15,13 @@ from itertools import chain
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a combined NCBI summary excel sheet')
     parser.add_argument('--biosample_output', dest='biosample_output', required=False, default="BiosampleAttributes_Microbe.1.0.xlsx", help='prefix for biosample final file.')
     parser.add_argument('--sra_output', dest='sra_output', required=False, default="Sra_Microbe.1.0.xlsx", help='prefix for sra final file.')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
  

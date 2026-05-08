@@ -26,7 +26,7 @@ process SPADES {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    def ica = params.ica ? "bash ${params.bin_dir}" : ""
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -91,13 +91,13 @@ process SPADES {
 
     #This file will determine if downstream process GENERATE_PIPELINE_STATS_FAILURE and CREATE_SUMMARY_LINE_FAILURE will run (if spades creates contigs, but not scaffolds).
     # also, will rename the fairy file to publish
-    ${ica}afterSpades.sh
+    ${ica}afterSpades.py
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         spades: \$(spades.py --version 2>&1 | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//')
         spades_container: ${container}
-        \$(${ica}afterSpades.sh -V)
+        \$(${ica}afterSpades.py -V)
     END_VERSIONS
 
     #revert path back to main envs for running on terra

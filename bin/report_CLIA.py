@@ -19,8 +19,7 @@ from ANI_target import get_ani_targets
 ###email: dyp9@cdc.gov
 
 # Function to get the script version
-def get_version():
-    return "1.1.0"
+__version__ = "1.1.0"
 
 def parse_args():
     parser = argparse.ArgumentParser( formatter_class = argparse.RawTextHelpFormatter, description = "Summary report generating script for CLIA Phoenix" )
@@ -33,7 +32,7 @@ def parse_args():
     parser.add_argument('--coverage', default=40, dest="coverage", type=str, help='Coverage cut off to use.', required=False)
     parser.add_argument('--ani_cutoff', default=95.0, dest="ani_cutoff", type=float, help='ANI identity cutoff percentage (default: 95.0).', required=False)
     parser.add_argument('--ani_coverage_cutoff', default=70.0, dest="ani_coverage_cutoff", type=float, help='ANI coverage cutoff percentage (default: 70.0).', required=False)
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     opts = parser.parse_args()
     return opts
 

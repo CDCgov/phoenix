@@ -15,9 +15,9 @@ process DETERMINE_TOP_MASH_HITS {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-t terra" : ""
+    def terra = params.terra ? "-t" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    def ica = params.ica ? "bash ${params.bin_dir}" : ""
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def sample_name = "${mash_dists}" - ".txt" //get full sample name with REFSEQ_DATE
@@ -26,9 +26,7 @@ process DETERMINE_TOP_MASH_HITS {
     """
     mkdir reference_dir
 
-    ${ica}sort_and_prep_dist.sh -a $assembly_scaffolds -x $mash_dists -o reference_dir $terra
-
-    script_version=\$(${ica}sort_and_prep_dist.sh -V)
+    ${ica}sort_and_prep_dist.py -a $assembly_scaffolds -x $mash_dists -o reference_dir $terra
 
     if [[ ! -f ${sample_name}_best_MASH_hits.txt ]]; then
         echo "No MASH hit found" > ${sample_name}_best_MASH_hits.txt
@@ -39,7 +37,7 @@ process DETERMINE_TOP_MASH_HITS {
         Date_of_RefSeq_Pull: \$(date +"%Y-%m-%d")
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${script_version}
+        \$(${ica}sort_and_prep_dist.py -V)
     END_VERSIONS
     """
 }

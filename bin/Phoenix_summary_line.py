@@ -14,8 +14,7 @@ import argparse
 ## Written by Rich Stanton (njr5@cdc.gov) and Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "2.0.1"
+__version__ = "2.0.1"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
@@ -38,7 +37,7 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--out', required=True, help='output file name')
     parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
     parser.add_argument('--old_phoenix_version', default="Unknown", required=False, dest='old_phoenix_version', help='The version of phx used to produce originalGRiPHin_Summary row for the sample. used during updater')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
 #set colors for warnings so they are seen

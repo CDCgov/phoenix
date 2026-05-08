@@ -22,6 +22,7 @@ process FILE_RENAME {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container: ${container}
+        \$(${ica}file_rename.py --version)
     END_VERSIONS
     """
 }

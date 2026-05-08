@@ -34,19 +34,19 @@ process SAMPLESHEET_CHECK {
     if [ ${reads_check} = "true" ]; then
         echo "Running check of reads samplesheet"
         ${ica}check_samplesheet.py ${samplesheet} samplesheet.valid.csv
-        script_version=\$(echo check_samplesheet.py: \$(${ica}check_samplesheet.py --version ))
+        script_version=\$(${ica}check_samplesheet.py --version )
     elif [ ${scaffolds_check} = "true" ]; then
         echo "Running check of assembly samplesheet"
         ${ica}check_assembly_samplesheet.py ${samplesheet} samplesheet.valid.csv
-        script_version=\$(echo check_assembly_samplesheet.py: \$(${ica}check_assembly_samplesheet.py --version ))
+        script_version=\$(${ica}check_assembly_samplesheet.py --version )
     elif [ ${directory_check} = "true" ]; then
         echo "Running check of directory samplesheet"
         ${ica}check_directory_samplesheet.py ${samplesheet} samplesheet.valid.csv ${updater} ${sheet_by_dir}
-        script_version=\$(echo check_directory_samplesheet.py: \$(${ica}check_directory_samplesheet.py --version ))
+        script_version=\$(${ica}check_directory_samplesheet.py --version )
     elif [ ${griphins_check} = "true" ]; then
         echo "Running check of GRiPHin samplesheet"
         ${ica}check_griphin_samplesheet.py ${samplesheet} samplesheet.valid.csv
-        script_version=\$(echo check_griphin_samplesheet.py: \$(${ica}check_griphin_samplesheet.py --version ))
+        script_version=\$(${ica}check_griphin_samplesheet.py --version )
     else
         echo "No valid check type provided, exiting."
         exit 1

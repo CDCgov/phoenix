@@ -58,7 +58,7 @@ process UPDATE_GRIPHIN {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        combine_GRiPHins.py: \$(${ica}combine_GRiPHins.py --version)
+        \$(${ica}combine_GRiPHins.py --version)
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

@@ -32,7 +32,7 @@ process CREATE_CLIA_PDF {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        report_CLIA.py: \$(${ica}report_CLIA.py --version )
+        \$(${ica}report_CLIA.py --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

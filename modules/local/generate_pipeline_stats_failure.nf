@@ -20,9 +20,9 @@ process GENERATE_PIPELINE_STATS_FAILURE {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-2 terra" : ""
+    def terra = params.terra ? "-2" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    def ica = params.ica ? "bash ${params.bin_dir}" : ""
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def srst_fullgenes_file = srst_fullgenes ? "-x $srst_fullgenes" : ""
@@ -30,7 +30,7 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # this runs with --mode CDC_PHEONIX or PHOENIX when SPAdes fails (creates contigs and not scaffolds)
-    ${ica}pipeline_stats_writer.sh \\
+    ${ica}pipeline_stats_writer.py \\
         -a $raw_qc \\
         -b $fastp_total_qc \\
         -d ${prefix} \\
@@ -42,13 +42,11 @@ process GENERATE_PIPELINE_STATS_FAILURE {
         -5 $coverage \\
         $terra
 
-    script_version=\$(${ica}pipeline_stats_writer.sh -V)
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${script_version}
+        \$(${ica}pipeline_stats_writer.py -V)
     END_VERSIONS
     """
 }

@@ -10,8 +10,7 @@ import gzip
 import re
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parse_args(args=None):
     Description = "Reformat cdcgov/phoenix samplesheet file and check its contents."
@@ -19,7 +18,7 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description=Description, epilog=Epilog)
     parser.add_argument("FILE_IN", help="Input samplesheet file.")
     parser.add_argument("FILE_OUT", help="Output file.")
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
     return parser.parse_args(args)
 
 

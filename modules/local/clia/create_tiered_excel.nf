@@ -22,7 +22,7 @@ process CREATE_TIERED_EXCEL {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        process_amr_data.py: \$(${ica}process_amr_data.py --version)
+        \$(${ica}process_amr_data.py --version)
         phoenix_base_container: ${container}
     END_VERSIONS
     """

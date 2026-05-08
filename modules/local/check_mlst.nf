@@ -26,7 +26,7 @@ process CHECK_MLST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        fix_MLST2.py: \$(${ica}fix_MLST2.py --version )
+        \$(${ica}fix_MLST2.py --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

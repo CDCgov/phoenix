@@ -8,8 +8,7 @@ from datetime import date
 ## v1.0.0 Written by Maria Diaz edits to v2.0.0 by Jill Hagey
 
 # Function to get the script version
-def get_version():
-    return "2.0.0"
+__version__ = "2.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser()
@@ -18,7 +17,7 @@ def parseArgs(args=None):
     parser.add_argument('-t', '--trimd_read', dest="trimd_read", default=None, required=False)
     parser.add_argument('-b', '--busco', dest="busco", default=False, action='store_true', help='Pass to make true for -entry cdc pipelines') # Need this for when you call -entry CDC_PHOENIX or CDC_SCAFFOLDS, but spades fails
     parser.add_argument('--phx_version', default="Unknown", required=False, dest='phx_version', help='The version of phx used to produce GRiPHin_Summary row for the sample.')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
     return parser.parse_args()
 
 ## Compare the GET_RAW_STATS module combined reads output

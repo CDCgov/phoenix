@@ -5,8 +5,7 @@ import argparse
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
@@ -15,7 +14,7 @@ def parseArgs(args=None):
     parser.add_argument('-g', '--gamma', required=True, dest='gamma_report', help='CSV file with a list of sample_name,new_name. This option will output the new_name rather than the sample name to "blind" reports.')
     parser.add_argument('-o', '--output', default="", required=False, dest='output', help='Name of output file default is GRiPHin_Summary.xlsx.')
     parser.add_argument('-a', '--amrfinder', dest="amrfinder_report", required=True, help='Pass the name of the amrfinder database used. Only used for documentation purposes')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
 #set colors for warnings so they are seen

@@ -12,8 +12,7 @@ import fileinput
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
@@ -22,7 +21,7 @@ def parseArgs(args=None):
     parser.add_argument('-t','--tax_file', dest='tax_file', required=False, help='The .tax file.')
     parser.add_argument('-a','--ani_file', dest='ani_file', required=False, help='The coverage cut off default is 30x.')
     parser.add_argument('-s','--shigapass_file', dest="shigapass_file", default=False, help='Turn on with --scaffolds to keep samples from failing/warnings/alerts that are based on trimmed data. Default is off.')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen

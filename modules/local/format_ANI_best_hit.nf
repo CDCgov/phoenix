@@ -14,7 +14,7 @@ process FORMAT_ANI {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-t terra" : ""
+    def terra = params.terra ? "-t" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     if (params.ica==false) { ica = "" } 
     else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
@@ -34,7 +34,8 @@ process FORMAT_ANI {
             db_version="REFSEQ_unknown"
         fi
         # script also checks that match is 80 or > otherwise an error is thrown
-        ${ica}ANI_best_hit_formatter.sh -a ${ani_file} -n ${prefix} -d \${db_version} ${terra}
+        ${ica}ANI_best_hit_formatter.py -a ${ani_file} -n ${prefix} -d \${db_version} ${terra}
+
 
         # since we need to check any files that have Escherichia or Shigella in them we will rename files
         if grep -qE "Escherichia|Shigella" "${prefix}_\${db_version}.fastANI_initial.txt"; then
@@ -47,13 +48,11 @@ process FORMAT_ANI {
         fi
     fi
 
-    script_version=\$(${ica}ANI_best_hit_formatter.sh -V)
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${script_version}
+        \$(${ica}ANI_best_hit_formatter.py -V)
     END_VERSIONS
     """
 }

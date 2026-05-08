@@ -13,10 +13,11 @@ from pathlib import Path
 
 logger = logging.getLogger()
 
+__version__ = "1.0.0"
 
 class RowChecker:
     """
-    Define a service that can validate and transform each given row.
+    Define a service that can validate and transform each given row.fv
 
     Attributes:
         modified (list): A list of dicts, where each dict corresponds to a previously
@@ -232,6 +233,7 @@ def parse_args(argv=None):
         choices=("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"),
         default="WARNING",
     )
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
     return parser.parse_args(argv)
 
 

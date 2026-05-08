@@ -19,7 +19,7 @@ process CORRUPTION_CHECK {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    def ica = params.ica ? "bash ${params.bin_dir}" : ""
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def num1 = "${reads[0]}".minus(".fastq.gz")
@@ -31,10 +31,8 @@ process CORRUPTION_CHECK {
     #set +e
     #check for file integrity and log errors
     #if there is a corruption problem the script will create a *_summaryline.tsv and *.synopsis file for the sample.
-    ${ica}fairy_proc.sh -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} -v ${phx_version}
-    ${ica}fairy_proc.sh -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} -v ${phx_version}
-
-    script_version=\$(${ica}fairy_proc.sh -V)
+    ${ica}fairy_proc.py -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} -v ${phx_version}
+    ${ica}fairy_proc.py -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} -v ${phx_version}
 
     #making a copy of the summary file to pass to READ_COUNT_CHECKS to handle file names being the same
     cp ${prefix}_corruption_summary.txt ${prefix}_summary_old.txt
@@ -48,7 +46,7 @@ process CORRUPTION_CHECK {
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${script_version}
+        \$(${ica}fairy_proc.py -V)
     END_VERSIONS
     """
 }

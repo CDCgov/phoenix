@@ -6,10 +6,6 @@ CLIA WGS Run Summary generating script for CLIA Phoenix
 email: dyp9@cdc.gov
 """
 
-# Function to get the script version
-def get_version():
-    return "1.0.0"
-
 import argparse
 import pandas as pd
 import numpy as np
@@ -18,6 +14,7 @@ from datetime import date
 import logging
 import os, glob
 
+__version__ = "1.0.0"
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -30,7 +27,7 @@ def parse_args():
     parser.add_argument('--amrfinder_version', dest="amrfinder_version", type=str, help='AMRFinderPlus version', required=True)
     parser.add_argument('--ar_database', dest="ar_database", type=str, help='AR Databased used with AMRFinderPlus.', required=True)
     parser.add_argument('--coverage', default=40, dest="coverage", type=str, help='Coverage cut off to use.', required=True)
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     opts = parser.parse_args()
     return opts
 

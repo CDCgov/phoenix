@@ -29,8 +29,7 @@ pd.set_option('display.max_colwidth', None)  # Show all columns
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "2.1.0"
+__version__ = "2.1.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
@@ -50,7 +49,7 @@ def parseArgs(args=None):
     parser.add_argument('--centar', dest="centar", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--filter_samples', dest="filter_samples", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--ar_gene_thresholds',default=None, nargs='+', required=False, dest='ar_gene_thresholds', help="Thresholds for SRST2 and GAMMA AR genes in the format  e.g. and the default --ar_gene_threshold SRST2-NT=98 SRST2-COV=90 GAMMA-AA=98,GAMMA-COV=90")
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen
@@ -310,7 +309,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
                 warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({})".format(float(90.00),Trim_Q30_R1_per))
         if Trim_Q30_R2_per == "Unknown" or float(Trim_Q30_R2_per) < float(70.00):
             try:
-                warnings.append("Average Q30 of trimmed 21 reads <{:.2f}% ({:.2f}%)".format(float(70.00),float(Trim_Q30_R2_per)))
+                warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({:.2f}%)".format(float(70.00),float(Trim_Q30_R2_per)))
             except ValueError:
                 warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({})".format(float(70.00),Trim_Q30_R2_per))
         if Trim_unclassified_percent == "Unknown" or float(Trim_unclassified_percent) > float(30.00):

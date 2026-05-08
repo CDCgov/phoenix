@@ -78,7 +78,7 @@ process GRIPHIN {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        griphin.py: \$(${ica}GRiPHin.py --version)
+        \$(${ica}GRiPHin.py --version)
         bldb_creation_date: \$(echo ${bldb} | sed 's/[^0-9]//g')
         phoenix_base_container: ${container}
     END_VERSIONS

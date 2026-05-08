@@ -60,6 +60,8 @@ workflow GENERATE_PIPELINE_STATS_WF {
         if (asmbld_k2_bh_summary == null) asmbld_k2_bh_summary = Channel.empty()
         if (fullgene_results == null)     fullgene_results     = Channel.empty()
 
+        log.info ">>> mode_upper is: ${params.mode_upper}"
+
         def add_padding = { ch, id_ch ->
             ch.mix(
                 wtasmbld_report

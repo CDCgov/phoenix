@@ -14,8 +14,7 @@ import pandas as pd
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary line')
@@ -39,7 +38,7 @@ def parseArgs(args=None):
     parser.add_argument('-o', '--out', dest="output", required=True, help='output file name')
     parser.add_argument('-v', dest="current_phx_version", required=True, help='current phx version.')
     parser.add_argument('--old_software_version_file', dest="old_software_version_file", required=False, help='Intermediate software versions file to show what the version of updater run was')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
 def get_old_database_IDs(software_versions):

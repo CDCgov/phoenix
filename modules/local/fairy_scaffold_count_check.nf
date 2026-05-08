@@ -25,7 +25,7 @@ process SCAFFOLD_COUNT_CHECK {
 
     script:
     // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-t terra" : ""
+    def terra = params.terra ? "-2" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     ica_python = params.ica ? "python ${params.bin_dir}" : ""
     ica_bash = params.ica ? "bash ${params.bin_dir}" : ""
@@ -62,7 +62,7 @@ process SCAFFOLD_COUNT_CHECK {
         ${ica_bash}determine_taxID.sh -r $kraken2_trimd_summary -s ${prefix} -d $nodes_file -m $names_file
 
         #write synopsis file
-        ${ica_bash}pipeline_stats_writer.sh -d ${prefix} -q ${prefix}.tax -5 $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
+        ${ica_bash}pipeline_stats_writer.py -d ${prefix} -q ${prefix}.tax -5 $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
         $kraken2_trimd_report $kraken2_trimd_summary_pipeline_stats $krona_trimd $terra
 
         # write summary_line file
@@ -91,19 +91,15 @@ process SCAFFOLD_COUNT_CHECK {
         cp ${prefix}_summary_old_3.txt ${prefix}_scaffolds_summary.txt
     fi
 
-    #gettings script versions
-    dettaxid_version=\$(${ica_bash}determine_taxID.sh -V)
-    pipestats_version=\$(${ica_bash}pipeline_stats_writer.sh -V)
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${dettaxid_version}
-        \${pipestats_version}
-        Phoenix_summary_line.py: \$(${ica_python}Phoenix_summary_line.py --version )
-        edit_line_summary.py: \$(${ica_python}edit_line_summary.py --version )
+        \$(${ica_bash}determine_taxID.sh -V)
+        \$(${ica_bash}pipeline_stats_writer.py -V)
+        \$(${ica_python}Phoenix_summary_line.py --version )
+        \$(${ica_python}edit_line_summary.py --version )
     END_VERSIONS
     """
 }
