@@ -1,7 +1,8 @@
 process ABRITAMR {
     tag "$meta.id"
     label 'process_medium'
-    container "quay.io/biocontainers/abritamr:1.0.17--pyh5707d69_1"
+    // 1.2.0--pyh5707d69_1
+    container "quay.io/biocontainers/abritamr@sha256:ef222b1567bd6046c5c143b1eb815557f1c9169cb297788cb4c2b987ef885013"
 
     input:
     tuple val(meta), path(fasta), val(organism_param), path(ar_bd)
@@ -15,6 +16,7 @@ process ABRITAMR {
     path "versions.yml"                             , emit: versions
 
     script:
+    def container_version = task.container.toString() - "quay.io/biocontainers/abritamr@"
     def is_compressed = fasta.getName().endsWith(".gz") ? true : false
     fasta_name = fasta.getName().replace(".gz", "")
     // use --species
@@ -45,6 +47,7 @@ process ABRITAMR {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         abritamr: \$(echo \$(abritamr --version 2>&1) | sed 's/^.*abritamr //' | sed 's/)//'))
+        abritamr_container: ${container_version}
         amrfinderplus: \$(amrfinder --version)
     END_VERSIONS
     """

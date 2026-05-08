@@ -337,7 +337,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - MLST database is now created using pubMLST API and merged with the unique schemes available on pasteur and enterobase sites
    - Numerous new schemes were added including a significant group that now contain more than a single scheme for an organism
  
-## [v2.2.1](https://github.com/CDCgov/phoenix/releases/tag/v2.2.1) (XX/XX/2026)
+## [v2.2.1](https://github.com/CDCgov/phoenix/releases/tag/v2.2.1) (04/13/2026)
 
 **Fixed Bugs:**  
 
@@ -349,7 +349,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed bug that caused failure of CHECK_SHIGAPASS_TAXA step [#196](https://github.com/CDCgov/phoenix/issues/196).
 - Fixed error when BBDuk was run with memory flag it was incorrect passing an extra dash ('-') to the tool
 
-**Implemented Enhancements:** 
+**Implemented Enhancements:**  
 - `--mode SRA` and `--mode CDC_SRA` allow ERR numbers as well as SRR.  
 - Added `--mode COMBINE_GRIPHINS` to pass several griphin scripts to the pipeline to combine into one griphin report. 
 - Creation of `--mode CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
@@ -357,22 +357,27 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Added gamma plasmidfinder to tools run during -mode update_phoenix.
 - Added better version tracking and gamma plasmidFinder changes to the updater_log in -mode update_phoenix
 
-## [v2.3.0](https://github.com/CDCgov/phoenix/releases/tag/v2.3.0) (05/XX/2026)
-**Fixed Bugs:**  
-- MLST Fixes  
-   - Corrected Mycobacterium abscessus linkage for SRST2 lookup
+## [v2.3.0](https://github.com/CDCgov/phoenix/releases/tag/v2.3.0) (05/08/2026)
 
-**Database Updates:**
-- Hypervirulence database underwent a major overhaul. Add details HERE
-- Updated remaining databases as usual -  
+**Fixed Bugs:**  
+- Fixed bug that caused failure for `--mode combine_griphins` when only 2 griphins are passed.  
+- Fix for null being string when run on Seqera Cloud and MLST *E. coli* methods applied to *Shigella* as well. Thanks to @DOH-HNH0303 for the [PR](https://github.com/CDCgov/phoenix/pull/207).  
+- MLST Fixes:  
+   - Corrected Mycobacterium abscessus linkage for SRST2 lookup.
+   - MLST now called correctly for Serratia species [issue 206](https://github.com/CDCgov/phoenix/issues/206)
+
+**Database Updates:**  
+- Hypervirulence database underwent a major overhaul and now contains 281 sequences. The 5 hypervirulence genes were extracted from NCBI *Klebsiella pneumoniae* Refseq genomes using hypervirulence reference sequences from the GCA_056237995.1 genome. Resulting hypervirulence sequences were deduplicated and checked for nonsense mutations, start and stop codons. Sequences with internal stop codons, no start or stop codon were excluded. Since these sequences were in silico based, their functionality has not yet been confirmed.
+- Updated remaining databases as usual:  
    ResGANNCBI:     20260430 for gamma_AR and srst2_AR  
    amrfinderdb:    20260324 for amrfinder+  
+   - Version [2026-03-24.1](https://ftp.ncbi.nlm.nih.gov/pathogen/Antimicrobial_resistance/AMRFinderPlus/database/4.2/)  
    MLST:           20260504 for MLST and SRST2_MLST  
    PF_Replicons:   20260430 for gamma_PF  
    Assembly_stats: 20260430 for assembly_ratio and gc_content  
    names & nodes:  20260430 for kraken2 and determine_taxid  
 
-**Implemented Enhancements:** 
-- `--mode update_phoenix' now properly handles when previous runs were of the scaffold/cdc_scaffold types
-- Added gamma hypervirulence to tools run during `--mode update_phoenix`.
-
+**Implemented Enhancements:**  
+- `--mode update_phoenix' now properly handles when previous runs were of the scaffold/cdc_scaffold types  
+- Added gamma hypervirulence to tools run during `--mode update_phoenix`.  
+- Added unzipped filtered scaffolds to Terra.bio output as requested in [issue 204](https://github.com/CDCgov/phoenix/issues/204).  

@@ -46,7 +46,7 @@ process GRIPHIN {
         echo "DEBUG: old_software_arg = '${old_software_arg}'" >&2
     """
 
-    def blind_names   = blind_list ? "--blind_list ${blind_list}" : ""
+    def blind_names  = blind_list ? "--blind_list ${blind_list}" : ""
     def phoenix_mode = phx_mode ? "" : "--phoenix"
     def scaffolds = (params.mode_upper == "SCAFFOLDS" || params.mode_upper == "CDC_SCAFFOLDS" || inferred_mode == "SCAFFOLD_INFERRED") ? "--scaffolds" : "" 
     def shigapass = shigapass_detected ? "--shigapass" : ""
@@ -56,7 +56,7 @@ process GRIPHIN {
     def filter = filter_var ? "--filter_samples" : ""
     def output_prefix = ((dont_publish == true) || (params.mode_upper == "CENTAR" && params.indir == null)) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
     def container_version = "base_v2.2.0"
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def prefix = task.ext.prefix ?: "GRiPHin"
     def stage_files = [
         metas.collect { "mkdir -p ${prefix}/${it.id}" },
