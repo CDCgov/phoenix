@@ -49,7 +49,7 @@ def parseArgs(args=None):
     parser.add_argument('--centar', dest="centar", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--filter_samples', dest="filter_samples", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--ar_gene_thresholds',default=None, nargs='+', required=False, dest='ar_gene_thresholds', help="Thresholds for SRST2 and GAMMA AR genes in the format  e.g. and the default --ar_gene_threshold SRST2-NT=98 SRST2-COV=90 GAMMA-AA=98,GAMMA-COV=90")
-    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')# Add an argument to display the version
+    parser.add_argument('--version', action='version', version=f'%(prog)s: {__version__}')# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen
