@@ -16,6 +16,7 @@ process QUAST {
     script:
     def args     = task.ext.args   ?: ''
     def prefix   = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "staphb/quast@"
     //set up for terra
     if (params.terra==false) {
         terra = ""
@@ -51,6 +52,7 @@ process QUAST {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         quast: \$(quast.py --version 2>&1 | grep "QUAST" | sed 's/^.*QUAST v//; s/ .*\$//')
+        quast_container: ${container}
     END_VERSIONS
 
     #revert path back to main envs for running on terra

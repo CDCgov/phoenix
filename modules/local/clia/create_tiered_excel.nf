@@ -14,7 +14,7 @@ process CREATE_TIERED_EXCEL {
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     def container_version = "base_v2.2.0"
-    def container = task.container.toString() - "quay.io/jvhagey/phoenix:"
+    def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     #make csv file
     ${ica}process_amr_data.py

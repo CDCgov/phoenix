@@ -19,6 +19,7 @@ process MASH_SKETCH {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "staphb/mash@"
     """
     mash \\
         sketch \\
@@ -31,6 +32,7 @@ process MASH_SKETCH {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         mash: \$(mash --version 2>&1)
+        mash_container: ${container}
     END_VERSIONS
     """
 }
