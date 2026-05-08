@@ -100,6 +100,9 @@ task phoenix {
     # Get N50 from Quast file
     grep '^N50' ~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv | awk -F '\t' '{print $2}' | tee N50
 
+    # Create unzipped assembly file for downstream analyses
+    gunzip -k ~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz
+
     # Get AMRFinder+ output
     awk -F '\t' 'BEGIN{OFS=":"} {print $7,$12}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20251203.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CLASSES
     awk -F '\t' '{ if($8 == "core") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20251203.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CORE_GENES
@@ -344,6 +347,7 @@ task phoenix {
     File? filtered_scaffolds_log   = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
     File? contigs                  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
     File? filtered_scaffolds       = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
+    File? unzipped_filtered_scaffolds  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa"
     File? assembly_with_seq_names  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
     File? assembly                 = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.scaffolds.fa.gz"
     File? spades_log               = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.spades.log"

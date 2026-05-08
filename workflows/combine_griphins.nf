@@ -104,7 +104,7 @@ workflow COMBINE_GRIPHINS_WF {
                 more_than_two: it[2] > 2
             }
 
-        exactly_two_ch = griphins_ch.exactly_two.map{ meta, fileList, size -> [ meta, [fileList[0], fileList[1]] ] }
+        exactly_two_ch = griphins_ch.exactly_two.map{ meta, fileList, size -> [ meta, fileList[0], fileList[1] ] }
         more_than_two_ch = griphins_ch.more_than_two.map{ meta, fileList, size -> [ meta, fileList ] }
 
         // combine griphin files, the new one just created and the old one that was found in the project dir. 
