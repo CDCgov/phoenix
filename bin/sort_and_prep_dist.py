@@ -40,12 +40,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-x", "--dist-file",    required=True, help="Path to MASH distance .txt file")
     parser.add_argument("-a", "--assembly-file", default="",   help="Assembly file path")
     parser.add_argument("-o", "--outdir",        default=".",  help="Output directory for downloaded genomes")
-    parser.add_argument("-t", "--terra",         default="",   help="Set to 'terra' if running on Terra")
     parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
 
-def build_ssl_context(terra: str) -> ssl.SSLContext:
+def build_ssl_context() -> ssl.SSLContext:
     """
     Return an SSL context. Certificate verification is intentionally
     disabled to match the original --no-check-certificate behaviour.
@@ -162,7 +161,7 @@ def main() -> None:
 
     outdir     = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
-    ssl_ctx    = build_ssl_context(args.terra)
+    ssl_ctx    = build_ssl_context()
     sample_name = dist_path.stem                    # basename without extension
 
     hits_file = Path(f"{sample_name}_best_MASH_hits.txt")

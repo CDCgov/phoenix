@@ -25,8 +25,7 @@ process SCAFFOLD_COUNT_CHECK {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    ica_python = params.ica ? "python ${params.bin_dir}" : ""
-    ica_bash = params.ica ? "bash ${params.bin_dir}" : ""
+    ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def fairy_read_count_outcome_file = fairy_read_count_outcome ? "$fairy_read_count_outcome" : ""
@@ -57,18 +56,18 @@ process SCAFFOLD_COUNT_CHECK {
 
         # if the sample has no scaffolds left make the summaryline and synopsis file for it. 
         # get taxa ID
-        ${ica_python}determine_taxID.py --trimmed-kraken $kraken2_trimd_summary --sample-name ${prefix} --nodes $nodes_file --names $names_file
+        ${ica}determine_taxID.py --trimmed-kraken $kraken2_trimd_summary --sample-name ${prefix} --nodes $nodes_file --names $names_file
 
         #write synopsis file
-        ${ica_python}pipeline_stats_writer.py --sample-name ${prefix} --taxid-file ${prefix}.tax --coverage $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
+        ${ica}pipeline_stats_writer.py --sample-name ${prefix} --taxid-file ${prefix}.tax --coverage $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
         $kraken2_trimd_report $kraken2_trimd_summary_pipeline_stats $krona_trimd
 
         # write summary_line file
-        ${ica_python}Phoenix_summary_line.py --name ${prefix} --stats ${prefix}.synopsis --taxa ${prefix}.tax --out ${prefix}_summaryline.tsv\\
+        ${ica}Phoenix_summary_line.py --name ${prefix} --stats ${prefix}.synopsis --taxa ${prefix}.tax --out ${prefix}_summaryline.tsv\\
         $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg --phx_version $phx_version
 
         # change pass to fail and add in error
-        ${ica_python}edit_line_summary.py --input ${prefix}_summaryline.tsv
+        ${ica}edit_line_summary.py --input ${prefix}_summaryline.tsv
 
         #change file name.
         cp ${prefix}_summary_old_3.txt ${prefix}_scaffolds_summary.txt
@@ -94,10 +93,10 @@ process SCAFFOLD_COUNT_CHECK {
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \$(${ica_python}determine_taxID.py -V)
-        \$(${ica_python}pipeline_stats_writer.py -V)
-        \$(${ica_python}Phoenix_summary_line.py --version )
-        \$(${ica_python}edit_line_summary.py --version )
+        \$(${ica}determine_taxID.py -V)
+        \$(${ica}pipeline_stats_writer.py -V)
+        \$(${ica}Phoenix_summary_line.py --version )
+        \$(${ica}edit_line_summary.py --version )
     END_VERSIONS
     """
 }
