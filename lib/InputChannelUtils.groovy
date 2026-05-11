@@ -58,7 +58,7 @@ class InputChannelUtils {
             }
     }
 
-    static def detect_entry_type(sample_dir) {
+    static def detect_mode_type(sample_dir) {
         def all_files = []
         sample_dir.eachFileRecurse { all_files << it.name }
         

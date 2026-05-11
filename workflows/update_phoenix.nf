@@ -298,13 +298,13 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
-        // Running gamma to identify AR genes in scaffolds
+        // Running gamma to identify HV genes in scaffolds
         GAMMA_HV (
             filtered_scaffolds_ch, params.hvgamdb
         )
         ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
         
-        // Running gamma to identify AR genes in scaffolds
+        // Running gamma to identify plasmid replicons in scaffolds
         GAMMA_PF (
             filtered_scaffolds_ch, params.gamdbpf
         )
@@ -462,11 +462,6 @@ workflow UPDATE_PHOENIX_WF {
             ),
             isolates_needing_update
         )
-
-        filter_to_update_ids(CREATE_INPUT_CHANNELS.out.raw_stats, isolates_needing_update).view { meta, file -> log.info ">>> raw_stats: ${meta.id}" }
-        filter_to_update_ids(CREATE_INPUT_CHANNELS.out.fastp_total_qc, isolates_needing_update).view { meta, file -> log.info ">>> fastp_total_qc: ${meta.id}" }
-        filter_to_update_ids(SRST2_AR.out.fullgene_results.concat(CREATE_INPUT_CHANNELS.out.srst2_ar).unique{ meta, file -> [meta.id, meta.project_id] }, isolates_needing_update).view { meta, file -> log.info ">>> srst2_ar: ${meta.id}" }
-
 
         GENERATE_PIPELINE_STATS_WF (
             filter_to_update_ids(CREATE_INPUT_CHANNELS.out.raw_stats, isolates_needing_update),
