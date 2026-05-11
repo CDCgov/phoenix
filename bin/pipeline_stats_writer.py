@@ -50,8 +50,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("-e", "--kraken2-trimd-report")
     p.add_argument("-f", "--kraken2-trimd-summary")
     p.add_argument("-g", "--krona-trimd")
-    p.add_argument("-i", "--trimmed-assembly")
-    p.add_argument("-H", "--spades-assembly",      dest="spades_assembly")
+    p.add_argument("-i", "--filtered-assembly")
+    p.add_argument("-H", "--assembly",      dest="spades_assembly")
     p.add_argument("-j", "--kraken2-asmbld-report")
     p.add_argument("-k", "--kraken2-asmbled-summary")
     p.add_argument("-l", "--krona-asmbld")
@@ -70,9 +70,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("-y", "--mlst-file")
     p.add_argument("-z", "--assembly-only",        action="store_true")
     p.add_argument("-1", "--amr-file")
-    p.add_argument("-2", "--terra",                default="")
     p.add_argument("-5", "--coverage",             type=int, default=0)
-    p.add_argument("-3", "--internal-phoenix",     action="store_true")
+    p.add_argument("-3", "--cdc-phoenix-mode",     action="store_true")
     p.add_argument("-V", "--version",              action="version", version=f"%(prog)s: {__version__}")
     return p.parse_args()
 
@@ -900,7 +899,7 @@ def main() -> None:
 
     check_assembly(syn, args)
 
-    if args.internal_phoenix:
+    if args.cdc_phoenix_mode:
         check_kraken2_assembly(syn, args)
 
     check_kraken2_weighted(syn, args)
@@ -916,7 +915,7 @@ def main() -> None:
 
     qc_fail += check_coverage(syn, args, bps_post_all, assembly_length, reads_min)
 
-    if args.internal_phoenix:
+    if args.cdc_phoenix_mode:
         check_busco(syn, args)
 
     check_fastani(syn, args)
@@ -931,7 +930,7 @@ def main() -> None:
     if args.amr_file:
         check_amrfinder(syn, args)
 
-    if args.internal_phoenix:
+    if args.cdc_phoenix_mode:
         if run_type == "all":
             check_srst2(syn, args)
         else:
@@ -960,7 +959,7 @@ def main() -> None:
         "ALERT: something to note, does not mean it is a poor-quality assembly.\n"
     )
 
-    if args.internal_phoenix:
+    if args.cdc_phoenix_mode:
         syn._fh.write(
             "\n*BUSCO defines core genes as single-copy orthologs that should be "
             "highly conserved among the closely related species.\n"

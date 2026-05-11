@@ -551,8 +551,8 @@ workflow CREATE_INPUT_CHANNELS {
 //                        .view { "AFTER UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
 
             // indir branch
-            entry_type_ch = directory_ch.map { meta, dir ->
-                [meta, InputChannelUtils.detect_entry_type(file("${dir}/${meta.id}"))]
+            mode_type_ch = directory_ch.map { meta, dir ->
+                [meta, InputChannelUtils.detect_mode_type(file("${dir}/${meta.id}"))]
             }
 
             // pulling all the necessary project level files into channels
@@ -769,8 +769,8 @@ workflow CREATE_INPUT_CHANNELS {
                 .unique()
 
             // Function to detect what the original run type was based on what files are present in the directory
-            entry_type_ch = directory_ch.map { meta, dir ->
-                [meta, InputChannelUtils.detect_entry_type(file("${dir}/${meta.id}"))]
+            mode_type_ch = directory_ch.map { meta, dir ->
+                [meta, InputChannelUtils.detect_mode_type(file("${dir}/${meta.id}"))]
             }
 
             COLLECT_PROJECT_FILES (
@@ -866,5 +866,5 @@ workflow CREATE_INPUT_CHANNELS {
         pipeline_info_isolate  = isolate_version_broadcast_ch // Use this for summary lines
         update_pipeline_info_isolate = isolate_update_broadcast_ch
         sample_needs_update_ch
-        entry_type = entry_type_ch  
+        entry_type = mode_type_ch  
 }
