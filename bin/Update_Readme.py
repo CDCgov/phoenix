@@ -212,7 +212,7 @@ def write_readme(old_gamma, old_mlst, old_amrfinder, new_ar_db, new_mlst_db, new
 
     if os.path.exists(sample_directory + "/" + output):
         # File exists — read, normalize columns, reindex, append new row, write back
-        df = pd.read_csv(output, sep='\t', dtype=str, on_bad_lines='warn', engine='python')
+        df = pd.read_csv(sample_directory + "/" +output, sep='\t', dtype=str, on_bad_lines='warn', engine='python')
 
         # Normalize column names to handle any case differences
         col_map = {col: match for col in df.columns for match in canonical_cols if col.lower() == match.lower()}

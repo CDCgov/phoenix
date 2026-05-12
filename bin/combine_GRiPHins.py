@@ -37,7 +37,7 @@ def parseArgs(args=None):
     parser.add_argument('-s', '--samplesheet', required=False, default=None, dest='samplesheet', help='samplesheet with sample,directory columns. Used to doublecheck sample names.')
     parser.add_argument('--griphin_list', required=False, default=None, nargs='?', const=True, type=str, dest='griphin_list', help='pass instead of -g1/-g2 when you want to combine more than 2 griphins. If you just pass --griphin_list the script assumes you have multiple griphin_summary.xlsx files in the current dir. You can also pass a csv that just has the full paths to the griphin files you want to combine.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
-    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')# Add an argument to display the version
+    parser.add_argument('--version', action='version', version=f'%(prog)s: {__version__}')# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen

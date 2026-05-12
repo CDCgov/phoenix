@@ -28,7 +28,6 @@ include { UPDATE_GRIPHIN as UPDATE_GRIPHIN_ONLY_TWO } from '../modules/local/upd
 */
 
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-include { CREATE_INPUT_CHANNELS          } from '../subworkflows/local/create_input_channels'
 
 /*
 ========================================================================================

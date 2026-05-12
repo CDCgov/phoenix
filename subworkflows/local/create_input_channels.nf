@@ -43,6 +43,17 @@ workflow CREATE_INPUT_CHANNELS {
     main:
 
         ch_versions = Channel.empty() // Used to collect the software versions
+        if (indir) {
+            println("${orange}Indir directory provided: ${indir}. If you are running with a samplesheet make sure to provide the path with --input. ${reset}")
+        } else {
+            println("${orange}No indir directory provided. If you are running with a samplesheet make sure to provide the path with --input. ${reset}")
+        }
+
+        if (samplesheet) {
+            println("${orange}Samplesheet provided: ${samplesheet}. If you are running with an input directory make sure to provide the path with --indir. ${reset}")
+        } else {
+            println("${orange}No samplesheet provided. If you are running with an input directory make sure to provide the path with --indir. ${reset}")
+        }
 
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
@@ -482,10 +493,11 @@ workflow CREATE_INPUT_CHANNELS {
             /////////////////////////// COLLECT README FOR UPDATER ///////////////////////////////
             def readme_glob = InputChannelUtils.append_to_path(params.indir.toString(),'*/*_updater_log.tsv')
 
-            readme_files_ch = Channel.fromPath(readme_glob) // use created regrex to get samples
-                .map{ it -> InputChannelUtils.create_meta(it, "_updater_log.tsv", params.indir.toString(), false)}.ifEmpty( [[id: "", project_id: ""], []] )  // create meta for sample
-                .combine(all_passed_id_channel).filter{ meta, readme_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id)}.ifEmpty( [[id: "", project_id: ""], [], []] ) //filtering out failed samples - keep those in all_passed_id_channel
-                .map{ meta, readme_files, all_passed_id_channel -> [meta, readme_files]} //remove all_passed_id_channel from output
+            readme_files_ch = Channel.fromPath(readme_glob)
+                .map{ it -> InputChannelUtils.create_meta(it, "_updater_log.tsv", params.indir.toString(), false) }
+                .combine(all_passed_id_channel)
+                .filter{ meta, readme_files, all_passed_id_channel -> all_passed_id_channel.contains(meta.id) }
+                .map{ meta, readme_files, all_passed_id_channel -> [meta, readme_files] }
 
             /////////////////////////// COLLECT PROJECT LEVEL FILES ///////////////////////////////
 

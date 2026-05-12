@@ -415,13 +415,39 @@ workflow UPDATE_PHOENIX {
             if (params.input) { ch_input = file(params.input) }
         }
     } else {
-        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
+/*        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
             ch_input = null //keep samplesheet input null if not passed
             def checkPathParamList = [ params.indir, params.multiqc_config ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
         } else { // if no samplesheet is passed and no input directory is given
             exit 1, 'For --mode UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!' 
+        }
+    }*/
+        if (params.indir != null ) {
+
+            def checkPathParamList = [ params.indir, params.multiqc_config ]
+            for (param in checkPathParamList) {
+                if (param) { file(param, checkIfExists: true) }
+            }
+
+            //ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
+
+            // Build expected samplesheet path
+            def samplesheet_path = "${params.indir}/Directory_samplesheet.csv"
+
+            // Check it exists with a helpful error
+            if ( !file(samplesheet_path).exists() ) {
+                exit 1, "Expected samplesheet not found: ${samplesheet_path}\nMake sure Directory_samplesheet.csv exists inside --indir."
+            }
+
+            // Create channel input
+            ch_input = file(samplesheet_path)
+            params.indir = null // Set indir to null to avoid confusion later in the workflow since we have the samplesheet path now
+            ch_input_indir = null // Set input directory to null since we have the samplesheet path now
+            params.input = samplesheet_path // Set input to the samplesheet path for consistency in the workflow
+        } else {
+            exit 1, 'For --mode UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!'
         }
     }
 
@@ -485,59 +511,99 @@ workflow COMBINE_GRIPHINS {
 // WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
 workflow CENTAR {
+
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
+
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
-        if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For --mode RUN_CENTAR: You need EITHER an input samplesheet or a directory! Just pick one.' 
-        } else { // if only samplesheet is passed check to make sure input is an actual file
+
+        if (params.indir != null ) { // if both provided → error
+            exit 1, 'For --mode RUN_CENTAR: You need EITHER an input samplesheet or a directory! Just pick one.'
+
+        } else { // only samplesheet provided
+
             def checkPathParamList = [ params.input, params.multiqc_config ]
-            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            ch_input_indir = null //keep input directory null if not passed
+            for (param in checkPathParamList) {
+                if (param) { file(param, checkIfExists: true) }
+            }
+
+            ch_input_indir = null // keep input directory null if not passed
+
             // get full path for input and make channel
-            if (params.input) { ch_input = file(params.input) }
-            // Allow outdir to be relative !!!! Does this need to be changed if outdir is empty??
+            if (params.input) {
+                ch_input = file(params.input)
+            }
+
+            // Allow outdir to be relative
             outdir = Channel.fromPath(params.outdir, relative: true)
-            //griph_out = Channel.fromPath(params.griphin_out, relative: true)
         }
+
     } else {
-        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
-            ch_input = null //keep samplesheet input null if not passed
+
+        if (params.indir != null ) { // directory mode
+
             def checkPathParamList = [ params.indir, params.multiqc_config ]
-            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
-            //make sure a directory is passed 
-            if (new File(params.indir).isDirectory()){
-                ch_input_indir = Channel.fromPath(params.indir, relative: true)
+            for (param in checkPathParamList) {
+                if (param) { file(param, checkIfExists: true) }
+            }
+
+            // Make sure indir is actually a directory
+            if (new File(params.indir).isDirectory()) {
+
+                //ch_input_indir = Channel.fromPath(params.indir, relative: true)
+
+                // Build expected samplesheet path
+                def samplesheet_path = "${params.indir}/Directory_samplesheet.csv"
+
+                // Check it exists with clear error
+                if ( !file(samplesheet_path).exists() ) {
+                    exit 1, "Expected samplesheet not found: ${samplesheet_path}\nMake sure Directory_samplesheet.csv exists inside --indir."
+                }
+
+                // Pass samplesheet as ch_input
+                ch_input = file(samplesheet_path)
+                params.indir = null // Set indir to null to avoid confusion later in the workflow since we have the samplesheet path now
+                ch_input_indir = null // Set input directory to null since we have the samplesheet path now
+                params.input = samplesheet_path // Set input to the samplesheet path for consistency in the
+
             } else {
                 exit 1, 'You passed a file with --indir and a directory is required. Or use --input'
             }
-            if (params.outdir == "${launchDir}/phx_output" ) { 
+
+            // Handle outdir logic
+            if (params.outdir == "${launchDir}/phx_output" ) {
+
                 outdir = params.indir
                 println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${outdir}.${reset}")
+
             } else {
                 // Allow outdir to be relative
                 outdir = Channel.fromPath(params.outdir, relative: true)
-                //griph_out = Channel.fromPath(params.griphin_out, relative: true)
             }
-        } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For --mode CENTAR: You need EITHER an input samplesheet or a directory!' 
+
+        } else {
+            // neither input nor indir provided
+            exit 1, 'For --mode CENTAR: You need EITHER an input samplesheet or a directory!'
         }
     }
 
-    //make sure outdir and griphin_out aren't passed at the same time
+    // make sure outdir and griphin_out aren't passed at the same time
     if (params.griphin_out != "${launchDir}" && params.outdir != "${launchDir}/phx_output"){
-        exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir. Please rerun with only one of these parameters." 
+        exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir. Please rerun with only one of these parameters."
     }
+
     // check if the wgmlst_container was passed
-    if (params.wgmlst_container == null) { println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}") }
+    if (params.wgmlst_container == null) {
+        println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}")
+    }
 
     main:
         RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
 
     emit:
-        //output for phylophoenix
-        griphins_excel   = RUN_CENTAR.out.griphins_excel
+        // output for phylophoenix
+        griphins_excel = RUN_CENTAR.out.griphins_excel
 }
 
 /*

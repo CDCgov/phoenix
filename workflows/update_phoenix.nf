@@ -386,26 +386,39 @@ workflow UPDATE_PHOENIX_WF {
         files_to_update_ch = scaffolds_for_update_ch
             .map { meta, scaffolds -> [[id:meta.id, project_id:meta.project_id], meta] }
             .join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate.map{ meta, file -> [[id:meta.id, project_id:meta.project_id], file] }, by: [[0][0],[0][1]])
+            .view { log.info "[POST-CIC-PI] size=${it.size()} | id=${it[0].id} | ${it}"}
             .map { key, meta, pipeline_info -> [meta, pipeline_info] }
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [[id:meta.id, project_id:meta.project_id], file(dir)] }, by: [[0][0],[0][1]])
+            .view { log.info "[POST-CIC-DIR] size=${it.size()} | id=${it[0].id} | ${it}" }
             .map{ meta, a, b -> 
                 def pipeline_info = [a, b].find { it.toString().endsWith('.yml') }
                 def dir = [a, b].find { !it.toString().endsWith('.yml') }
                 [meta, dir, pipeline_info]
             }
             .join(CREATE_INPUT_CHANNELS.out.readme.map{                meta, readme -> [[id:meta.id, project_id:meta.project_id], readme]}, by: [[0][0],[0][1]], remainder: true)
+            .view { log.info "[POST-CIC-README] size=${it.size()} | id=${it[0].id} | ${it} " }
             .filter { it -> it.size() == 4 }
             .map{ meta, dir, pipeline_info, readme -> [meta, dir, pipeline_info, readme ?: []] }
             .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{              meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
+            .view { log.info "[POST-CIC-GAR] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(GAMMA_AR.out.gamma.map{                              meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
+            .view { log.info "[POST-GAR] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{           meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
+            .view { log.info "[POST-CIC-AMRF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(AMRFINDERPLUS_RUN.out.report.map{                    meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
+            .view { log.info "[POST-AMRF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{              meta, taxonomy    -> [[id:meta.id, project_id:meta.project_id], taxonomy]},    by: [[0][0],[0][1]])
+            .view { log.info "[POST-CIC-TAX] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{        meta, tax_file    -> [[id:meta.id, project_id:meta.project_id], tax_file]},    by: [[0][0],[0][1]], remainder: true)
+            .view { log.info "[POST-SHIG-TAX] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{              meta, gamma_pf    -> [[id:meta.id, project_id:meta.project_id], gamma_pf]},    by: [[0][0],[0][1]])
+            .view { log.info "[POST-CIC-GPF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(GAMMA_PF.out.gamma.map{                              meta, g_pf        -> [[id:meta.id, project_id:meta.project_id], g_pf]},        by: [[0][0],[0][1]])
+            .view { log.info "[POST-GPF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{              meta, gamma_hv    -> [[id:meta.id, project_id:meta.project_id], gamma_hv]},    by: [[0][0],[0][1]])
+            .view { log.info "[POST-CIC-GHV] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(GAMMA_HV.out.gamma.map{                              meta, g_hv        -> [[id:meta.id, project_id:meta.project_id], g_hv]},        by: [[0][0],[0][1]])
+            .view { log.info "[POST-GHV] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.update_pipeline_info_isolate
                 .combine(isolates_needing_update)
                 .filter { meta, software, update_ids -> 
@@ -414,11 +427,13 @@ workflow UPDATE_PHOENIX_WF {
                 }
                 .map { meta, software, update_ids -> [[id:meta.id, project_id:meta.project_id], software] }
             , by: [[0][0],[0][1]], remainder: true)
+            .view { log.info "[POST-UPDATE-INFO] size=${it.size()} | id=${it[0].id} | ${it}" }
             .map { meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file, g_pf, gp, g_hv, gh, software ->
                 return [
                     meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file ?: [], g_pf, gp, g_hv, gh, software ?: []
                 ]
             }
+            .view { log.info "[FINAL FILES TO UPDATE CH] size=${it.size()} | id=${it[0].id} | ${it}" }
 
         files_to_update_local = files_to_update_ch
 
@@ -463,10 +478,7 @@ workflow UPDATE_PHOENIX_WF {
             isolates_needing_update
         )
 
-        filter_to_update_ids(CREATE_INPUT_CHANNELS.out.raw_stats, isolates_needing_update).view { meta, file -> log.info ">>> raw_stats: ${meta.id}" }
-        filter_to_update_ids(CREATE_INPUT_CHANNELS.out.fastp_total_qc, isolates_needing_update).view { meta, file -> log.info ">>> fastp_total_qc: ${meta.id}" }
         filter_to_update_ids(SRST2_AR.out.fullgene_results.concat(CREATE_INPUT_CHANNELS.out.srst2_ar).unique{ meta, file -> [meta.id, meta.project_id] }, isolates_needing_update).view { meta, file -> log.info ">>> srst2_ar: ${meta.id}" }
-
 
         GENERATE_PIPELINE_STATS_WF (
             filter_to_update_ids(CREATE_INPUT_CHANNELS.out.raw_stats, isolates_needing_update),
@@ -507,49 +519,37 @@ workflow UPDATE_PHOENIX_WF {
         // Anchor: scaffolds_for_update_ch — present for ALL sample types (scaffolds + reads)
         scaffolds_local = scaffolds_for_update_ch
             .map{ meta, scaffolds -> [[id:meta.id, project_id:meta.project_id], scaffolds] }
-        line_step2 = InputChannelUtils.debugChannel(scaffolds_local, 2, "STEP 1 | anchor: scaffolds_for_update")
-            .join(DO_MLST.out.checked_MLSTs
+        line_step2 = scaffolds_local.join(DO_MLST.out.checked_MLSTs
                 .map{ meta, checked_MLSTs -> [[id:meta.id, project_id:meta.project_id], checked_MLSTs] }, by: [[0][0],[0][1]])
-        line_step3 = InputChannelUtils.debugChannel(line_step2, 3, "STEP 2 | after MLST join")
-            .join(CREATE_INPUT_CHANNELS.out.gamma_hv
+        line_step3 = line_step2.join(CREATE_INPUT_CHANNELS.out.gamma_hv
                 .map{ meta, gamma_hv -> [[id:meta.id, project_id:meta.project_id], gamma_hv] }, by: [[0][0],[0][1]])
-        line_step4 = InputChannelUtils.debugChannel(line_step3, 4, "STEP 3 | after gamma_hv join")
-            .join(GAMMA_AR.out.gamma
+        line_step4 = line_step3.join(GAMMA_AR.out.gamma
                 .map{ meta, gamma -> [[id:meta.id, project_id:meta.project_id], gamma] }, by: [[0][0],[0][1]])
-        line_step5 = InputChannelUtils.debugChannel(line_step4, 5, "STEP 4 | after gamma_ar join")
-            .join(CREATE_INPUT_CHANNELS.out.gamma_pf
+        line_step5 = line_step4.join(CREATE_INPUT_CHANNELS.out.gamma_pf
                 .map{ meta, gamma_pf -> [[id:meta.id, project_id:meta.project_id], gamma_pf] }, by: [[0][0],[0][1]])
-        line_step6 = InputChannelUtils.debugChannel(line_step5, 6, "STEP 5 | after gamma_pf join")
-            .join(CREATE_INPUT_CHANNELS.out.quast_report
+        line_step6 = line_step5.join(CREATE_INPUT_CHANNELS.out.quast_report
                 .map{ meta, quast_report -> [[id:meta.id, project_id:meta.project_id], quast_report] }, by: [[0][0],[0][1]])
-        line_step7 = InputChannelUtils.debugChannel(line_step6, 7, "STEP 6 | after quast_report join")
-            .join(CALCULATE_ASSEMBLY_RATIO.out.ratio
+        line_step7 = line_step6.join(CALCULATE_ASSEMBLY_RATIO.out.ratio
                 .concat(CREATE_INPUT_CHANNELS.out.assembly_ratio)
                 .unique{ meta, file -> [meta.id, meta.project_id] }
                 .map{ meta, assembly_ratio -> [[id:meta.id, project_id:meta.project_id], assembly_ratio] }, by: [[0][0],[0][1]])
-        line_step8 = InputChannelUtils.debugChannel(line_step7, 8, "STEP 7 | after assembly_ratio join")
-            .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats
+        line_step8 = line_step7.join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats
                 .concat(CREATE_INPUT_CHANNELS.out.synopsis)
                 .unique{ meta, file -> [meta.id, meta.project_id] }
                 .map{ meta, synopsis -> [[id:meta.id, project_id:meta.project_id], synopsis] }, by: [[0][0],[0][1]])
-        line_step9 = InputChannelUtils.debugChannel(line_step8, 9, "STEP 8 | after synopsis join")
-            .join(CHECK_SHIGAPASS_TAXA.out.tax_file
+        line_step9 = line_step8.join(CHECK_SHIGAPASS_TAXA.out.tax_file
                 .concat(CREATE_INPUT_CHANNELS.out.taxonomy)
                 .unique{ meta, file -> [meta.id, meta.project_id] }
                 .map{ meta, taxonomy -> [[id:meta.id, project_id:meta.project_id], taxonomy] }, by: [[0][0],[0][1]])
-        line_step10 = InputChannelUtils.debugChannel(line_step9, 10, "STEP 9 | after taxonomy join")
-            .join(CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary
+        line_step10 = line_step9.join(CREATE_INPUT_CHANNELS.out.k2_wtasmbld_bh_summary
                 .map{ meta, k2_wtasmbld_bh_summary -> [[id:meta.id, project_id:meta.project_id], k2_wtasmbld_bh_summary] }, by: [[0][0],[0][1]])
-        line_step11 = InputChannelUtils.debugChannel(line_step10, 11, "STEP 10 | after k2_wtasmbld_bh_summary join")
-            .join(AMRFINDERPLUS_RUN.out.report
+        line_step11 = line_step10.join(AMRFINDERPLUS_RUN.out.report
                 .map{ meta, report -> [[id:meta.id, project_id:meta.project_id], report] }, by: [[0][0],[0][1]])
-        line_step12 = InputChannelUtils.debugChannel(line_step11, 12, "STEP 11 | after amrfinder join")
-            .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit
+        line_step12 = line_step11.join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit
                 .concat(CREATE_INPUT_CHANNELS.out.ani_best_hit)
                 .unique{ meta, file -> [meta.id, meta.project_id] }
                 .map{ meta, ani_best_hit -> [[id:meta.id, project_id:meta.project_id], ani_best_hit] }, by: [[0][0],[0][1]])
-        line_step13 = InputChannelUtils.debugChannel(line_step12, 13, "STEP 12 | after ani_best_hit join")
-            .join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate
+        line_step13 = line_step12.join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate
                 .filter{ meta, pipeline_info -> pipeline_info != null }
                 .map{ meta, pipeline_info ->
                     def content = pipeline_info.text
@@ -560,19 +560,16 @@ workflow UPDATE_PHOENIX_WF {
                     [[id:meta.id, project_id:meta.project_id], version] }, by: [[0][0],[0][1]])
 
         // ── Null-safe late joins for read level outputs ──────────────────────────
-        line_step14 = InputChannelUtils.debugChannel(line_step13, 14, "STEP 13 | after pipeline_version join")
-            .join(CREATE_INPUT_CHANNELS.out.fastp_total_qc
+        line_step14 = line_step13.join(CREATE_INPUT_CHANNELS.out.fastp_total_qc
                 .map{ meta, f -> [[id:meta.id, project_id:meta.project_id], f] }, by: [[0][0],[0][1]], remainder: true)
             .filter { it -> it[1] != null }  // drop right-side remainders
             .map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }
 
-        line_step15 = InputChannelUtils.debugChannel(line_step14, 15, "STEP 14 | after fastp_total_qc late join")
-            .join(CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary
+        line_step15 = line_step14.join(CREATE_INPUT_CHANNELS.out.k2_trimd_bh_summary
                 .map{ meta, k2_trimd_bh_summary -> [[id:meta.id, project_id:meta.project_id], k2_trimd_bh_summary] }, by: [[0][0],[0][1]], remainder: true)
             .filter { it -> it[1] != null }  // drop right-side remainders
             .map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }
 
-        InputChannelUtils.debugChannel(line_step15, 16, "STEP 15 | final channel before reorder")
 
        line_summary_ch = line_step15
             .map{ meta, scaffolds, checked_MLSTs, gamma_hv, gamma, gamma_pf, quast_report,
