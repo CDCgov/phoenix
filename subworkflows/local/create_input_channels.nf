@@ -878,5 +878,5 @@ workflow CREATE_INPUT_CHANNELS {
         pipeline_info_isolate  = isolate_version_broadcast_ch // Use this for summary lines
         update_pipeline_info_isolate = isolate_update_broadcast_ch
         sample_needs_update_ch
-        entry_type = mode_type_ch  
+        mode_type = mode_type_ch  
 }
