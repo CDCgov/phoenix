@@ -14,8 +14,6 @@ process DETERMINE_TOP_MASH_HITS {
     path("versions.yml"),                               emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-t" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
@@ -26,7 +24,7 @@ process DETERMINE_TOP_MASH_HITS {
     """
     mkdir reference_dir
 
-    ${ica}sort_and_prep_dist.py -a $assembly_scaffolds -x $mash_dists -o reference_dir $terra
+    ${ica}sort_and_prep_dist.py -a $assembly_scaffolds -x $mash_dists -o reference_dir
 
     if [[ ! -f ${sample_name}_best_MASH_hits.txt ]]; then
         echo "No MASH hit found" > ${sample_name}_best_MASH_hits.txt
