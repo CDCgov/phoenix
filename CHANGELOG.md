@@ -381,5 +381,5 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - `--mode update_phoenix' now properly handles when previous runs were of the scaffold/cdc_scaffold types  
 - Added gamma hypervirulence to tools run during `--mode update_phoenix`.  
 - Added unzipped filtered scaffolds to Terra.bio output as requested in [issue 204](https://github.com/CDCgov/phoenix/issues/204).  
-- Bash scripts were converted to python for cohesiveness including, `afterSpades.sh`, `calculate_assembly_ratio.sh`, `determine_taxID.sh`, `fairy_proc.sh`, `kraken2_best_hit.sh`, `pipeline_stats_writer.sh`, `sort_and_prep_dist.sh`.  
-- Old scripts no longer in use were remove including, `beforeSpades.sh`, `getMLST2_phoenix.py`, `pipeline_stats_writer_trimd.sh` and `to_json.py`.  
+- Bash scripts were converted to python for cohesiveness including, `afterSpades.sh`, `calculate_assembly_ratio.sh`, `determine_taxID.sh`, `fairy_proc.sh`, `kraken2_best_hit.sh`, `pipeline_stats_writer.sh` and `sort_and_prep_dist.sh`.  
+- Old scripts no longer in use were remove including, `beforeSpades.sh`, `getMLST2_phoenix.py`, `pipeline_stats_writer_trimd.sh`, `dumpsoftwareversions_mod_with_out.py`and `to_json.py`.  

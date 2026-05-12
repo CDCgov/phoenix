@@ -14,8 +14,6 @@ process CALCULATE_ASSEMBLY_RATIO {
     path("versions.yml")                           , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-t terra" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
@@ -23,7 +21,7 @@ process CALCULATE_ASSEMBLY_RATIO {
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}calculate_assembly_ratio.py -d $ncbi_database -q $quast_report -x $taxa_file -s ${prefix} $terra
+    ${ica}calculate_assembly_ratio.py -d $ncbi_database -q $quast_report -x $taxa_file -s ${prefix}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

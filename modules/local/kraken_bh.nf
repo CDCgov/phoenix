@@ -13,8 +13,6 @@ process KRAKEN_BEST_HIT {
     path("versions.yml"),                          emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-t" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
     def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
@@ -22,7 +20,7 @@ process KRAKEN_BEST_HIT {
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}kraken2_best_hit.py -i $kraken_summary -q $count_file -n ${prefix} $terra
+    ${ica}kraken2_best_hit.py -i $kraken_summary -q $count_file -n ${prefix}
 
     mv ${prefix}.summary.txt ${prefix}.kraken2_${kraken_type}.top_kraken_hit.txt
 

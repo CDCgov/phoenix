@@ -33,17 +33,11 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Calculate assembly ratio vs. NCBI expected length."
     )
-    p.add_argument("-d", "--db-path",      required=True,
-                   help="Path to sorted NCBI ratio database file")
-    p.add_argument("-q", "--quast-report", required=True,
-                   help="QUAST report.tsv file")
-    p.add_argument("-x", "--tax-file",     default="",
-                   help="Tax file from determine_taxID.sh")
-    p.add_argument("-f", "--force",        default="",
-                   metavar="\"genus species\"",
-                   help="Manually specify taxonomy to compare against")
+    p.add_argument("-d", "--db-path",      required=True, help="Path to sorted NCBI ratio database file")
+    p.add_argument("-q", "--quast-report", required=True, help="QUAST report.tsv file")
+    p.add_argument("-x", "--tax-file",     default="", help="Tax file from determine_taxID.sh")
+    p.add_argument("-f", "--force",        default="", metavar="\"genus species\"", help="Manually specify taxonomy to compare against")
     p.add_argument("-s", "--sample-name",  required=True)
-    p.add_argument("-t", "--terra",        default="")
     p.add_argument("-V", "--version",      action="version", version=f"%(prog)s: {__version__}")
     return p.parse_args()
 

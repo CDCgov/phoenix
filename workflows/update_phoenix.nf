@@ -298,13 +298,13 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
-        // Running gamma to identify AR genes in scaffolds
+        // Running gamma to identify HV genes in scaffolds
         GAMMA_HV (
             filtered_scaffolds_ch, params.hvgamdb
         )
         ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
         
-        // Running gamma to identify AR genes in scaffolds
+        // Running gamma to identify plasmid replicons in scaffolds
         GAMMA_PF (
             filtered_scaffolds_ch, params.gamdbpf
         )
@@ -326,14 +326,14 @@ workflow UPDATE_PHOENIX_WF {
             }
             .map{ meta, reads, fairy_data -> [meta, reads] }
             .view { meta, reads -> log.info ">>> [CHECKPOINT 4 - after fairy filter] sample=${meta.id} | NOTE: if a sample appears at CP2 but not here, it failed the fairy check" }
-            .join(CREATE_INPUT_CHANNELS.out.entry_type, by: [0])
-            .view { meta, reads, et -> log.info ">>> [CHECKPOINT 5 - after entry_type join] sample=${meta.id} entry_type=${et.base} | NOTE: if a sample appears at CP4 but not here, the entry_type join failed (meta key mismatch?)" }
+            .join(CREATE_INPUT_CHANNELS.out.mode_type, by: [0])
+            .view { meta, reads, et -> log.info ">>> [CHECKPOINT 5 - after mode_type join] sample=${meta.id} mode_type=${et.base} | NOTE: if a sample appears at CP4 but not here, the mode_type join failed (meta key mismatch?)" }
             .filter{ meta, reads, et ->
                 def passed = et.base == 'CDC_PHOENIX'
-                if (!passed) log.info ">>> [CHECKPOINT 6 - DROPPED by entry_type filter] sample=${meta.id} entry_type=${et.base}"
+                if (!passed) log.info ">>> [CHECKPOINT 6 - DROPPED by mode_type filter] sample=${meta.id} mode_type=${et.base}"
                 passed
             }
-            .map { meta, reads, entry_type -> [meta, reads] }
+            .map { meta, reads, mode_type -> [meta, reads] }
             .view { meta, reads -> log.info ">>> [CHECKPOINT 7 - final trimd_reads_file_integrity_ch] sample=${meta.id} | NOTE: if a sample appears at CP5 but not here, it was filtered out as non-CDC_PHOENIX" }
 
         // Identifying AR genes in trimmed reads - only runs for entry types that have reads
@@ -346,9 +346,9 @@ workflow UPDATE_PHOENIX_WF {
             scaffolds_for_update_ch,
             CREATE_INPUT_CHANNELS.out.fairy_outcome,
             reads_for_update_ch
-                .join(CREATE_INPUT_CHANNELS.out.entry_type, by: [0])
+                .join(CREATE_INPUT_CHANNELS.out.mode_type, by: [0])
                 .filter{ meta, reads, et -> et.base == 'CDC_PHOENIX' }
-                .map{ meta, reads, entry_type -> [meta, reads] },
+                .map{ meta, reads, mode_type -> [meta, reads] },
             CHECK_SHIGAPASS_TAXA.out.tax_file
                 .concat(CREATE_INPUT_CHANNELS.out.taxonomy)
                 .unique{ meta, file -> [meta.id, meta.project_id] }
@@ -449,15 +449,15 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(CREATE_AND_UPDATE_README.out.versions)
 
         // Create scaffold placeholder channel - one empty entry per scaffold sample
-        scaffold_meta_ch = CREATE_INPUT_CHANNELS.out.entry_type
+        scaffold_meta_ch = CREATE_INPUT_CHANNELS.out.mode_type
             .combine(isolates_needing_update)
             .filter{ meta, et, update_ids -> update_ids.contains(meta.id) }
             .filter{ meta, et, update_ids -> et.base == 'SCAFFOLDS' || et.base == 'CDC_SCAFFOLDS' }
             .map{    meta, et, update_ids -> [meta, []] }
 
-        // Filter entry_type to only samples that need updating
-        ch_entry_type = filter_to_update_ids(
-            CREATE_INPUT_CHANNELS.out.entry_type,
+        // Filter mode_type to only samples that need updating
+        ch_mode_type = filter_to_update_ids(
+            CREATE_INPUT_CHANNELS.out.mode_type,
             isolates_needing_update
         )
 
@@ -506,7 +506,7 @@ workflow UPDATE_PHOENIX_WF {
             filter_to_update_ids(CALCULATE_ASSEMBLY_RATIO.out.ratio.concat(CREATE_INPUT_CHANNELS.out.assembly_ratio).unique{ meta, file -> [meta.id, meta.project_id] }, isolates_needing_update),
             filter_to_update_ids(AMRFINDERPLUS_RUN.out.mutation_report, isolates_needing_update),
             filter_to_update_ids(CALCULATE_ASSEMBLY_RATIO.out.gc_content.concat(CREATE_INPUT_CHANNELS.out.gc_content).unique{ meta, file -> [meta.id, meta.project_id] }, isolates_needing_update),
-            ch_entry_type
+            ch_mode_type
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
@@ -615,7 +615,6 @@ workflow UPDATE_PHOENIX_WF {
             .map { dirs -> dirs.collectEntries { dir -> def dirName = dir.tokenize('/').last()
             return [dirName, dir]}}
 
-      
         // Implement fallback mechanism: if CREATE_SUMMARY_LINE produces null summaryline, use CREATE_INPUT_CHANNELS.out.line_summary
         fallback_line_summary_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[id:meta.id, project_id:meta.project_id], line_summary]}
         
@@ -641,17 +640,17 @@ workflow UPDATE_PHOENIX_WF {
 
         // Combine successful and fallback summaries
         summaries_ch = successful_summaries_ch.mix(fallback_summaries_ch)
-            .join(CREATE_INPUT_CHANNELS.out.entry_type
+            .join(CREATE_INPUT_CHANNELS.out.mode_type
             .map{ meta, et -> [meta.project_id, et] }, by: [0])
             .groupTuple(by: 0)
             .map { group -> 
                 def meta = [:]
-                def (id, summary_lines, entry_types) = group
+                def (id, summary_lines, mode_types) = group
                 id2 = id.split('/')[-1]
                 meta.project_id = id.split('/')[-1]
                 meta.full_project_id = id
                 def full_project_id = project_ids.value[id2]
-                def first_type = entry_types.flatten().first().base
+                def first_type = mode_types.flatten().first().base
                 def busco_boolean = first_type == 'CDC_PHOENIX' || first_type == 'CDC_SCAFFOLDS'
                 return [meta, summary_lines, full_project_id, busco_boolean]
             }
@@ -717,7 +716,7 @@ workflow UPDATE_PHOENIX_WF {
         summaries_with_outdir_ch = summaries_ch.combine(outdir_full_path.toList()).map{meta, summary_lines, full_project_id, busco_boolean, outdir -> [meta, summary_lines, outdir, busco_boolean] }
 
         // Now we need to check if --centar was passed when the samples were run previously. // "ifEmpty()" branch executes if no files match 
-        centar_var = CREATE_INPUT_CHANNELS.out.entry_type
+        centar_var = CREATE_INPUT_CHANNELS.out.mode_type
             .map{ meta, et -> et.centar }
             .filter{ it == true }
             .ifEmpty( Channel.of(false) )
@@ -818,7 +817,7 @@ workflow UPDATE_PHOENIX_WF {
                 }
 
             // Sets inferred mode for GRiPHin based on whether the input is from scaffolds or reads, determined by checking if any of the files for that sample contain "fastp" in the name (indicating read-level data). If no files contain "fastp", it is assumed to be scaffold-level data and inferred mode is set to "SCAFFOLD_INFERRED". If any file contains "fastp", inferred mode is set to "READS". This allows GRiPHin to adjust its processing based on the type of input data without requiring an explicit parameter from the user.
-            indir_inferred_mode = CREATE_INPUT_CHANNELS.out.entry_type
+            indir_inferred_mode = CREATE_INPUT_CHANNELS.out.mode_type
                 .map{ meta, et -> et.base }
                 .collect()
                 .map{ bases ->
@@ -905,10 +904,10 @@ workflow UPDATE_PHOENIX_WF {
                     }
 
                 // Determine inferred_mode PER PROJECT
-                ch_inferred_mode_per_project = CREATE_INPUT_CHANNELS.out.entry_type
-                    .map { meta, entry_type ->
+                ch_inferred_mode_per_project = CREATE_INPUT_CHANNELS.out.mode_type
+                    .map { meta, mode_type ->
                         def pid = meta.project_id.toString().split('/')[-1].replace("]", "").trim()
-                        def mode = (entry_type.base in ['CDC_PHOENIX', 'PHOENIX']) ? 'READS' : 'SCAFFOLD_INFERRED'
+                        def mode = (mode_type.base in ['CDC_PHOENIX', 'PHOENIX']) ? 'READS' : 'SCAFFOLD_INFERRED'
                         [pid, mode]
                     }
                     .groupTuple(by: 0)
@@ -1122,10 +1121,10 @@ workflow UPDATE_PHOENIX_WF {
                         unique_versions.join(',')
                     }
 
-                ch_inferred_mode = CREATE_INPUT_CHANNELS.out.entry_type.first()
+                ch_inferred_mode = CREATE_INPUT_CHANNELS.out.mode_type.first()
                     .map { row ->
-                        def (meta, entry_type) = row
-                        entry_type.base == 'CDC_PHOENIX' || entry_type.base == 'PHOENIX' ? "READS" : "SCAFFOLD_INFERRED"
+                        def (meta, mode_type) = row
+                        mode_type.base == 'CDC_PHOENIX' || mode_type.base == 'PHOENIX' ? "READS" : "SCAFFOLD_INFERRED"
                     }
 
                 ch_busco_check = collected_summaries_ch.map{ it[3] }.collect().map{ it.any{ it == true } }.ifEmpty(false)

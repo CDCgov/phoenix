@@ -24,21 +24,18 @@ process SCAFFOLD_COUNT_CHECK {
     path("versions.yml"),                                            emit: versions
 
     script:
-    // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-2" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    ica_python = params.ica ? "python ${params.bin_dir}" : ""
-    //ica_bash = params.ica ? "bash ${params.bin_dir}" : ""
+    ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def fairy_read_count_outcome_file = fairy_read_count_outcome ? "$fairy_read_count_outcome" : ""
-    def raw_qc = raw_qc_file ? "-a $raw_qc_file" : ""
-    def fastp_total_qc_pipeline_stats = fastp_total_qc_file ? "-b $fastp_total_qc_file" : ""
-    def fastp_total_qc_summaryline = fastp_total_qc_file ? "-t $fastp_total_qc_file" : ""
-    def kraken2_trimd_summary_pipeline_stats = kraken2_trimd_summary ? "-f $kraken2_trimd_summary" : ""
-    def kraken2_trimd_summary_summaryline = kraken2_trimd_summary ? "-k $kraken2_trimd_summary" : ""
-    def kraken2_trimd_report = kraken2_trimd_report_file ? "-e $kraken2_trimd_report_file" : ""
-    def krona_trimd = krona_trimd_file ? "-g $krona_trimd_file" : ""
+    def raw_qc = raw_qc_file ? "--raw-read-counts $raw_qc_file" : ""
+    def fastp_total_qc_pipeline_stats = fastp_total_qc_file ? "--total-read-counts $fastp_total_qc_file" : ""
+    def fastp_total_qc_summaryline = fastp_total_qc_file ? "--trimmed $fastp_total_qc_file" : ""
+    def kraken2_trimd_summary_pipeline_stats = kraken2_trimd_summary ? "--kraken2-trimd-summary $kraken2_trimd_summary" : ""
+    def kraken2_trimd_summary_summaryline = kraken2_trimd_summary ? "--kraken_trim $kraken2_trimd_summary" : ""
+    def kraken2_trimd_report = kraken2_trimd_report_file ? "--kraken2-trimd-report $kraken2_trimd_report_file" : ""
+    def krona_trimd = krona_trimd_file ? "--krona-trimd $krona_trimd_file" : ""
     def extended_qc_arg = extended_qc ? "--extended_qc" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
@@ -59,18 +56,18 @@ process SCAFFOLD_COUNT_CHECK {
 
         # if the sample has no scaffolds left make the summaryline and synopsis file for it. 
         # get taxa ID
-        ${ica_python}determine_taxID.py -r $kraken2_trimd_summary -s ${prefix} -d $nodes_file -m $names_file
+        ${ica}determine_taxID.py --trimmed-kraken $kraken2_trimd_summary --sample-name ${prefix} --nodes $nodes_file --names $names_file
 
         #write synopsis file
-        ${ica_python}pipeline_stats_writer.py -d ${prefix} -q ${prefix}.tax -5 $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
-        $kraken2_trimd_report $kraken2_trimd_summary_pipeline_stats $krona_trimd $terra
+        ${ica}pipeline_stats_writer.py --sample-name ${prefix} --taxid-file ${prefix}.tax --coverage $coverage $raw_qc $fastp_total_qc_pipeline_stats \\
+        $kraken2_trimd_report $kraken2_trimd_summary_pipeline_stats $krona_trimd
 
         # write summary_line file
-        ${ica_python}Phoenix_summary_line.py -n ${prefix} -s ${prefix}.synopsis -x ${prefix}.tax -o ${prefix}_summaryline.tsv\\
+        ${ica}Phoenix_summary_line.py --name ${prefix} --stats ${prefix}.synopsis --taxa ${prefix}.tax --out ${prefix}_summaryline.tsv\\
         $kraken2_trimd_summary_summaryline $fastp_total_qc_summaryline $extended_qc_arg --phx_version $phx_version
 
         # change pass to fail and add in error
-        ${ica_python}edit_line_summary.py -i ${prefix}_summaryline.tsv
+        ${ica}edit_line_summary.py --input ${prefix}_summaryline.tsv
 
         #change file name.
         cp ${prefix}_summary_old_3.txt ${prefix}_scaffolds_summary.txt
@@ -96,10 +93,10 @@ process SCAFFOLD_COUNT_CHECK {
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \$(${ica_python}determine_taxID.py -V)
-        \$(${ica_python}pipeline_stats_writer.py -V)
-        \$(${ica_python}Phoenix_summary_line.py --version )
-        \$(${ica_python}edit_line_summary.py --version )
+        \$(${ica}determine_taxID.py -V)
+        \$(${ica}pipeline_stats_writer.py -V)
+        \$(${ica}Phoenix_summary_line.py --version )
+        \$(${ica}edit_line_summary.py --version )
     END_VERSIONS
     """
 }

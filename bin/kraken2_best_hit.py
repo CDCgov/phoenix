@@ -25,12 +25,9 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Grab best kraken2 species hit from a summary list file."
     )
-    p.add_argument("-i", "--list-file",    required=True,
-                   help="Path to kraken2 .summary.txt list file")
-    p.add_argument("-q", "--read-file",    default="",
-                   help="Count file (reads or contigs)")
+    p.add_argument("-i", "--list-file",    required=True, help="Path to kraken2 .summary.txt list file")
+    p.add_argument("-q", "--read-file",    default="", help="Count file (reads or contigs)")
     p.add_argument("-n", "--sample-name",  required=True)
-    p.add_argument("-t", "--terra",        default="")
     p.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return p.parse_args()
 
