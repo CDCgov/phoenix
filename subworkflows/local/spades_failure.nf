@@ -107,7 +107,7 @@ workflow SPADES_WF {
             .join(DETERMINE_TAXA_ID.out.taxonomy.map{                                  meta, taxonomy        -> [[id:meta.id],taxonomy]},       by: [0])
             .join(SPADES.out.spades_outcome.splitCsv(strip:true).map{meta, spades_outcome -> [[id:meta.id], spades_outcome]}, by: [0])
                     .filter{meta, pipeline_stats, fastp_total_qc, ksummary, taxonomy, spades_outcome -> "${spades_outcome[0]}" == "run_failure" || "${spades_outcome[1]}" == "no_scaffolds" || "${spades_outcome[2]}" == "no_contigs"}
-                    .map{ meta, pipeline_stats, fastp_total_qc, ksummary, taxonomy, spades_outcome -> [meta, fastp_total_qc, [], [], [], [], [], [], pipeline_stats, taxonomy, ksummary, [], [], [], []] }
+                    .map{ meta, pipeline_stats, fastp_total_qc, ksummary, taxonomy, spades_outcome -> [meta, fastp_total_qc, [], [], [], [], [], [], pipeline_stats, taxonomy, ksummary, [], [], [], [], []] }
 
         // Create one line summary for case when spades fails to create scaffolds
         CREATE_SUMMARY_LINE (
