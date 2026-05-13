@@ -3,7 +3,7 @@
 """
 Description: Script to format ANI output to include more information on the top line.
 
-Usage: ./ANI_best_hit_formatter.py -a ani_file -n sample_name [-d db_name] [-t terra] [-V]
+Usage: ./ANI_best_hit_formatter.py -a ani_file -n sample_name [-d db_name] [-V]
 
 Output location: /sample_name/fastANI/
 
@@ -30,7 +30,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-a", "--ani-file",   required=True,  help="ANI input file")
     parser.add_argument("-n", "--sample-name", required=True, help="Sample name")
     parser.add_argument("-d", "--db-name",    default="",     help="Database name")
-    parser.add_argument("-t", "--terra",      default="",     help="Set to 'terra' if running on Terra")
     parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
