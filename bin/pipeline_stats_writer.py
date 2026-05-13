@@ -185,9 +185,7 @@ def parse_kraken2_summary(path_str: str) -> dict:
         unclass, unclass_str, domain, genus, species, species_pct, genus_pct.
     Result is cached so repeated calls with the same path are free.
     """
-    result = dict(unclass=0.0, unclass_str="0",
-                  domain=0.0, genus="", species="",
-                  species_pct=0.0, genus_pct=0.0)
+    result = dict(unclass=0.0, unclass_str="0",domain=0.0, genus="", species="",species_pct=0.0, genus_pct=0.0)
     if not nonempty(path_str):
         return result
     try:
@@ -219,8 +217,7 @@ def parse_kraken2_summary(path_str: str) -> dict:
 # ---------------------------------------------------------------------------
 
 @lru_cache(maxsize=16)
-def check_kraken2_contamination(report_path: str,
-                                weighted: bool = False) -> tuple[int, float]:
+def check_kraken2_contamination(report_path: str,          weighted: bool = False) -> tuple[int, float]:
     """
     Count genera above the contamination threshold.
     Cached — the report file is read at most once per path+mode combination.
@@ -247,12 +244,10 @@ def check_kraken2_contamination(report_path: str,
                 root      = raw_pct
                 total_pct = unclass + root
             elif level == "G" and total_pct > 0:
-                if int((raw_pct * 100) / total_pct) > KRAKEN2_CONTAMINATION_THRESH:
-                    n_genera += 1
+                if int((raw_pct * 100) / total_pct) > KRAKEN2_CONTAMINATION_THRESH:  n_genera += 1
         else:
             if level == "G":
-                if int(str(raw_pct).split(".")[0]) > KRAKEN2_CONTAMINATION_THRESH:
-                    n_genera += 1
+                if int(str(raw_pct).split(".")[0]) > KRAKEN2_CONTAMINATION_THRESH:  n_genera += 1
 
     return n_genera, total_pct
 
@@ -275,14 +270,11 @@ def check_gamma(syn: Synopsis, label: str, gamma_path: str,
                 gene_type: str, sample_name: str, db_tag: str) -> None:
     count = count_gamma_hits(gamma_path)
     if count < 0:
-        syn.record(label, "FAILED",
-                   f"{sample_name}_{db_tag}.gamma does not exist")
+        syn.record(label, "FAILED", f"{sample_name}_{db_tag}.gamma does not exist")
     elif count == 0:
-        syn.record(label, "SUCCESS",
-                   f"No {gene_type} genes were found", escalate=False)
+        syn.record(label, "SUCCESS", f"No {gene_type} genes were found", escalate=False)
     else:
-        syn.record(label, "SUCCESS",
-                   f"{count} {gene_type} gene(s) found", escalate=False)
+        syn.record(label, "SUCCESS", f"{count} {gene_type} gene(s) found", escalate=False)
 
 
 # ---------------------------------------------------------------------------
@@ -291,10 +283,8 @@ def check_gamma(syn: Synopsis, label: str, gamma_path: str,
 
 def check_raw_reads(syn: Synopsis, args) -> tuple[int, int, bool]:
     if not nonempty(args.raw_read_counts):
-        syn.record("FASTQs",          "FAILED",
-                   f"{args.raw_read_counts} reads QC file does not exist")
-        syn.record("RAW_READ_COUNTS", "FAILED",
-                   f"{args.raw_read_counts} reads QC file does not exist")
+        syn.record("FASTQs",          "FAILED", f"{args.raw_read_counts} reads QC file does not exist")
+        syn.record("RAW_READ_COUNTS", "FAILED", f"{args.raw_read_counts} reads QC file does not exist")
         return 0, 0, False
 
     last = read_tsv_last_line(args.raw_read_counts)
@@ -305,14 +295,12 @@ def check_raw_reads(syn: Synopsis, args) -> tuple[int, int, bool]:
         syn.record("FASTQs", "SUCCESS", f"R1: {r1}bps R2: {r2}bps", escalate=False)
     else:
         if r1 <= 0:
-            syn.record("FASTQs_R1", "FAILED",
-                       f"R1 not represented correctly in {args.raw_read_counts}")
+            syn.record("FASTQs_R1", "FAILED", f"R1 not represented correctly in {args.raw_read_counts}")
             r1 = 0
         else:
             syn.record("FASTQs_R1", "SUCCESS", f"{r1}bps", escalate=False)
         if r2 <= 0:
-            syn.record("FASTQs_R2", "FAILED",
-                       f"R2 not represented correctly in {args.raw_read_counts}")
+            syn.record("FASTQs_R2", "FAILED", f"R2 not represented correctly in {args.raw_read_counts}")
             r2 = 0
         else:
             syn.record("FASTQs_R2", "SUCCESS", f"{r2}bps", escalate=False)
@@ -323,8 +311,7 @@ def check_raw_reads(syn: Synopsis, args) -> tuple[int, int, bool]:
 def check_raw_counts(syn: Synopsis, args, raw_exists: bool) -> None:
     if not raw_exists:
         for lbl in ("RAW_READ_COUNTS", "RAW_Q30_R1%", "RAW_Q30_R2%"):
-            syn.record(lbl, "FAILED",
-                       f"{args.sample_name}_raw_read_counts.txt not found")
+            syn.record(lbl, "FAILED", f"{args.sample_name}_raw_read_counts.txt not found")
         return
 
     last      = read_tsv_last_line(args.raw_read_counts)   # cached — free
@@ -336,29 +323,23 @@ def check_raw_counts(syn: Synopsis, args, raw_exists: bool) -> None:
     q30_r2    = safe_int(q30_r2_s.split(".")[1][:2]) if "." in q30_r2_s else 0
 
     if raw_reads <= 0:
-        syn.record("RAW_READ_COUNTS", "FAILED",
-                   f"No individual read count before trimming: {raw_reads} ({raw_pairs} paired)")
+        syn.record("RAW_READ_COUNTS", "FAILED", f"No individual read count before trimming: {raw_reads} ({raw_pairs} paired)")
     elif raw_reads <= 1_000_000:
-        syn.record("RAW_READ_COUNTS", "WARNING",
-                   f"Low individual read count before trimming: {raw_reads} ({raw_pairs} paired)")
+        syn.record("RAW_READ_COUNTS", "WARNING", f"Low individual read count before trimming: {raw_reads} ({raw_pairs} paired)")
     else:
-        syn.record("RAW_READ_COUNTS", "SUCCESS",
-                   f"{raw_reads} individual reads ({raw_pairs} paired)", escalate=False)
+        syn.record("RAW_READ_COUNTS", "SUCCESS", f"{raw_reads} individual reads ({raw_pairs} paired)", escalate=False)
 
     for pct, thresh, label in ((q30_r1, 90, "RAW_Q30_R1%"), (q30_r2, 70, "RAW_Q30_R2%")):
         if pct < thresh:
             syn.record(label, "WARNING", f"Q30 at {pct}% (Threshold is {thresh}%)")
         else:
-            syn.record(label, "SUCCESS",  f"Q30 at {pct}% (Threshold is {thresh}%)",
-                       escalate=False)
+            syn.record(label, "SUCCESS",  f"Q30 at {pct}% (Threshold is {thresh}%)", escalate=False)
 
 
 def check_trimmed_reads(syn: Synopsis, args) -> tuple[int, int, int, bool]:
     if not nonempty(args.total_read_counts):
-        syn.record("TRIMMED_FASTQs",      "FAILED",
-                   f"{args.total_read_counts} reads QC file does not exist")
-        syn.record("TRIMMED_READ_COUNTS", "FAILED",
-                   f"{args.total_read_counts} reads QC file does not exist")
+        syn.record("TRIMMED_FASTQs",      "FAILED", f"{args.total_read_counts} reads QC file does not exist")
+        syn.record("TRIMMED_READ_COUNTS", "FAILED", f"{args.total_read_counts} reads QC file does not exist")
         return 0, 0, 0, False
 
     last     = read_tsv_last_line(args.total_read_counts)
@@ -367,13 +348,11 @@ def check_trimmed_reads(syn: Synopsis, args) -> tuple[int, int, int, bool]:
     unpaired = safe_int(last[6])  if len(last) > 6 else 0
 
     if r1 > 0 and r2 > 0 and unpaired > 0:
-        syn.record("TRIMMED_BPS", "SUCCESS",
-                   f"R1: {r1}bps R2: {r2}bps Unpaired: {unpaired}bps", escalate=False)
+        syn.record("TRIMMED_BPS", "SUCCESS", f"R1: {r1}bps R2: {r2}bps Unpaired: {unpaired}bps", escalate=False)
     else:
         for val, lbl in ((r1, "TRIMMED_R1"), (r2, "TRIMMED_R2")):
             if val <= 0:
-                syn.record(lbl, "FAILED",
-                           f"{lbl[-2:]} not represented correctly in {args.total_read_counts}")
+                syn.record(lbl, "FAILED",     f"{lbl[-2:]} not represented correctly in {args.total_read_counts}")
             else:
                 syn.record(lbl, "SUCCESS", f"{val}bps", escalate=False)
         if unpaired > 0:
@@ -390,8 +369,7 @@ def check_trimmed_reads(syn: Synopsis, args) -> tuple[int, int, int, bool]:
 def check_trimmed_counts(syn: Synopsis, args, total_exists: bool) -> tuple[int, int]:
     if not total_exists:
         for lbl in ("TRIMMED_READ_COUNTS", "TRIMMED_Q30_R1%", "TRIMMED_Q30_R2%"):
-            syn.record(lbl, "FAILED",
-                       f"{args.sample_name}_trimmed_read_counts.txt not found")
+            syn.record(lbl, "FAILED", f"{args.sample_name}_trimmed_read_counts.txt not found")
         return 0, 0
 
     last     = read_tsv_last_line(args.total_read_counts)   # cached — free
@@ -407,14 +385,11 @@ def check_trimmed_counts(syn: Synopsis, args, total_exists: bool) -> tuple[int, 
     q30_r2   = safe_int(q30_r2_s.split(".")[1][:2]) if "." in q30_r2_s else 0
 
     if total <= 0:
-        syn.record("TRIMMED_READ_COUNTS", "FAILED",
-                   f"No individual read count after trimming: {trimmed} ({paired} paired, {orphaned} singled)")
+        syn.record("TRIMMED_READ_COUNTS", "FAILED", f"No individual read count after trimming: {trimmed} ({paired} paired, {orphaned} singled)")
     elif total <= 1_000_000:
-        syn.record("TRIMMED_READ_COUNTS", "WARNING",
-                   f"Low individual read count after trimming: {total} ({paired} paired, {orphaned} singled)")
+        syn.record("TRIMMED_READ_COUNTS", "WARNING", f"Low individual read count after trimming: {total} ({paired} paired, {orphaned} singled)")
     else:
-        syn.record("TRIMMED_READ_COUNTS", "SUCCESS",
-                   f"{total} individual reads ({paired} paired, {orphaned} singled)", escalate=False)
+        syn.record("TRIMMED_READ_COUNTS", "SUCCESS", f"{total} individual reads ({paired} paired, {orphaned} singled)", escalate=False)
 
     for pct, thresh, label in (
         (q30_r1, 90, "TRIMMED_Q30_R1%"),
@@ -423,141 +398,101 @@ def check_trimmed_counts(syn: Synopsis, args, total_exists: bool) -> tuple[int, 
         if pct < thresh:
             syn.record(label, "WARNING", f"Q30 at {pct}% (Threshold is {thresh}%)")
         else:
-            syn.record(label, "SUCCESS",  f"Q30 at {pct}% (Threshold is {thresh}%)",
-                       escalate=False)
+            syn.record(label, "SUCCESS",  f"Q30 at {pct}% (Threshold is {thresh}%)", escalate=False)
 
     return total, bps_all
 
 
-def _kraken2_contamination_report(syn: Synopsis, report_path: str,
-                                  label: str, weighted: bool = False) -> None:
+def _kraken2_contamination_report(syn: Synopsis, report_path: str,            label: str, weighted: bool = False) -> None:
     """Shared contamination reporting logic for all three kraken2 contexts."""
     n_genera, _ = check_kraken2_contamination(report_path, weighted)
     if n_genera > 1:
-        syn.record(label, "WARNING",
-                   f"{n_genera} genera found above {KRAKEN2_CONTAMINATION_THRESH}% threshold")
+        syn.record(label, "WARNING", f"{n_genera} genera found above {KRAKEN2_CONTAMINATION_THRESH}% threshold")
     elif n_genera == 1:
-        syn.record(label, "SUCCESS",
-                   f"Only one genus found above {KRAKEN2_CONTAMINATION_THRESH}% threshold",
-                   escalate=False)
+        syn.record(label, "SUCCESS", f"Only one genus found above {KRAKEN2_CONTAMINATION_THRESH}% threshold", escalate=False)
     else:
         result = "ALERT" if "ASMBLD" in label else "WARNING"
-        syn.record(label, result,
-                   f"No genera found above {KRAKEN2_CONTAMINATION_THRESH}% threshold")
+        syn.record(label, result, f"No genera found above {KRAKEN2_CONTAMINATION_THRESH}% threshold")
 
 
 def check_kraken2_reads(syn: Synopsis, args) -> None:
     pre_success = nonempty(args.kraken2_trimd_report)
     if not pre_success:
-        syn.record("KRAKEN2_READS", "FAILED",
-                   f"{args.sample_name}.kraken2_trimd.summary.txt not found")
+        syn.record("KRAKEN2_READS", "FAILED", f"{args.sample_name}.kraken2_trimd.summary.txt not found")
 
     if pre_success and not nonempty(args.krona_trimd):
-        syn.record("KRONA_READS", "FAILED",
-                   f"{args.sample_name}_trimd.html not found")
+        syn.record("KRONA_READS", "FAILED", f"{args.sample_name}_trimd.html not found")
     elif not pre_success:
-        syn.record("KRONA_READS", "FAILED",
-                   "kraken2 reads did not complete successfully")
+        syn.record("KRONA_READS", "FAILED", "kraken2 reads did not complete successfully")
 
     if nonempty(args.kraken2_trimd_summary):
         k = parse_kraken2_summary(args.kraken2_trimd_summary)
         if k["domain"] <= 0:
-            syn.record("KRAKEN2_CLASSIFY_READS", "FAILED",
-                       "There are no classified reads" if pre_success
-                       else "KRAKEN2_READS did not complete successfully")
+            syn.record("KRAKEN2_CLASSIFY_READS", "FAILED", "There are no classified reads" if pre_success else "KRAKEN2_READS did not complete successfully")
         elif k["unclass"] > KRAKEN2_UNCLASS_FLAG:
-            syn.record("KRAKEN2_CLASSIFY_READS", "WARNING",
-                       f"unclassified reads comprise {k['unclass_str']}% of total")
+            syn.record("KRAKEN2_CLASSIFY_READS", "WARNING", f"unclassified reads comprise {k['unclass_str']}% of total")
         else:
-            syn.record("KRAKEN2_CLASSIFY_READS", "SUCCESS",
-                       f"{k['species_pct']}% {k['genus']} {k['species']} "
-                       f"with {k['unclass_str']}% unclassified reads", escalate=False)
+            syn.record("KRAKEN2_CLASSIFY_READS", "SUCCESS", f"{k['species_pct']}% {k['genus']} {k['species']} " f"with {k['unclass_str']}% unclassified reads", escalate=False)
     else:
-        syn.record("KRAKEN2_CLASSIFY_READS", "FAILED",
-                   f"{args.sample_name}.kraken2_trimd.classifiedreads.txt not found")
+        syn.record("KRAKEN2_CLASSIFY_READS", "FAILED", f"{args.sample_name}.kraken2_trimd.classifiedreads.txt not found")
 
     if pre_success:
-        _kraken2_contamination_report(syn, args.kraken2_trimd_report,
-                                      "KRAKEN2_READS_CONTAM")
+        _kraken2_contamination_report(syn, args.kraken2_trimd_report,                "KRAKEN2_READS_CONTAM")
 
 
 def check_kraken2_assembly(syn: Synopsis, args) -> None:
     ok = nonempty(args.kraken2_asmbld_report)
     if not ok:
-        syn.record("KRAKEN2_ASMBLD", "FAILED",
-                   f"{args.sample_name}.kraken2_asmbld.summary.txt not found")
+        syn.record("KRAKEN2_ASMBLD", "FAILED", f"{args.sample_name}.kraken2_asmbld.summary.txt not found")
 
     if ok and not nonempty(args.krona_asmbld):
-        syn.record("KRONA_ASMBLD", "FAILED",
-                   f"{args.sample_name}_asmbld.html not found")
+        syn.record("KRONA_ASMBLD", "FAILED", f"{args.sample_name}_asmbld.html not found")
     elif not ok:
-        syn.record("KRONA_ASMBLD", "FAILED",
-                   "kraken2 unweighted did not complete successfully")
+        syn.record("KRONA_ASMBLD", "FAILED", "kraken2 unweighted did not complete successfully")
 
     if nonempty(args.kraken2_asmbled_summary):
         k = parse_kraken2_summary(args.kraken2_asmbled_summary)
         if k["domain"] <= 0:
-            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "FAILED",
-                       "There are no classified reads (Did post assembly kraken2 fail too?)"
-                       if ok else "kraken2 assembly did not complete successfully")
+            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "FAILED", "There are no classified reads (Did post assembly kraken2 fail too?)" if ok else "kraken2 assembly did not complete successfully")
         elif k["unclass"] > KRAKEN2_UNCLASS_FLAG:
-            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "WARNING",
-                       f"unclassified scaffolds comprise {k['unclass_str']}% of total")
+            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "WARNING", f"unclassified scaffolds comprise {k['unclass_str']}% of total")
         elif k["genus_pct"] < 70:
-            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "WARNING",
-                       f"Genus-{k['genus']}({k['genus_pct']}%) under 70% "
-                       f"(species {k['species']} ({k['species_pct']}%)), possibly contaminated")
+            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "WARNING", f"Genus-{k['genus']}({k['genus_pct']}%) under 70% " f"(species {k['species']} ({k['species_pct']}%)), possibly contaminated")
         else:
-            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "SUCCESS",
-                       f"{k['genus']}({k['genus_pct']}%) {k['species']}({k['species_pct']}%) "
-                       f"with {k['unclass_str']}% unclassified scaffolds", escalate=False)
+            syn.record("KRAKEN2_CLASSIFY_ASMBLD", "SUCCESS", f"{k['genus']}({k['genus_pct']}%) {k['species']}({k['species_pct']}%) " f"with {k['unclass_str']}% unclassified scaffolds", escalate=False)
     else:
-        syn.record("KRAKEN2_CLASSIFY_ASMBLD", "FAILED",
-                   f"{args.sample_name}.kraken2_asmbld.classifiedreads.txt not found")
+        syn.record("KRAKEN2_CLASSIFY_ASMBLD", "FAILED", f"{args.sample_name}.kraken2_asmbld.classifiedreads.txt not found")
 
     # Fixed: original had 'lassification' typo that silently broke this check
     if ok:
-        _kraken2_contamination_report(syn, args.kraken2_asmbld_report,
-                                      "KRAKEN2_ASMBLD_CONTAM")
+        _kraken2_contamination_report(syn, args.kraken2_asmbld_report,                "KRAKEN2_ASMBLD_CONTAM")
 
 
 def check_kraken2_weighted(syn: Synopsis, args) -> None:
     ok = nonempty(args.kraken2_weighted_report)
     if not ok:
-        syn.record("KRAKEN2_WEIGHTED", "FAILED",
-                   f"{args.sample_name}.kraken2_wtasmbld.summary.txt not found")
+        syn.record("KRAKEN2_WEIGHTED", "FAILED", f"{args.sample_name}.kraken2_wtasmbld.summary.txt not found")
 
     if ok and not nonempty(args.krona_weighted):
-        syn.record("KRONA_WEIGHTED", "FAILED",
-                   f"{args.sample_name}_weighted.html not found")
+        syn.record("KRONA_WEIGHTED", "FAILED", f"{args.sample_name}_weighted.html not found")
     elif not ok:
-        syn.record("KRONA_WEIGHTED", "FAILED",
-                   "kraken2 weighted did not complete successfully")
+        syn.record("KRONA_WEIGHTED", "FAILED", "kraken2 weighted did not complete successfully")
 
     if nonempty(args.kraken2_weighted_summary):
         k = parse_kraken2_summary(args.kraken2_weighted_summary)
         if k["domain"] <= 0:
-            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "FAILED",
-                       "There are no classified reads" if ok
-                       else "Kraken2 weighted did not complete successfully")
+            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "FAILED", "There are no classified reads" if ok else "Kraken2 weighted did not complete successfully")
         elif k["unclass"] > KRAKEN2_UNCLASS_FLAG:
-            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "WARNING",
-                       f"unclassified reads comprise {k['unclass_str']}% of total")
+            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "WARNING", f"unclassified reads comprise {k['unclass_str']}% of total")
         elif k["genus_pct"] < 70:
-            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "FAILED",
-                       f"Genus-{k['genus']} under 70% "
-                       f"(species-{k['species']} {k['species_pct']}%), likely contaminated")
+            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "FAILED", f"Genus-{k['genus']} under 70% " f"(species-{k['species']} {k['species_pct']}%), likely contaminated")
         else:
-            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "SUCCESS",
-                       f"{k['genus']}({k['genus_pct']}%) {k['species']}({k['species_pct']}%) "
-                       f"with {k['unclass_str']}% unclassified scaffolds", escalate=False)
+            syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "SUCCESS", f"{k['genus']}({k['genus_pct']}%) {k['species']}({k['species_pct']}%) " f"with {k['unclass_str']}% unclassified scaffolds", escalate=False)
     else:
-        syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "FAILED",
-                   f"{args.sample_name}.kraken2_wtasmbld.classifiedreads.txt not found")
+        syn.record("KRAKEN2_CLASSIFY_WEIGHTED", "FAILED", f"{args.sample_name}.kraken2_wtasmbld.classifiedreads.txt not found")
 
     if ok:
-        _kraken2_contamination_report(syn, args.kraken2_weighted_report,
-                                      "KRAKEN2_WEIGHTED_CONTAM", weighted=True)
+        _kraken2_contamination_report(syn, args.kraken2_weighted_report, "KRAKEN2_WEIGHTED_CONTAM", weighted=True)
 
 
 def check_assembly(syn: Synopsis, args) -> tuple[int, int]:
@@ -566,38 +501,29 @@ def check_assembly(syn: Synopsis, args) -> tuple[int, int]:
 
     if nonempty(args.spades_assembly):
         full_scaffolds = gz_count_headers(args.spades_assembly)
-        syn.record("ASSEMBLY", "SUCCESS",
-                   f"{full_scaffolds} scaffolds found", escalate=False)
+        syn.record("ASSEMBLY", "SUCCESS", f"{full_scaffolds} scaffolds found", escalate=False)
     else:
-        syn.record("ASSEMBLY", "FAILED",
-                   f"{args.sample_name}.scaffolds.fa.gz not found")
+        syn.record("ASSEMBLY", "FAILED", f"{args.sample_name}.scaffolds.fa.gz not found")
 
-    if nonempty(args.trimmed_assembly):
-        full_longies  = gz_count_headers(args.trimmed_assembly)
+    if nonempty(args.filtered_assembly):
+        full_longies  = gz_count_headers(args.filtered_assembly)
         full_shorties = full_scaffolds - full_longies
         if full_longies <= 200:
-            syn.record("SCAFFOLD_TRIM", "SUCCESS",
-                       f"{full_longies} scaffolds remain. {full_shorties} removed (too short)",
-                       escalate=False)
+            syn.record("SCAFFOLD_TRIM", "SUCCESS", f"{full_longies} scaffolds remain. {full_shorties} removed (too short)", escalate=False)
         elif full_longies <= 500:
-            syn.record("SCAFFOLD_TRIM", "WARNING",
-                       f"{full_longies} scaffolds remain (high). {full_shorties} removed (too short)")
+            syn.record("SCAFFOLD_TRIM", "WARNING", f"{full_longies} scaffolds remain (high). {full_shorties} removed (too short)")
         else:
-            syn.record("SCAFFOLD_TRIM", "FAILED",
-                       f"{full_longies} scaffolds remain (too high). {full_shorties} removed (too short)")
+            syn.record("SCAFFOLD_TRIM", "FAILED", f"{full_longies} scaffolds remain (too high). {full_shorties} removed (too short)")
     else:
-        syn.record("SCAFFOLD_TRIM", "FAILED",
-                   f"{args.sample_name}.filtered.scaffolds.fa.gz not found")
+        syn.record("SCAFFOLD_TRIM", "FAILED", f"{args.sample_name}.filtered.scaffolds.fa.gz not found")
 
     return full_scaffolds, full_longies
 
 
 def check_quast(syn: Synopsis, args) -> tuple[int, str]:
     if not nonempty(args.quast_report):
-        syn.record("QUAST",          "FAILED",
-                   f"{args.sample_name}_report.tsv does not exist")
-        syn.record("QUAST_GC_Content","FAILED",
-                   f"{args.sample_name}_report.tsv does not exist")
+        syn.record("QUAST",          "FAILED", f"{args.sample_name}_report.tsv does not exist")
+        syn.record("QUAST_GC_Content","FAILED", f"{args.sample_name}_report.tsv does not exist")
         return 0, ""
 
     lines = read_all_lines(args.quast_report)   # cached
@@ -613,16 +539,13 @@ def check_quast(syn: Synopsis, args) -> tuple[int, str]:
     n50             = qfield(18, 2)
     gc_con          = qfield(17, 3)
 
-    syn.record("QUAST", "SUCCESS",
-               f"#-{contig_num} length-{assembly_length} n50-{n50} %GC-{gc_con}",
-               escalate=False)
+    syn.record("QUAST", "SUCCESS", f"#-{contig_num} length-{assembly_length} n50-{n50} %GC-{gc_con}", escalate=False)
 
     if nonempty(args.gc_content_file):
         gc_lines    = read_all_lines(args.gc_content_file)  # cached
         gc_stdev_s  = gc_lines[2].split()[1] if len(gc_lines) > 2 else "Not"
         if gc_stdev_s.startswith("Not"):
-            syn.record("QUAST_GC_Content", "ALERT",
-                       f"Low References for STDev - {gc_con}x({gc_stdev_s}-SD)")
+            syn.record("QUAST_GC_Content", "ALERT", f"Low References for STDev - {gc_con}x({gc_stdev_s}-SD)")
         else:
             gc_stdev = safe_float(gc_stdev_s)
             gc_mean  = safe_float(gc_lines[5].split()[1]) if len(gc_lines) > 5 else 0.0
@@ -631,21 +554,13 @@ def check_quast(syn: Synopsis, args) -> tuple[int, str]:
             gc_right = gc_mean + devs
             gc_val   = safe_float(gc_con)
             if gc_val < gc_left:
-                syn.record("QUAST_GC_Content", "WARNING",
-                           f"%GC-{gc_con} below {gc_left:.5f} "
-                           f"(2.58*{gc_stdev:.5f}SD from mean {gc_mean:.5f})")
+                syn.record("QUAST_GC_Content", "WARNING",     f"%GC-{gc_con} below {gc_left:.5f} "     f"(2.58*{gc_stdev:.5f}SD from mean {gc_mean:.5f})")
             elif gc_val > gc_right:
-                syn.record("QUAST_GC_Content", "WARNING",
-                           f"%GC-{gc_con} above {gc_right:.5f} "
-                           f"(2.58*{gc_stdev:.5f}SD from mean {gc_mean:.5f})")
+                syn.record("QUAST_GC_Content", "WARNING",     f"%GC-{gc_con} above {gc_right:.5f} "     f"(2.58*{gc_stdev:.5f}SD from mean {gc_mean:.5f})")
             else:
-                syn.record("QUAST_GC_Content", "SUCCESS",
-                           f"%GC-{gc_con} within {gc_left:.5f}-{gc_right:.5f} "
-                           f"(2.58*{gc_stdev:.5f}SD from mean {gc_mean:.5f})",
-                           escalate=False)
+                syn.record("QUAST_GC_Content", "SUCCESS",     f"%GC-{gc_con} within {gc_left:.5f}-{gc_right:.5f} "     f"(2.58*{gc_stdev:.5f}SD from mean {gc_mean:.5f})",     escalate=False)
     else:
-        syn.record("QUAST_GC_Content", "FAILED",
-                   f"%GC-{gc_con}, but GC content file does not exist.")
+        syn.record("QUAST_GC_Content", "FAILED", f"%GC-{gc_con}, but GC content file does not exist.")
 
     return assembly_length, gc_con
 
@@ -669,19 +584,16 @@ def check_taxa(syn: Synopsis, args) -> tuple[str, str]:
             dec_species = line.split("\t")[1].strip()
 
     if dec_genus != "Not_assigned" and dec_species != "Not_assigned":
-        syn.record(f"TAXA-{tax_source}", "SUCCESS",
-                   f"{dec_genus} {dec_species}", escalate=False)
+        syn.record(f"TAXA-{tax_source}", "SUCCESS", f"{dec_genus} {dec_species}", escalate=False)
     elif dec_genus != "Not_assigned":
         syn.record("TAXA", "WARNING", "No Species was able to be determined")
     else:
-        syn.record("TAXA", "FAILED",
-                   "None of the classifiers completed successfully")
+        syn.record("TAXA", "FAILED", "None of the classifiers completed successfully")
 
     return dec_genus, dec_species
 
 
-def check_assembly_ratio(syn: Synopsis, args,
-                         dec_genus: str, dec_species: str) -> str:
+def check_assembly_ratio(syn: Synopsis, args,   dec_genus: str, dec_species: str) -> str:
     genus_initial = dec_genus[0] if dec_genus else "?"
     assembly_id   = f"{genus_initial}.{dec_species}"
     qc_fail       = ""
@@ -694,48 +606,36 @@ def check_assembly_ratio(syn: Synopsis, args,
     assembly_ratio   = safe_float(lines[-1].split()[1]) if lines else 0.0
     stdev_line       = lines[3] if len(lines) > 3 else ""
     species_stdev_ln = lines[2] if len(lines) > 2 else ""
-    st_dev_str       = (stdev_line.split()[1]
-                        if stdev_line and "N/A" not in stdev_line else "N/A")
+    st_dev_str       = (stdev_line.split()[1]  if stdev_line and "N/A" not in stdev_line else "N/A")
     st_dev           = safe_float(st_dev_str) if st_dev_str != "N/A" else 0.0
 
     if assembly_ratio < 0:
-        syn.record("ASSEMBLY_RATIO(SD)", "WARNING",
-                   f"No Reference - {assembly_ratio}x({st_dev_str}-SD) against {assembly_id}")
-    elif ("Not calculated on species with n<10 references" in species_stdev_ln
-          or st_dev_str == "N/A"):
-        syn.record("ASSEMBLY_RATIO(SD)", "ALERT",
-                   f"Low References for STDev - {assembly_ratio}x({st_dev_str}-SD) against {assembly_id}")
+        syn.record("ASSEMBLY_RATIO(SD)", "WARNING", f"No Reference - {assembly_ratio}x({st_dev_str}-SD) against {assembly_id}")
+    elif ("Not calculated on species with n<10 references" in species_stdev_ln or st_dev_str == "N/A"):
+        syn.record("ASSEMBLY_RATIO(SD)", "ALERT", f"Low References for STDev - {assembly_ratio}x({st_dev_str}-SD) against {assembly_id}")
     elif st_dev > 2.58:
-        syn.record("ASSEMBLY_RATIO(SD)", "FAILED",
-                   f"St. dev. too large - {assembly_ratio}x({st_dev}-SD) against {assembly_id}")
+        syn.record("ASSEMBLY_RATIO(SD)", "FAILED", f"St. dev. too large - {assembly_ratio}x({st_dev}-SD) against {assembly_id}")
         qc_fail = f"STDev_above_2.58({st_dev})-"
     else:
-        syn.record("ASSEMBLY_RATIO(SD)", "SUCCESS",
-                   f"{assembly_ratio}x({st_dev}-SD) against {assembly_id}", escalate=False)
+        syn.record("ASSEMBLY_RATIO(SD)", "SUCCESS", f"{assembly_ratio}x({st_dev}-SD) against {assembly_id}", escalate=False)
 
     return qc_fail
 
 
-def check_coverage(syn: Synopsis, args, bps_post_all: int,
-                   assembly_length: int, reads_min: int) -> str:
+def check_coverage(syn: Synopsis, args, bps_post_all: int, assembly_length: int, reads_min: int) -> str:
     if not (assembly_length > 0 and bps_post_all > 0):
         return ""
 
     avg_cov = round(bps_post_all / assembly_length, 2)
 
     if READS_LOW <= avg_cov < READS_HIGH:
-        syn.record("COVERAGE", "SUCCESS",
-                   f"{avg_cov}x coverage (Target:40x, Cutoff:{reads_min}x)",
-                   escalate=False)
+        syn.record("COVERAGE", "SUCCESS", f"{avg_cov}x coverage (Target:40x, Cutoff:{reads_min}x)", escalate=False)
     elif avg_cov >= READS_HIGH:
-        syn.record("COVERAGE", "ALERT",
-                   f"{avg_cov}x coverage (Target:<150x)")
+        syn.record("COVERAGE", "ALERT", f"{avg_cov}x coverage (Target:<150x)")
     elif avg_cov > reads_min:
-        syn.record("COVERAGE", "ALERT",
-                   f"{avg_cov}x coverage (Target:40x, Cutoff:{reads_min}x)")
+        syn.record("COVERAGE", "ALERT", f"{avg_cov}x coverage (Target:40x, Cutoff:{reads_min}x)")
     else:
-        syn.record("COVERAGE", "FAILED",
-                   f"{avg_cov}x coverage (Min:30x)")
+        syn.record("COVERAGE", "FAILED", f"{avg_cov}x coverage (Min:30x)")
         return f"coverage_below_30({avg_cov})-"
 
     return ""
@@ -743,8 +643,7 @@ def check_coverage(syn: Synopsis, args, bps_post_all: int,
 
 def check_busco(syn: Synopsis, args) -> None:
     if not nonempty(args.busco_summary):
-        syn.record("BUSCO", "FAILED",
-                   f"short_summary.*.{args.sample_name}.scaffolds.fa.txt not found")
+        syn.record("BUSCO", "FAILED", f"short_summary.*.{args.sample_name}.scaffolds.fa.txt not found")
         return
 
     found = total = 0
@@ -762,18 +661,14 @@ def check_busco(syn: Synopsis, args) -> None:
     label    = f"BUSCO_{db.upper()}"
 
     if pct > 97:
-        syn.record(label, "SUCCESS",
-                   f"{pct}% core genes for {organism} found ({found}/{total}) (Target:90%)",
-                   escalate=False)
+        syn.record(label, "SUCCESS", f"{pct}% core genes for {organism} found ({found}/{total}) (Target:90%)", escalate=False)
     else:
-        syn.record(label, "WARNING",
-                   f"only {pct}% core genes for {organism} found ({found}/{total}) (Target:90%)")
+        syn.record(label, "WARNING", f"only {pct}% core genes for {organism} found ({found}/{total}) (Target:90%)")
 
 
 def check_fastani(syn: Synopsis, args) -> None:
     if not nonempty(args.formatted_fastani):
-        syn.record("FASTANI_REFSEQ", "FAILED",
-                   f"No {args.sample_name}_REFSEQ_*.fastANI.txt file")
+        syn.record("FASTANI_REFSEQ", "FAILED", f"No {args.sample_name}_REFSEQ_*.fastANI.txt file")
         return
 
     lines  = read_all_lines(args.formatted_fastani)
@@ -791,34 +686,26 @@ def check_fastani(syn: Synopsis, args) -> None:
         return
 
     if pct >= 95 and cov >= ANI_COVERAGE_THRESHOLD:
-        syn.record("FASTANI_REFSEQ", "SUCCESS",
-                   f"{pct}%ID {cov}%cov  tax={org}  ref={ref}", escalate=False)
+        syn.record("FASTANI_REFSEQ", "SUCCESS", f"{pct}%ID {cov}%cov  tax={org}  ref={ref}", escalate=False)
     elif pct < 95 and cov < ANI_COVERAGE_THRESHOLD:
-        syn.record("FASTANI_REFSEQ", "WARNING",
-                   f"% Identity({pct}%) and % coverage({cov}%) too low. {info}")
+        syn.record("FASTANI_REFSEQ", "WARNING", f"% Identity({pct}%) and % coverage({cov}%) too low. {info}")
     elif pct < 95:
-        syn.record("FASTANI_REFSEQ", "WARNING",
-                   f"% Identity({pct}%) is too low: {info}")
+        syn.record("FASTANI_REFSEQ", "WARNING", f"% Identity({pct}%) is too low: {info}")
     else:
-        syn.record("FASTANI_REFSEQ", "WARNING",
-                   f"% coverage too low ({cov}%). {info}")
+        syn.record("FASTANI_REFSEQ", "WARNING", f"% coverage too low ({cov}%). {info}")
 
 
 def check_mlst(syn: Synopsis, args) -> None:
     if not nonempty(args.mlst_file):
         with open(args.mlst_file) as fh:
             main_line = fh.readline()
-        result = ("FAILED",
-                  f"No MLST entries in {args.sample_name}.tsv"
-                  if main_line.startswith("Sample  Source")
-                  else f"{args.sample_name}.tsv does not exist")
+        result = ("FAILED",f"No MLST entries in {args.sample_name}.tsv"if main_line.startswith("Sample  Source")else f"{args.sample_name}.tsv does not exist")
         syn.record("MLST", *result)
         return
 
     lines = read_all_lines(args.mlst_file)
     if len(lines) < 2:
-        syn.record("MLST", "FAILED",
-                   f"No MLST entries in {args.sample_name}.tsv")
+        syn.record("MLST", "FAILED", f"No MLST entries in {args.sample_name}.tsv")
         return
 
     for line in lines[1:]:
@@ -829,40 +716,31 @@ def check_mlst(syn: Synopsis, args) -> None:
         if mlst_db == "-":
             syn.record("MLST", "FAILED", "No scheme identified")
         elif mlst_type == "-":
-            syn.record(f"MLST-{mlst_db.upper()}", "FAILED",
-                       f"No type identified, scheme={mlst_db} via {mlst_src}")
+            syn.record(f"MLST-{mlst_db.upper()}", "FAILED", f"No type identified, scheme={mlst_db} via {mlst_src}")
         else:
-            syn.record(f"MLST-{mlst_db.upper()}", "SUCCESS",
-                       f"ST{mlst_type} via {mlst_src}", escalate=False)
+            syn.record(f"MLST-{mlst_db.upper()}", "SUCCESS", f"ST{mlst_type} via {mlst_src}", escalate=False)
 
 
 def check_srst2(syn: Synopsis, args) -> None:
     if not nonempty(args.srst2_file):
-        syn.record("SRST2", "FAILED",
-                   f"{args.sample_name}__fullgenes__*.txt file does not exist")
+        syn.record("SRST2", "FAILED", f"{args.sample_name}__fullgenes__*.txt file does not exist")
         return
     lines    = read_all_lines(args.srst2_file)
     cols     = lines[0].split("\t") if lines else []
     narc_num = len(cols) - 1
     db       = "_".join(Path(args.srst2_file).stem.split("_")[3:5])
     if narc_num == 0:
-        syn.record("SRST2", "ALERT",
-                   f"Completed, but NO KNOWN AMR genes present from {db}")
+        syn.record("SRST2", "ALERT", f"Completed, but NO KNOWN AMR genes present from {db}")
     else:
-        syn.record("SRST2", "SUCCESS",
-                   f"{narc_num} gene(s) found from {db}", escalate=False)
+        syn.record("SRST2", "SUCCESS", f"{narc_num} gene(s) found from {db}", escalate=False)
 
 
 def check_amrfinder(syn: Synopsis, args) -> None:
     if not nonempty(args.amr_file):
-        syn.record("AMRFINDER", "FAILED",
-                   f"{args.sample_name}_all_genes.tsv does not exist")
+        syn.record("AMRFINDER", "FAILED", f"{args.sample_name}_all_genes.tsv does not exist")
         return
     count = sum(1 for l in read_all_lines(args.amr_file) if "POINT" in l)
-    syn.record("AMRFINDER", "SUCCESS",
-               f"No point mutations were found" if count == 0
-               else f"{count} point mutation(s) found", escalate=False)
-
+    syn.record("AMRFINDER", "SUCCESS", f"No point mutations were found" if count == 0 else f"{count} point mutation(s) found", escalate=False)
 
 # ---------------------------------------------------------------------------
 # Main
@@ -893,8 +771,7 @@ def main() -> None:
         _, bps_post_all = check_trimmed_counts(syn, args, total_exists)
         check_kraken2_reads(syn, args)
     else:
-        for lbl in ("QC_COUNTS", "Q30_STATS", "BBDUK", "TRIMMING",
-                    "KRAKEN2_READS", "KRONA_READS"):
+        for lbl in ("QC_COUNTS", "Q30_STATS", "BBDUK", "TRIMMING",  "KRAKEN2_READS", "KRONA_READS"):
             syn.write(lbl, "NA", "Assembly only isolate")
 
     check_assembly(syn, args)
@@ -938,20 +815,16 @@ def main() -> None:
 
     if args.gamma_replicon:
         db_tag = "_".join(Path(args.gamma_replicon).stem.split("_")[-3:-1])
-        check_gamma(syn, "PLASMID_REPLICONS", args.gamma_replicon,
-                    "replicon", args.sample_name, db_tag)
+        check_gamma(syn, "PLASMID_REPLICONS", args.gamma_replicon,  "replicon", args.sample_name, db_tag)
 
     if args.gamma_hv:
         db_tag = "_".join(Path(args.gamma_hv).stem.split("_")[-3:-1])
-        check_gamma(syn, "HYPERVIRULENCE", args.gamma_hv,
-                    "hypervirulence", args.sample_name, db_tag)
+        check_gamma(syn, "HYPERVIRULENCE", args.gamma_hv,  "hypervirulence", args.sample_name, db_tag)
 
     if qc_fail:
         syn.record("Auto Pass/FAIL", "FAIL", qc_fail.rstrip("-"))
     else:
-        syn.write("Auto Pass/FAIL", "PASS",
-                  "Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)"
-                  "/min_length(>1000000) to pass auto QC filtering")
+        syn.write("Auto Pass/FAIL", "PASS","Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)""/min_length(>1000000) to pass auto QC filtering")
 
     syn._fh.write(
         f"---------- {args.sample_name} completed as {syn.status} ----------\n"
