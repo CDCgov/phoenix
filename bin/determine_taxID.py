@@ -36,7 +36,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Determine best taxonomic ID from ANI / kraken2 sources."
     )
-    p.add_argument("-k", "--weighted-kraken",  required=True, help="Weighted kraken2 report")
+    p.add_argument("-k", "--weighted-kraken",  default="", help="Weighted kraken2 report")
     p.add_argument("-s", "--sample-name",      required=True)
     p.add_argument("-f", "--fastani-file",     default="", help="Formatted FastANI output file")
     p.add_argument("-d", "--nodes",            required=True, help="NCBI nodes.dmp (plain or gzipped)")

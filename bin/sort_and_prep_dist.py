@@ -34,9 +34,7 @@ GCF_ACCN_RE  = re.compile(r"(GCF_\d{9}\.\d+)")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Sort MASH distances and download best-matching reference genomes."
-    )
+    parser = argparse.ArgumentParser( description="Sort MASH distances and download best-matching reference genomes.")
     parser.add_argument("-x", "--dist-file",    required=True, help="Path to MASH distance .txt file")
     parser.add_argument("-a", "--assembly-file", default="",   help="Assembly file path")
     parser.add_argument("-o", "--outdir",        default=".",  help="Output directory for downloaded genomes")
