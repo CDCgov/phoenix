@@ -228,7 +228,7 @@ task update_phoenix {
     String  qc_issues                         = read_string("QC_ISSUES")
     #summary files
     File updater_log              =  "phx_output/~{samplename}/~{samplename}_updater_log.tsv"
-    File full_results             = "~{samplename}_updated.tar.gz"
+    File updated_full_results     = "~{samplename}_updated.tar.gz"
     File griphin_excel_summary    = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx"
     File griphin_tsv_summary      = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv"
     File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
