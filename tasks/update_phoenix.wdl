@@ -20,8 +20,9 @@ task update_phoenix {
     #untar data to update
     mkdir ./full_results
     tar -xzf ~{current_full_results} -C ./full_results
-    project_directory="/mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/"
+    project_directory="/mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/~{samplename}"
     ls ./
+    ls $PWD
 
     # Make sample form
     echo "sample,directory" > sample.csv
@@ -39,7 +40,6 @@ task update_phoenix {
     #checking variables
     echo $version
     echo $input_file
-    echo $project_directory
 
     if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --mode UPDATE_PHOENIX --outdir ./phx_output --terra true $input_file --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --shigapass_database $shigapass_db; then
       # Everything finished, pack up the results and clean up
