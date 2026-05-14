@@ -30,8 +30,6 @@ params.output = "" /// Initialise param so no warning is printed
 if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
 //comment out in v2.3.0 to run --centar
 //if (params.centar == true) { exit 1, "Sorry, --centar available yet as it's validation isn't complete. It will be released with a newer version of phx in the future." }
-// Access workflow metadata
-if (params.pipeline != null) { exit 1, "--pipeline is not a parameter for phoenix, please use --mode." }
 
 /*
 ========================================================================================
@@ -521,7 +519,7 @@ workflow COMBINE_GRIPHINS {
 */
 
 //
-// WORKFLOW: Entry point for running C. diff specific pipeline as standalone
+// WORKFLOW: mode for running C. diff specific pipeline as standalone
 //
 workflow CENTAR {
 
