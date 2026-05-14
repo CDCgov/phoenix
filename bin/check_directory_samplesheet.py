@@ -88,6 +88,7 @@ def check_samplesheet(file_in, file_out, updater, sheet_by_dir):
 
             # Check for duplicate sample names
             sample_name = line.split(",")[0]
+            print(project_id )
             project_id = line.split(",")[1].split("/")[-2]
             uni_id = sample_name + "_" + project_id
             if uni_id.split("_")[0] in sample_name_list:
