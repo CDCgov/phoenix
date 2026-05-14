@@ -357,7 +357,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Added gamma plasmidfinder to tools run during -mode update_phoenix.
 - Added better version tracking and gamma plasmidFinder changes to the updater_log in -mode update_phoenix
 
-## [v2.3.0](https://github.com/CDCgov/phoenix/releases/tag/v2.3.0) (05/08/2026)
+## [v2.3.0](https://github.com/CDCgov/phoenix/releases/tag/v2.3.0) (05/14/2026)
 
 **Fixed Bugs:**  
 - Fixed bug that caused failure for `--mode combine_griphins` when only 2 griphins are passed.  
@@ -383,3 +383,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Added unzipped filtered scaffolds to Terra.bio output as requested in [issue 204](https://github.com/CDCgov/phoenix/issues/204).  
 - Bash scripts were converted to python for cohesiveness including, `afterSpades.sh`, `calculate_assembly_ratio.sh`, `determine_taxID.sh`, `fairy_proc.sh`, `kraken2_best_hit.sh`, `pipeline_stats_writer.sh` and `sort_and_prep_dist.sh`.  
 - Old scripts no longer in use were remove including, `beforeSpades.sh`, `getMLST2_phoenix.py`, `pipeline_stats_writer_trimd.sh`, `dumpsoftwareversions_mod_with_out.py`and `to_json.py`.  
+
+**Container Updates:**  
+- Containers updated to include developers bug fixes:  
+  - amrfinderplus: v4.2.5 to [v4.2.7](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.2.7)  
