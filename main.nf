@@ -49,6 +49,36 @@ include { UPDATE_PHOENIX_WF           } from './workflows/update_phoenix'
 include { RUN_CENTAR                  } from './workflows/centar'
 include { COMBINE_GRIPHINS_WF         } from './workflows/combine_griphins'
 
+// At the top of your main workflow, before anything else
+if (!params.containsKey('mode') || !params.mode) {
+    error """
+    =========================================
+    ERROR: --mode is required but was not provided.
+    
+    Usage: nextflow run main.nf --mode PHOENIX
+    
+    Valid modes: PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, CDC_PHOENIX, CLIA, UPDATE_PHOENIX, SRA, CDC_SRA, COMBINE_GRIPHINS, CENTAR
+    =========================================
+    """
+}
+
+def valid_modes = [
+    'PHOENIX', 'CDC_PHOENIX',
+    'SCAFFOLDS', 'CDC_SCAFFOLDS',
+    'SRA', 'CDC_SRA',
+    'UPDATE_PHOENIX', 'CLIA',
+    'COMBINE_GRIPHINS', 'CENTAR'
+]
+if (!valid_modes.contains(params.mode.toUpperCase())) {
+    error """
+    =========================================
+    ERROR: Invalid --mode '${params.mode}'
+    
+    Valid modes: ${valid_modes.join(', ')}
+    =========================================
+    """
+}
+
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
 //
