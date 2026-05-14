@@ -20,13 +20,13 @@ task update_phoenix {
     #untar data to update
     mkdir ./full_results
     tar -xzf ~{current_full_results} -C ./full_results
-    project_directory="/full_results/~{samplename}/phx_output/~{samplename}"
+    project_directory="/mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/~{samplename}"
     echo $PWD
     ls ./
-    ls ./full_results
-    ls ./full_results/~{samplename}
-    ls ./full_results/~{samplename}/phx_output/
-    ls ./full_results/~{samplename}/phx_output/~{samplename}
+    ls /mnt/disks/cromwell_root/~{samplename}/full_results
+    ls /mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}
+    ls /mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output
+    ls /mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/~{samplename}
 
     # Make sample form
     echo "sample,directory" > sample.csv
