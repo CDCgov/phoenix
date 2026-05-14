@@ -21,6 +21,7 @@ task update_phoenix {
     mkdir ./full_results
     tar -xzf ~{current_full_results} -C ./full_results
     project_directory="/full_results/~{samplename}/phx_output/~{samplename}"
+    echo $PWD
     ls ./
     ls ./full_results
     ls ./full_results/~{samplename}
