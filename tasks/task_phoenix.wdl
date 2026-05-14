@@ -271,7 +271,7 @@ task phoenix {
     File?   work_files                        = "work.tar.gz"
     String  project_dir                       = read_string("PROJECT_DIR")
     String  phoenix_version                   = read_string("VERSION")
-    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.2.0"
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.3.0"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warnings                          = read_string("WARNINGS")

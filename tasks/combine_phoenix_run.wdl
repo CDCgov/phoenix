@@ -222,7 +222,7 @@ task combine_phoenix_run {
     File?   biosample_excel_summary = if defined(combined_ncbi_biosample_xlsx_prefix) then "~{combined_ncbi_biosample_xlsx_prefix}_BiosampleAttributes_Microbe.1.0.xlsx" else "BiosampleAttributes_Microbe.1.0.xlsx"
     File?   sra_excel_summary       = if defined(combined_ncbi_sra_xlsx_prefix) then "~{combined_ncbi_sra_xlsx_prefix}_Sra_Microbe.1.0.xlsx" else "Sra_Microbe.1.0.xlsx"
     String  phoenix_version         = read_string("VERSION")
-    String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.0.2"
+    String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.3.0"
     String  analysis_date           = read_string("DATE")
   }
   runtime {
