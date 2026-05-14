@@ -120,6 +120,5 @@ workflow DO_MLST {
 
     emit:
         checked_MLSTs = checked_mlst_ch
-        //checked_MLSTs = checked_mlst_ch.view { "DEBUG DO_MLST EMIT: $it" }
         versions      = ch_versions
 }

@@ -192,14 +192,10 @@ workflow UPDATE_PHOENIX_WF {
             .filter{ meta, value, update_ids -> update_ids.contains(meta.id) }
             .map{ meta, value, update_ids -> [meta, value] }
 
-        CREATE_INPUT_CHANNELS.out.reads.view { meta, reads -> "READS BEFORE: ${meta.id} -> ${reads}" }
-
         reads_for_update_ch = CREATE_INPUT_CHANNELS.out.reads
             .combine(isolates_needing_update)
             .filter{ meta, reads, update_ids -> update_ids.contains(meta.id) }
             .map{ meta, reads, update_ids -> [meta, reads] }
-
-        reads_for_update_ch.view { meta, reads -> "RFU: ${meta.id} -> ${reads}" }
 
         CREATE_INPUT_CHANNELS.out.filtered_scaffolds
             .map{ meta, scaffolds -> meta.id }
@@ -312,29 +308,15 @@ workflow UPDATE_PHOENIX_WF {
 
         // combing fastp_trimd information with fairy check of reads to confirm there are reads after filtering
         trimd_reads_file_integrity_ch = reads_for_update_ch
-            .view { meta, reads -> log.info ">>> [CHECKPOINT 0 - reads_for_update_ch] sample=${meta.id} reads=${reads}" }
             .join(CREATE_INPUT_CHANNELS.out.fairy_outcome.map{ meta, fairy_outcome ->
                 def content = file(fairy_outcome.toString()).text
                 def passed = !content.contains("FAILED")
-                log.info ">>> [CHECKPOINT 1 - fairy_outcome] sample=${meta.id} passed=${passed}"
                 [[id:meta.id, project_id:meta.project_id], [fairy_outcome, passed]]}, by: [[0][0],[0][1]])
-            .view { meta, reads, fairy_data -> log.info ">>> [CHECKPOINT 2 - after fairy join] sample=${meta.id} fairy_passed=${fairy_data[1]} | NOTE: if a sample appears at CP0 but not here, the join on meta.id/project_id failed" }
-            .filter { meta, reads, fairy_data ->
-                def passed = fairy_data[1] == true
-                if (!passed) log.info ">>> [CHECKPOINT 3 - DROPPED by fairy filter] sample=${meta.id}"
-                passed
-            }
+            .filter { meta, reads, fairy_data -> fairy_data[1] == true }
             .map{ meta, reads, fairy_data -> [meta, reads] }
-            .view { meta, reads -> log.info ">>> [CHECKPOINT 4 - after fairy filter] sample=${meta.id} | NOTE: if a sample appears at CP2 but not here, it failed the fairy check" }
             .join(CREATE_INPUT_CHANNELS.out.mode_type, by: [0])
-            .view { meta, reads, et -> log.info ">>> [CHECKPOINT 5 - after mode_type join] sample=${meta.id} mode_type=${et.base} | NOTE: if a sample appears at CP4 but not here, the mode_type join failed (meta key mismatch?)" }
-            .filter{ meta, reads, et ->
-                def passed = et.base == 'CDC_PHOENIX'
-                if (!passed) log.info ">>> [CHECKPOINT 6 - DROPPED by mode_type filter] sample=${meta.id} mode_type=${et.base}"
-                passed
-            }
+            .filter{ meta, reads, et -> et.base == 'CDC_PHOENIX' }
             .map { meta, reads, mode_type -> [meta, reads] }
-            .view { meta, reads -> log.info ">>> [CHECKPOINT 7 - final trimd_reads_file_integrity_ch] sample=${meta.id} | NOTE: if a sample appears at CP5 but not here, it was filtered out as non-CDC_PHOENIX" }
 
         // Identifying AR genes in trimmed reads - only runs for entry types that have reads
         SRST2_AR (
@@ -386,39 +368,26 @@ workflow UPDATE_PHOENIX_WF {
         files_to_update_ch = scaffolds_for_update_ch
             .map { meta, scaffolds -> [[id:meta.id, project_id:meta.project_id], meta] }
             .join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate.map{ meta, file -> [[id:meta.id, project_id:meta.project_id], file] }, by: [[0][0],[0][1]])
-            .view { log.info "[POST-CIC-PI] size=${it.size()} | id=${it[0].id} | ${it}"}
             .map { key, meta, pipeline_info -> [meta, pipeline_info] }
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [[id:meta.id, project_id:meta.project_id], file(dir)] }, by: [[0][0],[0][1]])
-            .view { log.info "[POST-CIC-DIR] size=${it.size()} | id=${it[0].id} | ${it}" }
             .map{ meta, a, b -> 
                 def pipeline_info = [a, b].find { it.toString().endsWith('.yml') }
                 def dir = [a, b].find { !it.toString().endsWith('.yml') }
                 [meta, dir, pipeline_info]
             }
             .join(CREATE_INPUT_CHANNELS.out.readme.map{                meta, readme -> [[id:meta.id, project_id:meta.project_id], readme]}, by: [[0][0],[0][1]], remainder: true)
-            .view { log.info "[POST-CIC-README] size=${it.size()} | id=${it[0].id} | ${it} " }
             .filter { it -> it.size() == 4 }
             .map{ meta, dir, pipeline_info, readme -> [meta, dir, pipeline_info, readme ?: []] }
             .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{              meta, gamma_ar    -> [[id:meta.id, project_id:meta.project_id], gamma_ar]},    by: [[0][0],[0][1]])
-            .view { log.info "[POST-CIC-GAR] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(GAMMA_AR.out.gamma.map{                              meta, gamma       -> [[id:meta.id, project_id:meta.project_id], gamma]},       by: [[0][0],[0][1]])
-            .view { log.info "[POST-GAR] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.ncbi_report.map{           meta, ncbi_report -> [[id:meta.id, project_id:meta.project_id], ncbi_report]}, by: [[0][0],[0][1]])
-            .view { log.info "[POST-CIC-AMRF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(AMRFINDERPLUS_RUN.out.report.map{                    meta, report      -> [[id:meta.id, project_id:meta.project_id], report]},      by: [[0][0],[0][1]])
-            .view { log.info "[POST-AMRF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.taxonomy.map{              meta, taxonomy    -> [[id:meta.id, project_id:meta.project_id], taxonomy]},    by: [[0][0],[0][1]])
-            .view { log.info "[POST-CIC-TAX] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CHECK_SHIGAPASS_TAXA.out.edited_tax_file.map{        meta, tax_file    -> [[id:meta.id, project_id:meta.project_id], tax_file]},    by: [[0][0],[0][1]], remainder: true)
-            .view { log.info "[POST-SHIG-TAX] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.gamma_pf.map{              meta, gamma_pf    -> [[id:meta.id, project_id:meta.project_id], gamma_pf]},    by: [[0][0],[0][1]])
-            .view { log.info "[POST-CIC-GPF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(GAMMA_PF.out.gamma.map{                              meta, g_pf        -> [[id:meta.id, project_id:meta.project_id], g_pf]},        by: [[0][0],[0][1]])
-            .view { log.info "[POST-GPF] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.gamma_hv.map{              meta, gamma_hv    -> [[id:meta.id, project_id:meta.project_id], gamma_hv]},    by: [[0][0],[0][1]])
-            .view { log.info "[POST-CIC-GHV] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(GAMMA_HV.out.gamma.map{                              meta, g_hv        -> [[id:meta.id, project_id:meta.project_id], g_hv]},        by: [[0][0],[0][1]])
-            .view { log.info "[POST-GHV] size=${it.size()} | id=${it[0].id} | ${it}" }
             .join(CREATE_INPUT_CHANNELS.out.update_pipeline_info_isolate
                 .combine(isolates_needing_update)
                 .filter { meta, software, update_ids -> 
@@ -427,13 +396,11 @@ workflow UPDATE_PHOENIX_WF {
                 }
                 .map { meta, software, update_ids -> [[id:meta.id, project_id:meta.project_id], software] }
             , by: [[0][0],[0][1]], remainder: true)
-            .view { log.info "[POST-UPDATE-INFO] size=${it.size()} | id=${it[0].id} | ${it}" }
             .map { meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file, g_pf, gp, g_hv, gh, software ->
                 return [
                     meta, dir, pipeline_info, readme, g_ar, g, ncbi, rpt, tax, t_file ?: [], g_pf, gp, g_hv, gh, software ?: []
                 ]
             }
-            .view { log.info "[FINAL FILES TO UPDATE CH] size=${it.size()} | id=${it[0].id} | ${it}" }
 
         files_to_update_local = files_to_update_ch
 
@@ -478,8 +445,6 @@ workflow UPDATE_PHOENIX_WF {
             isolates_needing_update
         )
 
-        filter_to_update_ids(SRST2_AR.out.fullgene_results.concat(CREATE_INPUT_CHANNELS.out.srst2_ar).unique{ meta, file -> [meta.id, meta.project_id] }, isolates_needing_update).view { meta, file -> log.info ">>> srst2_ar: ${meta.id}" }
-
         GENERATE_PIPELINE_STATS_WF (
             filter_to_update_ids(CREATE_INPUT_CHANNELS.out.raw_stats, isolates_needing_update),
             filter_to_update_ids(CREATE_INPUT_CHANNELS.out.fastp_total_qc, isolates_needing_update),
@@ -512,7 +477,7 @@ workflow UPDATE_PHOENIX_WF {
 
         //get back project_id info
         pipeline_stats_ch = GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.concat(CREATE_INPUT_CHANNELS.out.synopsis).unique{ meta, file -> [meta.id, meta.project_id] }
-                                    .join(GAMMA_AR.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma, meta.project_id]}, by: [0]).map{ meta, pipeline_stats, gamma, project_id -> [[id:meta.id, project_id:project_id], pipeline_stats]}.view { "STEP 0 (PS): ${it[0].id}, ${it[1]}" }
+                                    .join(GAMMA_AR.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma, meta.project_id]}, by: [0]).map{ meta, pipeline_stats, gamma, project_id -> [[id:meta.id, project_id:project_id], pipeline_stats]}
 
 
         // Combining output based on meta.id to create summary by sample
@@ -580,7 +545,7 @@ workflow UPDATE_PHOENIX_WF {
                  report, ani_best_hit, version]
             }
 
-        line_summary_ch.view { it ->
+/*        line_summary_ch.view { it ->
             def meta = it[0]
             return """
             ====================================================
@@ -591,7 +556,7 @@ workflow UPDATE_PHOENIX_WF {
             """.stripIndent()
         }
         line_summary_ch.ifEmpty { "!!! LOG ALERT: No samples survived the line_step joins !!!" }.view()
-
+*/
         // First, check if SHIGAPASS.out.summary is empty and create appropriate channel
         shigapass_ch = SHIGAPASS.out.summary.mix(CREATE_INPUT_CHANNELS.out.shigapass)
 
@@ -772,9 +737,6 @@ workflow UPDATE_PHOENIX_WF {
         def software_versions_ch =empty_ch
         if (params.indir != null) {
             // Use the existing collected_summaries_ch - no need to recalculate
-
-            println "==== ENTERING INDIR BRANCH ===="
-
             shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(CREATE_INPUT_CHANNELS.out.taxonomy)
                 .unique{ meta, file -> [meta.id, meta.project_id] }
                 .map{it -> get_only_taxa(it)}.collect().flatten()
@@ -848,8 +810,6 @@ workflow UPDATE_PHOENIX_WF {
             griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
             griphin_report = GRIPHIN_PUBLISH.out.griphin_report
 
-//           ch_collated_versions = ch_versions.unique().collectFile(name: 'collated_versions.yml')
-
             ch_collated_versions = ch_versions
                 .unique()
                 .collectFile(name: 'collated_versions.yml')
@@ -883,8 +843,7 @@ workflow UPDATE_PHOENIX_WF {
 
             if (params.outdir == "${launchDir}/phx_output") {
                 // BRANCH 3: --input WITHOUT --outdir (GRIPHIN_NO_PUBLISH per-project)
-                println "==== ENTERING INPUT WITHOUT OUTDIR BRANCH ===="
-                
+               
                 // Extract old_version PER PROJECT from collected_summaries_ch
                 ch_old_versions_per_project = collected_summaries_ch
                     .map { meta, files, path, busco, info -> 
@@ -899,7 +858,6 @@ workflow UPDATE_PHOENIX_WF {
                                 version = (content =~ /(?m)cdcgov\/phoenix:\s*(.+)/)[0][1].trim()
                             }
                         }
-                        //log.info "--- [VERSION DEBUG2] --- extracted: ${version}"
                         return [pid, version]
                     }
 
@@ -937,12 +895,7 @@ workflow UPDATE_PHOENIX_WF {
                         def pid = meta.project_id.toString().split('/')[-1].replace("]", "").trim()
                         return [ pid, busco, path ] 
                     }
-
-                ch_per_project.view            { log.info "CH_PER_PROJECT: ${it[0]}" }
-                ch_busco_per_project.view      { log.info "CH_BUSCO_PER_PROJECT: ${it[0]}" }
-                ch_old_versions_per_project.view { log.info "CH_OLD_VERSIONS: ${it[0]}" }
-                ch_inferred_mode_per_project.view { log.info "CH_INFERRED_MODE: ${it[0]}" }
-
+/*
                 // 1) Show exact keys for every project-level channel
                 ch_per_project
                     .map { pid, meta_list, clean_files -> "|${pid}|" }
@@ -977,57 +930,52 @@ workflow UPDATE_PHOENIX_WF {
                     .view { pid, meta_list, clean_files ->
                         "PER_PROJECT FULL ${pid}: meta_count=${meta_list.size()} file_count=${clean_files.size()} files=${clean_files*.name}"
                     }
-
+*/
                 // 3) Split joins into separate steps so you can see exactly where it stops
                 j1 = ch_per_project
                     .join(ch_busco_per_project, by: 0)
-                    .view { "J1: ${it} | size=${it.size()}" }
-
+                
                 j2 = j1
                     .join(ch_old_versions_per_project, by: 0)
-                    .view { "J2: ${it} | size=${it.size()}" }
-
+                
                 j3 = j2
                     .join(ch_inferred_mode_per_project, by: 0)
-                    .view { "J3: ${it} | size=${it.size()}" }
-
+                
                 ch_combined = j3
                     .map { row ->
                         assert row.size() == 7 : "Unexpected ch_combined shape: ${row}"
                         def (pid, meta_list, files, busco, path, old_version, inferred_mode) = row
                         [meta_list, files, path, busco, old_version, inferred_mode]
                     }
-                    .view { "CH_COMBINED: ${it}" }
-
+                
                 // 4) Name the GRIPHIN inputs explicitly and print them before the call
                 ch_valid_samplesheet = CREATE_INPUT_CHANNELS.out.valid_samplesheet
                     .collect()
                     .map { it ?: [] }
-                    .view { "VALID_SAMPLESHEET: ${it}" }
-
+ //
                 ch_griphin_metas = ch_combined
                     .map { it[0] }
-                    .view { "GRIPHIN METAS: ${it}" }
+//                    .view { "GRIPHIN METAS: ${it}" }
 
                 ch_griphin_files = ch_combined
                     .map { it[1] }
-                    .view { "GRIPHIN FILES: ${it*.name}" }
+//                    .view { "GRIPHIN FILES: ${it*.name}" }
 
                 ch_griphin_path = ch_combined
                     .map { it[2] }
-                    .view { "GRIPHIN PATH: ${it}" }
+//                    .view { "GRIPHIN PATH: ${it}" }
 
                 ch_griphin_busco = ch_combined
                     .map { it[3] }
-                    .view { "GRIPHIN BUSCO: ${it}" }
+//                    .view { "GRIPHIN BUSCO: ${it}" }
 
                 ch_griphin_old_version = ch_combined
                     .map { it[4] }
-                    .view { "GRIPHIN OLD_VERSION: ${it}" }
+//                    .view { "GRIPHIN OLD_VERSION: ${it}" }
 
                 ch_griphin_mode = ch_combined
                     .map { it[5] }
-                    .view { "GRIPHIN MODE: ${it}" }
+//                    .view { "GRIPHIN MODE: ${it}" }
 
                 GRIPHIN_NO_PUBLISH (
                     params.ardb,
@@ -1059,7 +1007,6 @@ workflow UPDATE_PHOENIX_WF {
                     .join(griphin_reports_ch.map{ meta, report -> [[project_id: meta.project_id.toString().split('/')[-1].replace("]", "")], report] }, by: [0])
                     .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [[project_id: meta.project_id.toString().split('/')[-1].replace("]", "")], dir] }.unique(), by: [0])
                     .map { list ->
-                        //log.info "--- [DEBUG CHECKPOINT 1: griphins_ch] --- Structure: ${list.inspect()}"
                         return list
                     }
                     .map{ meta, old_excel, new_excel, directory -> [[project_id: meta.project_id, full_project_id: directory], old_excel, new_excel] }
@@ -1098,8 +1045,6 @@ workflow UPDATE_PHOENIX_WF {
                 META_CUSTOM_DUMPSOFTWAREVERSIONS ( software_versions_ch )
             } else { 
                 // BRANCH 2: --input WITH --outdir (GRIPHIN_PUBLISH aggregated)
-                println "==== ENTERING INPUT WITH OUTDIR BRANCH ===="
-
                 // Extract old versions from collected_summaries_ch (which has the info files)
                 ch_old_versions = collected_summaries_ch
                     .map { meta, files, path, busco, info -> 
@@ -1129,9 +1074,17 @@ workflow UPDATE_PHOENIX_WF {
 
                 ch_busco_check = collected_summaries_ch.map{ it[3] }.collect().map{ it.any{ it == true } }.ifEmpty(false)
                 
-                ch_clean_metas = griphin_inputs_ch.groupTuple(by: 0)
-                    .map { m, f -> m + [filenames: f.flatten().unique().collect { it.name }] }
+                ch_clean_metas = griphin_inputs_ch
+                    .filter { meta, file -> file != null && file.toString() != '[]' }
+                    .combine(isolates_needing_update)
+                    .filter { meta, file, update_ids -> 
+                        update_ids != ['__EMPTY__'] && update_ids.contains(meta.id) 
+                    }
+                    .map { meta, file, update_ids -> [meta, file] }
+                    .groupTuple(by: 0)
+                    .map { m, f -> m + [filenames: f.flatten().findAll { it != null }.unique().collect { it.name }] }
                     .collect().ifEmpty([])
+
                 ch_clean_files = griphin_inputs_ch.map{ it[1] }.collect().map{ it.flatten().unique() }.ifEmpty([])
                 
                 ch_output_dir = Channel.fromPath(params.outdir, type: 'dir').collect()
@@ -1164,12 +1117,14 @@ workflow UPDATE_PHOENIX_WF {
                     .unique()
                     .collectFile(name: 'collated_versions.yml', sort: true)
 
-                // Join the versions with our 'collected' channel to get the 'thick' meta
                 software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch
-                    .map { meta, directory_ch -> 
+                    .combine(isolates_needing_update)
+                    .filter { meta, dir, update_ids -> 
+                        update_ids != ['__EMPTY__'] && update_ids.contains(meta.id) 
+                    }
+                    .map { meta, dir, update_ids -> 
                         def p_id = meta.project_id.toString().split('/')[-1].replace("]", "")
-                        // INJECT: full_project_id is the directory_ch
-                        return [ [id: p_id, project_id: p_id, full_project_id: directory_ch] ]
+                        [ [id: p_id, project_id: p_id, full_project_id: dir] ]
                     }
                     .unique()
                     .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))

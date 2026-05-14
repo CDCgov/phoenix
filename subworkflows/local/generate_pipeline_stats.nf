@@ -60,8 +60,6 @@ workflow GENERATE_PIPELINE_STATS_WF {
         if (asmbld_k2_bh_summary == null) asmbld_k2_bh_summary = Channel.empty()
         if (fullgene_results == null)     fullgene_results     = Channel.empty()
 
-        log.info ">>> mode_upper is: ${params.mode_upper}"
-
         def add_padding = { ch, id_ch ->
             ch.mix(
                 wtasmbld_report
@@ -101,9 +99,6 @@ workflow GENERATE_PIPELINE_STATS_WF {
             .map { meta, report, rt ->
                 [meta, report]
             }
-
-        wtasmbld_report.view { ">>> wtasmbld_report shape: ${it}" }
-        scaffold_origin_ids.view { ">>> scaffold_origin_ids: ${it}" }
 
         if (params.mode_upper == "SCAFFOLDS") {
             // All samples are scaffold-based — pad all trimmed read channels wholesale
@@ -166,38 +161,10 @@ workflow GENERATE_PIPELINE_STATS_WF {
             fullgene_results = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
-        fastp_raw_qc.count().view            { it -> log.info ">>> JOIN INPUT fastp_raw_qc count: ${it}" }
-        fastp_total_qc.count().view          { it -> log.info ">>> JOIN INPUT fastp_total_qc count: ${it}" }
-        fullgene_results.count().view        { it -> log.info ">>> JOIN INPUT fullgene_results count: ${it}" }
-        trimd_report.count().view            { it -> log.info ">>> JOIN INPUT trimd_report count: ${it}" }
-        trimd_krona_html.count().view        { it -> log.info ">>> JOIN INPUT trimd_krona_html count: ${it}" }
-        trimd_k2_bh_summary.count().view     { it -> log.info ">>> JOIN INPUT trimd_k2_bh_summary count: ${it}" }
-        renamed_fastas.count().view          { it -> log.info ">>> JOIN INPUT renamed_fastas count: ${it}" }
-        filtered_fastas.count().view         { it -> log.info ">>> JOIN INPUT filtered_fastas count: ${it}" }
-        mlst.count().view                    { it -> log.info ">>> JOIN INPUT mlst count: ${it}" }
-        gamma_hv.count().view                { it -> log.info ">>> JOIN INPUT gamma_hv count: ${it}" }
-        gamma_ar.count().view                { it -> log.info ">>> JOIN INPUT gamma_ar count: ${it}" }
-        gamma_pf.count().view                { it -> log.info ">>> JOIN INPUT gamma_pf count: ${it}" }
-        quast_report.count().view            { it -> log.info ">>> JOIN INPUT quast_report count: ${it}" }
-        busco.count().view                   { it -> log.info ">>> JOIN INPUT busco count: ${it}" }
-        asmbld_report.count().view           { it -> log.info ">>> JOIN INPUT asmbld_report count: ${it}" }
-        asmbld_krona_html.count().view       { it -> log.info ">>> JOIN INPUT asmbld_krona_html count: ${it}" }
-        asmbld_k2_bh_summary.count().view    { it -> log.info ">>> JOIN INPUT asmbld_k2_bh_summary count: ${it}" }
-        wtasmbld_krona_html.count().view     { it -> log.info ">>> JOIN INPUT wtasmbld_krona_html count: ${it}" }
-        wtasmbld_report.count().view         { it -> log.info ">>> JOIN INPUT wtasmbld_report count: ${it}" }
-        wtasmbld_k2_bh_summary.count().view  { it -> log.info ">>> JOIN INPUT wtasmbld_k2_bh_summary count: ${it}" }
-        taxa_id.count().view                 { it -> log.info ">>> JOIN INPUT taxa_id count: ${it}" }
-        format_ani.count().view              { it -> log.info ">>> JOIN INPUT format_ani count: ${it}" }
-        assembly_ratio.count().view          { it -> log.info ">>> JOIN INPUT assembly_ratio count: ${it}" }
-        amr_point_mutations.count().view     { it -> log.info ">>> JOIN INPUT amr_point_mutations count: ${it}" }
-        gc_content.count().view              { it -> log.info ">>> JOIN INPUT gc_content count: ${it}" }
-        wtasmbld_report_with_rt.count().view { it -> log.info ">>> JOIN INPUT wtasmbld_report_with_rt count: ${it}" }
-
         if (params.mode_upper == "UPDATE_PHOENIX") {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
             pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id, project_id:meta.project_id],fastp_raw_qc]}\
                 .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id, project_id:meta.project_id],fastp_total_qc]},         by: [0])\
-                .view { it -> log.info ">>> STATS JOIN 1 (after fastp_total_qc): ${it[0]}" }\
                 .join(fullgene_results.map{           meta, fullgene_results       -> [[id:meta.id, project_id:meta.project_id],fullgene_results]},       by: [0])\
                 .join(trimd_report.map{               meta, report                 -> [[id:meta.id, project_id:meta.project_id],report]},                 by: [0])\
                 .join(trimd_krona_html.map{           meta, trimd_krona_html       -> [[id:meta.id, project_id:meta.project_id],trimd_krona_html]},       by: [0])\

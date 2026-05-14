@@ -149,14 +149,6 @@ def add_project_id(old_meta, input_ch, outdir_path){
     return [meta, input_ch]
 }
 
-// Debug helper: print items; if the channel is empty, print a tagged <EMPTY> line once.
-def debugEmpty = { String tag, ch ->
-    def EMPTY = new Object()                          // unique sentinel
-    ch.ifEmpty(EMPTY)                                 // emit EMPTY only if ch completes with no items
-      .view { v -> v.is(EMPTY) ? "$tag >>> <EMPTY>"   // print empty marker
-                               : "$tag >>> $v" }     // print normal items
-}
-
 /*
 ========================================================================================
     RUN MAIN WORKFLOW

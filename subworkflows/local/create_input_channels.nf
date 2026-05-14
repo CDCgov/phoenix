@@ -43,17 +43,6 @@ workflow CREATE_INPUT_CHANNELS {
     main:
 
         ch_versions = Channel.empty() // Used to collect the software versions
-        if (indir) {
-            println("${orange}Indir directory provided: ${indir}. If you are running with a samplesheet make sure to provide the path with --input. ${reset}")
-        } else {
-            println("${orange}No indir directory provided. If you are running with a samplesheet make sure to provide the path with --input. ${reset}")
-        }
-
-        if (samplesheet) {
-            println("${orange}Samplesheet provided: ${samplesheet}. If you are running with an input directory make sure to provide the path with --indir. ${reset}")
-        } else {
-            println("${orange}No samplesheet provided. If you are running with an input directory make sure to provide the path with --indir. ${reset}")
-        }
 
         //if input directory is passed use it to gather assemblies otherwise use samplesheet
         if (indir != null) {
@@ -331,19 +320,12 @@ workflow CREATE_INPUT_CHANNELS {
                 .groupTuple(by: 0)
                 .map{ meta, files ->
                     def fileList = files.flatten()
-                    if (fileList.size() > 1) {
-                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Found ${fileList.size()} files: ${fileList.collect { it.getName() }}"
-                    }
                     def sortedFiles = fileList.sort { a, b ->
                         def dateA = (a.getName() =~ /\d{8}/) ? (a.getName() =~ /\d{8}/)[0].toInteger() : 0
                         def dateB = (b.getName() =~ /\d{8}/) ? (b.getName() =~ /\d{8}/)[0].toInteger() : 0
                         return dateB <=> dateA
                     }
-                    def newest_file = sortedFiles[0]
-                    if (fileList.size() > 1) {
-                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Selected Newest: ${newest_file.getName()}"
-                    }
-                    return [meta, newest_file]
+                    return [meta, sortedFiles[0]]
                 }
 
             // get .fastANI.txt
@@ -356,19 +338,12 @@ workflow CREATE_INPUT_CHANNELS {
                 .groupTuple(by: 0)
                 .map{ meta, files ->
                     def fileList = files.flatten()
-                    if (fileList.size() > 1) {
-                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Found ${fileList.size()} files: ${fileList.collect { it.getName() }}"
-                    }
                     def sortedFiles = fileList.sort { a, b ->
                         def dateA = (a.getName() =~ /\d{8}/) ? (a.getName() =~ /\d{8}/)[0].toInteger() : 0
                         def dateB = (b.getName() =~ /\d{8}/) ? (b.getName() =~ /\d{8}/)[0].toInteger() : 0
                         return dateB <=> dateA
                     }
-                    def newest_file = sortedFiles[0]
-                    if (fileList.size() > 1) {
-                        log.info "--- [ANI DEBUG] --- Isolate: ${meta.id} | Selected Newest: ${newest_file.getName()}"
-                    }
-                    return [meta, newest_file]
+                    return [meta, sortedFiles[0]]
                 }
 
             // get prokka files
@@ -558,9 +533,7 @@ workflow CREATE_INPUT_CHANNELS {
                         .map{ meta, griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info -> 
                             [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel, griphin_tsv, phoenix_tsv, pipeline_info, update_info ?: []] 
                         }
-//                        .view { "BEFORE UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
                         .unique { it[0].project_id }
-//                        .view { "AFTER UNIQUE: ${it[0].project_id} | Excel:${it[1]?.name} | TSV:${it[2]?.name} | Phoenix:${it[3]?.name} | Info:${it[4]?.name} | Update:${it[5]?.name}" }
 
             // indir branch
             mode_type_ch = directory_ch.map { meta, dir ->
