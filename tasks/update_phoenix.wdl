@@ -20,10 +20,11 @@ task update_phoenix {
     #untar data to update
     mkdir ./full_results
     tar -xzf ~{current_full_results} -C ./full_results
-    project_directory="/mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/~{samplename}"
-    echo $PWD
-    ls ./
-    ls /mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/~{samplename}
+    project_directory="/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/~{samplename}"
+    
+    ls /mnt/disks/cromwell_root//full_results/~{samplename}/phx_output/
+    echo "~{samplename} folder"
+    ls /mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/~{samplename}
 
     # Make sample form
     echo "sample,directory" > sample.csv
@@ -33,7 +34,6 @@ task update_phoenix {
     cd ~{samplename}
     #set input variable
     input_file="--input ../sample.csv"
-    #set scaffold as blank variable
 
     # set shigapass db path
     shigapass_db="/opt/conda/envs/phoenix/share/shigapass-1.5.0/db"
