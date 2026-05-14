@@ -8,14 +8,14 @@ workflow update_phoenix {
   }
   input {
     String  samplename
-    String  project_directory
+    File    full_results
     Int?    coverage
   }
   call update_phoenix_nf.update_phoenix {
     input:
       samplename        = samplename,
       coverage          = coverage,
-      project_directory = project_directory
+      full_results = full_results
   }
   output {
     #phoenix summary output values
@@ -72,6 +72,7 @@ workflow update_phoenix {
     File?  shigapass_summary       = update_phoenix.shigapass_summary
     #phoenix summary output
     File   updater_log             = update_phoenix.updater_log
+    File   full_results            = update_phoenix.full_results
     File   phoenix_tsv_summary     = update_phoenix.phoenix_tsv_summary
     File   griphin_excel_summary   = update_phoenix.griphin_excel_summary
     File   griphin_tsv_summary     = update_phoenix.griphin_tsv_summary
