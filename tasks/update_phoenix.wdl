@@ -23,9 +23,6 @@ task update_phoenix {
     project_directory="/mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/~{samplename}"
     echo $PWD
     ls ./
-    ls /mnt/disks/cromwell_root/~{samplename}/full_results
-    ls /mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}
-    ls /mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output
     ls /mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/~{samplename}
 
     # Make sample form
