@@ -3,7 +3,7 @@ version 1.0
 task update_phoenix {
   input {
     String   samplename
-    String   project_directory
+    File     full_results
     Int?     coverage = 30
     Int      memory = 64
     Int      cpu = 8
@@ -16,9 +16,16 @@ task update_phoenix {
 
     #download phoenix code to get the script from
     nextflow clone cdcgov/phoenix -r $version ./$version/
+
+    #untar data to update
+    mkdir ./full_results
+    tar -xzf ~{samplename}.tar.gz -C ./full_results
+    project_directory="/mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/"
+    ls ./
+
     # Make sample form
     echo "sample,directory" > sample.csv
-    echo "~{samplename},~{project_directory}" >> sample.csv
+    echo "~{samplename},$project_directory" >> sample.csv
     # Run PHoeNIx
     mkdir ~{samplename}
     cd ~{samplename}
@@ -32,13 +39,14 @@ task update_phoenix {
     #checking variables
     echo $version
     echo $input_file
+    echo $project_directory
 
     if nextflow run cdcgov/phoenix -plugins nf-google@1.1.3 -profile terra -r $version --mode UPDATE_PHOENIX --outdir ./phx_output --terra true $input_file --coverage ~{coverage} --tmpdir $TMPDIR --max_cpus ~{cpu} --max_memory '~{memory}.GB' --shigapass_database $shigapass_db; then
       # Everything finished, pack up the results and clean up
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
       cd ..
-      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz
+      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}_updated.tar.gz
     else
       # Run failed
       tar -cf - work/ | gzip -n --best > work.tar.gz
@@ -220,7 +228,7 @@ task update_phoenix {
     String  qc_issues                         = read_string("QC_ISSUES")
     #summary files
     File updater_log              =  "phx_output/~{samplename}/~{samplename}_updater_log.tsv"
-    File full_results             = "~{samplename}.tar.gz"
+    File full_results             = "~{samplename}_updated.tar.gz"
     File griphin_excel_summary    = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx"
     File griphin_tsv_summary      = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv"
     File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
