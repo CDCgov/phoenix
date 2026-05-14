@@ -3,7 +3,7 @@ version 1.0
 task update_phoenix {
   input {
     String   samplename
-    File     full_results
+    File     current_full_results
     Int?     coverage = 30
     Int      memory = 64
     Int      cpu = 8
@@ -19,7 +19,7 @@ task update_phoenix {
 
     #untar data to update
     mkdir ./full_results
-    tar -xzf ~{samplename}.tar.gz -C ./full_results
+    tar -xzf ~{current_full_results} -C ./full_results
     project_directory="/mnt/disks/cromwell_root/~{samplename}/full_results/~{samplename}/phx_output/"
     ls ./
 
@@ -85,7 +85,7 @@ task update_phoenix {
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-    if [ $mode == "PHOENIX"]; then
+    if [ ${mode} == "PHOENIX" ]; then
       if head -n 1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "ShigaPass_Organism"; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee SHIGAPASS_TAXA
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f29 | tee MLST_SCHEME_1
@@ -135,7 +135,7 @@ task update_phoenix {
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($34 != "" && $34 != "-") {gsub(/[^a-zA-Z0-9]/, "", $32); print "ML" $34 "_" $32} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
         fi
       fi
-    elif [ $mode == "CDC_PHOENIX" ]; then
+    elif [ ${mode} == "CDC_PHOENIX" ]; then
       if head -n 1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "ShigaPass_Organism"; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee SHIGAPASS_TAXA
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_SCHEME_1
@@ -198,7 +198,6 @@ task update_phoenix {
   >>>
   output {
     File?   work_files                        = "work.tar.gz"
-    String  project_dir                       = read_string("PROJECT_DIR")
     String  phoenix_version                   = read_string("VERSION")
     String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.3.0"
     String  analysis_date                     = read_string("DATE")
@@ -206,7 +205,7 @@ task update_phoenix {
     String  warnings                          = read_string("WARNINGS")
     String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
     String  taxa_source                       = read_string("TAXA_SOURCE")
-    String? shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
+    String  shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
     String  mlst_scheme_1                     = read_string("MLST_SCHEME_1")
     String  mlst_1                            = read_string("MLST_1")
     String  mlst1_ncbi                        = read_string("MLST1_NCBI")
@@ -227,7 +226,7 @@ task update_phoenix {
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
     String  qc_issues                         = read_string("QC_ISSUES")
     #summary files
-    File updater_log              =  "phx_output/~{samplename}/~{samplename}_updater_log.tsv"
+    File updater_log              = "~{samplename}/phx_output/~{samplename}/~{samplename}_updater_log.tsv"
     File updated_full_results     = "~{samplename}_updated.tar.gz"
     File griphin_excel_summary    = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx"
     File griphin_tsv_summary      = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv"
@@ -252,7 +251,7 @@ task update_phoenix {
     File  synopsis                 = "~{samplename}/phx_output/~{samplename}/~{samplename}.synopsis"
     File? best_taxa_id             = "~{samplename}/phx_output/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File?  amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations_20260324.tsv"
+    File? amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations_20260324.tsv"
     File? amrfinder_taxa_match     = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
     File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv"
     #species specific

@@ -2,20 +2,20 @@ version 1.0
 
 import "../tasks/update_phoenix.wdl" as update_phoenix_nf
 
-workflow update_phoenix {
+workflow update_phoenix_workflow {
   meta {
     description: "A WDL wrapper to update the AR gene calls and MLST information for isolates."
   }
   input {
     String  samplename
-    File    full_results
+    File    current_full_results
     Int?    coverage
   }
   call update_phoenix_nf.update_phoenix {
     input:
-      samplename        = samplename,
-      coverage          = coverage,
-      full_results = full_results
+      samplename           = samplename,
+      coverage             = coverage,
+      current_full_results = current_full_results
   }
   output {
     #phoenix summary output values
@@ -27,7 +27,7 @@ workflow update_phoenix {
     String  warnings                          = update_phoenix.warnings
     String  final_taxa_id                     = update_phoenix.final_taxa_id
     String  taxa_source                       = update_phoenix.taxa_source
-    String? shigapass_taxa                    = update_phoenix.shigapass_taxa
+    String  shigapass_taxa                    = update_phoenix.shigapass_taxa
     String  mlst_scheme_1                     = update_phoenix.mlst_scheme_1
     String  mlst_1                            = update_phoenix.mlst_1
     String  mlst1_ncbi                        = update_phoenix.mlst1_ncbi
@@ -61,23 +61,23 @@ workflow update_phoenix {
     File? gamma_pf_calls           = update_phoenix.gamma_pf_calls
     File? blat_pf_calls            = update_phoenix.blat_pf_calls
     #phoenix output
-    File   summary_line            = update_phoenix.summary_line
-    File   synopsis                = update_phoenix.synopsis
-    File?  best_taxa_id            = update_phoenix.best_taxa_id
+    File? assembly_ratio_file      = update_phoenix.assembly_ratio_file
+    File? gc_content_file          = update_phoenix.gc_content_file
+    File  summary_line             = update_phoenix.summary_line
+    File  synopsis                 = update_phoenix.synopsis
+    File? best_taxa_id             = update_phoenix.best_taxa_id
     #phoenix amrfinder
-    File?  amrfinder_mutations     = update_phoenix.amrfinder_mutations
-    File?  amrfinder_taxa_match    = update_phoenix.amrfinder_taxa_match
-    File?  amrfinder_hits          = update_phoenix.amrfinder_hits
+    File? amrfinder_mutations      = update_phoenix.amrfinder_mutations
+    File? amrfinder_taxa_match     = update_phoenix.amrfinder_taxa_match
+    File? amrfinder_hits           = update_phoenix.amrfinder_hits
     #species specific
-    File?  shigapass_summary       = update_phoenix.shigapass_summary
+    File? shigapass_summary        = update_phoenix.shigapass_summary
     #phoenix summary output
-    File   updater_log             = update_phoenix.updater_log
-    File   full_results            = update_phoenix.updated_full_results
-    File   phoenix_tsv_summary     = update_phoenix.phoenix_tsv_summary
-    File   griphin_excel_summary   = update_phoenix.griphin_excel_summary
-    File   griphin_tsv_summary     = update_phoenix.griphin_tsv_summary
-    String phoenix_version         = update_phoenix.phoenix_version
-    String phoenix_docker          = update_phoenix.phoenix_docker
-    String analysis_date           = update_phoenix.analysis_date
+    File  updater_log              = update_phoenix.updater_log
+    File  full_results             = update_phoenix.updated_full_results
+    File  phoenix_tsv_summary      = update_phoenix.phoenix_tsv_summary
+    File  griphin_excel_summary    = update_phoenix.griphin_excel_summary
+    File  griphin_tsv_summary      = update_phoenix.griphin_tsv_summary
+    File  versions_file            = update_phoenix.versions_file
   }
 }
