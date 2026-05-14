@@ -102,6 +102,7 @@ task phoenix {
 
     # Create unzipped assembly file for downstream analyses
     gunzip -k ~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz
+    gunzip -k ~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.contigs.fa.gz
 
     # Get AMRFinder+ output
     awk -F '\t' 'BEGIN{OFS=":"} {print $7,$12}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20251203.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CLASSES
@@ -346,6 +347,7 @@ task phoenix {
     File? assembly_graph           = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.assembly.gfa.gz"
     File? filtered_scaffolds_log   = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.bbmap_filtered.log"
     File? contigs                  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.contigs.fa.gz"
+    File? unzipped_contigs         = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.contigs.fa"
     File? filtered_scaffolds       = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa.gz"
     File? unzipped_filtered_scaffolds  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.filtered.scaffolds.fa"
     File? assembly_with_seq_names  = "~{samplename}/phx_output/~{samplename}/assembly/~{samplename}.renamed.scaffolds.fa.gz"
@@ -406,7 +408,7 @@ task phoenix {
     File? multiqc_output           = "~{samplename}/phx_output/multiqc/multiqc_report.html"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:d41682797fd662a4430a0f624475b0761a94611184f26f8acab769d3263b4153"
+    docker: "quay.io/jvhagey/phoenix@sha256:2b7074686ff21486c6abe569e6475589d3ed98522bb1689cadd9a08824635f2c"
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"

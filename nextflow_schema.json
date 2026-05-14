@@ -14,8 +14,8 @@
             "properties": {
                 "mode": {
                     "type": "string",
-                    "description": "Which entry point (aka 'mode') to run. Can be upper or lower case.",
-                    "help_text": "Which entry point to run. Can be upper or lower case. Pick one of the following modes: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, or UPDATE_PHOENIX.",
+                    "description": "Which mode to run. Can be upper or lower case.",
+                    "help_text": "Which mode point to run. Can be upper or lower case. Pick one of the following modes: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, or UPDATE_PHOENIX.",
                     "fa_icon": "fas fa-keyboard",
                     "default": "PHOENIX"
                 },

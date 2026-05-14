@@ -71,7 +71,7 @@ RUN micromamba create -n bbmap -c conda-forge bioconda::bbmap=39.13 -y && \
     micromamba create -n srst2 -c conda-forge bioconda::srst2==0.2.0  -y && \
     micromamba create -n spades -c conda-forge bioconda::spades=4.2.0 -y && \
     micromamba create -n mlst -c conda-forge bioconda::mlst=2.25.0 -y && \
-    micromamba create -n amrfinderplus -c conda-forge bioconda::ncbi-amrfinderplus=4.2.5 && micromamba clean -a -y
+    micromamba create -n amrfinderplus -c conda-forge bioconda::ncbi-amrfinderplus=4.2.7 && micromamba clean -a -y
 
 #RUN source ~/opt/conda/etc/profile.d/conda.sh
 ENV PATH=/opt/conda/envs/phoenix/bin:/opt/conda/bin:/opt/conda/envs/env/bin:/opt/conda/envs/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
