@@ -173,8 +173,7 @@ def detect_read_orientation(fname: str, full_name: str,
 # Output writers
 # ---------------------------------------------------------------------------
 
-def write_synopsis_failure(prefix: str, sample_name: str,
-                           read: str, status: str = "FAILED") -> None:
+def write_synopsis_failure(prefix: str, sample_name: str, read: str, status: str = "FAILED") -> None:
     out = Path(f"{sample_name}.synopsis")
     today = datetime.now().strftime("%c")
 
@@ -195,8 +194,7 @@ def write_synopsis_failure(prefix: str, sample_name: str,
         fh.write("ALERT: something to note, does not mean it is a poor-quality assembly.\n")
 
 
-def write_summaryline_failure(prefix: str, phx_version: str,
-                              read: str, busco: bool) -> None:
+def write_summaryline_failure(prefix: str, phx_version: str, read: str, busco: bool) -> None:
     """Write the TSV summary line for a failed/corrupt sample."""
     headers = SUMMARY_HEADERS_BUSCO if busco else SUMMARY_HEADERS_NO_BUSCO
     n_unknown = len(headers) - 2   # all columns except WGS_ID and failure reason
@@ -211,8 +209,7 @@ def write_summaryline_failure(prefix: str, phx_version: str,
         fh.write(row)   # tr -d '\n' in original — no trailing newline
 
 
-def write_corruption_summary(prefix: str, read: str, corrupt: bool,
-                             err_msg: str = "") -> None:
+def write_corruption_summary(prefix: str, read: str, corrupt: bool) -> None:
     out = Path(f"{prefix}_corruption_summary.txt")
     with out.open("a") as fh:
         if corrupt:
@@ -220,8 +217,6 @@ def write_corruption_summary(prefix: str, read: str, corrupt: bool,
                 f"FAILED CORRUPTION CHECK! CANNOT UNZIP FASTQ FILE. "
                 f"CHECK FASTQ FILE {prefix}_{read} FOR CORRUPTION!\n"
             )
-            if err_msg:
-                fh.write(f"  Error: {err_msg}\n")
         else:
             fh.write(f"PASSED: File {prefix}_{read} is not corrupt.\n")
 
@@ -250,7 +245,7 @@ def main() -> None:
     corrupt, err_msg = check_gzip_integrity(fname)
 
     if corrupt:
-        write_corruption_summary(prefix, read, corrupt=True, err_msg=err_msg)
+        write_corruption_summary(prefix, read, corrupt=True)
         write_summaryline_failure(prefix, args.phx_version, read, args.busco)
         write_synopsis_failure(prefix, prefix, read)
     else:
