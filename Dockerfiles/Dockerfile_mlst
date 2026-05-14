@@ -1,60 +1,75 @@
-FROM ubuntu:24.04 AS app
+FROM ubuntu:focal AS app 
+ARG MLST_VER="2.25.0" 
+ARG ANY2FASTA_VER="0.4.2" 
 
-ARG MLST_VER="2.25.0"
-ARG ANY2FASTA_VER="0.4.2"
-
-LABEL base.image="ubuntu:24.04"
-LABEL dockerfile.version="2"
-LABEL software="mlst"
-LABEL software.version="${MLST_VER}"
-LABEL description="Scan contig files against PubMLST typing schemes"
-LABEL website="https://github.com/tseemann/mlst"
-LABEL license="https://github.com/tseemann/mlst/blob/master/LICENSE"
-LABEL maintainer="Jill Hagey"
+LABEL base.image="ubuntu:focal" 
+LABEL dockerfile.version="2" 
+LABEL software="mlst" 
+LABEL software.version="${MLST_VER}" 
+LABEL description="Scan contig files against PubMLST typing schemes" 
+LABEL website="https://github.com/tseemann/mlst" 
+LABEL license="https://github.com/tseemann/mlst/blob/master/LICENSE" 
+LABEL maintainer="Jill Hagey" 
 LABEL maintainer.email="qpk9@cdc.gov"
+LABEL maintainer="Nick Vlachos" 
+LABEL maintainer.email="nvx4@cdc.gov"
 
-# install dependencies via apt; cleanup apt garbage
-# blast from ubuntu:focal is v2.9.0 (as of 2022-05-09)
+# Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \ 
-  wget \
-  ca-certificates \
+  wget \ 
+  ca-certificates \ 
   perl \ 
-  libmoo-perl \
-  liblist-moreutils-perl \
-  libjson-perl \
-  gzip \
-  file \
-  ncbi-blast+ && \
+  libmoo-perl \ 
+  liblist-moreutils-perl \ 
+  libjson-perl \ 
+  gzip \ 
+  file \ 
+  ncbi-blast+ && \ 
   apt-get autoclean && rm -rf /var/lib/apt/lists/*
 
-# get any2fasta; move binary to /usr/local/bin which is already in $PATH
+# Install any2fasta
 RUN wget https://github.com/tseemann/any2fasta/archive/refs/tags/v${ANY2FASTA_VER}.tar.gz && \ 
-  tar xzf v${ANY2FASTA_VER}.tar.gz && \
-  rm v${ANY2FASTA_VER}.tar.gz && \
-  chmod +x any2fasta-${ANY2FASTA_VER}/any2fasta && \
+  tar xzf v${ANY2FASTA_VER}.tar.gz && \ 
+  rm v${ANY2FASTA_VER}.tar.gz && \ 
+  chmod +x any2fasta-${ANY2FASTA_VER}/any2fasta && \ 
   mv -v any2fasta-${ANY2FASTA_VER}/any2fasta /usr/local/bin
 
-# get mlst
-RUN wget https://github.com/tseemann/mlst/archive/v${MLST_VER}.tar.gz && \
-  tar -xzf v${MLST_VER}.tar.gz && \
+# Install mlst
+RUN wget https://github.com/tseemann/mlst/archive/v${MLST_VER}.tar.gz && \ 
+  tar -xzf v${MLST_VER}.tar.gz && \ 
   rm v${MLST_VER}.tar.gz
 
-# set PATH and perl local settings
-ENV PATH="${PATH}:/mlst-${MLST_VER}/bin:" \
-    LC_ALL=C.UTF-8
+# Set PATH and locale
+ENV PATH="/mlst-${MLST_VER}/bin:${PATH}" \ LC_ALL=C.UTF-8
 
-# check dependencies and list available schemes
-RUN mlst --check && mlst --list
+# Remove default database
+RUN rm -rf /mlst-${MLST_VER}/db
 
-#set working directory so its easier to find the db
+# Copy custom database (ensure this runs every time, no caching)
+COPY --chown=root:root db /mlst-${MLST_VER}/db
+
+# Set proper permissions on database
+RUN chmod -R 755 /mlst-${MLST_VER}/db && \ 
+  find /mlst-${MLST_VER}/db -type f -exec chmod 644 {} \; && \ 
+  find /mlst-${MLST_VER}/db -type d -exec chmod 755 {} \; && \
+  mv /mlst-${MLST_VER}/db/scheme_species_map.tsv /mlst-${MLST_VER}/db/scheme_species_map.tab
+
+# Verify installation and show database info
+RUN echo "=== MLST Installation Info ===" && \ 
+  which mlst && \ 
+  mlst --version && \ 
+  echo "=== Database location ===" && \ 
+  ls -la /mlst-${MLST_VER}/db/ && \ 
+  echo "=== Available schemes ===" && \ 
+  mlst --list && \ 
+  echo "=== Dependency check ===" && \ 
+  mlst --check
+
+# Create /data directory for working
+RUN mkdir -p /data && chmod 777 /data
+
+# Set working directory
 WORKDIR /data
 
-#remove db that comes with the mlst software
-RUN rm -r /mlst-${MLST_VER}/db/*
-# add in custom db and move to correct location
-COPY db /data/db
-RUN mv /data/db ../mlst-${MLST_VER}
-#change permissions of database files
-RUN chmod 755 --recursive /mlst-${MLST_VER}/db/*
-#RUN chmod 755 /mlst-${MLST_VER}/db/blast/*
-#RUN chmod 755 /mlst-${MLST_VER}/db/pubmlst/*
+# Default command
+CMD ["mlst", "--help"]
