@@ -55,26 +55,9 @@ if (!params.containsKey('mode') || !params.mode) {
     =========================================
     ERROR: --mode is required but was not provided.
     
-    Usage: nextflow run main.nf --mode PHOENIX
+    Usage: nextflow run main.nf --mode PHOENIX -profile <docker,singularity, etc> --input samplesheet.csv --kraken2db /path/to/kraken2db
     
-    Valid modes: PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, CDC_PHOENIX, CLIA, UPDATE_PHOENIX, SRA, CDC_SRA, COMBINE_GRIPHINS, CENTAR
-    =========================================
-    """
-}
-
-def valid_modes = [
-    'PHOENIX', 'CDC_PHOENIX',
-    'SCAFFOLDS', 'CDC_SCAFFOLDS',
-    'SRA', 'CDC_SRA',
-    'UPDATE_PHOENIX', 'CLIA',
-    'COMBINE_GRIPHINS', 'CENTAR'
-]
-if (!valid_modes.contains(params.mode.toUpperCase())) {
-    error """
-    =========================================
-    ERROR: Invalid --mode '${params.mode}'
-    
-    Valid modes: ${valid_modes.join(', ')}
+    Valid modes: PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, CDC_PHOENIX, UPDATE_PHOENIX, SRA, CDC_SRA, COMBINE_GRIPHINS
     =========================================
     """
 }

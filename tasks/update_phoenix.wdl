@@ -244,7 +244,7 @@ task update_phoenix {
     File  synopsis                 = "~{samplename}/phx_output/~{samplename}/~{samplename}.synopsis"
     File? best_taxa_id             = "~{samplename}/phx_output/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File  amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations_20260324.tsv"
+    File?  amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations_20260324.tsv"
     File? amrfinder_taxa_match     = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
     File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv"
     #species specific

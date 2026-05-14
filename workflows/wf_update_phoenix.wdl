@@ -54,14 +54,18 @@ workflow update_phoenix {
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
     File?  srst2                   = update_phoenix.srst2
     #phoenix gamma
-    File   gamma_ar_calls          = update_phoenix.gamma_ar_calls
-    File   blat_ar_calls           = update_phoenix.blat_ar_calls
+    File? gamma_ar_calls           = update_phoenix.gamma_ar_calls
+    File? blat_ar_calls            = update_phoenix.blat_ar_calls
+    File? gamma_hv_calls           = update_phoenix.gamma_hv_calls
+    File? blat_hv_calls            = update_phoenix.blat_hv_calls
+    File? gamma_pf_calls           = update_phoenix.gamma_pf_calls
+    File? blat_pf_calls            = update_phoenix.blat_pf_calls
     #phoenix output
     File   summary_line            = update_phoenix.summary_line
     File   synopsis                = update_phoenix.synopsis
     File?  best_taxa_id            = update_phoenix.best_taxa_id
     #phoenix amrfinder
-    File   amrfinder_mutations     = update_phoenix.amrfinder_mutations
+    File?  amrfinder_mutations     = update_phoenix.amrfinder_mutations
     File?  amrfinder_taxa_match    = update_phoenix.amrfinder_taxa_match
     File?  amrfinder_hits          = update_phoenix.amrfinder_hits
     #species specific
