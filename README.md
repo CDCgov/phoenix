@@ -4,7 +4,7 @@ PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality
 
 <!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->  
 
-[![DOI](https://zenodo.org/badge/490844937.svg)](https://zenodo.org/badge/latestdoi/18169441)   
+[![DOI](https://zenodo.org/badge/490844937.svg)](https://doi.org/10.5281/zenodo.7702319)
 
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
@@ -36,7 +36,7 @@ The SHARE IT Act is a federal law that says government agencies like CDC must be
 
 # Quick Start
 
-1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=21.10.3`). 
+1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=25.10.2`). 
 
    There are several options for install if you do not already have it on your system:
 

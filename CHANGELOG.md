@@ -355,7 +355,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Creation of `--mode CENTAR` to take in a phoenix directory (runs all samples in dir) or a samplesheet (with format "sample,dir") to "update" a previously run of phx (<2.2.0) to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID.  
 - `--centar` parameter can be passed when running `--mode PHOENIX` or `--mode CDC_PHOENIX` to run additional modules for *Clostridium difficile* specific output. This will only run on samples that have *C. difficile* as the taxa ID. See [wiki]() for full documentation.
 - Added gamma plasmidfinder to tools run during -mode update_phoenix.
-- Added better version tracking and gamma plasmidFinder changes to the updater_log in -mode update_phoenix
+- Added better version tracking and gamma plasmidFinder changes to the updater_log in --mode update_phoenix
 
 ## [v2.3.0](https://github.com/CDCgov/phoenix/releases/tag/v2.3.0) (05/14/2026)
 
