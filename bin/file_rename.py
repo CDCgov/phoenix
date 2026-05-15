@@ -5,6 +5,8 @@ import os
 import glob
 from pathlib import Path
 
+__version__ = "1.0.0"
+
 def rename_griphin_files(directory):
     """
     Rename files ending in *_GRiPHin_Summary.tsv or *_GRiPHin_Summary.xlsx
@@ -51,6 +53,7 @@ def main():
     parser = argparse.ArgumentParser(description='Rename GRiPHin_Summary files to shorter format')
     parser.add_argument( '-d', '--directory', type=str, default='.', help='Directory containing files to rename (default: current directory)' )
     parser.add_argument('--dry-run', action='store_true', help='Show what would be renamed without actually renaming' )
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
     args = parser.parse_args()
     
     # Check if directory exists

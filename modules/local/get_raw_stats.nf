@@ -47,9 +47,9 @@ process GET_RAW_STATS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        q30.py: \$(${ica}q30.py --version )
-        create_raw_stats_output.py: \$(${ica}create_raw_stats_output.py --version )
-        fairy.py: \$(${ica}fairy.py --version )
+        \$(${ica}q30.py --version )
+        \$(${ica}create_raw_stats_output.py --version )
+        \$(${ica}fairy.py --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

@@ -2,8 +2,7 @@ process MLST {
     tag "$meta.id"
     label 'process_medium'
     // 2.25.0_12312025 - must edit manually below (line 28)!!!
-    container 'quay.io/jvhagey/mlst@sha256:a67904d356118f9c163d26000d4d78cc449e3205145f87be28726869d67602f7'
-
+    container 'quay.io/jvhagey/mlst@sha256:8f2995a4f599ec54a81d67dc630c0229b2138a40cb112a84d15256c1ebe51475'
     input:
     tuple val(meta), path(fasta), path(taxonomy)
 
@@ -200,7 +199,7 @@ process MLST {
     fi
 
     # New as of MLST 2.23.0, correctness score update results in some other species outperforming instrinsic ecoli_2 alleles in some cases. Force ecoli to run if ANI taxonomy says so
-    if [[ \${genus,,} == "escherichia" ]]; then
+    if [[ \${genus,,} == "escherichia" || \${genus,,} == "shigella" ]]; then
         if [[ \$scheme == "aeromonas" ]]; then
             mv ${prefix}.tsv ${prefix}.OLD-tsv
             mlst --scheme ecoli --threads $task.cpus \$unzipped_fasta > ${prefix}_1.tsv

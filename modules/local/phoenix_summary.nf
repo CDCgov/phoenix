@@ -30,7 +30,7 @@ process GATHER_SUMMARY_LINES {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        Create_phoenix_summary_tsv.py: \$(${ica}Create_phoenix_summary_tsv.py --version )
+        \$(${ica}Create_phoenix_summary_tsv.py --version)
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

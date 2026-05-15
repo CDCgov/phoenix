@@ -20,13 +20,13 @@ process CDIFF_CLADE {
     //def outdir_path = meta.project_id
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}get_Cdiff_clade.sh \\
+    ${ica}get_Cdiff_clade.py \\
         -m ${mlst_combined_file} \\
         -r "${mlst_database}"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        get_Cdiff_clade.sh: \$(${ica}get_Cdiff_clade.sh -V)
+        \$(${ica}get_Cdiff_clade.py -V)
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

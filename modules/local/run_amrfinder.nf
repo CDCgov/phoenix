@@ -1,12 +1,12 @@
 process AMRFINDERPLUS_RUN {
     tag "$meta.id"
     label 'process_medium'
-    if (params.mode_upper == "CLIA") {
-        //3.12.8-2024-07-22.1
-        container 'staphb/ncbi-amrfinderplus@sha256:ddabe0c55de98554de0b913ebbe8d68860a5de14b0059f5a6971178a1c72657b'
+    if (params.mode_upper == "CLIA") { // in case they diverge in the future. 
+        //4.2.7-2026-03-24.1
+        container 'staphb/ncbi-amrfinderplus@sha256:90e57a65bde22d3270ca13d43e59470aa2aa544b0b377fad7d8b2d1032e9741f'
     } else {
-        //4.2.5-2025-12-03.1
-        container 'staphb/ncbi-amrfinderplus@sha256:1c1773e3ed3f96a577418945523ef4e97d1f7f0d63534530336c6f65c9d007ed'
+        //4.2.7-2026-03-24.1
+        container 'staphb/ncbi-amrfinderplus@sha256:90e57a65bde22d3270ca13d43e59470aa2aa544b0b377fad7d8b2d1032e9741f'
     }
 
     input:

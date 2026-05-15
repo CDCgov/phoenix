@@ -15,7 +15,7 @@ process DETERMINE_TAXA_ID {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    def ica = params.ica ? "bash ${params.bin_dir}" : ""
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     // -r needs to be last as in -entry SCAFFOLDS/CDC_SCAFFOLDS k2_bh_summary is not passed so its a blank argument
@@ -25,9 +25,7 @@ process DETERMINE_TAXA_ID {
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}determine_taxID.sh $k2_weighted_file -s ${meta.id} $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
-
-    script_version=\$(${ica}determine_taxID.sh -V)
+    ${ica}determine_taxID.py $k2_weighted_file -s ${meta.id} $formatted_ani_file -d $nodes_file -m $names_file $k2_bh_file
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -35,7 +33,7 @@ process DETERMINE_TAXA_ID {
         NCBI_Taxonomy_Names_Reference_File: $names_file
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${script_version}
+        \$(${ica}determine_taxID.py -V)
     END_VERSIONS
     """
 }

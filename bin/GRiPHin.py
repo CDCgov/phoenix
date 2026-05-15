@@ -29,8 +29,7 @@ pd.set_option('display.max_colwidth', None)  # Show all columns
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "2.1.0"
+__version__ = "2.1.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
@@ -50,7 +49,7 @@ def parseArgs(args=None):
     parser.add_argument('--centar', dest="centar", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--filter_samples', dest="filter_samples", default=False, action='store_true', required=False, help='Use for when there are C. diff isolates in samplesheet.')
     parser.add_argument('--ar_gene_thresholds',default=None, nargs='+', required=False, dest='ar_gene_thresholds', help="Thresholds for SRST2 and GAMMA AR genes in the format  e.g. and the default --ar_gene_threshold SRST2-NT=98 SRST2-COV=90 GAMMA-AA=98,GAMMA-COV=90")
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument('--version', action='version', version=f'%(prog)s: {__version__}')# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen
@@ -310,7 +309,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
                 warnings.append("Average Q30 of trimmed R1 reads <{:.2f}% ({})".format(float(90.00),Trim_Q30_R1_per))
         if Trim_Q30_R2_per == "Unknown" or float(Trim_Q30_R2_per) < float(70.00):
             try:
-                warnings.append("Average Q30 of trimmed 21 reads <{:.2f}% ({:.2f}%)".format(float(70.00),float(Trim_Q30_R2_per)))
+                warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({:.2f}%)".format(float(70.00),float(Trim_Q30_R2_per)))
             except ValueError:
                 warnings.append("Average Q30 of trimmed R2 reads <{:.2f}% ({})".format(float(70.00),Trim_Q30_R2_per))
         if Trim_unclassified_percent == "Unknown" or float(Trim_unclassified_percent) > float(30.00):
@@ -817,10 +816,27 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name,ar_gene_thres
         df["WGS_ID"] = sample_name
         df.index = [sample_name]
     final_srst2_df = pd.concat([final_srst2_df, df], axis=0, sort=True, ignore_index=False).fillna("")
-
     return final_srst2_df
 
-def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, spades_fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, ar_db):
+def get_novel_big5_alert(gamma_ar_file, big5_keep_extended, big5_oxa_keep):
+    combo_list = big5_oxa_keep + big5_keep_extended
+    genes_to_check = ['bla' + g for g in combo_list]
+    gamma_df = pd.read_csv(gamma_ar_file, sep='\t', header=0)
+    results = []
+    for _, row in gamma_df.iterrows():
+        gene_name = row['Gene'].split('__')[2].split('_')[0]  # extract gene name from second field
+        #if any(g in gene_name for g in big5_genes) and row['Match_Type'] == 'Mutant':
+        if gene_name in genes_to_check and row['Match_Type'] in ('Indel', 'Indel Truncation'):
+            print(gene_name)
+            results.append(f"Possible novel {gene_name} with {row['Description'].rstrip(',')}")
+        if gene_name in genes_to_check and row['Match_Type'] == 'Mutant':
+            if "mutations" in row['Description']:
+                results.append(f"Possible novel {gene_name} with {row['Description'].rstrip(',')}")
+            else:
+                results.append(f"Possible novel {gene_name} with {row['Description'].rstrip(',')} mutation")
+    return results
+
+def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, spades_fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, ar_db, BLDB):
     '''For each step to gather metrics try to find the file and if not then make all variables unknown'''
     try:
         Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Total_Trimmed_bp, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_Q30_R1_percent, Trim_Q30_R2_percent = get_Q30(trim_stats, raw_stats)
@@ -922,7 +938,9 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         srst2_ar_df = pd.concat([srst2_ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
         srst2_warning = None
     try:
-        alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1], gc_metrics[0])
+        big5_keep, big5_oxa_keep, big5_keep_extended = find_big_5(BLDB)
+        novel_big5_alerts = get_novel_big5_alert(gamma_ar_file, big5_keep_extended, big5_oxa_keep)
+        alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1], gc_metrics[0], novel_big5_alerts)
     except:
         alerts = ""
     # try except in the function itself
@@ -1478,24 +1496,20 @@ def find_big_5(BLDB):
     df = pd.read_csv(BLDB)
     big5_genes = ["KPC", "IMP", "NDM", "OXA", "VIM"]
     filtered_df = df[df["Protein name"].str.contains('|'.join(big5_genes), case=False, na=False)]
-    
+    big5_keep_extended = filtered_df[filtered_df['Protein name'].str.contains("KPC|NDM|VIM|IMP", case=False, na=False)]['Protein name'].tolist() # for catching novel variants
     # Handle functional info and whitespace
     final_df = filtered_df[filtered_df["Functional information"].str.strip().isin([
         "carbapenemase", "IR carbapenemase", "carbapenemase\xa0view", "IR carbapenemase\xa0view"
     ])]
-    
     # OXA Subfamily Filter
     subfamily_list = ["OXA-48-like", "OXA-23-like", "OXA-24-like", "OXA-58-like", "OXA-143-like"]
     oxa_cond = final_df["Protein name"].str.contains("OXA", case=False, na=False)
     sub_cond = final_df["Subfamily"].isin(subfamily_list)
-    
     non_oxa = final_df[~oxa_cond]
     oxa_rows = final_df[oxa_cond & sub_cond]
     oxa_filtered = oxa_rows[~(oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~oxa_rows["Subfamily"].str.contains("OXA-48-like", na=False))]
-    
     # CRITICAL: Use the combined filtered dataframe
     filtered_final_df = pd.concat([non_oxa, oxa_filtered])
-    
     # Explode synonyms into a clean set
     final_set = set()
     for _, row in filtered_final_df[["Protein name", "Alternative protein names"]].drop_duplicates().iterrows():
@@ -1505,9 +1519,8 @@ def find_big_5(BLDB):
             # Split "OXA-181; blaOXA-181" into individual items
             for name in re.split(r'[;,\s]+', str(row["Alternative protein names"])):
                 if name.strip(): final_set.add(name.strip())
-
     protein_list = list(final_set)
-    return [p for p in protein_list if "OXA" not in p.upper()], [p for p in protein_list if "OXA" in p.upper()]
+    return [p for p in protein_list if "OXA" not in p.upper()], [p for p in protein_list if "OXA" in p.upper()], big5_keep_extended
 
 def big5_check(final_ar_df, is_combine, BLDB):
     columns_to_highlight = []
@@ -1515,24 +1528,19 @@ def big5_check(final_ar_df, is_combine, BLDB):
         final_ar_df = final_ar_df.drop(['AR_Database','UNI'], axis=1, errors='ignore')
     else:
         final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1, errors='ignore')
-    
     all_genes = final_ar_df.columns.tolist()
-    big5_keep, big5_oxa_keep = find_big_5(BLDB)
-    
+    big5_keep, big5_oxa_keep, big5_keep_extended = find_big_5(BLDB)
     for gene in all_genes:
         if gene == 'No_AR_Genes_Found': continue
-        
         # Split header into gene name and drug info
         parts = gene.split('_(')
         if len(parts) < 2: continue
         gene_header = parts[0]
         drug = parts[1]
-        
         # Clean header for matching
         match_name = gene_header.upper()
         if "-LIKE" in match_name:
             match_name = match_name.split('_BLA')[0]
-
         # Use substring matching (any gene name from DB found in the header)
         if "OXA" in match_name:
             if any(oxa.upper() in match_name for oxa in big5_oxa_keep):
@@ -1540,7 +1548,6 @@ def big5_check(final_ar_df, is_combine, BLDB):
         else:
             if any(b5.upper() in match_name for b5 in big5_keep):
                 columns_to_highlight.append(gene)
-                
     print(f"\nHighlighting columns: {columns_to_highlight}")
     return columns_to_highlight
 
@@ -1936,7 +1943,7 @@ def main():
             trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, mlst_file, fairy_file, spades_fairy_file, busco_short_summary, asmbld_ratio, gc, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file = Get_Files(directory, sample_name, directory2, args.updater)
             #Get the metrics for the sample
             srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Seq_reads, Paired_Trimmed_reads, Total_trim_Seq_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, \
-            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, spades_fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, args.ar_db)
+            QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2 = Get_Metrics(args.phoenix, args.scaffolds, args.set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc, sample_name, mlst_file, fairy_file, spades_fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, args.ar_db, args.bldb)
             #Collect this mess of variables into appeneded lists
             data_location_L, parent_folder_L, Sample_Names, Q30_R1_per_L, Q30_R2_per_L, Total_Raw_Seq_bp_L, Total_Seq_reads_L, Paired_Trimmed_reads_L, Total_trim_Seq_reads_L, Trim_kraken_L, Asmbld_kraken_L, Coverage_L, Assembly_Length_L, Species_Support_L, fastani_organism_L, fastani_ID_L, fastani_coverage_L, warnings_L , alerts_L, \
             Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, assembly_stdev_L, tax_method_L, QC_result_L, QC_reason_L, MLST_scheme_1_L, MLST_scheme_2_L, MLST_type_1_L, MLST_type_2_L, MLST_alleles_1_L , MLST_alleles_2_L, MLST_source_1_L, MLST_source_2_L = Append_Lists(data_location, parent_folder, sample_name, \

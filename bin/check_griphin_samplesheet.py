@@ -7,15 +7,14 @@ import argparse
 from pathlib import Path
 import pandas as pd
 
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parse_args(args=None):
     parser = argparse.ArgumentParser(
     description="Validate a file-of-filepaths (one filepath per line).",  epilog="Example usage: python check_samplesheet.py <FILE_IN> <FILE_OUT>", )
     parser.add_argument("FILE_IN", help="Input file (one filepath per line).")
     parser.add_argument("FILE_OUT", help="Output file.")
-    parser.add_argument("--version", action="version", version=get_version())
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args(args)
 
 def make_dir(path):

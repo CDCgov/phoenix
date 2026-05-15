@@ -15,13 +15,12 @@ from itertools import chain
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a combined GRiPHin summary excel sheet')
     parser.add_argument('-o', '--out', dest='output_file', required=False, default=None, help='output file name')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
 

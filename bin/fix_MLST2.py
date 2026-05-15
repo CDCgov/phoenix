@@ -6,6 +6,8 @@ import argparse
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 
+__version__ = "4.0.0"
+
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -34,11 +36,7 @@ def parse_args():
         '-o', '--output',
         help='Output file prefix (default: derived from taxonomy file)'
     )
-    parser.add_argument(
-        '-v','--version', 
-        action='version',
-        version=f'%(prog)s {get_version()}'
-    )
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
     
     return parser.parse_args()
 
@@ -66,10 +64,6 @@ def read_taxonomy(taxonomy_file: str) -> Tuple[str, str]:
         print(f"Warning: Taxonomy file not found: {taxonomy_file}")
     
     return genus, species
-
-# Function to get the script version
-def get_version():
-	return "4.0.0"
 
 def get_pull_date(mlst_db_path: str) -> str:
     """Read database version/pull date."""

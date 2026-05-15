@@ -28,7 +28,6 @@ include { UPDATE_GRIPHIN as UPDATE_GRIPHIN_ONLY_TWO } from '../modules/local/upd
 */
 
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-include { CREATE_INPUT_CHANNELS          } from '../subworkflows/local/create_input_channels'
 
 /*
 ========================================================================================
@@ -104,7 +103,7 @@ workflow COMBINE_GRIPHINS_WF {
                 more_than_two: it[2] > 2
             }
 
-        exactly_two_ch = griphins_ch.exactly_two.map{ meta, fileList, size -> [ meta, [fileList[0], fileList[1]] ] }
+        exactly_two_ch = griphins_ch.exactly_two.map{ meta, fileList, size -> [ meta, fileList[0], fileList[1] ] }
         more_than_two_ch = griphins_ch.more_than_two.map{ meta, fileList, size -> [ meta, fileList ] }
 
         // combine griphin files, the new one just created and the old one that was found in the project dir. 

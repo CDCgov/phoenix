@@ -7,12 +7,11 @@ import glob
 import argparse
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet.')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
 def clean_gene_name(gene):

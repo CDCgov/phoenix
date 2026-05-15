@@ -16,9 +16,7 @@ from load_files import FileLoader
 import xlsxwriter
 
 # Function to get the script version
-def get_version():
-    #update to 2.1.0 to make one sheet per biosample
-    return "2.1.0"
+__version__ = "2.1.0"
 
 def parseArgs(args=None):
     """"""
@@ -31,7 +29,7 @@ def parseArgs(args=None):
     parser.add_argument('-g', '--griphin_summary', dest='griphin_summary', type=str, required=True)
     parser.add_argument('-b', '--osii_bioprojects', dest='osii_bioprojects', type=str, required=True)
     parser.add_argument('-d', '--directory', default=None, dest='directory', type=str, required=False, help='Pass a PHoeNIx output directory rather than a GRiPHin_samplesheet.')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')# Add an argument to display the version
     return parser.parse_args()
 
 def get_isolate_dirs(directory, griphin_summary):

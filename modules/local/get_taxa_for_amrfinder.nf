@@ -28,6 +28,7 @@ process GET_TAXA_FOR_AMRFINDER {
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
+        \$(${ica}get_taxa_for_amrfinder.py -V)
     END_VERSIONS
     """
 }

@@ -24,8 +24,7 @@ CYELLOW = '\033[93m'
 CEND = '\033[0m'
 
 # Function to get the script version
-def get_version():
-    return "2.3.0"
+__version__ = "2.3.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='Script to generate a PhoeNix summary excel sheet')
@@ -33,7 +32,7 @@ def parseArgs(args=None):
     parser.add_argument('--all_samples', dest='all_samples', action='store_true', help='Pass if running updater pipeline.')
     parser.add_argument('-b', '--busco', action='store_true', help='parameter to know if busco was run')
     parser.add_argument('--software_versions', dest='software_versions', help='This will update old files with correct PHX_Version')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
 

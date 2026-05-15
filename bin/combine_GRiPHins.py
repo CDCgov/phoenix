@@ -21,8 +21,7 @@ from GRiPHin import order_ar_gene_columns, Combine_dfs, write_to_excel, convert_
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "1.0.0"
+__version__ = "1.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser(description='''Script to create new griphin excel sheet by combining two griphin summaries. The -g2 is considered the "new" file and thus when 
@@ -38,7 +37,7 @@ def parseArgs(args=None):
     parser.add_argument('-s', '--samplesheet', required=False, default=None, dest='samplesheet', help='samplesheet with sample,directory columns. Used to doublecheck sample names.')
     parser.add_argument('--griphin_list', required=False, default=None, nargs='?', const=True, type=str, dest='griphin_list', help='pass instead of -g1/-g2 when you want to combine more than 2 griphins. If you just pass --griphin_list the script assumes you have multiple griphin_summary.xlsx files in the current dir. You can also pass a csv that just has the full paths to the griphin files you want to combine.')
     parser.add_argument('--coverage', default=30, required=False, dest='set_coverage', help='The coverage cut off default is 30x.')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument('--version', action='version', version=f'%(prog)s: {__version__}')# Add an argument to display the version
     return parser.parse_args()
 
 #set colors for warnings so they are seen
@@ -151,6 +150,8 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
         # Use vectorized operations for speed to get UNI column
         df['UNI'] = df['Parent_Folder'] + '/' + df['Data_Location'] + '/' + df['WGS_ID']
         df = df[['UNI'] + [col for col in df.columns if col != 'UNI']]
+        #rename columns for backwards compatibility
+        df = df.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path}")
     # check that we have the files from the same entry # set that its a CDC PHOENIX run
@@ -409,12 +410,16 @@ def split_centar_df(centar, excel, sample_names):
         converters={'CEMB RT Crosswalk': str},
         header=[0, 1],    # Use the 2nd row as the header
         skipfooter=footer_lines1,engine='openpyxl')
+    #rename columns for backwards compatibility
+    df = df.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
     if centar == True:
         df_1 = pd.read_excel(excel,
             converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1 ,engine='openpyxl', dtype={'WGS_ID': str,'Parent_Folder': str,'Data_Location': str}) # Specifying dtypes prevents pandas from using more memory than necessary for each column.
+        #rename columns for backwards compatibility
+        df_1 = df_1.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
         # Use vectorized operations for speed to creating UNI column for speed and lower memory usage
         df_1['UNI'] = df_1['Parent_Folder'] + '/' + df_1['Data_Location'] + '/' + df_1['WGS_ID']
         df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
@@ -479,7 +484,7 @@ def remove_dup_rows(old_griphin_df, new_griphin_df):
     #new_griphin_df["UNI"] = new_griphin_df["UNI"].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
     #remove dups
     old_griphin_df = old_griphin_df[~old_griphin_df['UNI'].isin(new_griphin_df['UNI'])]
-    print_df(old_griphin_df, "Old griphin df after removing dups", True)
+#    print_df(old_griphin_df, "Old griphin df after removing dups", True)
     return old_griphin_df
 
 def backwards_compatibility(df, parent_folder, file_path):
@@ -627,7 +632,6 @@ def main():
         # Derive output file name from input file name
         output_file = args.griphin_new.replace("_GRiPHin_Summary.xlsx", "")
     # checking what the input type is
-    print(args.old_phx_version)
     if args.griphin_old != None and args.griphin_new != None: # only two files being combined
         combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, phoenix_final, shiga_final, centar_final, ordered_centar_df_final, centar_df_lens_final, centar_df_column_names_final = read_excels(args.griphin_old, args.griphin_new, args.samplesheet, args.remove_dups, args.parent_folder)
     else:

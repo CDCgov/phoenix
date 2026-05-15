@@ -12,12 +12,11 @@ import time
 import argparse
 
 # Function to get the script version
-def get_version():
-    return "2.0.0"
+__version__ = "2.0.0"
 
 def parseArgs(args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     parser.add_argument('-i', '--input', dest='input', required=False, help='input fasta filename')
     parser.add_argument('files', nargs=argparse.REMAINDER)
     return parser.parse_args()
@@ -55,8 +54,12 @@ def stat(filename):
     print("total bases:", total_base_count)
     print("q20 bases:", q20_count)
     print("q30 bases:", q30_count)
-    print("q20 percents:", 100 * float(q20_count)/float(total_base_count))
-    print("q30 percents:", 100 * float(q30_count)/float(total_base_count))
+    if total_base_count == 0:
+        print("q20 percents:", 0)
+        print("q30 percents:", 0)
+    else:
+        print("q20 percents:", 100 * float(q20_count)/float(total_base_count))
+        print("q30 percents:", 100 * float(q30_count)/float(total_base_count))
 
 def main():
     args = parseArgs()

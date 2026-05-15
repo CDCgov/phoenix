@@ -7,15 +7,14 @@
 import argparse
 
 # Function to get the script version
-def get_version():
-    return "2.0.0"
+__version__ = "2.0.0"
 
 def parseArgs(args=None):
     """Takes in a taxa file and creates a file with the taxa found"""
     parser = argparse.ArgumentParser(description='Script to convert taxonomy to correctly formatted mlst database name(s) to pull from pubmlst')
     parser.add_argument('-G', '--genus', dest="genus", required=False, help='genus of taxonomy')
     parser.add_argument('-s', '--species', dest="species", required=False, help='species of taxonomy')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
 # Function to look up correct tax name for finding correct folder
@@ -926,7 +925,7 @@ def convert(to_convert):
         'Moraxella catarrhalis' : 'mcatarrhalis',
         'Morganella morganii' : 'mmorganii',
         'Mycobacteria spp.' : 'mycobacteria',
-        'Mycobacteroides abscessus' : 'mycobacterium,mabscessus',
+        'Mycobacteroides abscessus' : 'mycobacteria,mabscessus',
         'Mycoplasma agalactiae' : 'magalactiae',
         'Mycoplasma anserisalpingitidis' : 'manserisalpingitidis',
         'Mycoplasma bovis' : 'mbovis',

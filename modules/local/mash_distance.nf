@@ -33,7 +33,7 @@ process MASH_DIST {
     "${task.process}":
         mash: \$(mash --version 2>&1)
         mash_container: ${container}
-        Mash Sketch: $reference
+        Mash_Sketch: $reference
     END_VERSIONS
     """
 }

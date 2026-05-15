@@ -43,7 +43,7 @@ process CLIA_GRIPHIN {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        CLIA_GRiPHin.py: \$(${ica}CLIA_GRiPHin.py --version)
+        \$(${ica}CLIA_GRiPHin.py --version)
         bldb_creation_date: \$(echo ${bldb} | sed 's/[^0-9]//g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}

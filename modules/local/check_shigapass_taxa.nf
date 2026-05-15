@@ -71,7 +71,7 @@ process CHECK_SHIGAPASS_TAXA {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        check_taxa.py: \$(${ica}check_taxa.py --version)
+        \$(${ica}check_taxa.py --version)
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

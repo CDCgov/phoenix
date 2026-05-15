@@ -14,11 +14,14 @@ process CREATE_AND_UPDATE_README {
       path(new_tax,      stageAs: 'new_tax/*'), 
       path(old_pf,       stageAs: 'old_pf/*'), 
       path(new_pf,       stageAs: 'new_pf/*'),
+      path(old_hv,       stageAs: 'old_hv/*'), 
+      path(new_hv,       stageAs: 'new_hv/*'),
       path(old_software_versions)
     val(current_phx_version)
     path(mlst_db)
     path(ar_db)
     path(pf_db)
+    path(hv_db)
     path(amrfinder_db)
 
     output:
@@ -39,9 +42,9 @@ process CREATE_AND_UPDATE_README {
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}Update_Readme.py --mlst_db ${mlst_db} --amrfinder_db ${amrfinder_db} --ar_db ${ar_db} --old_gamma ${old_gamma_ar} --new_gamma ${new_gamma_ar} \\
-        --old_ncbi ${old_ncbi_ar} --new_ncbi ${new_ncbi_ar} ${old_tax_file} ${new_tax_file} --old_pf ${old_pf} --new_pf ${new_pf} \\
-        -p ${pipeline_info} -d ${directory}/${prefix} -v ${current_phx_version} -o ${prefix}_updater_log.tsv --pf_db ${pf_db} ${old_updater_software_versions}
+    ${ica}Update_Readme.py --mlst_db ${mlst_db} --amrfinder_db ${amrfinder_db} --ar_db ${ar_db} --hv_db ${hv_db} --old_gamma ${old_gamma_ar} --new_gamma ${new_gamma_ar} \\
+        --old_ncbi ${old_ncbi_ar} --new_ncbi ${new_ncbi_ar} ${old_tax_file} ${new_tax_file} --old_pf ${old_pf} --new_pf ${new_pf} --old_hv ${old_hv} --new_hv ${new_hv}\\
+        -p ${pipeline_info} -d ${directory}/${prefix} -v ${current_phx_version} -o ${prefix}_updater_log.tsv --pf_db ${pf_db} --hv_db ${hv_db} ${old_updater_software_versions}
 
     #move to output location for process to complete
     mkdir edited/
@@ -52,7 +55,7 @@ process CREATE_AND_UPDATE_README {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        Update_Readme.py: \$(${ica}Update_Readme.py --version )
+        \$(${ica}Update_Readme.py --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

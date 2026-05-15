@@ -29,7 +29,7 @@ process RENAME_FASTA_HEADERS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        rename_fasta_headers.py: \$(${ica}rename_fasta_headers.py --version )
+        \$(${ica}rename_fasta_headers.py --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

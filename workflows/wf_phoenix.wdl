@@ -113,7 +113,9 @@ workflow phoenix_workflow {
     File? assembly_graph          = phoenix.assembly_graph           # gfa.gz
     File? filtered_scaffolds_log  = phoenix.filtered_scaffolds_log   # bbmap_filtered.log
     File? contigs                 = phoenix.contigs                  # contigs.fa.gz
+    File? unzipped_contigs        = phoenix.unzipped_contigs         # contigs.fa
     File? filtered_scaffolds      = phoenix.filtered_scaffolds       # filtered.scaffolds.fa.gz
+    File? unzipped_filtered_scaffolds = phoenix.unzipped_filtered_scaffolds # filtered.scaffolds.fa
     File? assembly_with_seq_names = phoenix.assembly_with_seq_names  # renamed.scaffolds.fa.gz
     File? assembly                = phoenix.assembly                 # scaffolds.fa.gz
     File? spades_log              = phoenix.spades_log               # spades.log

@@ -9,8 +9,7 @@ from decimal import *
 ##Written by Rich Stanton (njr5@cdc.gov) and Nick Vlachos (nvx4@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "2.0.0"
+__version__ = "2.0.0"
 
 def parse_cmdline():
 	"""Parse command-line arguments for script."""
@@ -18,7 +17,7 @@ def parse_cmdline():
 	parser.add_argument("-r1", "--r1_stats", dest="r1_stats", action="store", required=True, help="Text file with r1 stats, from q30.py script.")
 	parser.add_argument("-r2", "--r2_stats", dest="r2_stats", action="store", required=True, help="Text file with r2 stats, from q30.py script.")
 	parser.add_argument("-n", "--name", dest="name", action="store", required=True, help="Sample name")
-	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+	parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
 	args = parser.parse_args()
 	return args
 

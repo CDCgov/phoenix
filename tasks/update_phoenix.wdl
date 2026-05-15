@@ -3,28 +3,33 @@ version 1.0
 task update_phoenix {
   input {
     String   samplename
-    String   project_directory
+    File     current_full_results
     Int?     coverage = 30
     Int      memory = 64
     Int      cpu = 8
     Int      disk_size = 100
   }
   command <<<
-    version="v2.2.1"
+    version="v2.3.0"
     echo $version | tee VERSION
     date | tee DATE
 
     #download phoenix code to get the script from
     nextflow clone cdcgov/phoenix -r $version ./$version/
+
+    #untar data to update
+    mkdir ./full_results
+    tar -xzf ~{current_full_results} -C ./full_results
+    project_directory="/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/~{samplename}"
+
     # Make sample form
     echo "sample,directory" > sample.csv
-    echo "~{samplename},~{project_directory}" >> sample.csv
+    echo "~{samplename},$project_directory" >> sample.csv
     # Run PHoeNIx
     mkdir ~{samplename}
     cd ~{samplename}
     #set input variable
     input_file="--input ../sample.csv"
-    #set scaffold as blank variable
 
     # set shigapass db path
     shigapass_db="/opt/conda/envs/phoenix/share/shigapass-1.5.0/db"
@@ -38,7 +43,7 @@ task update_phoenix {
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
       cd ..
-      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}.tar.gz
+      tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}_updated.tar.gz
     else
       # Run failed
       tar -cf - work/ | gzip -n --best > work.tar.gz
@@ -52,17 +57,14 @@ task update_phoenix {
     #check if this was a CDC run or just regular
     mode=$(head -n1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "BUSCO_Lineage" && echo "CDC_PHOENIX" || echo "PHOENIX")
 
-    # Get N50 from Quast file
-    grep '^N50' ~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv | awk -F '\t' '{print $2}' | tee N50
-
     # Get AMRFinder+ output
-    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$12}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CLASSES
-    awk -F '\t' '{ if($8 == "core") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CORE_GENES
-    awk -F '\t' '{ if($8 == "plus") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_PLUS_GENES
-    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$13}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_SUBCLASSES
-    awk -F '\t' '{ if($9 == "STRESS") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_STRESS_GENES
-    awk -F '\t' '{ if($9 == "VIRULENCE") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
-    awk -F '\t' '{ if($11 == "BETA-LACTAM") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_BETA_LACTAM_GENES
+    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$12}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CLASSES
+    awk -F '\t' '{ if($8 == "core") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_CORE_GENES
+    awk -F '\t' '{ if($8 == "plus") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_PLUS_GENES
+    awk -F '\t' 'BEGIN{OFS=":"} {print $7,$13}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tail -n+2 | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_AMR_SUBCLASSES
+    awk -F '\t' '{ if($9 == "STRESS") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_STRESS_GENES
+    awk -F '\t' '{ if($9 == "VIRULENCE") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_VIRULENCE_GENES
+    awk -F '\t' '{ if($11 == "BETA-LACTAM") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_BETA_LACTAM_GENES
 
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
@@ -77,7 +79,7 @@ task update_phoenix {
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
     sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
-    if [ $mode == "PHOENIX"]; then
+    if [ ${mode} == "PHOENIX" ]; then
       if head -n 1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "ShigaPass_Organism"; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee SHIGAPASS_TAXA
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f29 | tee MLST_SCHEME_1
@@ -100,7 +102,7 @@ task update_phoenix {
         elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST2_NCBI
         else
-          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv  | awk -F'\t' '{if ($35 != "" && $35 != "-"); {gsub(/[^a-zA-Z0-9]/, "", $33); print "ML" $35 "_" $33}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
+          sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($35 != "" && $35 != "-"); gsub(/[^a-zA-Z0-9]/, "", $33); print "ML" $35 "_" $33}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
         fi
       else
         echo "" | tee SHIGAPASS_TAXA
@@ -127,7 +129,7 @@ task update_phoenix {
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($34 != "" && $34 != "-") {gsub(/[^a-zA-Z0-9]/, "", $32); print "ML" $34 "_" $32} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
         fi
       fi
-    elif [ $mode == "CDC_PHOENIX" ]; then
+    elif [ ${mode} == "CDC_PHOENIX" ]; then
       if head -n 1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "ShigaPass_Organism"; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee SHIGAPASS_TAXA
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_SCHEME_1
@@ -190,15 +192,14 @@ task update_phoenix {
   >>>
   output {
     File?   work_files                        = "work.tar.gz"
-    String  project_dir                       = read_string("PROJECT_DIR")
     String  phoenix_version                   = read_string("VERSION")
-    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.2.0"
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.3.0"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warnings                          = read_string("WARNINGS")
     String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
     String  taxa_source                       = read_string("TAXA_SOURCE")
-    String? shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
+    String  shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
     String  mlst_scheme_1                     = read_string("MLST_SCHEME_1")
     String  mlst_1                            = read_string("MLST_1")
     String  mlst1_ncbi                        = read_string("MLST1_NCBI")
@@ -206,7 +207,7 @@ task update_phoenix {
     String  mlst_2                            = read_string("MLST_2")
     String  mlst2_ncbi                        = read_string("MLST2_NCBI")
     String  gamma_beta_lactam_genes           = read_string("GAMMA_BETA_LACTAM_RESISTANCE_GENES")
-    String  other_ar_genes                    = read_string("OTHER_AR_GENES")
+    String  gamma_other_ar_genes              = read_string("GAMMA_OTHER_AR_GENES")
     String  amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")
     String  amrfinder_amr_classes             = read_string("AMRFINDERPLUS_AMR_CLASSES")
     String  amrfinder_amr_subclasses          = read_string("AMRFINDERPLUS_AMR_SUBCLASSES")
@@ -219,35 +220,41 @@ task update_phoenix {
     String  plasmid_incompatibility_replicons = read_string("PLASMID_INCOMPATIBILITY_REPLICONS")
     String  qc_issues                         = read_string("QC_ISSUES")
     #summary files
-    File updater_log              =  "phx_output/~{samplename}/~{samplename}_updater_log.tsv"
-    File full_results             = "~{samplename}.tar.gz"
+    File updater_log              = "~{samplename}/phx_output/~{samplename}/~{samplename}_updater_log.tsv"
+    File updated_full_results     = "~{samplename}_updated.tar.gz"
     File griphin_excel_summary    = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.xlsx"
     File griphin_tsv_summary      = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv"
     File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
     #phoenix ani
-    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20250214.fastANI.txt"
+    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20260505.fastANI.txt"
     #phoenix quast and mlst
     File  mlst_tsv                 = "~{samplename}/phx_output/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
-    File? srst2                    = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20250519_srst2__results.txt"
+    File? srst2                    = "~{samplename}/phx_output/~{samplename}/srst2/~{samplename}__fullgenes__ResGANNCBI_20260430_srst2__results.txt"
     #phoenix gamma
-    File  gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250519_srst2.gamma"
-    File  blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20250519_srst2.psl"
+    File? gamma_ar_calls           = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20260430_srst2.gamma"
+    File? blat_ar_calls            = "~{samplename}/phx_output/~{samplename}/gamma_ar/~{samplename}_ResGANNCBI_20260430_srst2.psl"
+    File? gamma_hv_calls           = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20260507.gamma"
+    File? blat_hv_calls            = "~{samplename}/phx_output/~{samplename}/gamma_hv/~{samplename}_HyperVirulence_20260507.psl"
+    File? gamma_pf_calls           = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20260430.gamma"
+    File? blat_pf_calls            = "~{samplename}/phx_output/~{samplename}/gamma_pf/~{samplename}_PF-Replicons_20260430.psl"
     #phoenix output
+    File? assembly_ratio_file      = "~{samplename}/phx_output/~{samplename}/~{samplename}_Assembly_ratio_20260508.txt"
+    File? gc_content_file          = "~{samplename}/phx_output/~{samplename}/~{samplename}_GC_content_20260508.txt"
     File  summary_line             = "~{samplename}/phx_output/~{samplename}/~{samplename}_summaryline.tsv"
     File  synopsis                 = "~{samplename}/phx_output/~{samplename}/~{samplename}.synopsis"
     File? best_taxa_id             = "~{samplename}/phx_output/~{samplename}/~{samplename}.tax"
     #phoenix amrfinder
-    File  amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations_20250325.tsv"
+    File? amrfinder_mutations      = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_mutations_20260324.tsv"
     File? amrfinder_taxa_match     = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_AMRFinder_Organism.csv"
-    File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20250325.tsv"
+    File? amrfinder_hits           = "~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv"
     #species specific
     File? shigapass_summary        = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_ShigaPass_summary.csv"
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File  versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
+    File  versions_file            = "~{samplename}/phx_output/update_pipeline_info/software_versions.yml"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:d41682797fd662a4430a0f624475b0761a94611184f26f8acab769d3263b4153" # 2.2.0
+    docker: "quay.io/jvhagey/phoenix@sha256:2b7074686ff21486c6abe569e6475589d3ed98522bb1689cadd9a08824635f2c" # 2.3.0
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"

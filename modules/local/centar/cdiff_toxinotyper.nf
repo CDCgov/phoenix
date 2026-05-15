@@ -23,16 +23,16 @@ process CDIFF_TOXINOTYPER {
     //set up for terra
     // terra=true sets paths for blat for terra container paths
     if (params.terra==false) { terra = ""} 
-    else if (params.terra==true) { terra = "-p terra" }
+    else if (params.terra==true) { terra = "-p" }
     else { error "Please set params.terra to either \"true\" or \"false\"" }
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "staphb/gamma@"
     """
-    ${ica}blat_toxinotypes.sh -i ${assembly} -d ${tox_database} -t ${tox_definitions} -o ${prefix} $terra
+    ${ica}blat_toxinotypes.py -i ${assembly} -d ${tox_database} -t ${tox_definitions} -o ${prefix} $terra
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        blat_toxinotypes.sh: \$(${ica}blat_toxinotypes.sh -V)
+        \$(${ica}blat_toxinotypes.py -V)
         gamma_container: ${container}
     END_VERSIONS
     """

@@ -472,10 +472,14 @@ workflow PHOENIX_EXTERNAL {
         //final_tax_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.collect().concat(DETERMINE_TAXA_ID.out.taxonomy.collect()).flatten().collate(2)
         //ani_best_hit_ch = CHECK_SHIGAPASS_TAXA.out.ani_best_hit.collect().concat(FORMAT_ANI.out.ani_best_hit.collect()).flatten().collate(2)
 
+        // Synthesize run_type channel in the format the subworkflow expects: [meta, rt_map]
+        run_type_ch = KRAKEN2_WTASMBLD.out.report
+            .map { meta, report -> [ meta, [base: params.mode_upper] ] }
+
         GENERATE_PIPELINE_STATS_WF (
             GET_RAW_STATS.out.combined_raw_stats, \
             GET_TRIMD_STATS.out.fastp_total_qc, \
-            [], \
+            Channel.empty(), \
             KRAKEN2_TRIMD.out.report, \
             KRAKEN2_TRIMD.out.krona_html, \
             KRAKEN2_TRIMD.out.k2_bh_summary, \
@@ -486,7 +490,10 @@ workflow PHOENIX_EXTERNAL {
             GAMMA_AR.out.gamma, \
             GAMMA_PF.out.gamma, \
             QUAST.out.report_tsv, \
-            [], [], [], [], \
+            Channel.empty(), \
+            Channel.empty(), \
+            Channel.empty(), \
+            Channel.empty(), \
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
@@ -494,7 +501,8 @@ workflow PHOENIX_EXTERNAL {
             CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
-            CALCULATE_ASSEMBLY_RATIO.out.gc_content
+            CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
+            run_type_ch
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 

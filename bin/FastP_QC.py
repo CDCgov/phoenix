@@ -13,8 +13,7 @@ from argparse import ArgumentParser
 ##Written by Rich Stanton (njr5@cdc.gov) and Nick Vlachos (nvx4@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "2.0.0"
+__version__ = "2.0.0"
 
 def parse_cmdline():
 	"""Parse command-line arguments for script."""
@@ -22,7 +21,7 @@ def parse_cmdline():
 	parser.add_argument("-t", "--trimmed_json", dest="trimmed_json", action="store", required=True, help="Json from fastp output on trimmed reads")
 	parser.add_argument("-s", "--single_json", dest="single_json", action="store", required=True, help="Json from fastp output on single reads.")
 	parser.add_argument("-n", "--name", dest="name", action="store", required=True, help="Sample name")
-	parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+	parser.add_argument("-V", "--version",  action="version", version=f"%(prog)s: {__version__}")# Add an argument to display the version
 	args = parser.parse_args()
 	return args
 

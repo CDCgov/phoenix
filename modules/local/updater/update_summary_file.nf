@@ -46,7 +46,7 @@ process UPDATE_SUMMARY_FILE {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        Update_Phoenix_summary_line.py: \$(${ica}Update_Phoenix_summary_line.py --version )
+        \$(${ica}Update_Phoenix_summary_line.py --version )
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
     END_VERSIONS

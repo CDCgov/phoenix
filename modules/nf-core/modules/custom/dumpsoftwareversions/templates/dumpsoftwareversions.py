@@ -71,6 +71,7 @@ for process, process_versions in versions_by_process.items():
 versions_by_module["Workflow"] = {
     "Nextflow": "$workflow.nextflow.version",
     "$workflow.manifest.name": "$workflow.manifest.version",
+    "Mode": "$params.mode_upper",
 }
 
 versions_mqc = {

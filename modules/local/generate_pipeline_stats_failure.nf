@@ -19,36 +19,31 @@ process GENERATE_PIPELINE_STATS_FAILURE {
     path("versions.yml")               , emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
-    // terra=true sets paths for bc/wget for terra container paths
-    def terra = params.terra ? "-2 terra" : ""
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    def ica = params.ica ? "bash ${params.bin_dir}" : ""
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def srst_fullgenes_file = srst_fullgenes ? "-x $srst_fullgenes" : ""
+    def srst_fullgenes_file = srst_fullgenes ? "--srst2-file $srst_fullgenes" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
     # this runs with --mode CDC_PHEONIX or PHOENIX when SPAdes fails (creates contigs and not scaffolds)
-    ${ica}pipeline_stats_writer.sh \\
-        -a $raw_qc \\
-        -b $fastp_total_qc \\
-        -d ${prefix} \\
-        -e $k2_trim_report \\
-        -f $k2_trim_summary \\
-        -g $krona_trimd \\
-        -q $taxID \\
+    ${ica}pipeline_stats_writer.py \\
+        --raw-read-counts $raw_qc \\
+        --total-read-counts $fastp_total_qc \\
+        --sample-name ${prefix} \\
+        --kraken2-trimd-report $k2_trim_report \\
+        --kraken2-trimd-summary $k2_trim_summary \\
+        --krona-trimd $krona_trimd \\
+        --taxid-file $taxID \\
         $srst_fullgenes_file \\
-        -5 $coverage \\
-        $terra
-
-    script_version=\$(${ica}pipeline_stats_writer.sh -V)
+        --coverage $coverage
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${script_version}
+        \$(${ica}pipeline_stats_writer.py -V)
     END_VERSIONS
     """
 }

@@ -10,8 +10,7 @@ import re
 ## Written by Jill Hagey (qpk9@cdc.gov)
 
 # Function to get the script version
-def get_version():
-    return "2.1.0" #2.1.0 had --clia added
+__version__ = "2.1.0" #2.1.0 had --clia added
 
 def parseArgs(args=None):
     """Takes in a taxa file and creates a file with the taxa found"""
@@ -19,7 +18,7 @@ def parseArgs(args=None):
     parser.add_argument('-t', '--taxa', dest="taxa_file", required=True, help='.tax file that comes from determine_taxID.sh')
     parser.add_argument('-a', '--abritamr_taxa', dest="abritamr_taxa", default=False, action='store_true', help='Creates a *_ABRITAMR_Organism.csv file for abritamr with taxa.')
     parser.add_argument('-o', '--output', dest="output", required=True, help='name of output file prefix')
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument("-V", "--version",      action="version", version=f"%(prog)s: {__version__}")
     return parser.parse_args()
 
 def get_taxa(taxa_file):

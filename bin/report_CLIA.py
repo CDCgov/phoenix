@@ -11,6 +11,7 @@ import logging
 import os, glob
 from ar_tiers_processor import get_ar_tiers
 from AMRFinder_ftsI_mutations_ID_Cov import get_ftsi_mutations
+from ANI_target import get_ani_targets
 
 ##CLIA WGS Run Summary generating script for CLIA Phoenix
 ###1-7-2026
@@ -18,8 +19,7 @@ from AMRFinder_ftsI_mutations_ID_Cov import get_ftsi_mutations
 ###email: dyp9@cdc.gov
 
 # Function to get the script version
-def get_version():
-    return "1.1.0"
+__version__ = "1.1.0"
 
 def parse_args():
     parser = argparse.ArgumentParser( formatter_class = argparse.RawTextHelpFormatter, description = "Summary report generating script for CLIA Phoenix" )
@@ -30,7 +30,9 @@ def parse_args():
     parser.add_argument('--ar_database', dest="ar_database", type=str, help='AR Databased used with AMRFinderPlus.', required=True)
     parser.add_argument('--abritamr_version', default='1.0.17', dest="abritamr_version", type=str, help='abritamr version.', required=False)
     parser.add_argument('--coverage', default=40, dest="coverage", type=str, help='Coverage cut off to use.', required=False)
-    parser.add_argument('--version', action='version', version=get_version())# Add an argument to display the version
+    parser.add_argument('--ani_cutoff', default=95.0, dest="ani_cutoff", type=float, help='ANI identity cutoff percentage (default: 95.0).', required=False)
+    parser.add_argument('--ani_coverage_cutoff', default=70.0, dest="ani_coverage_cutoff", type=float, help='ANI coverage cutoff percentage (default: 70.0).', required=False)
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s: {__version__}")
     opts = parser.parse_args()
     return opts
 
@@ -253,8 +255,8 @@ def clia_report(args):
         ar_tiers_df = get_ar_tiers(project_dir, matching_files[0])
         
         # Remove "other" column from ar_tiers_df if it exists
-        if 'other' in ar_tiers_df.columns:
-            ar_tiers_df = ar_tiers_df.drop(columns=['other'])
+        #if 'other' in ar_tiers_df.columns:
+        #    ar_tiers_df = ar_tiers_df.drop(columns=['other'])
         
         # Save AR tiers data to CSV for testing
         ar_tiers_csv_file = f"AR_tiers_output_{date.today().strftime('%Y-%m-%d')}.csv"
@@ -271,7 +273,10 @@ def clia_report(args):
         if 'ftsI_mutations' in ar_tiers_df.columns:
             ar_tiers_df['ftsI_mutations'] = ar_tiers_df['ftsI_mutations'].fillna('').replace('nan', '')
 
-        taxa_columns_to_read = ['WGS_ID','Taxa_Source','ShigaPass_Organism','FastANI_Organism','BUSCO_%Match','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
+        header_df = pd.read_csv(matching_files[0], sep='\t', nrows=0)
+        desired_taxa_columns = ['WGS_ID','Taxa_Source','ShigaPass_Organism','FastANI_Organism','BUSCO_%Match','Kraken_ID_WtAssembly_%','FastANI_%ID','FastANI_%Coverage','Taxa_Source']
+        taxa_columns_to_read = [col for col in desired_taxa_columns if col in header_df.columns]
+
         taxa_df = pd.read_csv(matching_files[0],sep='\t', usecols=taxa_columns_to_read)
         
         # Remove extra notes at the end of the file - same as get_griphin_df
@@ -375,6 +380,17 @@ def clia_report(args):
         taxa_df['Bases Aligned to FastANI Taxon (%)'] = taxa_df['Bases Aligned to FastANI Taxon (%)'].apply(lambda x: color_yellow(x, FASTANI_COVERAGE, "<"))
         #taxa_df['Genome Size'] = taxa_df['Genome Size'].apply(lambda x: color_red(x, ASSEMBLY_LENGTH, "<"))
         taxa_df['BUSCO Match (%)'] = taxa_df['BUSCO Match (%)'].apply(lambda x: color_yellow(x, BUSCO, "<"))
+        
+        # Get additional ANI target species (excluding the best match already shown in FastANI columns)
+        ani_targets_df = get_ani_targets(project_dir, args.ani_cutoff, args.ani_coverage_cutoff)
+        if not ani_targets_df.empty:
+            taxa_df = taxa_df.merge(ani_targets_df[['ID', 'ANI_Target_Species']], on='ID', how='left')
+            taxa_df['ANI_Target_Species'] = taxa_df['ANI_Target_Species'].fillna('').replace('nan', '')
+        else:
+            taxa_df['ANI_Target_Species'] = ''
+        
+        # Rename for display
+        taxa_df = taxa_df.rename(columns={'ANI_Target_Species': 'Other ANI Species (% ID, % Coverage)'})
     else:
         logging.info(f"No GRiPHin file: {matching_files[0]}")
     
@@ -477,7 +493,9 @@ def clia_report(args):
         <h2>{stitle4}</h2>
         {taxa_df.to_html(index=False, escape=False, justify="left", classes = 'table table-bordered', border=1)}
         <p style='font-size: 0.8em'>1. {note_text4}</br>
-        <style='font-size: 0.8em'>2. {note_text3}</br>
+        2. {note_text3}</br>
+        3. Taxonomic QC: <font style="background-color: lightcoral">FAIL</font> if QC failed, FastANI match &lt;{FASTANI_MATCH}%, or FastANI coverage &lt;{FASTANI_COVERAGE}%; <font style="background-color: lightgoldenrodyellow">WARNING</font> if BUSCO &lt;{BUSCO}% or Kraken assembly &lt;{KRAKEN_ASSEMBLY_GENUS}%; otherwise PASS.</br>
+        4. Other ANI Species (% ID, % Coverage) lists additional species (excluding the top FastANI hit) with ANI &gt;= {args.ani_cutoff}% and coverage &gt;= {args.ani_coverage_cutoff}% (unspecific *_sp. excluded).</br>
         </p>
         <h2>{stitle6}</h2>
         {ar_tiers_df.to_html(index=False, escape=False, justify="left", classes = 'table table-bordered', border=1)}
