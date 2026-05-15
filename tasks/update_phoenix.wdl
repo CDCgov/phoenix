@@ -207,7 +207,7 @@ task update_phoenix {
     String  mlst_2                            = read_string("MLST_2")
     String  mlst2_ncbi                        = read_string("MLST2_NCBI")
     String  gamma_beta_lactam_genes           = read_string("GAMMA_BETA_LACTAM_RESISTANCE_GENES")
-    String  other_ar_genes                    = read_string("OTHER_AR_GENES")
+    String  gamma_other_ar_genes              = read_string("GAMMA_OTHER_AR_GENES")
     String  amrfinder_point_mutations         = read_string("AMRFINDER_POINT_MUTATIONS")
     String  amrfinder_amr_classes             = read_string("AMRFINDERPLUS_AMR_CLASSES")
     String  amrfinder_amr_subclasses          = read_string("AMRFINDERPLUS_AMR_SUBCLASSES")
