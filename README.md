@@ -4,8 +4,7 @@ PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality
 
 <!-- [![GitHub Downloads](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social[![GitHub Downloads](https://img.shields.io/github/downloads/CDCgov/phoenix/total.svg?style=social&logo=github&label=Download-) -->  
 
-[![DOI](https://zenodo.org/badge/490844937.svg)](https://doi.org/10.5281/zenodo.7702319)
-
+[![DOI](https://zenodo.org/badge/490844937.svg)](https://doi.org/10.5281/zenodo.20193081)
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A521.10.3-23aa62.svg?labelColor=000000)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
