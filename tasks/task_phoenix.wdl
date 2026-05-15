@@ -404,7 +404,7 @@ task phoenix {
     Array[File]? ncbi_biosample    = glob("~{samplename}/phx_output/*_BiosampleAttributes_Microbe.1.0.xlsx")
     Array[File]? ncbi_sra_metadata = glob("~{samplename}/phx_output/*_Sra_Microbe.1.0.xlsx")
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File versions_file             = "~{samplename}/phx_output/update_pipeline_info/software_versions.yml"
+    File versions_file             = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
     File? multiqc_output           = "~{samplename}/phx_output/multiqc/multiqc_report.html"
   }
   runtime {

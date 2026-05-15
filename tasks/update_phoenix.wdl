@@ -251,7 +251,7 @@ task update_phoenix {
     #species specific
     File? shigapass_summary        = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_ShigaPass_summary.csv"
     #full results - optional for SCAFFOLDS and CDC_SCAFFOLDS entries
-    File  versions_file            = "~{samplename}/phx_output/pipeline_info/software_versions.yml"
+    File  versions_file            = "~{samplename}/phx_output/update_pipeline_info/software_versions.yml"
   }
   runtime {
     docker: "quay.io/jvhagey/phoenix@sha256:2b7074686ff21486c6abe569e6475589d3ed98522bb1689cadd9a08824635f2c" # 2.3.0
