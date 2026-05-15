@@ -96,7 +96,8 @@ class InputChannelUtils {
             ncbi_stats_ratio: /_Assembly_stats_(\d{8})\.txt/,
             ncbi_stats_gc   : /_Assembly_stats_(\d{8})\.txt/,
             srst2           : /ResGANNCBI_(\d{8})_srst2\.fasta/,
-            gamma_pf        : /PF-Replicons_(\d{8})\.fasta/
+            gamma_pf        : /PF-Replicons_(\d{8})\.fasta/,
+            gamma_hv        : /HyperVirulence_(\d{8})\.fasta/
         ]
         def dbFilename = db_path.toString().tokenize('/').last()
         def match = (dbFilename =~ patterns[type])
