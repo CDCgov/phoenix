@@ -35,7 +35,7 @@ workflow update_phoenix_workflow {
     String  mlst_2                            = update_phoenix.mlst_2
     String  mlst2_ncbi                        = update_phoenix.mlst2_ncbi
     String  gamma_beta_lactam_genes           = update_phoenix.gamma_beta_lactam_genes
-    String  other_ar_genes                    = update_phoenix.other_ar_genes
+    String  gamma_other_ar_genes                    = update_phoenix.gamma_other_ar_genes
     String  amrfinder_point_mutations         = update_phoenix.amrfinder_point_mutations
     String  amrfinder_amr_classes             = update_phoenix.amrfinder_amr_classes
     String  amrfinder_amr_subclasses          = update_phoenix.amrfinder_amr_subclasses
