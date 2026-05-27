@@ -387,3 +387,11 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Container Updates:**  
 - Containers updated to include developers bug fixes:  
   - amrfinderplus: v4.2.5 to [v4.2.7](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.2.7)  
+
+## [v2.3.1](https://github.com/CDCgov/phoenix/releases/tag/v2.3.1) (06/XX/2026)
+
+**Fixed Bugs:**  
+- Fixed bug that caused failure for when Shigella spp is identified [issue 210](https://github.com/CDCgov/phoenix/issues/210).  
+- Fixed bug that caused failure on Terra.bio at PROKKA step [issue 209](https://github.com/CDCgov/phoenix/issues/209).  
+- MLST Fixes:  
+   - 
