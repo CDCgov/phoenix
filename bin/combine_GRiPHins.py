@@ -137,6 +137,7 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
     # Read the Excel file, skipping the first row and using the second row as the header
     try: #check that this is an excel file
         df = pd.read_excel(file_path,
+            keep_default_na=False,
             converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
@@ -524,6 +525,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
     # Read the Excel file, skipping the first row and using the second row as the header
     try: #check that this is an excel file
         df_1 = pd.read_excel(file_path1,
+            keep_default_na=False,
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header
             skipfooter=footer_lines1,engine='openpyxl')
@@ -541,6 +543,7 @@ def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder)
         raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
     try: #check that this is an excel file
         df_2 = pd.read_excel(file_path2,
+            keep_default_na=False,
             converters={'CEMB RT Crosswalk': str},
             skiprows=1,  # Skip the first header row
             header=0,    # Use the second row as the header

@@ -274,6 +274,12 @@ def find_species_taxid(genus: str, species: str, by_name: dict) -> int:
     key2 = key.replace("-", " ")
     return by_name.get(key2, 0)
 
+def print_tax_map(taxid_map: dict) -> None:
+    print("TaxID map:")
+    for lvl in TAXA_LEVELS:
+        tid = taxid_map.get(lvl, 0)
+        print(f"  {lvl}: {tid}")
+
 
 def find_genus_taxid(genus: str, by_name: dict) -> int:
     return by_name.get(genus.lower(), 0)
@@ -347,15 +353,30 @@ def write_tax(sample_name: str, source: str, confidence: str, source_file: str,
     # Species display: lowercase full name then cut field 2+, matching bash:
     #   tax_name_list[species]=$(echo ${tax_name_list[species],,} | cut -d' ' -f2-)
     # Exception: if "sp." is in the name, skip the lowercase and just cut field 2+
+#    if sp_name not in ("NA", "Unknown"):
+#        if "sp." in sp_name:
+#            # bash: cut -d' ' -f2- without lowercasing
+#            sp_name = " ".join(sp_name.split()[1:])
+#        else:
+#            # bash: lowercase entire string first, then cut field 2+
     sp_name = name_map.get("species", "NA")
-    if sp_name not in ("NA", "Unknown"):
-        if "sp." in sp_name:
-            # bash: cut -d' ' -f2- without lowercasing
-            sp_name = " ".join(sp_name.split()[1:])
+    genus_name = name_map.get("genus", "NA")
+    parts = sp_name.split()
+
+    if len(parts) > 1:
+        # Strip genus prefix first if something meaningful remains after
+        if parts[0].lower() == genus_name.lower():
+            remaining = parts[1:]
+            if not (len(remaining) == 1 and remaining[0].lower() == genus_name.lower()):
+                parts = remaining
+
+        # Now check what we're left with and format accordingly
+        if parts[0].lower() == "sp.":
+            sp_name = "sp. " + "_".join(parts[1:])
         else:
-            # bash: lowercase entire string first, then cut field 2+
-            parts   = sp_name.lower().split()
-            sp_name = " ".join(parts[1:]) if len(parts) > 1 else sp_name.lower()
+            sp_name = "_".join(parts)
+    else:
+        sp_name = sp_name.lower()
 
     out = Path(f"{sample_name}.tax")
     with out.open("w") as fh:
@@ -410,6 +431,7 @@ def main() -> None:
         print("No ACCEPTABLE source found to determine taxonomy")
         sys.exit(0)
 
+
     # Walk taxonomy tree
     taxid_map = {lvl: 0 for lvl in TAXA_LEVELS}
 
@@ -433,7 +455,6 @@ def main() -> None:
 
     write_tax(args.sample_name, source, confidence, source_file,
               taxid_map, name_map, species)
-
 
 if __name__ == "__main__":
     main()

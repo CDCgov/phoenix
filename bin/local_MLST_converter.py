@@ -993,7 +993,7 @@ def convert(to_convert):
         'Trueperella pyogenes' : 'tpyogenes',
         'Ureaplasma spp.' : 'ureaplasma',
         'Vibrio spp.' : 'vibrio',
-        'Vibrio cholerae' : 'vcholerae,vcholerae_2',
+        'Vibrio cholerae' : 'vcholerae,vcholerae_O1_and_O139',
         'Vibrio parahaemolyticus' : 'vparahaemolyticus',
         'Vibrio tapetis' : 'vtapetis',
         'Vibrio vulnificus' : 'vvulnificus',
