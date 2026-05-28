@@ -389,9 +389,17 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - amrfinderplus: v4.2.5 to [v4.2.7](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.2.7)  
 
 ## [v2.3.1](https://github.com/CDCgov/phoenix/releases/tag/v2.3.1) (06/XX/2026)
+**Database Updates:**
+- ANI REFSEQ database: 20260521
+- MLST               : 20260526
 
 **Fixed Bugs:**  
 - Fixed bug that caused failure for when Shigella spp is identified [issue 210](https://github.com/CDCgov/phoenix/issues/210).  
-- Fixed bug that caused failure on Terra.bio at PROKKA step [issue 209](https://github.com/CDCgov/phoenix/issues/209).  
+- Fixed bug that caused failure on Terra.bio at PROKKA step [issue 209](https://github.com/CDCgov/phoenix/issues/209).
+- Fixed bug that resulted in failed lookups for taxa with parentheses and, in some cases, 'sp.' in the NCBI_Assembly_Stats file. Improved determine_taxa_id.py lookup handling and adjusted how parentheses are handled during ANI database creation  
 - MLST Fixes:  
-   - 
+   - Fixed issue with vcholorae's 2nd scheme being pointed to the wrong folder (non-existent)
+- GRiPHin Fixes:
+   - Fixed bug that caused NA to disappear from Stdev column, which would then skip the warning that there were <10 references for ratio and gc calculations
+   - Fixed bug that cut off text after sp. in kraken 2
+   - Fixed bug causing some BIG-5 genes to not be highlighted correctly (example blaOXA-23)
