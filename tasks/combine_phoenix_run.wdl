@@ -14,7 +14,7 @@ task combine_phoenix_run {
     String? combined_ncbi_sra_xlsx_prefix
   }
   command <<<
-    version="v2.3.0"
+    version="v2.4.0-dev"
     echo $version | tee VERSION
     date | tee DATE
 
@@ -226,7 +226,7 @@ task combine_phoenix_run {
     String  analysis_date           = read_string("DATE")
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:2b7074686ff21486c6abe569e6475589d3ed98522bb1689cadd9a08824635f2c" # 2.3.0
+    docker: "quay.io/jvhagey/phoenix@sha256:7839b36b06b398a855d03c3e4bd277379402ca180b85fb42350ca405ea470952" # 2.3.1
     memory: "8 GB"
     cpu: 1
     disks:  "local-disk 100 SSD"
