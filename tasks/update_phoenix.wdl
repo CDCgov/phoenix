@@ -254,7 +254,7 @@ task update_phoenix {
     File  versions_file            = "~{samplename}/phx_output/update_pipeline_info/software_versions.yml"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:f01fb93aeb7fe468a6205dfcbafab03b12f1a452956a0bc28302123b00be8de9" # 2.3.1
+    docker: "quay.io/jvhagey/phoenix@sha256:57ffd29a89177d6e81dbe06515f8bd2f2e32373de5f51f304d1ce8e3ca2c6b39" # 2.3.1
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"
