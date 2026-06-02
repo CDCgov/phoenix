@@ -226,7 +226,7 @@ task combine_phoenix_run {
     String  analysis_date           = read_string("DATE")
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:57ffd29a89177d6e81dbe06515f8bd2f2e32373de5f51f304d1ce8e3ca2c6b39" # 2.3.1
+    docker: "quay.io/jvhagey/phoenix@sha256:cf9401919f6a5a6d1c6ca4936c679777ea58e82ee9dcc4bcd4005b27ba4435fa" # 2.3.1
     memory: "8 GB"
     cpu: 1
     disks:  "local-disk 100 SSD"
