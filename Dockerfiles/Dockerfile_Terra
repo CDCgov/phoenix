@@ -21,7 +21,7 @@ ENV CONDA_SOLVER=libmamba
 
 # creating base environment
 RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
-    conda-forge::python  \
+    conda-forge::python=3.12.3  \
     conda-forge::biopython \
     pandas=2.3.3 \
     openpyxl \
@@ -46,7 +46,7 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     # you need this not the Jetbrains versio of java https://github.com/nextflow-io/nextflow/issues/2841
     conda-forge::openjdk \
     #bioconda::bbmap=39.13 \
-    bioconda::multiqc=1.14 \
+    bioconda::multiqc=1.24.1 \
     bioconda::fastp=0.24.0 \
     bioconda::mash=2.3 \
     #bioconda::mlst=2.25.0 \
