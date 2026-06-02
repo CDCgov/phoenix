@@ -69,7 +69,9 @@ task update_phoenix {
     # Gather Phoenix Output
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
+    # strip out commans in numbers
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f7 | sed ':a;s/\([0-9]\),\([0-9]\)/\1\2/;ta' | awk -F',' '{print NF}' | tee WARNING_COUNT
+    #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee WARNINGS
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
@@ -197,6 +199,7 @@ task update_phoenix {
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warnings                          = read_string("WARNINGS")
+    String  warning_count                     = read_string("WARNING_COUNT")
     String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
     String  taxa_source                       = read_string("TAXA_SOURCE")
     String  shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
@@ -254,7 +257,7 @@ task update_phoenix {
     File  versions_file            = "~{samplename}/phx_output/update_pipeline_info/software_versions.yml"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:55a0e01cfcadf8115d351786bf2e22043b589c7af56b5d40d91a470ff002f5ec" # 2.3.1
+    docker: "quay.io/jvhagey/phoenix@sha256:13072c5abb61f14e6cb1da67d6b6cf6a31faa645212d6598c41a6d8f09f798c8" # 2.3.1
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"

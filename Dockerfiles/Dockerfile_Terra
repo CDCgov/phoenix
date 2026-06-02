@@ -46,6 +46,8 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     # you need this not the Jetbrains versio of java https://github.com/nextflow-io/nextflow/issues/2841
     conda-forge::openjdk \
     #bioconda::bbmap=39.13 \
+    # need kaleido<1 for multiqc to work
+    conda-forge::python-kaleido<1 \
     bioconda::multiqc=1.24.1 \
     bioconda::fastp=0.24.0 \
     bioconda::mash=2.3 \
