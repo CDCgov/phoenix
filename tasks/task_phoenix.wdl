@@ -410,7 +410,7 @@ task phoenix {
     File? multiqc_output           = "~{samplename}/phx_output/multiqc/multiqc_report.html"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:13072c5abb61f14e6cb1da67d6b6cf6a31faa645212d6598c41a6d8f09f798c8" #v2.3.1
+    docker: "quay.io/jvhagey/phoenix@sha256:9fea54d258300e7b276883410a1ffb1fefa3aac23e27d33f98d3b4f776e26894" #v2.3.1
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"
