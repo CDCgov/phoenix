@@ -389,7 +389,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - amrfinderplus: v4.2.5 to [v4.2.7](https://github.com/ncbi/amr/releases/tag/amrfinder_v4.2.7)  
   - MultiQC: 1.14 to [1.24.1](https://github.com/MultiQC/MultiQC/releases/tag/v1.24.1) 
 
-## [v2.3.1](https://github.com/CDCgov/phoenix/releases/tag/v2.3.1) (06/XX/2026)
+## [v2.3.1](https://github.com/CDCgov/phoenix/releases/tag/v2.3.1) (06/03/2026)
 
 **Database Updates:**
 - ANI REFSEQ database: 20260521
