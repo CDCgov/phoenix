@@ -4,7 +4,7 @@ FROM mambaorg/micromamba:2.0.5
 LABEL base.image="mambaorg/micromamba:2.0.5"
 LABEL dockerfile.version="2"
 LABEL software="phoenix"
-LABEL software.version="2.2.0"
+LABEL software.version="2.3.1"
 LABEL description="PHoeNIx: A short-read pipeline for healthcare-associated and antimicrobial resistant pathogens"
 LABEL website="https://github.com/cdcgov/phoenix/"
 LABEL license="https://github.com/CDCgov/phoenix/blob/main/LICENSE"
@@ -28,8 +28,6 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::rsync \
     conda-forge::numpy=2.3.5 \
     conda-forge::xlsxwriter=3.2.9 \
-    conda-forge::bc \
-    conda-forge::wget \
     conda-forge::ca-certificates \
     conda-forge::procps-ng \
     conda-forge::coreutils \
@@ -37,7 +35,6 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::gsutil \
     conda-forge::pigz \
     conda-forge::xz \
-    conda-forge::setuptools \
     git \
     graphviz \
     conda-forge::libcurl \
@@ -47,7 +44,7 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     conda-forge::openjdk \
     #bioconda::bbmap=39.13 \
     # need kaleido<1 for multiqc to work
-    conda-forge::python-kaleido<1 \
+    conda-forge::python-kaleido=0.2.1 \
     bioconda::multiqc=1.24.1 \
     bioconda::fastp=0.24.0 \
     bioconda::mash=2.3 \
@@ -67,8 +64,8 @@ RUN micromamba create -n phoenix -c defaults -c bioconda -c conda-forge \
     micromamba clean -a -y
     #&& echo "source activate phoenix" >> ~/.bashrc
 
-RUN micromamba create -n bbmap -c conda-forge bioconda::bbmap=39.13 -y && \
-    micromamba create -n quast -c conda-forge bioconda::quast=5.3.0 -y && \
+RUN micromamba create -n bbmap -c conda-forge bioconda::bbmap=39.13 -y
+RUN micromamba create -n quast -c conda-forge bioconda::quast=5.3.0 -y && \
     micromamba create -n prokka -c conda-forge bioconda::prokka=1.14.5 "conda-forge::parallel<=20210422" -y && \
     micromamba create -n busco -c conda-forge -c bioconda python=3.12.11 numpy=2.3.1 busco=6.0.0 -y && \
     micromamba create -n srst2 -c conda-forge bioconda::srst2==0.2.0  -y && \

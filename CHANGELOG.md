@@ -390,17 +390,23 @@ Below are the list of changes to phx since is initial release. As fixes can take
   - MultiQC: 1.14 to [1.24.1](https://github.com/MultiQC/MultiQC/releases/tag/v1.24.1) 
 
 ## [v2.3.1](https://github.com/CDCgov/phoenix/releases/tag/v2.3.1) (06/XX/2026)
+
 **Database Updates:**
 - ANI REFSEQ database: 20260521
-- MLST               : 20260526
+- MLST               : 20260603
+
+**Implemented Enhancements:**  
+- Added `Alerts` column to Terra.bio output to be in line with the rest of PHX output.  
 
 **Fixed Bugs:**  
 - Fixed bug that caused failure for when Shigella spp is identified [issue 210](https://github.com/CDCgov/phoenix/issues/210).  
-- Fixed bug that caused failure on Terra.bio at PROKKA step [issue 209](https://github.com/CDCgov/phoenix/issues/209).
+- Fixed bug that caused failure on Terra.bio at PROKKA step [issue 209](https://github.com/CDCgov/phoenix/issues/209).  
+- Fixed bug that caused warning counts to be off on Terra.bio [issue 211](https://github.com/CDCgov/phoenix/issues/211).  
+- Added `Alerts` column to Terra.bio output to be in line with the rest of PHX output.  
 - Fixed bug that resulted in failed lookups for taxa with parentheses and, in some cases, 'sp.' in the NCBI_Assembly_Stats file. Improved determine_taxa_id.py lookup handling and adjusted how parentheses are handled during ANI database creation  
 - MLST Fixes:  
-   - Fixed issue with vcholorae's 2nd scheme being pointed to the wrong folder (non-existent)
-- GRiPHin Fixes:
-   - Fixed bug that caused NA to disappear from Stdev column, which would then skip the warning that there were <10 references for ratio and gc calculations
-   - Fixed bug that cut off text after sp. in kraken 2
-   - Fixed bug causing some BIG-5 genes to not be highlighted correctly (example blaOXA-23)
+   - Fixed issue with vcholorae's 2nd scheme being pointed to the wrong folder (non-existent).  
+- GRiPHin Fixes:  
+   - Fixed bug that caused NA to disappear from Stdev column, which would then skip the warning that there were <10 references for ratio and gc calculations.  
+   - Fixed bug that cut off text after sp. in Kraken2 output.  
+   - Fixed bug causing some BIG-5 genes to not be highlighted correctly (example blaOXA-23).  

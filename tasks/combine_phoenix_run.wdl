@@ -222,11 +222,11 @@ task combine_phoenix_run {
     File?   biosample_excel_summary = if defined(combined_ncbi_biosample_xlsx_prefix) then "~{combined_ncbi_biosample_xlsx_prefix}_BiosampleAttributes_Microbe.1.0.xlsx" else "BiosampleAttributes_Microbe.1.0.xlsx"
     File?   sra_excel_summary       = if defined(combined_ncbi_sra_xlsx_prefix) then "~{combined_ncbi_sra_xlsx_prefix}_Sra_Microbe.1.0.xlsx" else "Sra_Microbe.1.0.xlsx"
     String  phoenix_version         = read_string("VERSION")
-    String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.3.0"
+    String  phoenix_docker          = "quay.io/jvhagey/phoenix:2.3.1"
     String  analysis_date           = read_string("DATE")
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:9fea54d258300e7b276883410a1ffb1fefa3aac23e27d33f98d3b4f776e26894" # 2.3.1
+    docker: "quay.io/jvhagey/phoenix@sha256:311c6d99a86172a1254d7360ae39ade23275e0920bb8ecea2131015f111fb019" # 2.3.1
     memory: "8 GB"
     cpu: 1
     disks:  "local-disk 100 SSD"
