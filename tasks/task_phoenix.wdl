@@ -121,10 +121,12 @@ task phoenix {
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f7 | tee WARNINGS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f8 | tee ALERTS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee ESTIMATED_COVERAGE
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | awk '{printf "%.0f\n", $1}' | numfmt --grouping | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | awk '{if ($1+0==0 || $1=="unknown") print "unknown" else { n=sprintf("%.0f",$1); while(sub(/([0-9])([0-9]{3})(,|$)/,"\\1,\\2\\3",n)){} print n }}' | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee GENOME_LENGTH_B
+    echo 'genome length is '$GENOME_LENGTH_B
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f18 | tee ASSEMBLY_RATIO
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee ASSEMBLY_RATIO_STDEV
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | awk '{printf "%.0f\n", $1}' | numfmt --grouping | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 |  awk '{if ($1+0==0 || $1=="unknown") print "unknown" else { n=sprintf("%.0f",$1); while(sub(/([0-9])([0-9]{3})(,|$)/,"\\1,\\2\\3",n)){} print n }}'  | tee NUM_SCAFFOLDS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee GC_PERCENT
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
     if [ ${mode_upper} == "PHOENIX" ] || [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "SCAFFOLDS" ]; then
@@ -365,10 +367,10 @@ task phoenix {
     File? asmbld_html              = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/krona/~{samplename}_asmbld.html"
     File? asmbld_krona             = "~{samplename}/phx_output/~{samplename}/kraken2_asmbld/krona/~{samplename}_asmbld.krona"
     #phoenix ani
-    File? fast_ani                 = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20260505.ani.txt"
-    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20260505.fastANI.txt"
-    File? top_20_taxa_matches      = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20260430_best_MASH_hits.txt"
-    File? mash_distance            = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20260430.txt"
+    File? fast_ani                 = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20260521.ani.txt"
+    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20260521.fastANI.txt"
+    File? top_20_taxa_matches      = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20260521_best_MASH_hits.txt"
+    File? mash_distance            = "~{samplename}/phx_output/~{samplename}/ANI/mash_dist/~{samplename}_REFSEQ_20260521.txt"
     #phoenix quast and mlst
     File? quast_summary            = "~{samplename}/phx_output/~{samplename}/quast/~{samplename}_summary.tsv"
     File? mlst_tsv                 = "~{samplename}/phx_output/~{samplename}/mlst/~{samplename}_combined.tsv"

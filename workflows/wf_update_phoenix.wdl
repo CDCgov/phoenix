@@ -26,6 +26,7 @@ workflow update_phoenix_workflow {
     String  qc_outcome                        = update_phoenix.qc_outcome
     String  warnings                          = update_phoenix.warnings
     String  warning_count                     = update_phoenix.warning_count
+    String  alerts                            = update_phoenix.alerts
     String  final_taxa_id                     = update_phoenix.final_taxa_id
     String  taxa_source                       = update_phoenix.taxa_source
     String  shigapass_taxa                    = update_phoenix.shigapass_taxa
