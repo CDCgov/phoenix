@@ -10,7 +10,7 @@ task update_phoenix {
     Int      disk_size = 100
   }
   command <<<
-    version="v2.4.0-dev"
+    version="v2.3.1"
     date | tee DATE
 
     #download phoenix code to get the script from
