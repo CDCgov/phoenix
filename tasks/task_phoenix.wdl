@@ -121,13 +121,11 @@ task phoenix {
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f7 | tee WARNINGS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f8 | tee ALERTS
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f14 | tee ESTIMATED_COVERAGE
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | awk '{if ($1+0==0 || $1=="unknown") print "unknown" else { n=sprintf("%.0f",$1); while(sub(/([0-9])([0-9]{3})(,|$)/,"\\1,\\2\\3",n)){} print n }}' | tee GENOME_LENGTH
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee GENOME_LENGTH_B
-    echo 'genome length is '$GENOME_LENGTH_B
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee GC_PERCENT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | tee GENOME_LENGTH
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f18 | tee ASSEMBLY_RATIO
     sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee ASSEMBLY_RATIO_STDEV
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 |  awk '{if ($1+0==0 || $1=="unknown") print "unknown" else { n=sprintf("%.0f",$1); while(sub(/([0-9])([0-9]{3})(,|$)/,"\\1,\\2\\3",n)){} print n }}'  | tee NUM_SCAFFOLDS
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee GC_PERCENT
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
     if [ ${mode_upper} == "PHOENIX" ] || [ ${mode_upper} == "SRA" ] || [ ${mode_upper} == "SCAFFOLDS" ]; then
       sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee FINAL_TAXA_ID
