@@ -446,7 +446,7 @@ workflow PHOENIX_EXQC {
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             SCAFFOLD_COUNT_CHECK.out.outcome, \
             FASTP_TRIMD.out.reads, \
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },\
+            Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },\
             ASSET_CHECK.out.mlst_db, \
             true, \
             "original" // this is opposed to the "update" option.
@@ -480,7 +480,7 @@ workflow PHOENIX_EXQC {
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+            Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
@@ -497,7 +497,7 @@ workflow PHOENIX_EXQC {
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         // Combining determined taxa with the assembly stats based on meta.id
-        assembly_ratios_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+        assembly_ratios_ch = Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
                                 .map{                          meta, taxonomy   -> [[id:meta.id], taxonomy]}
                                 .join(QUAST.out.report_tsv.map{meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
@@ -532,8 +532,8 @@ workflow PHOENIX_EXQC {
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }, \
-            CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }, \
+            Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }, \
+            Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.ani_best_hit, FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content
@@ -549,12 +549,12 @@ workflow PHOENIX_EXQC {
         .join(QUAST.out.report_tsv.map{                                  meta, report_tsv             -> [[id:meta.id], report_tsv]},             by: [0])
         .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                    meta, ratio                  -> [[id:meta.id], ratio]},                  by: [0])
         .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{         meta, pipeline_stats         -> [[id:meta.id], pipeline_stats]},         by: [0])
-        .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+        .join(Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
                                 .map{                                    meta, taxonomy               -> [[id:meta.id], taxonomy]},               by: [0])
         .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{                       meta, k2_bh_summary          -> [[id:meta.id], k2_bh_summary]},          by: [0])
         .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                    meta, k2_wtasmbld_bh_summary -> [[id:meta.id], k2_wtasmbld_bh_summary]}, by: [0])
         .join(AMRFINDERPLUS_RUN.out.report.map{                          meta, report                 -> [[id:meta.id], report]},                 by: [0])
-        .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
+        .join(Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.ani_best_hit, FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
                                 .map{                                    meta, ani_best_hit           -> [[id:meta.id], ani_best_hit]},           by: [0])
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
@@ -609,11 +609,11 @@ workflow PHOENIX_EXQC {
         // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
         centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
-        shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
-                            .map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.collect().sum().map{ it -> it[0] > 0 }
+        shigapass_var = Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+                            .map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.collect().sum().map{ it -> it[0] > 0 }.ifEmpty(false)
 
-        fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
-                            .concat(GET_TRIMD_STATS.out.outcome).concat(GET_RAW_STATS.out.outcome).concat(CORRUPTION_CHECK.out.outcome)
+        fairy_files_ch = Channel.empty().mix(SCAFFOLD_COUNT_CHECK.out.outcome, SPADES_WF.out.fairy_outcome, SPADES_WF.out.spades_outcome,
+                            GET_TRIMD_STATS.out.outcome, GET_RAW_STATS.out.outcome, CORRUPTION_CHECK.out.outcome)
 
         //create GRiPHin report channel
         griphin_inputs_ch = Channel.empty()
@@ -628,13 +628,13 @@ workflow PHOENIX_EXQC {
                 fairy_files_ch,
                 DO_MLST.out.checked_MLSTs,
                 SPADES_WF.out.taxonomy, 
-                CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
+                Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.tax_file, DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
                 CALCULATE_ASSEMBLY_RATIO.out.ratio,
                 CALCULATE_ASSEMBLY_RATIO.out.gc_content,
                 GAMMA_AR.out.gamma,
                 GAMMA_PF.out.gamma,
                 GAMMA_HV.out.gamma,
-                CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] },
+                Channel.empty().mix(CHECK_SHIGAPASS_TAXA.out.ani_best_hit, FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] },
                 SHIGAPASS.out.summary,
                 BUSCO.out.short_summaries_specific_txt,
                 SRST2_AR.out.fullgene_results
