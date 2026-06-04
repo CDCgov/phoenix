@@ -117,10 +117,14 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                     Trim_unclassified_percent = line.split(' ')[1].strip()
                 elif line.startswith("G:"):
                     Trim_Genus_percent = line.split(' ')[1].strip()
-                    Trim_Genus = line.split(' ')[2].strip()
+                    #Trim_Genus = line.split(' ')[2].strip()
+                    gparts = line.split(' ', maxsplit=2)
+                    Trim_Genus = gparts[2].strip() if len(gparts) > 2 else ""
                 elif line.startswith("s:"):
                     Trim_Species_percent = line.split(' ')[1].strip()
-                    Trim_Species = line.split(' ')[2].strip()
+                    #Trim_Species = line.split(' ')[2].strip()
+                    sparts = line.split(' ', maxsplit=2)
+                    Trim_Species = sparts[2].strip() if len(sparts) > 2 else ""
         # Need to add check for cases when Krakens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
         if len(Trim_Genus) == 0:
             Trim_Genus = "None"
@@ -142,10 +146,14 @@ def get_kraken_info(kraken_trim, kraken_wtasmbld, sample_name):
                     Asmbld_unclassified_percent = line.split(' ')[1].strip()
                 elif line.startswith("G:"):
                     Asmbld_Genus_percent = line.split(' ')[1].strip()
-                    Asmbld_Genus = line.split(' ')[2].strip()
+                    #Asmbld_Genus = line.split(' ')[2].strip()
+                    g2parts = line.split(' ', maxsplit=2)
+                    Asmbld_Genus = g2parts[2].strip() if len(g2parts) > 2 else ""
                 elif line.startswith("s:"):
                     Asmbld_Species_percent = line.split(' ')[1].strip()
                     Asmbld_Species = line.split(' ')[2].strip()
+                    s2parts = line.split(' ', maxsplit=2)
+                    Asmbld_Species = s2parts[2].strip() if len(s2parts) > 2 else ""
         # Need to add check for cases when Krakens DB does not have Genus or Species level hits, leaving a blank spot that crashes downstream
         if len(Asmbld_Genus) == 0:
             Asmbld_Genus = "None"
@@ -834,6 +842,7 @@ def get_novel_big5_alert(gamma_ar_file, big5_keep_extended, big5_oxa_keep):
                 results.append(f"Possible novel {gene_name} with {row['Description'].rstrip(',')}")
             else:
                 results.append(f"Possible novel {gene_name} with {row['Description'].rstrip(',')} mutation")
+    results = ', '.join(results)
     return results
 
 def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df, ar_df, hv_df, trim_stats, raw_stats, kraken_trim, kraken_trim_report, kraken_wtasmbld_report, kraken_wtasmbld, quast_report, busco_short_summary, asmbld_ratio, gc_file, sample_name, mlst_file, fairy_file, spades_fairy_file, gamma_ar_file, gamma_pf_file, gamma_hv_file, fast_ani_file, tax_file, srst2_file, ar_dic, ar_gene_thresholds, ar_db, BLDB):
@@ -940,7 +949,9 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
     try:
         big5_keep, big5_oxa_keep, big5_keep_extended = find_big_5(BLDB)
         novel_big5_alerts = get_novel_big5_alert(gamma_ar_file, big5_keep_extended, big5_oxa_keep)
-        alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1], gc_metrics[0], novel_big5_alerts)
+        alerts = compile_alerts(scaffolds_entry, Coverage, assembly_ratio_metrics[1], gc_metrics[0])
+        if novel_big5_alerts != "":
+            alerts = alerts + ', ' + novel_big5_alerts
     except:
         alerts = ""
     # try except in the function itself
@@ -1507,7 +1518,12 @@ def find_big_5(BLDB):
     sub_cond = final_df["Subfamily"].isin(subfamily_list)
     non_oxa = final_df[~oxa_cond]
     oxa_rows = final_df[oxa_cond & sub_cond]
-    oxa_filtered = oxa_rows[~(oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~oxa_rows["Subfamily"].str.contains("OXA-48-like", na=False))]
+#    oxa_filtered = oxa_rows[~(oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~oxa_rows["Subfamily"].str.contains("OXA-48-like", na=False))]
+    oxa_filtered = oxa_rows[~(
+        oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & 
+        ~oxa_rows["Natural (N) or Acquired (A)"].str.startswith("A") &
+        ~oxa_rows["Subfamily"].isin(subfamily_list)
+    )]
     # CRITICAL: Use the combined filtered dataframe
     filtered_final_df = pd.concat([non_oxa, oxa_filtered])
     # Explode synonyms into a clean set

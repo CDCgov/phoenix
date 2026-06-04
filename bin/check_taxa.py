@@ -132,7 +132,7 @@ def convert_ecoli_to_shiga_or_update_shiga(shigapass_file, format_ani_file, ani_
     with open(shigapass_file) as f:
             second_line = f.readlines()[1]
             Predicted_FlexSerotype = second_line.split(";")[7]
-    for marker, sp in [("SS", "s:624\tsonnei\n"), ("SF", "s:623\tflexneri\n"), ("SB", "s:621\tboydii\n"), ("SD", "s:622\tdysenteriae\n")]:
+    for marker, sp in [("SS", "s:624\tsonnei\n"), ("SF", "s:623\tflexneri\n"), ("SB", "s:621\tboydii\n"), ("SD", "s:622\tdysenteriae\n"), ("Shigella spp.", "s:625\tShigella sp.\n")]:
         print(f"Checking for marker '{marker}' in tax file...")
         if marker in Predicted_FlexSerotype:
             species = sp

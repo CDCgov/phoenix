@@ -59,10 +59,7 @@ include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_a
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
 include { ABRITAMR                       } from '../modules/local/clia/abritamr'
 include { CALCULATE_ASSEMBLY_RATIO       } from '../modules/local/assembly_ratio'
-include { CREATE_SUMMARY_LINE            } from '../modules/local/phoenix_summary_line'
-include { FETCH_FAILED_SUMMARIES         } from '../modules/local/fetch_failed_summaries'
 include { CLIA_GRIPHIN                   } from '../modules/local/clia/clia_griphin'
-include { CREATE_NCBI_UPLOAD_SHEET       } from '../modules/local/create_ncbi_upload_sheet'
 include { CREATE_TIERED_EXCEL            } from '../modules/local/clia/create_tiered_excel'
 include { CREATE_CLIA_PDF                } from '../modules/local/clia/clia_pdf'
 

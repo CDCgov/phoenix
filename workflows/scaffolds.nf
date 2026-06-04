@@ -450,7 +450,7 @@ workflow SCAFFOLDS_EXTERNAL {
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
         shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
                     .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
-                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: []]}  // If shigapass_file is null, use empty list
+                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: [], []]}  // If shigapass_file is null, use empty list, and add an empty list for the line summary to maintain the structure
 
         // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
         line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0]) 

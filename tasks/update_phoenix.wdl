@@ -10,8 +10,7 @@ task update_phoenix {
     Int      disk_size = 100
   }
   command <<<
-    version="v2.3.0"
-    echo $version | tee VERSION
+    version="v2.3.1"
     date | tee DATE
 
     #download phoenix code to get the script from
@@ -21,6 +20,11 @@ task update_phoenix {
     mkdir ./full_results
     tar -xzf ~{current_full_results} -C ./full_results
     project_directory="/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/~{samplename}"
+    # if updater was already run
+    if [ -e "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/update_pipeline_info/" ]; then
+      mv "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/software_versions.yml" "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/old_software_versions.yml"
+      mv "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/update_pipeline_info/software_versions.yml" "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/"
+    fi
 
     # Make sample form
     echo "sample,directory" > sample.csv
@@ -43,6 +47,12 @@ task update_phoenix {
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
       cd ..
+      # move dag, report, timeline and trace to update directory
+      mv ~{samplename}/phx_output/pipeline_info/  ~{samplename}/phx_output/update_pipeline_info/
+      # remove now empty pipeline info directory
+      rm -r ~{samplename}/phx_output/pipeline_info/
+      # add back original pipeline info for the run to preserve original run information and have it all in one place
+      cp -r "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/"* ~{samplename}/phx_output/
       tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}_updated.tar.gz
     else
       # Run failed
@@ -67,21 +77,35 @@ task update_phoenix {
     awk -F '\t' '{ if($11 == "BETA-LACTAM") { print $6}}' ~{samplename}/phx_output/~{samplename}/AMRFinder/~{samplename}_all_genes_20260324.tsv | tr '\n' ', ' | sed 's/.$//' | tee AMRFINDERPLUS_BETA_LACTAM_GENES
 
     # Gather Phoenix Output
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee QC_OUTCOME
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_ISSUES
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee WARNINGS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f4 | tee VERSION
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f5 | tee QC_OUTCOME
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | tee QC_ISSUES
+    # strip out commans in numbers
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f7 | sed ':a;s/\([0-9]\),\([0-9]\)/\1\2/;ta' | awk -F',' '{print NF}' | tee WARNING_COUNT
+    #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f6 | awk -F',' '{print NF}' | tee WARNING_COUNT
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f7 | tee WARNINGS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f8 | tee ALERTS
+    # shouldn't change numbers wise, but added formatting for consistency with previous versions and to handle any future changes in number formatting
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f17 | awk '{printf "%.0f\n", $1}' | numfmt --grouping | tee GENOME_LENGTH
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f18 | tee ASSEMBLY_RATIO
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee ASSEMBLY_RATIO_STDEV
+    # shouldn't change numbers wise, but added formatting for consistency with previous versions and to handle any future changes in number formatting
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f16 | awk '{printf "%.0f\n", $1}' | numfmt --grouping | tee NUM_SCAFFOLDS
+    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f15 | tee GC_PERCENT
     #sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f2,3 | tr '\t' '/' | tee PROJECT_DIR
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f19 | tee FINAL_TAXA_ID
-    sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee TAXA_SOURCE
-    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
-    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
-    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
-    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
-    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee GAMMA_OTHER_AR_GENES
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee AMRFINDER_POINT_MUTATIONS
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee HYPERVIRULENCE_GENES
+    sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f26 | tee PLASMID_INCOMPATIBILITY_REPLICONS
     if [ ${mode} == "PHOENIX" ]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee TAXA_SOURCE
       if head -n 1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "ShigaPass_Organism"; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee SHIGAPASS_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_CONFIDENCE
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_COVERAGE
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f29 | tee MLST_SCHEME_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f33 | tee MLST_SCHEME_2
@@ -90,7 +114,7 @@ task update_phoenix {
         MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $29); print $31 "_" $29}')
         if [[ "$MLST1_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($31 != "" && $31 != "-") print "ML" $31; else print ""}' | tee MLST1_NCBI
-        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == *Missing_allele* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST1_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($31 != "" && $31 != "-"); gsub(/[^a-zA-Z0-9]/, "", $29); print "ML" $31 "_" $29}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
@@ -99,13 +123,16 @@ task update_phoenix {
         MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $33); print $35 "_" $33}')
         if [[ "$MLST2_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($35 != "" && $35 != "-") print "ML" $35; else print ""}' | tee MLST2_NCBI
-        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == *Missing_allele* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST2_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($35 != "" && $35 != "-"); gsub(/[^a-zA-Z0-9]/, "", $33); print "ML" $35 "_" $33}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
         fi
       else
         echo "" | tee SHIGAPASS_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f24 | tee FASTANI_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f25 | tee FASTANI_CONFIDENCE
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_COVERAGE
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee MLST_SCHEME_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_SCHEME_2
@@ -114,7 +141,7 @@ task update_phoenix {
         MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $28); print $30 "_" $28}')
         if [[ "$MLST1_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($30 != "" && $30 != "-") print "ML" $30; else print ""}' | tee MLST1_NCBI
-        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == *Missing_allele* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST1_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($30 != "" && $30 != "-") {gsub(/[^a-zA-Z0-9]/, "", $28); print "ML" $30 "_" $28} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
@@ -123,15 +150,20 @@ task update_phoenix {
         MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $32); print $34 "_" $32}')
         if [[ "$MLST2_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($34 != "" && $34 != "-") print "ML" $34; else print ""}' | tee MLST2_NCBI
-        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == *Missing_allele* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST2_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($34 != "" && $34 != "-") {gsub(/[^a-zA-Z0-9]/, "", $32); print "ML" $34 "_" $32} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
         fi
       fi
     elif [ ${mode} == "CDC_PHOENIX" ]; then
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f20 | tee FINAL_TAXA_ID
+      sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f21 | tee TAXA_SOURCE
       if head -n 1 ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | grep -q "ShigaPass_Organism"; then
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee SHIGAPASS_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee FASTANI_CONFIDENCE
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f29 | tee FASTANI_COVERAGE
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f31 | tee MLST_SCHEME_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f33 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f35 | tee MLST_SCHEME_2
@@ -140,7 +172,7 @@ task update_phoenix {
         MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $31); print $33 "_" $31}')
         if [[ "$MLST1_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($33 != "" && $33 != "-") print "ML" $33; else print ""}' | tee MLST1_NCBI
-        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == *Missing_allele* || "$MLST1_CHECK" == *Missing_allele* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST1_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($33 != "" && $33 != "-") {gsub(/[^a-zA-Z0-9]/, "", $31); print "ML" $33 "_" $31} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
@@ -149,13 +181,16 @@ task update_phoenix {
         MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $35); print $37 "_" $35}')
         if [[ "$MLST2_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($37 != "" && $37 != "-") print "ML" $37; else print ""}' | tee MLST2_NCBI
-        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == *Missing_allele* || "$MLST2_CHECK" == *Missing_allele* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST2_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($37 != "" && $37 != "-") {gsub(/[^a-zA-Z0-9]/, "", $35); print "ML" $37 "_" $35} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
         fi
       else
         echo "" | tee SHIGAPASS_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f26 | tee FASTANI_TAXA
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f27 | tee FASTANI_CONFIDENCE
+        sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f28 | tee FASTANI_COVERAGE
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f30 | tee MLST_SCHEME_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f32 | tee MLST_1
         sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | cut -d$'\t' -f34 | tee MLST_SCHEME_2
@@ -164,7 +199,7 @@ task update_phoenix {
         MLST1_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $30); print $32 "_" $30}')
         if [[ "$MLST1_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($32 != "" && $32 != "-") print "ML" $32; else print ""}' | tee MLST1_NCBI
-        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST1_CHECK" == *Novel* || "$MLST1_CHECK" == *Missing_allele* || "$MLST1_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST1_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($32 != "" && $32 != "-") {gsub(/[^a-zA-Z0-9]/, "", $30); print "ML" $32 "_" $30} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST1_NCBI
@@ -173,14 +208,14 @@ task update_phoenix {
         MLST2_CHECK=$(sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{gsub(/[^a-zA-Z0-9]/, "", $34); print $36 "_" $34}')
         if [[ "$MLST2_CHECK" == "-_" ]]; then
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($36 != "" && $36 != "-") print "ML" $36; else print ""}' | tee MLST2_NCBI
-        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
+        elif [[ "$MLST2_CHECK" == *Novel* || "$MLST2_CHECK" == *Missing_allele* || "$MLST2_CHECK" == "Unknown_Unknown" ]]; then
           echo "" | tee MLST2_NCBI
         else
           sed -n 2p ~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv | awk -F'\t' '{if ($36 != "" && $36 != "-") {gsub(/[^a-zA-Z0-9]/, "", $34); print "ML" $36 "_" $34} else print ""}' | sed -E 's/_[^_]*(Achtman|Oxford|Pasteur)/_\1/' | tee MLST2_NCBI
         fi
       fi
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f21 | tee GAMMA_BETA_LACTAM_RESISTANCE_GENES
-      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee OTHER_AR_GENES
+      sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f22 | tee GAMMA_OTHER_AR_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f23 | tee AMRFINDER_POINT_MUTATIONS
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f24 | tee HYPERVIRULENCE_GENES
       sed -n 2p ~{samplename}/phx_output/Phoenix_Summary.tsv | cut -d$'\t' -f25 | tee PLASMID_INCOMPATIBILITY_REPLICONS
@@ -193,10 +228,17 @@ task update_phoenix {
   output {
     File?   work_files                        = "work.tar.gz"
     String  phoenix_version                   = read_string("VERSION")
-    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.3.0"
+    String  phoenix_docker                    = "quay.io/jvhagey/phoenix:2.3.1"
     String  analysis_date                     = read_string("DATE")
     String  qc_outcome                        = read_string("QC_OUTCOME")
     String  warnings                          = read_string("WARNINGS")
+    String  warning_count                     = read_string("WARNING_COUNT")
+    String  alerts                            = read_string("ALERTS")
+    String  genome_length                     = read_string("GENOME_LENGTH") #make string for cases where it's "unknown"
+    String  assembly_ratio                    = read_string("ASSEMBLY_RATIO")
+    String  assembly_ratio_stdev              = read_string("ASSEMBLY_RATIO_STDEV")
+    String  scaffold_count                    = read_string("NUM_SCAFFOLDS") #make string for cases where it's "unknown"
+    String  gc_percent                        = read_string("GC_PERCENT") #make string for cases where it's "unknown"
     String  final_taxa_id                     = read_string("FINAL_TAXA_ID")
     String  taxa_source                       = read_string("TAXA_SOURCE")
     String  shigapass_taxa                    = read_string("SHIGAPASS_TAXA")
@@ -226,7 +268,7 @@ task update_phoenix {
     File griphin_tsv_summary      = "~{samplename}/phx_output/phx_output_GRiPHin_Summary.tsv"
     File phoenix_tsv_summary      = "~{samplename}/phx_output/Phoenix_Summary.tsv"
     #phoenix ani
-    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20260505.fastANI.txt"
+    File? reformated_fast_ani      = "~{samplename}/phx_output/~{samplename}/ANI/~{samplename}_REFSEQ_20260521.fastANI.txt"
     #phoenix quast and mlst
     File  mlst_tsv                 = "~{samplename}/phx_output/~{samplename}/mlst/~{samplename}_combined.tsv"
     # cdc_phoenix busco and srst2 - optional for PHOENIX, SCAFFOLDS and SRA entries
@@ -254,7 +296,7 @@ task update_phoenix {
     File  versions_file            = "~{samplename}/phx_output/update_pipeline_info/software_versions.yml"
   }
   runtime {
-    docker: "quay.io/jvhagey/phoenix@sha256:2b7074686ff21486c6abe569e6475589d3ed98522bb1689cadd9a08824635f2c" # 2.3.0
+    docker: "quay.io/jvhagey/phoenix@sha256:311c6d99a86172a1254d7360ae39ade23275e0920bb8ecea2131015f111fb019" # 2.3.1
     memory: "~{memory} GB"
     cpu: cpu
     disks:  "local-disk ~{disk_size} SSD"
