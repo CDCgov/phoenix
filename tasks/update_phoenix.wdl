@@ -20,6 +20,11 @@ task update_phoenix {
     mkdir ./full_results
     tar -xzf ~{current_full_results} -C ./full_results
     project_directory="/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/~{samplename}"
+    # if updater was already run
+    if [ -e "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/update_pipeline_info/" ]; then
+      mv "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/software_versions.yml" "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/old_software_versions.yml"
+      mv "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/update_pipeline_info/software_versions.yml" "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/"
+    fi
 
     # Make sample form
     echo "sample,directory" > sample.csv
@@ -42,6 +47,12 @@ task update_phoenix {
       #tar -cf - work/ | gzip -n --best > work.tar.gz
       rm -rf .nextflow/ work/
       cd ..
+      # move dag, report, timeline and trace to update directory
+      mv ~{samplename}/phx_output/pipeline_info/  ~{samplename}/phx_output/update_pipeline_info/
+      # remove now empty pipeline info directory
+      rm -r ~{samplename}/phx_output/pipeline_info/
+      # add back original pipeline info for the run to preserve original run information and have it all in one place
+      cp -r "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/" ~{samplename}/phx_output/
       tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}_updated.tar.gz
     else
       # Run failed
