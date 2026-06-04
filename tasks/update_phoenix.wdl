@@ -52,7 +52,7 @@ task update_phoenix {
       # remove now empty pipeline info directory
       rm -r ~{samplename}/phx_output/pipeline_info/
       # add back original pipeline info for the run to preserve original run information and have it all in one place
-      cp -r "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/" ~{samplename}/phx_output/
+      cp -r "/mnt/disks/cromwell_root/full_results/~{samplename}/phx_output/pipeline_info/"* ~{samplename}/phx_output/
       tar -cf - ~{samplename}/ | gzip -n --best > ~{samplename}_updated.tar.gz
     else
       # Run failed
