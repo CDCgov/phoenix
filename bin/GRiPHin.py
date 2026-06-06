@@ -336,7 +336,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
             warnings.append("GC% >2.58 stdev away from mean GC of {:.2f}%".format(float(gc_metrics[3])))
     if scaffolds != "Unknown" and Wt_asmbld_unclassified_percent != "Unknown" and Asmbld_Genus_percent != "Unknown":
-        if int(scaffolds) > int(200) and int(scaffolds) < int(500): # between 200-500 
+        if int(scaffolds) > int(200) and int(scaffolds) < int(500): # between 200-500
             warnings.append("High scaffold count 200-500 ({})".format(int(scaffolds)))
         if float(Wt_asmbld_unclassified_percent) > float(30.00):
             warnings.append(">{:.2f}% unclassifed weighted scaffolds".format(int(30)))
@@ -348,7 +348,7 @@ def compile_warnings(scaffolds_entry, Total_Trimmed_reads, Total_Raw_reads, Q30_
         else:
             warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
-        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25))) 
+        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them".format(int(25)))
     if MLST_scheme_1 != "-" and not MLST_scheme_1.startswith(scheme_guess):
         if genus == "Enterobacter" and MLST_scheme_1 == "ecloacae":
             pass
@@ -574,7 +574,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df, ar_gene_thresholds, ar_
     # loop through list of gamma info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}AA/{:.0f}:#{}]G".format(percent_BP_ID, percent_codon_ID, percent_length, contig_number) for percent_BP_ID, percent_codon_ID, percent_length, contig_number in zip(percent_BP_IDs, percent_codon_IDs, percent_lengths, contig_numbers)]
     # Minimum % length required to be included in report, otherwise removed from list
-    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < ar_gene_thresholds['GAMMA-COV']]): 
+    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < ar_gene_thresholds['GAMMA-COV']]):
         index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < ar_gene_thresholds['GAMMA-COV']] # get index for value removed to remove from other lists (values less than 90)
         percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= ar_gene_thresholds['GAMMA-COV']] # filter list to remove values below cutoff (keep those greater than or equal to 90)
         for index in sorted(index_remove_postion, reverse=True):
@@ -601,7 +601,7 @@ def parse_gamma_ar(gamma_ar_file, sample_name, final_df, ar_gene_thresholds, ar_
         df["AR_Database"] = DB
         df["No_AR_Genes_Found"] = ""
         df.index = [sample_name]
-    # Check for duplicate column names, multiple hits 
+    # Check for duplicate column names, multiple hits
     df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     return final_df
@@ -647,7 +647,7 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     # loop through list of gamma info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     pf_coverage = ["[{:.0f}NT/{:.0f}:#{}]G".format(percent_NT_ID, percent_length, contig_number) for percent_NT_ID, percent_length, contig_number in zip(percent_NT_IDs, percent_lengths, contig_numbers)]
     # Minimum % length required to be included in report, otherwise removed from list
-    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 60]): 
+    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 60]):
         index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < 60 ] # get index for value removed to remove from other lists (values less than 90)
         percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= 60] # filter list to remove values below cutoff (keep those greater than or equal to 90)
         for index in sorted(index_remove_postion, reverse=True): #delete them in reverse order so that you don't throw off the subsequent indexes.
@@ -658,7 +658,7 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
     if bool([percent_NT_ID for percent_NT_ID in percent_NT_IDs if int(percent_NT_ID) < 95]):
         index_remove_postion = [ n for n,percent_NT_ID in enumerate(percent_NT_IDs) if int(percent_NT_ID) < 95 ] # get index for value removed to remove from other lists (values less than 98)
         percent_NT_IDs = [percent_NT_ID for percent_NT_ID in percent_NT_IDs if int(percent_NT_ID) >= 95] # filter list to remove values below cutoff (keep those greater than or equal to 98)
-        #reset indexes as if you deleted rows in the if loop above the index values will be off from index_remove_postion 
+        #reset indexes as if you deleted rows in the if loop above the index values will be off from index_remove_postion
         pf_column_name.reset_index(drop=True, inplace=True)
         #loop through list of indexes to delete and remove them from the other lists so they all match
         for index in sorted(index_remove_postion, reverse=True): #delete them in reverse order so that you don't throw off the subsequent indexes.
@@ -694,21 +694,21 @@ def parse_mlst(mlst_file, scheme_guess, sample_name):
             date = split_line[2]
             DB_ID = split_line[3] # scheme name (i.e Pasteur or Oxford etc)
             Scheme = str(split_line[4]) # scheme number
-            
+
             if scheme_guess == "abaum" and "PARALOG" in Scheme:
                 print("Warning: suppressing " + Scheme + " in " + sample_name)
                 continue
-            
+
             # Handle cases where the alleles are all -
             if (len(set(split_line[5:])) == 1) and split_line[5:][0] == "-":
                 alleles = "-"
             else:
                 alleles = ".".join(split_line[5:]) # combine all alleles separated by .
-            
+
             # Exclusion list
-            exclusion_list = ["-", "Novel_allele", "Novel_profile", "Missing_allele", 
+            exclusion_list = ["-", "Novel_allele", "Novel_profile", "Missing_allele",
                             "Novel_allele-PARALOG", "Novel_profile-PARALOG", "Missing_allele-PARALOG"]
-            
+
             # Find if this DB_ID already exists and get its index
             try:
                 db_index = Scheme_list[0].index(DB_ID)
@@ -720,7 +720,7 @@ def parse_mlst(mlst_file, scheme_guess, sample_name):
                 Scheme_list[2][db_index].append(alleles)
                 Scheme_list[3][db_index].append(source)
                 Scheme_list[4][db_index].append(date)
-                
+
             except ValueError:
                 # Database doesn't exist, create new entry
                 Scheme_list[0].append(DB_ID)
@@ -731,7 +731,7 @@ def parse_mlst(mlst_file, scheme_guess, sample_name):
                 Scheme_list[2].append([alleles])
                 Scheme_list[3].append([source])
                 Scheme_list[4].append([date])
-    
+
     return Scheme_list
 
 def parse_ani(fast_ani_file):
@@ -784,7 +784,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name,ar_gene_thres
     #    temp_drug=srst2_df['annotation'].values[i].split(';')[-2]
     #    temp_id=temp_allele+'_'+temp_accession
     #    ar_dic[temp_id]=temp_drug
-        
+
     # Since srst2 currently doesn't handle () in the gene names we will make a quick detour to fix this... now fixing annotations
     srst2_df.annotation = srst2_df.annotation.fillna(srst2_df.allele.map(ar_dic)) # this only fills in nas
 
@@ -798,7 +798,7 @@ def parse_srst2_ar(srst2_file, ar_dic, final_srst2_df, sample_name,ar_gene_thres
     # loop through list of srst2 info to combine into "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}NT/{:.0f}]S".format(percent_BP_ID, percent_length) for percent_BP_ID, percent_length in zip(percent_BP_IDs, percent_lengths)]
     # Minimum % length required to be included in report, otherwise removed from list
-    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < ar_gene_thresholds['SRST2-COV']]): 
+    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < ar_gene_thresholds['SRST2-COV']]):
         index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < ar_gene_thresholds['SRST2-COV']] # get index for value removed to remove from other lists (values less than 90)
         percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= ar_gene_thresholds['SRST2-COV']] # filter list to remove values below cutoff (keep those greater than or equal to 90)
         for index in sorted(index_remove_postion, reverse=True):
@@ -891,12 +891,12 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
         QC_result, QC_reason = Checking_auto_pass_fail(fairy_file, spades_fairy_file, scaffolds_entry, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count, sample_name)
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Warning: Possibly coverage and assembly length was not calculated and/or "+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
     try:
         FastANI_output_list, scheme_guess_fastani, fastani_warning = parse_ani(fast_ani_file)
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Warning: " + sample_name + ".fastANI.txt not found")
         ani_source_file = fastani_ID = fastani_coverage = fastani_organism = 'Unknown'
         FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
@@ -910,14 +910,14 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         ar_df = pd.concat([ar_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         pf_df = parse_gamma_pf(gamma_pf_file, sample_name, pf_df)
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Warning: Gamma file for pf database on " + sample_name + " not found")
         df = pd.DataFrame({'WGS_ID':[sample_name], 'No_Plasmid_Markers':['File not found'], 'Plasmid_Replicon_Database':['PF GAMMA file not found'] })
         df.index = [sample_name]
         pf_df = pd.concat([pf_df, df], axis=0, sort=True, ignore_index=False).fillna("")
     try:
         hv_df = parse_gamma_hv(gamma_hv_file, sample_name, hv_df)
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Warning: Gamma file for hv database on " + sample_name + " not found")
         df = pd.DataFrame({'WGS_ID':[sample_name], 'No_HVGs_Found':['File not found'], 'HV_Database':['HV GAMMA file not found'] })
         df.index = [sample_name]
@@ -972,31 +972,31 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         if len(Scheme_list[0]) > 1:
             if Scheme_list[0][0] < Scheme_list[0][1]:
                 MLST_scheme_1 = Scheme_list[0][0]
-                
+
                 # Get original indices before sorting
                 mlst_with_indices_1 = list(enumerate(Scheme_list[1][0]))
                 # Sort by ST value, keeping original index
                 mlst_sorted_1 = sorted(mlst_with_indices_1, key=lambda x: x[1], reverse=True)
-                
+
                 # Extract sorted values and original indices
                 mlst_types_1 = [item[1] for item in mlst_sorted_1]
                 order_1 = [item[0] for item in mlst_sorted_1]
-                
+
                 sorted_alleles_1 = [Scheme_list[2][0][i] for i in order_1]
                 sorted_sources_1 = [Scheme_list[3][0][i] for i in order_1]
                 MLST_type_1 = ", ".join(mlst_types_1)
                 MLST_alleles_1 = ",".join(sorted_alleles_1)
                 MLST_source_1 = ",".join(sorted_sources_1)
-                
+
                 MLST_scheme_2 = Scheme_list[0][1]
-                
+
                 # Same fix for scheme 2
                 mlst_with_indices_2 = list(enumerate(Scheme_list[1][1]))
                 mlst_sorted_2 = sorted(mlst_with_indices_2, key=lambda x: x[1], reverse=True)
-                
+
                 mlst_types_2 = [item[1] for item in mlst_sorted_2]
                 order_2 = [item[0] for item in mlst_sorted_2]
-                
+
                 sorted_alleles_2 = [Scheme_list[2][1][i] for i in order_2]
                 sorted_sources_2 = [Scheme_list[3][1][i] for i in order_2]
                 MLST_type_2 = ", ".join(mlst_types_2)
@@ -1005,25 +1005,25 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
             else:
                 # Same fix for the reversed case
                 MLST_scheme_1 = Scheme_list[0][1]
-                
+
                 mlst_with_indices_1 = list(enumerate(Scheme_list[1][1]))
                 mlst_sorted_1 = sorted(mlst_with_indices_1, key=lambda x: x[1], reverse=True)
                 mlst_types_1 = [item[1] for item in mlst_sorted_1]
                 order_1 = [item[0] for item in mlst_sorted_1]
-                
+
                 sorted_alleles_1 = [Scheme_list[2][1][i] for i in order_1]
                 sorted_sources_1 = [Scheme_list[3][1][i] for i in order_1]
                 MLST_type_1 = ", ".join(mlst_types_1)
                 MLST_alleles_1 = ",".join(sorted_alleles_1)
                 MLST_source_1 = ",".join(sorted_sources_1)
-                
+
                 MLST_scheme_2 = Scheme_list[0][0]
-                
+
                 mlst_with_indices_2 = list(enumerate(Scheme_list[1][0]))
                 mlst_sorted_2 = sorted(mlst_with_indices_2, key=lambda x: x[1], reverse=True)
                 mlst_types_2 = [item[1] for item in mlst_sorted_2]
                 order_2 = [item[0] for item in mlst_sorted_2]
-                
+
                 sorted_alleles_2 = [Scheme_list[2][0][i] for i in order_2]
                 sorted_sources_2 = [Scheme_list[3][0][i] for i in order_2]
                 MLST_type_2 = ", ".join(mlst_types_2)
@@ -1038,7 +1038,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
             MLST_type_2 = ""
             MLST_alleles_2 = ""
             MLST_source_2 = ""
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Warning: " + sample_name + "_combined.tsv not found")
         MLST_scheme_1 = MLST_scheme_2 = MLST_type_1 = MLST_type_2 = MLST_alleles_1 = MLST_alleles_2 = MLST_source_1 = MLST_source_2 = 'Unknown'
     try:
@@ -1050,7 +1050,7 @@ def Get_Metrics(phoenix_entry, scaffolds_entry, set_coverage, srst2_ar_df, pf_df
         warnings = ""
     return srst2_ar_df, pf_df, ar_df, hv_df, Q30_R1_per, Q30_R2_per, Total_Raw_Seq_bp, Total_Raw_reads, Paired_Trimmed_reads, Total_Trimmed_reads, Trim_kraken, Asmbld_kraken, Coverage, Assembly_Length, FastANI_output_list, warnings, alerts, \
     Scaffold_Count, busco_metrics, gc_metrics, assembly_ratio_metrics, QC_result, QC_reason, MLST_scheme_1, MLST_scheme_2, MLST_type_1, MLST_type_2, MLST_alleles_1, MLST_alleles_2, MLST_source_1, MLST_source_2
-    
+
 
 def Get_Files(directory1, sample_name, directory2, updater):
     '''Create file paths to collect files from sample folder.'''
@@ -1149,7 +1149,7 @@ def Get_Files(directory1, sample_name, directory2, updater):
                 gamma_pf_file = directory1  + sample_name + "_PF-Replicons_blank.gamma"
     except IndexError:
         gamma_pf_file = directory1 + "/" + sample_name + "_PF-Replicons_blank.gamma"
-    try: 
+    try:
         gamma_hv_file_1 = glob.glob(directory1 + "/" + sample_name + "_HyperVirulence_*.gamma")
         if gamma_hv_file_1:
             gamma_hv_file = gamma_hv_file_1[0]
@@ -1262,8 +1262,8 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'Taxa_Source'                : tax_method_L,
         'Kraken_ID_Trimmed_Reads_%'  : Trim_kraken_L,
         'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
-        'FastANI_Organism'           : fastani_organism_L, 
-        'FastANI_%ID'                : fastani_ID_L, 
+        'FastANI_Organism'           : fastani_organism_L,
+        'FastANI_%ID'                : fastani_ID_L,
         'FastANI_%Coverage'          : fastani_coverage_L,
         'Species_Support_ANI'        : Species_Support_L,
         'Primary_MLST_Scheme'        : MLST_scheme_1_L,
@@ -1301,8 +1301,8 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
         'BUSCO_%Match'               : percent_busco_L,
         'Kraken_ID_Trimmed_Reads_%'  : Trim_kraken_L,
         'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
-        'FastANI_Organism'           : fastani_organism_L, 
-        'FastANI_%ID'                : fastani_ID_L, 
+        'FastANI_Organism'           : fastani_organism_L,
+        'FastANI_%ID'                : fastani_ID_L,
         'FastANI_%Coverage'          : fastani_coverage_L,
         'Species_Support_ANI'        : Species_Support_L,
         'Primary_MLST_Scheme'        : MLST_scheme_1_L,
@@ -1327,7 +1327,7 @@ def get_gene_fam(gene):
         else:
             gene_family = gene.split('_')[0].split('-')[0] ###AGK added this because not sure why you wouldn't want the genes without dashes?
     else:
-        gene_family = gene.split('_')[0].split('-')[0] # split to remove allele number and just have gene name AGK changed     
+        gene_family = gene.split('_')[0].split('-')[0] # split to remove allele number and just have gene name AGK changed
     return gene_family
 
 def srst2_dedup(srst2_ar_df, gamma_ar_df):
@@ -1388,7 +1388,7 @@ def srst2_dedup(srst2_ar_df, gamma_ar_df):
                 for val in gene_list:
                     count = count + 1 #only continue below if we have seen this gene before
                     if gene_list.count(val) > 1 and val not in multiple_occurrences:
-                        #get a dataframe of the gene in question 
+                        #get a dataframe of the gene in question
                         matching_columns = gamma_neg_srst2.columns[pd.Series(gamma_neg_srst2.columns).apply(get_gene_fam) == val].tolist()
                         df = pd.DataFrame(gamma_neg_srst2.loc[row.name, matching_columns])
                         # Define the regex pattern to extract Percent_Match and Coverage and Extract Percent_Match and Coverage using str.extract
@@ -1464,11 +1464,11 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
     common_cols = ar_df.columns.intersection(srst2_ar_df.columns) #get column names that are in both dataframes --> These are GAMMA +
     ignore_cols = ['AR_Database', 'UNI','No_AR_Genes_Found', 'WGS_ID'] # These columns should not be included in gene processing
     gene_common_cols = [x for x in common_cols if x not in ignore_cols] # Get gene columns that are common to both but not in the ignore list
-    
+
     # If there are no common gene columns, skip the comparison logic
     if not gene_common_cols:
         return ar_df
-    
+
     # Combine values in cells for columns that are in both dataframes as these would be the same gene alleles for GAMMA and SRST2
     for col in gene_common_cols:
         ar_combined_df[col] = (srst2_ar_df[col].map(str) + ":" + ar_df[col]).replace(':', "")
@@ -1478,14 +1478,14 @@ def add_srst2(ar_df, srst2_ar_df, is_combine):
     # Subset SRST2 to just the overlapping gene columns
     srst2_common = srst2_ar_df[gene_common_cols]
     # Create a mask to keep values in ar_combined_df that are different from srst2_common
-    mask = srst2_common.notna() & ((ar_combined_df.isna()) | (srst2_common != ar_combined_df)) 
+    mask = srst2_common.notna() & ((ar_combined_df.isna()) | (srst2_common != ar_combined_df))
     # Keep only those differing values from ar_combined_df (rest filled with ''), meaning they don't have a solo SRST2 hit as these would be identical between the two dfs
     ar_combined_nosolosrst2 = ar_combined_df.where(mask).fillna('')
     # Determine which values exist only in SRST2 and not in GAMMA
     srst2_has_value = srst2_common.notna() & (srst2_common != '')
     gamma_has_value = ar_df[gene_common_cols].notna() & (ar_df[gene_common_cols] != '')
     srst2_ar_df_only = srst2_common.where(srst2_has_value & ~gamma_has_value).fillna('')
-    
+
     # Drop overlapping gene columns from original DataFrames to avoid duplication
     #print(f"DEBUG: Dropping gene common columns from ar_df: {gene_common_cols}")
     ar_df.drop(gene_common_cols, axis = 1, inplace=True) #this one will be how we carry through WGS_ID and UNI
@@ -1520,7 +1520,7 @@ def find_big_5(BLDB):
     oxa_rows = final_df[oxa_cond & sub_cond]
 #    oxa_filtered = oxa_rows[~(oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & ~oxa_rows["Subfamily"].str.contains("OXA-48-like", na=False))]
     oxa_filtered = oxa_rows[~(
-        oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) & 
+        oxa_rows["Natural (N) or Acquired (A)"].str.contains(r"N\s\(", na=False) &
         ~oxa_rows["Natural (N) or Acquired (A)"].str.startswith("A") &
         ~oxa_rows["Subfamily"].isin(subfamily_list)
     )]
@@ -1698,9 +1698,9 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     else: # allow for backward compatibility with versions <2.2.0
         worksheet.merge_range('A1:C1', "PHoeNIx Summary", cell_format_light_blue)
         worksheet.merge_range('D1:R1', "QC Metrics", cell_format_grey_blue)
-    #taxa columns 
+    #taxa columns
     # Find start and end column letters
-    # to allow backwards compatability with v2.1.1 we need a little try and catch...  
+    # to allow backwards compatability with v2.1.1 we need a little try and catch...
     if "Final_Taxa_ID" in df.columns:
         taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
     elif "Taxa_Source" in df.columns:
@@ -1710,7 +1710,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
     # Dynamically merge based on start and end column
     worksheet.merge_range(f"{taxa_start_col}1:{taxa_end_col}1", "Taxonomic Information", cell_format_green)
-    #MLST columns 
+    #MLST columns
     # Define start and end column based on centar condition
     mlst_start_col = column_letter(list(df.columns).index("Primary_MLST_Scheme"))  # Get index of start column
     if centar:
@@ -1732,7 +1732,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] - 1), "Other Toxins", cell_format_p3) #-1 is to account for MLST clade being in the MLST columns, but in the centar dataframe
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1]), 0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2] - 1), "C. difficile Specific AR Mutations", cell_format_p2)
         worksheet.merge_range(0, (qc_minus_centar + centar_df_lens[0] + centar_df_lens[1] + centar_df_lens[2]), 0, (qc_minus_centar + sum(centar_df_lens) - 1), "ML Predicted Ribotype", cell_format_p1)
-        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count)-1, "Antibiotic Resistance Genes", cell_format_lightgrey) 
+        worksheet.merge_range(0, (qc_max_col), 0, (qc_max_col + ar_gene_count)-1, "Antibiotic Resistance Genes", cell_format_lightgrey)
         worksheet.merge_range(0, (qc_max_col + ar_gene_count), 0 ,(qc_max_col + ar_gene_count + hv_gene_count - 1), "Hypervirulence Genes^^", cell_format_grey)
         worksheet.merge_range(0, (qc_max_col + ar_gene_count + hv_gene_count), 0, (qc_max_col + ar_gene_count + pf_gene_count + hv_gene_count - 1), "Plasmid Incompatibility Replicons^^^", cell_format_darkgrey)
         # needed this for anoter set of samples... not sure what the differences are  -- cdc_phx with --centar
@@ -1767,13 +1767,13 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     for column in ar_df.columns:
         for gene in columns_to_highlight:
             if column == gene: # if the column is one of the big 5 genes to highlight
-                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns
                 cell = xl_rowcol_to_cell(1, col_adjustment)   # Gets the excel location like A1
                 #cell_value = ar_df.iloc[2, column_count] # get the value in that cell
                 worksheet.write(cell, column, orange_format)
         column_count = column_count + 1
     ##            for row in range(ar_df.shape[0]):
-    ##                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+    ##                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns
     ##                row_adjustment = row + 2
     ##                cell = xl_rowcol_to_cell(row_adjustment, col_adjustment)   # Gets the excel location like A1
     ##                cell_value = ar_df.iloc[row, column_count] # get the value in that cell
@@ -1787,7 +1787,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
     # More footers - Disclaimer etc.
     # unbold
     no_bold = workbook.add_format({'bold': False})
-    worksheet.write_url('A' + str(max_row + 7), 'https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#mlst-allele-symbols', string="Click for a full explaination of symbols used in MLST allele markers. The source of the MLST determination can be 'assembly' (MLST), 'reads' (SRST2) or both 'assembly/reads'.")
+    worksheet.write_url('A' + str(max_row + 7), 'https://github.com/CDCgov/phoenix/wiki/Pipeline-Overview#mlst-allele-symbols', string="Click for a full explanation of symbols used in MLST allele markers. The source of the MLST determination can be 'assembly' (MLST), 'reads' (SRST2) or both 'assembly/reads'.")
     worksheet.write('A' + str(max_row + 8),"^Using Antibiotic Resistance Gene database " + ar_db + " (ResFinder, ARG-ANNOT, NCBI Bacterial Antimicrobial Resistance Reference Gene Database); gene matches from S:(SRST2) with [%Nuc_Identity, %Coverage], or from G:(GAMMA) with [%Nuc_Identity, %AA_Identity,  %Coverage]; GAMMA gene matches indicate associated contig.", no_bold)
     worksheet.write('A' + str(max_row + 9),"^^Using CDC-compiled iroB, iucA, peg-344, rmpA, and rmpA2 hypervirulence gene database ( " + hv_db + " ); gene matches noted with [%Nuc_Identity, %AA_Identity,  %Coverage].", no_bold)
     worksheet.write('A' + str(max_row + 10),"^^^Using the plasmid incompatibility replicons plasmidFinder database ( " + pf_db + " ); replicon matches noted with [%Nuc_Identity, %Coverage].", no_bold)
@@ -1859,7 +1859,7 @@ def convert_excel_to_tsv(output):
     #Replace all fields having line breaks with space
     #data_xlsx = data_xlsx.replace('\n', ' ',regex=True)
     #drop the footer information
-    data_xlsx = data_xlsx.iloc[:-11] 
+    data_xlsx = data_xlsx.iloc[:-11]
     #Write dataframe into csv
     data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
 
@@ -1922,7 +1922,7 @@ def main():
     if args.updater == True:
         input_samplesheet_df = pd.read_csv(args.samplesheet)
         samples_to_run = input_samplesheet_df["sample"].astype(str).tolist()
-    if args.centar == True and args.samplesheet != None and args.filter_samples == True: 
+    if args.centar == True and args.samplesheet != None and args.filter_samples == True:
         # When using species specific pipelines and --samplesheet is  given this means we need to make sure only samples in samplesheet are run
         input_samplesheet_df = pd.read_csv(args.samplesheet)
         # Check if 'directory' column exists before filtering
@@ -2014,4 +2014,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    

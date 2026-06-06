@@ -54,7 +54,7 @@ def Get_Parent_Folder(directory):
     #first make sure we have an absolute path
     directory = os.path.abspath(directory)
     #handing if trailing backslash isn't in there.
-    if directory[-1] != "/": 
+    if directory[-1] != "/":
         directory = directory + "/"
     # get project from directory path
     project = os.path.split(os.path.split(os.path.split(directory)[0])[0])[1]
@@ -177,7 +177,7 @@ def get_gc_metrics(gc_file):
                 extracted_value = (line.split("Sample_GC_Percent: ",1)[1]).strip()
                 if "No Match Found" in extracted_value or extracted_value == "NA":
                     sample_gc = "NA"
-                else: 
+                else:
                     sample_gc = float(extracted_value)
             elif "Species_GC_Mean:" in line:
                 extracted_value = (line.split("Species_GC_Mean: ",1)[1]).strip()
@@ -277,7 +277,7 @@ def compile_warnings(Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_pe
         if float(gc_metrics[1]) > (float(gc_metrics[3])+float(gc_metrics[2])): #check that gc% is < 2.58 stdev away from mean gc of species
             warnings.append("GC% >2.58 stdev away from mean GC of {:.2f}%.".format(float(gc_metrics[3])))
     if scaffolds != "Unknown" and Wt_asmbld_unclassified_percent != "Unknown" and Asmbld_Genus_percent != "Unknown":
-        if int(scaffolds) > int(200) and int(scaffolds) < int(500): # between 200-500 
+        if int(scaffolds) > int(200) and int(scaffolds) < int(500): # between 200-500
             warnings.append("High scaffold count 200-500 ({}).".format(int(scaffolds)))
         if float(Wt_asmbld_unclassified_percent) > float(30.00):
             warnings.append(">{:.2f}% unclassifed weighted scaffolds.".format(int(30)))
@@ -289,7 +289,7 @@ def compile_warnings(Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_pe
         else:
             warnings.append("No assembly file found possible SPAdes failure.")
     if len(kraken_wtasmbld_genus) >=2:
-        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them.".format(int(25))) 
+        warnings.append(">=2 genera had >{:.2f}% of wt scaffolds assigned to them.".format(int(25)))
     if FastANI_ID != "Unknown":
         if float(FastANI_ID) < float(95.00):
             warnings.append("FastANI match is <95%.")
@@ -371,7 +371,7 @@ def Checking_auto_pass_fail(fairy_files, spades_fairy_file, coverage, length, as
     """
     Checking auto pass fail conditions
     SPAdes failure would say: "run_failure,no_scaffolds,no_contigs"
-    SPAdes  Success options: 
+    SPAdes  Success options:
     1. "run_completed,scaffolds_created,contigs_created"
     2. "run_completed,no_scaffolds,contigs_created"
     """
@@ -498,7 +498,7 @@ def parse_amrfinder_ar(amrfinder_file, sample_name, final_df, ar_db):
     # loop through list of gamma info to combine ifdnto "code" for ID%/%cov:contig# and make back into a pandas series
     coverage = ["[{:.0f}{}/{:.0f}:#{}:{}]".format(percent_codon_ID, match_type, percent_length, contig_number, method) for percent_codon_ID, match_type, percent_length, contig_number, method in zip(percent_codon_IDs, match_type, percent_lengths, contig_numbers, method)]
     # Minimum % length required to be included in report, otherwise removed from list
-    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 90]): 
+    if bool([percent_length for percent_length in percent_lengths if int(percent_length) < 90]):
         index_remove_postion = [ n for n,percent_length in enumerate(percent_lengths) if int(percent_length) < 90 ] # get index for value removed to remove from other lists (values less than 90)
         percent_lengths = [percent_length for percent_length in percent_lengths if int(percent_length) >= 90] # filter list to remove values below cutoff (keep those greater than or equal to 90)
         for index in sorted(index_remove_postion, reverse=True):
@@ -525,7 +525,7 @@ def parse_amrfinder_ar(amrfinder_file, sample_name, final_df, ar_db):
         df["AR_Database"] = db
         df["No_AR_Genes_Found"] = ""
         df.index = [sample_name]
-    # Check for duplicate column names, multiple hits 
+    # Check for duplicate column names, multiple hits
     #print(df["blaFOX-5_NG_049105.1(beta-lactam)"])
     df = duplicate_column_clean(df)
     final_df = pd.concat([final_df, df], axis=0, sort=True, ignore_index=False).fillna("")
@@ -601,19 +601,19 @@ def Get_Metrics(set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_
         gc_metrics = [gc_stdev, sample_gc, out_of_range_stdev, species_gc_mean]
     try:
         QC_result, QC_reason = Checking_auto_pass_fail(fairy_files, spades_fairy_file, Coverage, Assembly_Length, assembly_ratio_metrics[1], assembly_ratio_metrics[0], set_coverage, Scaffold_Count, sample_name)
-    
+
     except FileNotFoundError:
         print("Warning: Possibly coverage and assembly length was not calculated and/or "+ sample_name + "_Assembly_ratio_*.txt not found.")
         QC_result = QC_reason = 'Unknown'
     try:
         FastANI_output_list, fastani_warning = parse_ani(fast_ani_file)
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Warning: " + sample_name + ".fastANI.txt not found")
         ani_source_file = fastani_ID = fastani_coverage = fastani_organism = 'Unknown'
         FastANI_output_list = [ani_source_file, fastani_ID, fastani_coverage, fastani_organism]
     try:
         ar_df = parse_amrfinder_ar(amrfinder_file, sample_name, ar_df, ar_db)
-    except FileNotFoundError: 
+    except FileNotFoundError:
         print("Warning: AMRFinder file " + sample_name + "_all_genes_blank.tsv not found.")
         df = pd.DataFrame({'WGS_ID':[sample_name], 'No_AR_Genes_Found':['File not found'], 'AR_Database':['AMRFinder file not found'] })
         df.index = [sample_name]
@@ -627,7 +627,7 @@ def Get_Metrics(set_coverage, ar_df, trim_stats, raw_stats, kraken_trim, kraken_
     try:
         warnings = compile_warnings(Total_Trimmed_reads, Total_Raw_reads, Q30_R1_per, Q30_R2_per, Trim_Q30_R1_percent, Trim_Q30_R2_percent,\
                                     Scaffold_Count, gc_metrics, assembly_ratio_metrics, Trim_unclassified_percent, Wt_asmbld_unclassified_percent,\
-                                    kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent, 
+                                    kraken_trim_genus, kraken_wtasmbld_genus, Trim_Genus_percent, Asmbld_Genus_percent,
                                     fastani_warning, busco_metrics[1], FastANI_output_list[1], FastANI_output_list[2], QC_reason)
     except:
         warnings = ""
@@ -761,8 +761,8 @@ Scaffold_Count_L, busco_lineage_L, percent_busco_L, gc_L, assembly_ratio_L, asse
     'BUSCO_%Match'               : percent_busco_L,
     'Kraken_ID_Trimmed_Reads_%'  : Trim_kraken_L,
     'Kraken_ID_WtAssembly_%'     : Asmbld_kraken_L,
-    'FastANI_Organism'           : fastani_organism_L, 
-    'FastANI_%ID'                : fastani_ID_L, 
+    'FastANI_Organism'           : fastani_organism_L,
+    'FastANI_%ID'                : fastani_ID_L,
     'FastANI_%Coverage'          : fastani_coverage_L,
     'Species_Support_ANI'        : Species_Support_L}
     busco_data = {'WGS_ID'       : Sample_Names,
@@ -806,7 +806,7 @@ def big5_check(final_ar_df, BLDB):
     final_ar_df = final_ar_df.drop(['AR_Database','WGS_ID'], axis=1)
     all_genes = final_ar_df.columns.tolist()
     big5_keep, big5_oxa_keep= find_big_5(BLDB)
-    # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do. 
+    # loop through column names and check if they contain a gene we want highlighted. Then add to highlight list if they do.
     for gene in all_genes: # loop through each gene in the dataframe of genes found in all isolates
         if gene == 'No_AR_Genes_Found':
             pass
@@ -820,7 +820,7 @@ def big5_check(final_ar_df, BLDB):
                 [ columns_to_highlight.append(gene_name + "_(" + drug) for big5_oxa in big5_oxa_keep if gene_name == big5_oxa ]
             else: # for "blaIMP", "blaVIM", "blaNDM", and "blaKPC", this will take any thing with a matching substring to these
                 [ columns_to_highlight.append(gene_name + "_(" + drug) for big5 in big5_keep if search(big5, gene_name) ]
-    print(CYELLOW + "\nhighlighting colums:", columns_to_highlight, CEND)
+    print(CYELLOW + "\nhighlighting columns:", columns_to_highlight, CEND)
     return columns_to_highlight
 
 def column_letter(index):
@@ -889,7 +889,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, columns_
     #worksheet.set_column('A1:A1', None, cell_format_light_blue) #make summary column blue, #use for only 1 column in length
     worksheet.merge_range('A1:D1', "PHoeNIx Summary", cell_format_light_blue)
     worksheet.merge_range('E1:S1', "QC Metrics", cell_format_grey_blue)
-    #taxa column 
+    #taxa column
     taxa_start_col  = column_letter(list(df.columns).index("Final_Taxa_ID"))  # Get index of start column
     taxa_end_col = column_letter(list(df.columns).index("Species_Support_ANI"))  # Get index of end column
     # Dynamically merge based on start and end column
@@ -915,13 +915,13 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, columns_
     for column in ar_df.columns:
         for gene in columns_to_highlight:
             if column == gene: # if the column is one of the big 5 genes to highlight
-                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns
                 cell = xl_rowcol_to_cell(1, col_adjustment)   # Gets the excel location like A1
                 #cell_value = ar_df.iloc[2, column_count] # get the value in that cell
                 worksheet.write(cell, column, orange_format)
         column_count = column_count + 1
     ##            for row in range(ar_df.shape[0]):
-    ##                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns 
+    ##                col_adjustment = column_count + qc_max_col - 1 # adjust starting place to account for qc columns
     ##                row_adjustment = row + 2
     ##                cell = xl_rowcol_to_cell(row_adjustment, col_adjustment)   # Gets the excel location like A1
     ##                cell_value = ar_df.iloc[row, column_count] # get the value in that cell
@@ -941,7 +941,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, columns_
     worksheet.write('A' + str(max_row + 10),"EXACT - 100% sequence match over 100% of length to a protein in the database that is not a named allele.", no_bold)
     worksheet.write('A' + str(max_row + 11),"BLAST - BLAST alignment is > 90% of length and > 90% identity to a protein in the AMRFinderPlus database.", no_bold)
     worksheet.write('A' + str(max_row + 12),"PARTIAL - BLAST alignment is > 50% of length, but < 90% of length and > 90% identity to the reference, and does not end at a contig boundary.", no_bold)
-    worksheet.write('A' + str(max_row + 13),"PARTIAL_CONTIG_END - BLAST alignment is > 50% of length, but < 90% of length and > 90% identity to the reference, and the break occurrs at a contig boundary indicating that this gene is more likely to have been split by an assembly issue.", no_bold)
+    worksheet.write('A' + str(max_row + 13),"PARTIAL_CONTIG_END - BLAST alignment is > 50% of length, but < 90% of length and > 90% identity to the reference, and the break occurs at a contig boundary indicating that this gene is more likely to have been split by an assembly issue.", no_bold)
     worksheet.write('A' + str(max_row + 14),"HMM - HMM was hit above the cutoff, but there was not a BLAST hit that met standards for BLAST or PARTIAL. This does not have a suffix because only protein sequences are searched by HMM.", no_bold)
     worksheet.write('A' + str(max_row + 15),"INTERNAL_STOP - Translated blast reveals a stop codon that occurred before the end of the protein.", no_bold)
     worksheet.write('A' + str(max_row + 16),"POINT - Point mutation identified by blast.", no_bold)
@@ -1020,7 +1020,7 @@ def convert_excel_to_tsv(output):
     #Replace all fields having line breaks with space
     #data_xlsx = data_xlsx.replace('\n', ' ',regex=True)
     #drop the footer information
-    data_xlsx = data_xlsx.iloc[:-11] 
+    data_xlsx = data_xlsx.iloc[:-11]
     #Write dataframe into csv
     data_xlsx.to_csv(output_file + '.tsv', sep='\t', encoding='utf-8',  index=False, lineterminator ='\n')
 
@@ -1083,23 +1083,23 @@ def write_phoenix_summary(set_coverage, final_df, busco_df):
     final_df['Species'] = final_df.apply(extract_species, axis=1)
     # make column for warnings count
     final_df['Warning_Count'] = final_df['Warnings'].str.split(',').apply(len)
-    
+
     # Define the base columns to include
     columns_to_include = ['ID','PHX_Version','Auto_QC_Outcome','Warning_Count','Estimated_Coverage',
                          'Genome_Length','Assembly_Ratio_(STDev)','#_of_Scaffolds_>500bp','GC_%',
                          'BUSCO','BUSCO_DB','Final_Taxa_ID', 'Taxa_Source', 'FastANI_Organism',
                          'FastANI_%ID','FastANI_%Coverage']
-    
+
     # Only add ShigaPass_Organism if it exists in the DataFrame
     if 'ShigaPass_Organism' in final_df.columns:
         columns_to_include.append('ShigaPass_Organism')
-    
+
     # Add the remaining columns
     columns_to_include.extend(['Kraken2_Trimd','Kraken2_Weighted', 'Auto_QC_Failure_Reason'])
-    
+
     # Select only the columns that exist in the DataFrame
     final_df = final_df[columns_to_include]
-    
+
     #phx_df = pd.merge(phx_df, ar_db_df, on='ID')
     # add commas to make it more readable
     final_df["Genome_Length"] = final_df["Genome_Length"].apply(lambda x: "{:,.0f}".format(x) if pd.notna(x) and x != "Unknown" else x)
