@@ -409,4 +409,23 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - GRiPHin Fixes:  
    - Fixed bug that caused NA to disappear from Stdev column, which would then skip the warning that there were <10 references for ratio and gc calculations.  
    - Fixed bug that cut off text after sp. in Kraken2 output.  
-   - Fixed bug causing some BIG-5 genes to not be highlighted correctly (example blaOXA-23).  
+   - Fixed bug causing some BIG-5 genes to not be highlighted correctly (example blaOXA-23).
+ 
+## [v2.3.2](https://github.com/CDCgov/phoenix/releases/tag/v2.3.2) (07/XX/2026)  
+- Fixed an issue where the UPDATE_PHOENIX workflow crashed when previously failed samples where in the samplesheet. (Issue #138)  
+- Added fairy output retention when running UPDATE_PHOENIX  
+- Fixed an issue where UPDATE_PHOENIX would crash if the only AR gamma file matched the newest/current database  
+- Adjusted how CENTAR,UPDATE_PHOENIX, and CREATE_INPUT_CHANNELS workflows handle input designations internally, input vs indir (No changes to command line options)  
+
+** MLST updates:**  
+  - Corrected Providencia stuartii samples to also run under the general Providencia scheme  
+  - Fixed DO_MLST subworkflow to handle previously failed samples, related to UPDATE_PHOENIX subworkflow  
+  - Added another case to the taxa check section where scoring causing incorrect auto scheme. Citrobacter freundii was found to be identified as Salmonella (Issue #142)  
+
+** GRiPHiN Fixes:**  
+  - Corrected an issue where Acinetobacter baumannii samples  that only contained a 'paralog' variant MLST type were being excluded (Issue #141)  
+  - Fixed an issue where some AR genes were being accidently highlighted as BIG-5 when they were not actually included in that designation (Issue #140)  
+  - Fixed an issue when running UPDATE_PHOENIX without an outdir that the griphin file would retain empty columns in the AR/HV/PF sections  
+  - Fixed an issue where srst2 hits werent coming in for UPDATE_PHOENIX  
+  - Corrected labeling check of older griphin version regarding kraken2 columns  
+  - Fixed an issue with extra text being pulled through when Shigapass taxonomy is used (Issue #139) 
