@@ -415,12 +415,14 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Fixed an issue where the UPDATE_PHOENIX workflow crashed when previously failed samples where in the samplesheet. (Issue #138)  
 - Added fairy output retention when running UPDATE_PHOENIX  
 - Fixed an issue where UPDATE_PHOENIX would crash if there was no AR gamma file for a sample.
-- Adjusted how CENTAR,UPDATE_PHOENIX, and CREATE_INPUT_CHANNELS workflows handle input designations internally, input vs indir (No changes to command line options)  
+- Adjusted how CENTAR,UPDATE_PHOENIX, and CREATE_INPUT_CHANNELS workflows handle input designations internally, input vs indir (No changes to command line options)
+- ANI now handles poor sample quality (minimum MASH distance threshold) better  
 
 ** MLST updates:**  
   - Corrected Providencia stuartii samples to also run under the general Providencia scheme  
   - Fixed DO_MLST subworkflow to handle previously failed samples, related to UPDATE_PHOENIX subworkflow  
-  - Added another case to the taxa check section where scoring causing incorrect auto scheme. Citrobacter freundii was found to be identified as Salmonella (Issue #142)  
+  - Added another case to the taxa check section where scoring causing incorrect auto scheme. Citrobacter freundii was found to be identified as Salmonella (Issue #142)
+  X- Also in issue #142, it showed that some MLST schemes were improperly being displayed in secondary MLST info instead of primary. This has been corrected  
 
 ** GRiPHiN Fixes:**  
   - Corrected an issue where Acinetobacter baumannii samples  that only contained a 'paralog' variant MLST type were being excluded (Issue #141)  
