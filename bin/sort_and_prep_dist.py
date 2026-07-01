@@ -210,6 +210,9 @@ def main() -> None:
             else:
                 log_fh.write(f"✗ {source} did not download correctly\n")
 
+    if hits_file.stat().st_size == 0:
+        hits_file.unlink()
+
     print(f"Done. {matches} genome(s) written to {hits_file}")
 
 

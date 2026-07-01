@@ -49,6 +49,59 @@ CEND = '\033[0m'
 #pd.set_option('display.max_rows', None)
 #pd.set_option('display.max_columns', None)
 
+def diagnose_empty_columns(final_df, combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, final_ar_df):
+    """Identify which dataframe is the source of empty columns in final_df."""
+    
+    def get_empty_cols(df, label):
+        empty = [col for col in df.columns if df[col].replace('', pd.NA).isna().all()]
+        print(f"\n{'='*60}")
+        print(f"{label}: {df.shape[0]} rows x {df.shape[1]} cols")
+        print(f"  Empty columns ({len(empty)}): {empty}")
+        return set(empty)
+    
+    print("\n" + "="*60)
+    print("EMPTY COLUMN DIAGNOSIS")
+    print("="*60)
+    
+    empty_final     = get_empty_cols(final_df,            "final_df (going to write_to_excel)")
+    empty_qc        = get_empty_cols(combined_df_qc_final, "combined_df_qc_final")
+    empty_ar        = get_empty_cols(combined_df_ar_final, "combined_df_ar_final")
+    empty_ar_final  = get_empty_cols(final_ar_df,          "final_ar_df")
+    empty_pf        = get_empty_cols(combined_df_pf_final, "combined_df_pf_final")
+    empty_hv        = get_empty_cols(combined_df_hv_final, "combined_df_hv_final")
+    
+    # Cross-reference: which final_df empty cols came from which source df
+    print("\n" + "="*60)
+    print("TRACING EMPTY COLS IN final_df BACK TO SOURCE:")
+    for col in sorted(empty_final):
+        sources = []
+        if col in combined_df_qc_final.columns and col in empty_qc:
+            sources.append("QC")
+        if col in combined_df_ar_final.columns and col in empty_ar:
+            sources.append("AR")
+        if col in final_ar_df.columns and col in empty_ar_final:
+            sources.append("final_AR")
+        if col in combined_df_pf_final.columns and col in empty_pf:
+            sources.append("PF")
+        if col in combined_df_hv_final.columns and col in empty_hv:
+            sources.append("HV")
+        if not sources:
+            sources.append("INTRODUCED BY MERGE (not empty in any source df!)")
+        print(f"  '{col}': {' | '.join(sources)}")
+    
+    # Spot-check: cols empty in final_df but NOT empty in any source — merge artifact
+    all_source_empties = empty_qc | empty_ar | empty_pf | empty_hv
+    merge_artifacts = empty_final - all_source_empties
+    if merge_artifacts:
+        print(f"\n⚠️  MERGE ARTIFACTS (became empty only after merging): {merge_artifacts}")
+        for col in merge_artifacts:
+            # Show which df had values and how many
+            for df, label in [(combined_df_qc_final, "QC"), (combined_df_ar_final, "AR"),
+                               (combined_df_pf_final, "PF"), (combined_df_hv_final, "HV")]:
+                if col in df.columns:
+                    non_empty = df[col].replace('', pd.NA).notna().sum()
+                    print(f"    '{col}' in {label}: {non_empty} non-empty values — check merge key alignment")
+
 def df_has_index_dupes(df_to_check, label):
     # Check if the DataFrame has duplicate indices
     if df_to_check.index.duplicated().any():
@@ -197,6 +250,27 @@ def read_excel(file_path, old_phoenix, reference_qc_df, reference_centar_df, sam
     samples_to_add = ref_qc.index.difference(df1_qc.index)
     #make sure the order of the ar genes is correct
     order_ar_df = order_ar_gene_columns(df_ar, True)
+    # NEW: drop empty non-protected columns before returning to prevent
+    # stale schema from polluting downstream combines
+    protected = {
+        'UNI', 'WGS_ID', 'AR_Database', 'No_AR_Genes_Found',
+        'HV_Database', 'No_HVGs_Found',
+        'Plasmid_Replicon_Database', 'No_Plasmid_Markers'
+    }
+    for df_to_clean, label in [
+        (df_qc,       "df_qc"),
+        (order_ar_df, "order_ar_df"),
+        (df_pf,       "df_pf"),
+        (df_hv,       "df_hv"),
+    ]:
+        empty_cols = [col for col in df_to_clean.columns
+                      if col not in protected
+                      and df_to_clean[col].replace('', pd.NA).isna().all()]
+        if empty_cols:
+            print(CYELLOW + f"Warning: Dropping {len(empty_cols)} empty cols "
+                  f"from {label} in read_excel: {empty_cols}" + CEND)
+            df_to_clean.drop(columns=empty_cols, inplace=True)
+
     return df_qc, order_ar_df, df_pf, df_hv, phoenix, shiga, centar, ordered_centar_df, centar_df_lens, centar_df_column_names
 
 def combine_centar(ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1, ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2):
@@ -519,110 +593,131 @@ def detect_footer_lines(file_path, sheet_name=0):
     return footer_lines
 
 def read_excels(file_path1, file_path2, samplesheet, remove_dups, parent_folder):
-    #get number of footer lines for each file to skip when reading in as a pd
     footer_lines1 = detect_footer_lines(file_path1)
     footer_lines2 = detect_footer_lines(file_path2)
-    # Read the Excel file, skipping the first row and using the second row as the header
-    try: #check that this is an excel file
-        df_1 = pd.read_excel(file_path1,
-            keep_default_na=False,
-            skiprows=1,  # Skip the first header row
-            header=0,    # Use the second row as the header
-            skipfooter=footer_lines1,engine='openpyxl')
+    
+    def report_empties(df, label, protected=None):
+        """Helper to report empty columns at each stage."""
+        if protected is None:
+            protected = set()
+        empty = [col for col in df.columns 
+                 if col not in protected 
+                 and df[col].replace('', pd.NA).isna().all()]
+        print(f"\n[TRACE] {label}")
+        print(f"  Shape: {df.shape}")
+        print(f"  Empty cols ({len(empty)}): {empty}")
+        return empty
+
+    try:
+        df_1 = pd.read_excel(file_path1, keep_default_na=False, skiprows=1,
+                             header=0, skipfooter=footer_lines1, engine='openpyxl')
         if 'Parent_Folder' not in df_1.columns or 'PHX_Version' not in df_1.columns:
             df_1 = backwards_compatibility(df_1, parent_folder, file_path1)
-        #rename columns for backwards compatibility
         df_1 = df_1.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
-        # Use vectorized operations for speed to creating UNI column
-        # Pre-compute the parent folder replacement
         df_1['Parent_Folder'] = df_1['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
-        # Then create UNI using string formatting which is more memory efficient
         df_1['UNI'] = df_1['Parent_Folder'] + '/' + df_1['Data_Location'] + '/' + df_1['WGS_ID'].astype(str)
         df_1 = df_1[['UNI'] + [col for col in df_1.columns if col != 'UNI']]
+#        report_empties(df_1, "df_1 after read_excel")
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path1}")
-    try: #check that this is an excel file
-        df_2 = pd.read_excel(file_path2,
-            keep_default_na=False,
-            converters={'CEMB RT Crosswalk': str},
-            skiprows=1,  # Skip the first header row
-            header=0,    # Use the second row as the header
-            skipfooter=footer_lines2,engine='openpyxl')
-            #check if parent folder is present
+
+    try:
+        df_2 = pd.read_excel(file_path2, keep_default_na=False,
+                             converters={'CEMB RT Crosswalk': str}, skiprows=1,
+                             header=0, skipfooter=footer_lines2, engine='openpyxl')
         if 'Parent_Folder' not in df_2.columns or 'PHX_Version' not in df_2.columns:
             df_2 = backwards_compatibility(df_2, parent_folder, file_path2)
-        #rename columns for backwards compatibility
         df_2 = df_2.rename(columns={'Kraken_ID_Raw_Reads_%': 'Kraken_ID_Trimmed_Reads_%'})
-        # Pre-compute the parent folder replacement
         df_2['Parent_Folder'] = df_2['Parent_Folder'].str.replace("/scicomp/groups/", "/scicomp/groups-pure/", regex=False)
-        # Then create UNI using string formatting which is more memory efficient and Use vectorized operations for speed to creating UNI column
         df_2['UNI'] = df_2['Parent_Folder'] + '/' + df_2['Data_Location'] + '/' + df_2['WGS_ID'].astype(str)
         df_2 = df_2[['UNI'] + [col for col in df_2.columns if col != 'UNI']]
+#        report_empties(df_2, "df_2 after read_excel")
     except Exception as e:
         raise ValueError(f"The input file is not a valid Excel file: {file_path2}")
+
     #drop duplicate samples from the old dataframe
     if remove_dups == True:
         #remove duplicate rows -- in the larger phx pipeline the things that are duplicates will be updated
         df_1 = remove_dup_rows(df_1, df_2)
-    # because the dir is pulled into the module when making a griphin file some samples that aren't in the samplesheet can end up in the griphin file so we will remove those
-    #if samplesheet != None:
-    #    samplesheet = pd.read_csv(samplesheet, header=0)
-    #    if 'directory' in samplesheet.columns:
-    #        samples = samplesheet['directory'].to_list()
-    #    elif 'sample' in samplesheet.columns:
-    #        samples =  samplesheet['sample'].tolist()
-    #    df_1 = df_1[df_1['UNI'].isin(samples)]
-    #    df_2 = df_2[df_2['UNI'].isin(samples)]
-    # check that we have the files from the same entry and if species specific columns are there
+        # NEW: if all rows were removed, replace df_1's stale schema with df_2's
+        if df_1.shape[0] == 0:
+            print(CYELLOW + "Warning: All rows removed from old griphin — "
+                  "all samples already present in new griphin." + CEND)
+            df_1 = df_2.iloc[0:0]  # 0-row frame with df_2's column schema
+#            report_empties(df_1, "df_1 after replacing with df_2 schema")
+
     phoenix, shiga, centar_1, centar_2, all_centar = check_column_presence(df_1, file_path1, df_2, file_path2)
-    # We next start to split up the dataframes to go into already created functions in GRiPHin.py
-    if centar_1 == True: #if first dataframe has Centar information then split that df as well as the others
+    print(f"\n[TRACE] Flags: phoenix={phoenix}, shiga={shiga}, centar_1={centar_1}, centar_2={centar_2}")
+
+    # --- df_1 splitting ---
+    if centar_1 == True:
         ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1 = split_centar_df(centar_1, file_path1, set(df_1["UNI"]))
-        df1_qc, df1_gene_hits_with_centar = split_dataframe(df_1,"Toxinotype")
-        df1_centar, df1_gene_hits = split_dataframe(df1_gene_hits_with_centar,"AR_Database")
-        df1_ar, df1_pf_hv = split_dataframe(df1_gene_hits,"HV_Database")
-        df1_hv, df1_pf = split_dataframe(df1_pf_hv,"Plasmid_Replicon_Database")
+        df1_qc, df1_gene_hits_with_centar = split_dataframe(df_1, "Toxinotype")
+#        report_empties(df1_qc, "df1_qc after split on Toxinotype (centar_1=True)")
+        df1_centar, df1_gene_hits = split_dataframe(df1_gene_hits_with_centar, "AR_Database")
+        df1_ar, df1_pf_hv = split_dataframe(df1_gene_hits, "HV_Database")
+        df1_hv, df1_pf = split_dataframe(df1_pf_hv, "Plasmid_Replicon_Database")
     else:
-        #check if df_2 also has centar information. if so add blank centar info for the columns there to be able to combine, otherwise we will return an empty dataframe
         if centar_2 == True:
-            #make an empty dataframe with all the species specific columns in centar_2 so we can combine them
             ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1 = make_empty_species_specific_df(df_2, df_1, "MLST Clade", "ML Note")
         else:
-            #make an empty dataframe no columns we just have to have it be zeros to pass to the write_excel() function
             ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1 = split_centar_df(centar_1, file_path1, set(df_1["UNI"]))
-        df1_qc, df1_gene_hits = split_dataframe(df_1,"AR_Database")
-        df1_ar, df1_pf_hv = split_dataframe(df1_gene_hits,"HV_Database")
-        df1_hv, df1_pf = split_dataframe(df1_pf_hv,"Plasmid_Replicon_Database")
-    #doing the same splitting for the new dataframe
+        df1_qc, df1_gene_hits = split_dataframe(df_1, "AR_Database")
+#        report_empties(df1_qc, "df1_qc after split on AR_Database (centar_1=False)")
+        df1_ar, df1_pf_hv = split_dataframe(df1_gene_hits, "HV_Database")
+        df1_hv, df1_pf = split_dataframe(df1_pf_hv, "Plasmid_Replicon_Database")
+
+    # --- df_2 splitting ---
     if centar_2 == True:
         ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2 = split_centar_df(centar_2, file_path2, set(df_2["UNI"]))
-        df2_qc, df2_gene_hits_with_centar = split_dataframe(df_2,"Toxinotype")
-        df2_centar, df2_gene_hits = split_dataframe(df2_gene_hits_with_centar,"AR_Database")
-        df2_ar, df2_pf_hv = split_dataframe(df2_gene_hits,"HV_Database")
-        df2_hv, df2_pf = split_dataframe(df2_pf_hv,"Plasmid_Replicon_Database")
+        df2_qc, df2_gene_hits_with_centar = split_dataframe(df_2, "Toxinotype")
+#        report_empties(df2_qc, "df2_qc after split on Toxinotype (centar_2=True)")
+        df2_centar, df2_gene_hits = split_dataframe(df2_gene_hits_with_centar, "AR_Database")
+        df2_ar, df2_pf_hv = split_dataframe(df2_gene_hits, "HV_Database")
+        df2_hv, df2_pf = split_dataframe(df2_pf_hv, "Plasmid_Replicon_Database")
     else:
-        #check if df_2 also has centar information. if so add blank centar info for the columns there to be able to combine
-        #ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1 = split_centar_df(centar_1, file_path1)
         if centar_1 == True:
-            #make an empty dataframe with all the species specific columns in centar_1 so we can combine them
             ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2 = make_empty_species_specific_df(df_1, df_2, "MLST Clade", "ML Note")
         else:
-            #make an empty dataframe no columns we just have to have it be zeros to pass to the write_excel() function
             ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2 = split_centar_df(centar_2, file_path2, set(df_2["UNI"]))
-        df2_qc, df2_gene_hits = split_dataframe(df_2,"AR_Database")
-        df2_ar, df2_pf_hv = split_dataframe(df2_gene_hits,"HV_Database")
-        df2_hv, df2_pf = split_dataframe(df2_pf_hv,"Plasmid_Replicon_Database")
-    #combine qc columns
+        df2_qc, df2_gene_hits = split_dataframe(df_2, "AR_Database")
+#        report_empties(df2_qc, "df2_qc after split on AR_Database (centar_2=False)")
+        df2_ar, df2_pf_hv = split_dataframe(df2_gene_hits, "HV_Database")
+        df2_hv, df2_pf = split_dataframe(df2_pf_hv, "Plasmid_Replicon_Database")
+
+    # --- Key: trace both QC inputs and output of combine ---
+#    print("\n[TRACE] Before combine_qc_dataframes:")
+#    report_empties(df1_qc, "  df1_qc input")
+#    report_empties(df2_qc, "  df2_qc input")
+
     combined_df_qc = combine_qc_dataframes(df1_qc, df2_qc)
-    #combine ar columns
+
+    # Check if empties were introduced by the combine itself
+    pre_combine_empty = (
+        set(col for col in df1_qc.columns if df1_qc[col].replace('', pd.NA).isna().all()) |
+        set(col for col in df2_qc.columns if df2_qc[col].replace('', pd.NA).isna().all())
+    )
+    post_combine_empty = set(col for col in combined_df_qc.columns 
+                             if combined_df_qc[col].replace('', pd.NA).isna().all())
+    new_empties = post_combine_empty - pre_combine_empty
+#    report_empties(combined_df_qc, "combined_df_qc after combine_qc_dataframes")
+    if new_empties:
+        print(f"  ⚠️  NEW empties introduced by combine_qc_dataframes: {new_empties}")
+    else:
+        print(f"  ✓ No new empties introduced by combine_qc_dataframes")
+
     combined_df_ar, samples_to_add = combine_gene_dataframes(df1_ar, df2_ar)
-    #make sure the order of the ar genes is correct
     order_combined_ar_df = order_ar_gene_columns(combined_df_ar, True)
-    print(CYELLOW + "\nAdding sample(s) to the GRiPHin summary:", samples_to_add.tolist(),"\n" + CEND)
-    # combine pf and hv dataframes
+    print(CYELLOW + "\nAdding sample(s) to the GRiPHin summary:", samples_to_add.tolist(), "\n" + CEND)
+
     combined_df_pf, samples_to_add = combine_gene_dataframes(df1_pf, df2_pf)
     combined_df_hv, samples_to_add = combine_gene_dataframes(df1_hv, df2_hv)
-    ordered_centar_df, centar_df_lens, centar_df_column_names = combine_centar(ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1, ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2)
+#    report_empties(combined_df_hv, "combined_df_hv after combine_gene_dataframes")
+
+    ordered_centar_df, centar_df_lens, centar_df_column_names = combine_centar(
+        ordered_centar_df_1, centar_df_lens_1, centar_df_column_names_1,
+        ordered_centar_df_2, centar_df_lens_2, centar_df_column_names_2)
+
     return combined_df_qc, order_combined_ar_df, combined_df_pf, combined_df_hv, phoenix, shiga, all_centar, ordered_centar_df, centar_df_lens, centar_df_column_names
 
 def main():
@@ -693,23 +788,48 @@ def main():
         #df_has_other_dupes(combined_df_qc_final, 'WGS_ID', 'I Combined QC DataFrame with Centar --- Post merge')
         combined_df_qc_final = sort_columns_to_primary_ungrouped(combined_df_qc_final)
     
+    # Sanity-check UNI keys across all four dfs before merging
+#    for df, label in [(combined_df_qc_final, "QC"), (combined_df_ar_final, "AR"),
+#                    (combined_df_pf_final, "PF"), (combined_df_hv_final, "HV")]:
+#        if 'UNI' in df.columns:
+#            missing_in_qc = set(df['UNI']) - set(combined_df_qc_final['UNI'])
+#            if missing_in_qc:
+#                print(f"⚠️  {label} has UNI keys not in QC df: {missing_in_qc}")
+#        else:
+#            print(f"⚠️  {label} has no UNI column — it may still be the index!")
+
     # call function from griphin script to combine all dfs
     final_df, ar_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db = Combine_dfs(combined_df_qc_final, combined_df_ar_final, combined_df_pf_final, combined_df_hv_final, pd.DataFrame(), phoenix_final, args.scaffolds, True, args.bldb)
-
+    ar_start = list(final_df.columns).index('AR_Database')
+    hv_start = list(final_df.columns).index('HV_Database')
+    final_ar_df = final_df.iloc[:, [0] + list(range(ar_start, hv_start))]
+    ar_max_col = final_ar_df.shape[1] - 1
+    pf_start = list(final_df.columns).index('Plasmid_Replicon_Database')
+    hv_max_col = pf_start - hv_start
+    pf_max_col = final_df.shape[1] - pf_start
     #check if we need to add shiga pass information
     #get other information for excel writing
     combined_df_qc_final = combined_df_qc_final.drop('UNI', axis = 1)
     (qc_max_row, qc_max_col) = combined_df_qc_final.shape
-    pf_max_col = combined_df_pf_final.shape[1] - 1 #remove one for the UNI column
-    hv_max_col = combined_df_hv_final.shape[1] - 1 #remove one for the UNI column
-    #write excel sheet
+    #pf_max_col = combined_df_pf_final.shape[1] - 1 #remove one for the UNI column
+    #hv_max_col = combined_df_hv_final.shape[1] - 1 #remove one for the UNI column
     final_df = final_df.drop('UNI', axis=1)
     final_df = sort_samples_df(final_df)
-    #df_has_index_dupes(final_df, "Final DataFrame after dropping UNI")
-    #df_has_other_dupes(final_df, 'UNI', 'Final_Dataframe after dropping UNI')
-    #df_has_other_dupes(final_df, 'WGS_ID', 'Final Dataframe after dropping UNI')
+#    empty_before_write = [col for col in final_df.columns if final_df[col].replace('', pd.NA).isna().all()]
+#    print(f"Empty columns going into write_to_excel: {len(empty_before_write)}")
+#    print(f"Names: {empty_before_write}")
+#    print(f"final_df shape: {final_df.shape}")
+#    print(f"final_ar_df shape going into write_to_excel: {final_ar_df.shape}")
+#    print(f"final_ar_df columns: {final_ar_df.columns.tolist()}")
+#    print(f"qc_max_col: {qc_max_col}")
+#    print(f"ar_max_col: {ar_max_col}")
+#    print(f"hv_max_col: {hv_max_col}")
+#    print(f"pf_max_col: {pf_max_col}")
+#    print(f"qc+ar+hv+pf total: {qc_max_col + ar_max_col + hv_max_col + pf_max_col}")
+#    print(f"final_df total cols: {final_df.shape[1]}")
+#    diagnose_empty_columns(final_df, combined_df_qc_final, combined_df_ar_final, 
+#                       combined_df_pf_final, combined_df_hv_final, final_ar_df)
     write_to_excel(args.set_coverage, output_file, final_df, qc_max_col, ar_max_col, pf_max_col, hv_max_col, columns_to_highlight, final_ar_df, final_pf_db, final_ar_db, final_hv_db, phoenix_final, shiga_final, centar_final, centar_df_lens_final)
-    #write tsv from excel
     convert_excel_to_tsv(output_file)
 
 if __name__ == '__main__':

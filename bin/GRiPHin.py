@@ -65,6 +65,24 @@ def print_df(df_toprint, label, all):
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.max_colwidth', None, 'display.width', 1000, 'display.colheader_justify', 'center', 'display.precision', 2):  # more options can be specified also
             print(df_toprint)
 
+def extract_gene_name(column_header):
+    """Extract just the gene+allele portion, stripping accession."""
+    # Strip drug class suffix first e.g. "_(beta-lactam)"
+    gene_field = column_header.split('_(')[0]
+
+    # Now strip the accession from the end. Two patterns:
+    # 1. NCBI:      _NG_047939.1  _FJOJ01000013.1  _EU124663.1  _CP001050.1
+    #               i.e. _<2+letters><digits><optional_more><optional .version>
+    # 2. ResFinder: _3_Y13095  _13_AM990992  _1_FJ503047
+    #               i.e. _<digits>_<accession>
+    gene_only = re.sub(
+        r'_(?:\d+_[A-Z0-9]+(?:\.[0-9]+)?|[A-Z]{2,}[A-Z0-9_]*\d+(?:\.[0-9]+)?)$',
+        '',
+        gene_field
+    )
+
+    return gene_only
+
 def Get_Parent_Folder(directory):
     '''getting project and parent_folder info from the paths'''
     #Project - parent folder (first folder that is in the outdir)
@@ -684,6 +702,8 @@ def parse_gamma_pf(gamma_pf_file, sample_name, pf_df):
 def parse_mlst(mlst_file, scheme_guess, sample_name):
     """Pulls MLST info from *_combined.tsv file."""
     Scheme_list = [[],[],[],[],[]] # create empty list to fill later
+    # For abaum, collect all entries first then filter paralogs
+    raw_entries = []
     with open(mlst_file, 'r') as f:
         lines = f.readlines()
         lines.pop(0) # drop header line
@@ -695,42 +715,56 @@ def parse_mlst(mlst_file, scheme_guess, sample_name):
             DB_ID = split_line[3] # scheme name (i.e Pasteur or Oxford etc)
             Scheme = str(split_line[4]) # scheme number
             
-            if scheme_guess == "abaum" and "PARALOG" in Scheme:
-                print("Warning: suppressing " + Scheme + " in " + sample_name)
-                continue
-            
             # Handle cases where the alleles are all -
             if (len(set(split_line[5:])) == 1) and split_line[5:][0] == "-":
                 alleles = "-"
             else:
                 alleles = ".".join(split_line[5:]) # combine all alleles separated by .
             
-            # Exclusion list
-            exclusion_list = ["-", "Novel_allele", "Novel_profile", "Missing_allele", 
-                            "Novel_allele-PARALOG", "Novel_profile-PARALOG", "Missing_allele-PARALOG"]
+            raw_entries.append((DB_ID, Scheme, alleles, source, date))
+
+    # For abaum, check if a non-PARALOG entry exists for the same DB_ID before suppressing
+    if scheme_guess == "abaum":
+        # Get DB_IDs that have at least one non-PARALOG entry
+        db_ids_with_non_paralog = set(
+            entry[0] for entry in raw_entries if "PARALOG" not in entry[1]
+        )
+        filtered_entries = []
+        for entry in raw_entries:
+            DB_ID, Scheme = entry[0], entry[1]
+            if "PARALOG" in Scheme and DB_ID in db_ids_with_non_paralog:
+                print("Warning: suppressing " + Scheme + " in " + sample_name)
+                continue
+            filtered_entries.append(entry)
+        raw_entries = filtered_entries
+
+    # Exclusion list
+    exclusion_list = ["-", "Novel_allele", "Novel_profile", "Missing_allele", 
+                    "Novel_allele-PARALOG", "Novel_profile-PARALOG", "Missing_allele-PARALOG"]
+
+    for DB_ID, Scheme, alleles, source, date in raw_entries:
+        # Find if this DB_ID already exists and get its index
+        try:
+            db_index = Scheme_list[0].index(DB_ID)
+            # Database already exists, append to its lists
+            if not any(x in Scheme for x in exclusion_list):
+                Scheme_list[1][db_index].append("ST" + str(Scheme))
+            else:
+                Scheme_list[1][db_index].append(Scheme)
+            Scheme_list[2][db_index].append(alleles)
+            Scheme_list[3][db_index].append(source)
+            Scheme_list[4][db_index].append(date)
             
-            # Find if this DB_ID already exists and get its index
-            try:
-                db_index = Scheme_list[0].index(DB_ID)
-                # Database already exists, append to its lists
-                if not any(x in Scheme for x in exclusion_list):
-                    Scheme_list[1][db_index].append("ST" + str(Scheme))
-                else:
-                    Scheme_list[1][db_index].append(Scheme)
-                Scheme_list[2][db_index].append(alleles)
-                Scheme_list[3][db_index].append(source)
-                Scheme_list[4][db_index].append(date)
-                
-            except ValueError:
-                # Database doesn't exist, create new entry
-                Scheme_list[0].append(DB_ID)
-                if not any(x in Scheme for x in exclusion_list):
-                    Scheme_list[1].append(["ST" + str(Scheme)])
-                else:
-                    Scheme_list[1].append([Scheme])
-                Scheme_list[2].append([alleles])
-                Scheme_list[3].append([source])
-                Scheme_list[4].append([date])
+        except ValueError:
+            # Database doesn't exist, create new entry
+            Scheme_list[0].append(DB_ID)
+            if not any(x in Scheme for x in exclusion_list):
+                Scheme_list[1].append(["ST" + str(Scheme)])
+            else:
+                Scheme_list[1].append([Scheme])
+            Scheme_list[2].append([alleles])
+            Scheme_list[3].append([source])
+            Scheme_list[4].append([date])
     
     return Scheme_list
 
@@ -1538,6 +1572,7 @@ def find_big_5(BLDB):
     protein_list = list(final_set)
     return [p for p in protein_list if "OXA" not in p.upper()], [p for p in protein_list if "OXA" in p.upper()], big5_keep_extended
 
+# New version that should be more specific in matching the big 5 genes by using regex to look for exact matches of the gene names and not just substrings (so that we don't accidentally highlight genes that aren't actually the big 5 but just have similar names like blaOXA-1397 which is not an OXA gene of concern but would have been highlighted in the old version because it contains "blaOXA-139" in the name)
 def big5_check(final_ar_df, is_combine, BLDB):
     columns_to_highlight = []
     if is_combine:
@@ -1548,21 +1583,16 @@ def big5_check(final_ar_df, is_combine, BLDB):
     big5_keep, big5_oxa_keep, big5_keep_extended = find_big_5(BLDB)
     for gene in all_genes:
         if gene == 'No_AR_Genes_Found': continue
-        # Split header into gene name and drug info
         parts = gene.split('_(')
         if len(parts) < 2: continue
-        gene_header = parts[0]
-        drug = parts[1]
-        # Clean header for matching
-        match_name = gene_header.upper()
+        match_name = extract_gene_name(gene).upper()
         if "-LIKE" in match_name:
             match_name = match_name.split('_BLA')[0]
-        # Use substring matching (any gene name from DB found in the header)
         if "OXA" in match_name:
-            if any(oxa.upper() in match_name for oxa in big5_oxa_keep):
+            if any(re.search(re.escape(oxa.upper()) + r'(?!\d)', match_name) for oxa in big5_oxa_keep):
                 columns_to_highlight.append(gene)
         else:
-            if any(b5.upper() in match_name for b5 in big5_keep):
+            if any(re.search(re.escape(b5.upper()) + r'(?!\d)', match_name) for b5 in big5_keep):
                 columns_to_highlight.append(gene)
     print(f"\nHighlighting columns: {columns_to_highlight}")
     return columns_to_highlight
@@ -1600,8 +1630,33 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, scaffolds, is_com
     # combining all dataframes
     if (is_combine):
         final_df = pd.merge(df, final_ar_df, how="left", on=["UNI","UNI"])
+        # drop empty AR columns — only check columns that came from final_ar_df, not from df
+        ar_introduced_cols = [col for col in final_ar_df.columns if col not in df.columns]
+        protected_cols = ['No_AR_Genes_Found', 'AR_Database', 'WGS_ID', 'UNI']
+        post_merge_empty = [col for col in ar_introduced_cols 
+                            if col not in protected_cols 
+                            and final_df[col].replace('', pd.NA).isna().all()]
+        if post_merge_empty:
+            print(f"Dropping {len(post_merge_empty)} empty AR columns")
+            final_df = final_df.drop(columns=post_merge_empty)  
+
         final_df = pd.merge(final_df, hv_df, how="left", on=["UNI","UNI"])
+        hv_introduced_cols = [col for col in hv_df.columns if col not in df.columns and col not in final_ar_df.columns]
+        protected_hv = ['No_HVGs_Found', 'HV_Database', 'UNI']
+        post_hv_empty = [col for col in hv_introduced_cols 
+                        if col not in protected_hv 
+                        and final_df[col].replace('', pd.NA).isna().all()]
+        if post_hv_empty:
+            final_df = final_df.drop(columns=post_hv_empty)
+
         final_df = pd.merge(final_df, pf_df, how="left", on=["UNI","UNI"])
+        pf_introduced_cols = [col for col in pf_df.columns if col not in df.columns and col not in final_ar_df.columns and col not in hv_df.columns]
+        protected_pf = ['No_Plasmid_Markers', 'Plasmid_Replicon_Database', 'UNI']
+        post_pf_empty = [col for col in pf_introduced_cols 
+                        if col not in protected_pf 
+                        and final_df[col].replace('', pd.NA).isna().all()]
+        if post_pf_empty:
+            final_df = final_df.drop(columns=post_pf_empty)
     else:
         final_df = pd.merge(df, final_ar_df, how="left", on=["WGS_ID","WGS_ID"])
         final_df = pd.merge(final_df, hv_df, how="left", on=["WGS_ID","WGS_ID"])
@@ -1619,6 +1674,7 @@ def Combine_dfs(df, ar_df, pf_df, hv_df, srst2_ar_df, phoenix, scaffolds, is_com
     if 'GAMMA file not found' in pf_db:
         pf_db.remove("GAMMA file not found")
     pf_db = ",".join(pf_db)
+    empty_at_return = [col for col in final_df.columns if final_df[col].replace('', pd.NA).isna().all()]
     return final_df, ar_max_col, columns_to_highlight, final_ar_df, pf_db, ar_db, hv_db
 
 def column_letter(index):
@@ -1637,6 +1693,7 @@ def write_to_excel(set_coverage, output, df, qc_max_col, ar_gene_count, pf_gene_
         writer = pd.ExcelWriter(('GRiPHin_Summary.xlsx'), engine='xlsxwriter')
     # Convert the dataframe to an XlsxWriter Excel object.
     df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=1)
+ 
     # Get the xlsxwriter workfbook worksheet objects for formating
     workbook = writer.book
     (max_row, max_col) = df.shape # Get the dimensions of the dataframe.
@@ -1923,14 +1980,15 @@ def main():
         input_samplesheet_df = pd.read_csv(args.samplesheet)
         samples_to_run = input_samplesheet_df["sample"].astype(str).tolist()
     if args.centar == True and args.samplesheet != None and args.filter_samples == True: 
-        # When using species specific pipelines and --samplesheet is  given this means we need to make sure only samples in samplesheet are run
+        # When using species specific pipelines and --samplesheet is given this means we need to make sure only samples in samplesheet are run
         input_samplesheet_df = pd.read_csv(args.samplesheet)
         # Check if 'directory' column exists before filtering
-        if 'directory' in input_samplesheet_df.columns:
-            output_dir_string = str(args.output).replace("_GRiPHin_Summary","").replace("_GRiPHin","")
-            input_samplesheet_df = input_samplesheet_df[input_samplesheet_df["directory"].str.contains(fr"/{str(output_dir_string)}", na=False, regex=True)]
+        #if 'directory' in input_samplesheet_df.columns:
+        #    print("In directory - ", output_dir_string)
+        #    output_dir_string = str(args.output).replace("_GRiPHin_Summary","").replace("_GRiPHin","")
+        #    input_samplesheet_df = input_samplesheet_df[input_samplesheet_df["directory"].str.contains(fr"/{str(output_dir_string)}", na=False, regex=True)]
         samples_to_run = input_samplesheet_df["sample"].astype(str).tolist()
-        print("Samples to run:", samples_to_run)
+        print("Samples to run:", samples_to_run) 
     #input is a samplesheet that is "samplename,directory" where the directory is a phoenix like folder
     print("Using samplesheet:", samplesheet)
     with open(samplesheet) as csv_file:

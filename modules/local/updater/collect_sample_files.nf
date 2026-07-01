@@ -43,7 +43,7 @@ process COLLECT_SAMPLE_FILES {
     tuple val(meta), path("${meta.id}/${meta.id}_GC_content_*.txt"),                                            optional: true, emit: gc_content
     tuple val(meta), path("${meta.id}/${meta.id}.synopsis"),                                                                    emit: synopsis
     tuple val(meta), path("${meta.id}/${meta.id}.tax"),                                                         optional: true, emit: tax
-    tuple val(meta), path("${meta.id}/${meta.id}_summaryline.tsv"),                                                             emit: summary_line
+    tuple val(meta), path("${meta.id}/${meta.id}_summaryline*"),                                                                emit: summary_line
     tuple val(meta), path("${meta.id}/${meta.id}_updater_log.tsv"),                                             optional: true, emit: readme
     //path ("${meta.id}-CSF.csv"),                                                                                              emit: collect_file
     path("versions.yml"),                                                                                                       emit: versions

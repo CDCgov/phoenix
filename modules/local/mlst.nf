@@ -145,6 +145,11 @@ process MLST {
         mlst --scheme pmultocida_multihost --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
         cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
         rm ${prefix}_*.tsv
+    elif [[ \$scheme == "pstuartii" ]]; then
+        mv ${prefix}.tsv ${prefix}_1.tsv
+        mlst --scheme providencia --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
+        cat ${prefix}_1.tsv ${prefix}_2.tsv > ${prefix}.tsv
+        rm ${prefix}_*.tsv
     elif [[ \$scheme == "mbovis" ]]; then
         mv ${prefix}.tsv ${prefix}_1.tsv
         mlst --scheme mbovis_legacy --threads $task.cpus \$unzipped_fasta > ${prefix}_2.tsv
@@ -224,6 +229,11 @@ process MLST {
         if [[ \$scheme == "cronobacter" ]]; then
             mv ${prefix}.tsv ${prefix}.OLD-tsv
             mlst --scheme enterobacter --threads $task.cpus \$unzipped_fasta > ${prefix}.tsv
+        fi
+    elif [[ \${genus,,} == "citrobacter" ]]; then
+        if [[ \$scheme == "salmonella_Oxford" || \$scheme == "salmonella_Achtman" || \$scheme == "cronobacter" ]]; then
+            mv ${prefix}.tsv ${prefix}.OLD-tsv
+            mlst --scheme citrobacter --threads $task.cpus \$unzipped_fasta > ${prefix}.tsv
         fi
     else
         :

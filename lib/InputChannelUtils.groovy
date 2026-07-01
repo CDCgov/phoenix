@@ -140,16 +140,19 @@ class InputChannelUtils {
             if (type == "amrfinder" && oldFiles.isEmpty() && !undatedFiles.isEmpty()) {
                 oldFiles = undatedFiles
             }
-
             if (type == "gamma") {
-                needsUpdate = !hasNewest
-                resultFile = hasNewest ? null : finalize(oldFiles) 
+                needsUpdate = !hasNewest  // this stays the same - false for already updated
+                resultFile = hasNewest ? newestFile : finalize(oldFiles)  // return current file either way
             } else {
-                if (needsUpdate || !hasNewest) {
-                    resultFile = finalize(oldFiles)
-                    needsUpdate = true 
+                if (hasNewest) {
+                    // File is already current — pass it through as-is, no recompute needed
+                    resultFile = finalize([newestFile])
+                    // needsUpdate stays whatever it was (driven by gamma flag for other steps)
                 } else {
-                    resultFile = null
+                    // No current-dated file exists — use whatever old file(s) we have so 
+                    // downstream steps can recompute
+                    resultFile = finalize(oldFiles)
+                    needsUpdate = true
                 }
             }
         } else {

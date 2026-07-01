@@ -41,9 +41,13 @@ process CREATE_AND_UPDATE_README {
     def old_updater_software_versions = old_software_versions ? "--old_software_version_file ${old_software_versions}" : ""
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    def old_gamma_ar_file  = old_gamma_ar  ? "${old_gamma_ar}"  : "${new_gamma_ar}"
+    def old_ncbi_ar_file   = old_ncbi_ar   ? "${old_ncbi_ar}"   : "${new_ncbi_ar}"
+    def old_pf_file        = old_pf        ? "${old_pf}"        : "${new_pf}"
+    def old_hv_file        = old_hv        ? "${old_hv}"        : "${new_hv}"
     """
-    ${ica}Update_Readme.py --mlst_db ${mlst_db} --amrfinder_db ${amrfinder_db} --ar_db ${ar_db} --hv_db ${hv_db} --old_gamma ${old_gamma_ar} --new_gamma ${new_gamma_ar} \\
-        --old_ncbi ${old_ncbi_ar} --new_ncbi ${new_ncbi_ar} ${old_tax_file} ${new_tax_file} --old_pf ${old_pf} --new_pf ${new_pf} --old_hv ${old_hv} --new_hv ${new_hv}\\
+    ${ica}Update_Readme.py --mlst_db ${mlst_db} --amrfinder_db ${amrfinder_db} --ar_db ${ar_db} --hv_db ${hv_db} --old_gamma ${old_gamma_ar_file} --new_gamma ${new_gamma_ar} \\
+        --old_ncbi ${old_ncbi_ar_file} --new_ncbi ${new_ncbi_ar} ${old_tax_file} ${new_tax_file} --old_pf ${old_pf_file} --new_pf ${new_pf} --old_hv ${old_hv_file} --new_hv ${new_hv}\\
         -p ${pipeline_info} -d ${directory}/${prefix} -v ${current_phx_version} -o ${prefix}_updater_log.tsv --pf_db ${pf_db} --hv_db ${hv_db} ${old_updater_software_versions}
 
     #move to output location for process to complete

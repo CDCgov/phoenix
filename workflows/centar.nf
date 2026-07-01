@@ -113,7 +113,7 @@ def get_taxa_project_dir(input_ch){
         }
         return [input_ch[0], "$genus" ]
 }
-
+/*
 def validate_cdiff_presence(input_ch) {
     def errors = []
     // Process the flattened list in pairs (meta, genera_list)
@@ -137,6 +137,21 @@ def validate_cdiff_presence(input_ch) {
         error("Pipeline validation failed:\n" + errors.join('\n'))
     }
     return true
+}*/
+
+def validate_cdiff_presence(input_ch) {
+    def errors = []
+    for (int i = 0; i < input_ch.size(); i += 2) {
+        def project_meta = input_ch[i]
+        def genera_list = input_ch[i + 1]
+        def project_id = project_meta['project_id']
+        genera_list = genera_list.toList().collect { it.toString() }
+        if (!genera_list.contains("Clostridioides")) {
+            log.warn "Project ${project_id} does not contain Clostridioides. Found genera: ${genera_list.join(', ')}. Skipping CENTAR workflow."
+            errors.add(project_id)
+        }
+    }
+    return errors.size() == 0
 }
 
 /*
@@ -148,26 +163,41 @@ def validate_cdiff_presence(input_ch) {
 workflow RUN_CENTAR {
     take:
         ch_input
-        ch_input_indir
         ch_versions
         outdir_path
 
     main:
 
         CREATE_INPUT_CHANNELS (
-            ch_input_indir, ch_input, true
+            ch_input, true
         )
         ch_versions = ch_versions.mix(CREATE_INPUT_CHANNELS.out.versions)
 
         //confirm you have c diff samples in your run. 
-        CREATE_INPUT_CHANNELS.out.taxonomy.map{meta, taxonomy -> [[project_id:meta.project_id], taxonomy] }.map{ it -> get_taxa_project_dir(it) }.groupTuple(by: [0])
-                    .collect().map{ it -> validate_cdiff_presence(it)}
+//        CREATE_INPUT_CHANNELS.out.taxonomy.map{meta, taxonomy -> [[project_id:meta.project_id], taxonomy] }.map{ it -> get_taxa_project_dir(it) }.groupTuple(by: [0])
+//                    .collect().map{ it -> validate_cdiff_presence(it)}
 
-        //unzip any zipped databases
+        cdiff_valid_ch = CREATE_INPUT_CHANNELS.out.taxonomy
+            .map{meta, taxonomy -> [[project_id:meta.project_id], taxonomy] }
+            .map{ it -> get_taxa_project_dir(it) }
+            .groupTuple(by: [0])
+            .collect()
+            .map{ it -> validate_cdiff_presence(it) }
+            .filter{ it == true }
+
+        // Gate everything off a single boolean channel
+        cdiff_valid_ch.subscribe { valid ->
+            if (!valid) {
+                log.warn "No Clostridioides samples found - skipping all CENTAR steps"
+            }
+        }
+
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, [], params.clia_amrfinder_db
+            cdiff_valid_ch.map{ params.zipped_sketch },
+            cdiff_valid_ch.map{ params.custom_mlstdb },
+            cdiff_valid_ch.map{ [] },
+            cdiff_valid_ch.map{ params.clia_amrfinder_db }
         )
-        ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
         // run centar workflow
         CENTAR_SUBWORKFLOW (
@@ -225,15 +255,17 @@ workflow RUN_CENTAR {
                     [meta, summary_lines, dirs[0], busco_booleans[0]]}  // take first dir/busco since they should be the same within a project
         }
 
-        // Combining sample summaries into final report
+        // Gate collected_summaries_ch on cdiff validation
+        gated_summaries_ch = collected_summaries_ch.combine(cdiff_valid_ch)
+            .map{ meta, summary_line, dir, busco_boolean, valid -> [meta, summary_line, dir, busco_boolean] }
+
         GATHER_SUMMARY_LINES (
-            collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> meta},
-            collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> summary_line},
-            collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> dir}, 
-            collected_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean},
+            gated_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> meta},
+            gated_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> summary_line},
+            gated_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> dir}, 
+            gated_summaries_ch.map{ meta, summary_line, dir, busco_boolean -> busco_boolean},
             workflow.manifest.version
         )
-        ch_versions = ch_versions.mix(GATHER_SUMMARY_LINES.out.versions)
 
         // collect centar output and summary lines to make the griphin report, note that groupTuple will force waiting until all samples are complete before proceeding
         griphin_input_ch = CREATE_INPUT_CHANNELS.out.line_summary.map{meta, line_summary -> [[project_id:meta.project_id], line_summary] }.groupTuple(by: [0])\
@@ -246,6 +278,17 @@ workflow RUN_CENTAR {
         //griphin_input_multi_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == true}
         // channel for isolates from the same dir, but we still need to check if we are running all the samples in the dir or not
         //griphin_input_single_dir_ch = griphin_input_ch.combine(multiple_directories_ch).filter{meta, summary_lines, centar_files, dir, busco_var, is_multiple -> is_multiple.toBoolean() == false}
+
+        shigapass_var = CREATE_INPUT_CHANNELS.out.taxonomy
+            .map{ meta, taxonomy ->
+                def genus = ""
+                taxonomy.eachLine { line ->
+                    if (line.startsWith("G:")) genus = line.split('\t')[1]
+                }
+                genus
+            }
+            .collect()
+            .map{ genera -> genera.any{ it.contains("Escherichia") || it.contains("Shigella") } }
 
         //create GRiPHin report channel
         griphin_inputs_ch = Channel.empty()
@@ -271,25 +314,121 @@ workflow RUN_CENTAR {
                 CREATE_INPUT_CHANNELS.out.srst2_ar,
                 CENTAR_SUBWORKFLOW.out.consolidated_centar
             )
+            .combine(cdiff_valid_ch)  // gate here
+            .map{ meta, file, valid -> [meta, file] }  // strip the valid flag back off
 
-        if (params.indir != null) { // --indir is passed then samples are from the same dir, thus all samples are run together and output in --indir unless --outdir or --griphin_out is passed
+        if (params.outdir == "${launchDir}/phx_output") {
 
-            busco_boolean = collected_summaries_ch.map{ meta, summary_lines, centar_file, busco_boolean -> busco_boolean}
+            //add in the samplesheet specific to each project dir
+            boolean_ch = collected_summaries_ch.map{meta, summary_line, full_project_id, busco_boolean -> [[project_id:meta.project_id], full_project_id, busco_boolean]}
+                                .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0])
+                                .map{meta, full_project_id, busco_boolean, samplesheet -> [[project_id:full_project_id], busco_boolean, samplesheet]}
 
-            def outdir_full_path2
-            if (params.outdir != "${launchDir}/phx_output") {
-                outdir_full_path2 = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
-            } else {
-                outdir_full_path2 = Channel.fromPath(params.indir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
-            }
+            grouped_griphin_inputs_ch = griphin_inputs_ch.map { meta, file -> [meta.project_id, meta, file] }  // Restructure for grouping
+                // group all items by project_id
+                .groupTuple()
+                // build per-sample bundles inside each project
+                .map { String project_id, metas, files ->
+                        def sample_ids = metas.unique{ it.id }*.id as List<String>
+                        def per_sample = sample_ids.collect { sid ->
+                            def sfiles = files.findAll { file ->
+                                def filename = file.getName()
+                                // Match files that start with sid followed by delimiter (explicit matching)
+                                filename.startsWith(sid + "_") || filename.startsWith(sid + ".") ||
+                                (filename.startsWith("short_summary") && filename.contains("." + sid + "."))
+                            }
+                            [
+                                meta : [ id: sid, filenames: sfiles.collect { it.getName() } ],
+                                files: sfiles
+                            ]
+                        }
+                        def meta_list  = per_sample.collect { it.meta }
+                        def files_flat = per_sample.collectMany { it.files }
+                    // emit a tuple keyed by project for joining, plus the two payloads we need
+                    [ [project_id: project_id], meta_list, files_flat ]
+                }
+
+            // Join griphin_inputs_ch with boolean_ch
+            combined_ch = grouped_griphin_inputs_ch.join(boolean_ch, by: [0])
+                .map { project_key, meta_list, files_flat, busco_boolean, samplesheet ->
+                    // Order for the final call (we’ll unpack by index when invoking the module)
+                    [
+                        meta_list,              // 0 -> val(metas)
+                        files_flat,             // 1 -> path(griphin_files)
+                        project_key.project_id, // 2 -> path(outdir)
+                        samplesheet,            // 3 -> path(original_samplesheet)
+                        busco_boolean           // 4 -> val(entry)
+                    ]
+                }
+
+            //create GRiPHin report
+            GRIPHIN_NO_PUBLISH (
+                params.ardb,                                   // path(db)
+                combined_ch.map { it[3] },                     // path(original_samplesheet)
+                combined_ch.map { it[0] },                     // val(metas): list of [id:<sid>, filenames:[...]]
+                combined_ch.map { it[1] },                     // path(griphin_files): flattened file list
+                combined_ch.map { it[2] },                     // path(outdir): full_project_id
+                workflow.manifest.version,                     // val(phx_version)
+                params.coverage,                               // val(coverage)
+                combined_ch.map { it[4] },                     // val(entry): busco_boolean
+                shigapass_var,                                 // val(shigapass_detected)
+                true,                                          // val(centar_detected)
+                params.bldb,                                   // path(bldb)
+                true,                                          // val(filter_var)
+                true,                                          // val(dont_publish)
+                [],                                            // path(blind_list)
+                "",                                            // val(old_phx_version)
+                ""                                             // val(inferred_mode)
+
+            )
+            ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
+
+            // If the output directory is not the default, we need to update the path in the channel
+            griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([[],[]]).flatten().collate(2)
+                                .map{path_txt, griphin_file -> add_meta(path_txt, griphin_file)}
+
+            // join old and new griphins for combining
+            griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch
+                .map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.unique()
+                .join(griphin_reports_ch.map{                            meta, griphin_file   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_file]}, by: [0])
+                .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.unique(), by: [0])
+                .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
+
+            // combine griphin files, the new one just created and the old one that was found in the project dir. 
+            UPDATE_GRIPHIN (
+                griphins_ch.map{ meta, old_excel, new_excel -> [ old_excel, new_excel ] }, 
+                griphins_ch.map{ meta, old_excel, new_excel -> meta.full_project_id },
+                //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
+                [],
+                params.coverage,
+                params.bldb,
+                true,
+                griphins_ch.map{ meta, old_excel, new_excel -> meta.project_id }
+            )
+            ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
+
+            griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report
+            griphin_report = UPDATE_GRIPHIN.out.griphin_report
+
+            software_versions_ch = griphins_ch.map{meta, old_excel, new_excel -> [[project_id:meta.project_id, full_project_id:meta.full_project_id]]}
+                            .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
+
+            META_CUSTOM_DUMPSOFTWAREVERSIONS (
+                software_versions_ch
+            )
+
+        } else {
+
+            outdir_full_path = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
+            //was busco run on any samples
+            busco_boolean = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> busco_boolean}.collect().map{ busco_booleans -> busco_booleans.any{ it == true }}
 
             grouped_griphin_inputs_ch = griphin_inputs_ch.groupTuple()
                 .map { meta, files ->
                     [
                         meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
-                        files: files
-                    ]
-                }
+                        files: files 
+                    ] }
 
             //create GRiPHin report
             GRIPHIN_PUBLISH (
@@ -297,167 +436,24 @@ workflow RUN_CENTAR {
                 CREATE_INPUT_CHANNELS.out.valid_samplesheet,
                 grouped_griphin_inputs_ch.map { it.meta }.collect(),
                 grouped_griphin_inputs_ch.map { it.files }.collect(),
-                outdir_full_path2,
+                outdir_full_path,
                 workflow.manifest.version,
                 params.coverage,
-                // Fix once implemented, for now its hard-coded
-                CREATE_INPUT_CHANNELS.out.griphin_tsv_ch.map{meta, tsv -> tsv.readLines().first().contains('BUSCO')}, 
-                false, true, params.bldb, false, false, [], "", "" //Add empty string to show there is no old_version_info, and a second to show run type is not inferred (for updater only)
+                busco_boolean,
+                shigapass_var, true, params.bldb, true, false, [], "", "" //Add empty string to show there is no old_version_info, and a second to show run type is not inferred (for updater only)
             )
             ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
 
             griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
             griphin_report = GRIPHIN_PUBLISH.out.griphin_report
 
-            // to be able to create software_versions.yml
-            software_versions_ch = CREATE_INPUT_CHANNELS.out.directory_ch.map{meta, directory_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory_ch]]}.unique()
-                                .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
+            software_versions_ch = outdir_full_path.toList().map{dir -> [[project_id:dir.toString().split('/')[-1].replace("]", ""), full_project_id:dir]]}.unique()
+                            .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
 
-            META_CUSTOM_DUMPSOFTWAREVERSIONS(
+            META_CUSTOM_DUMPSOFTWAREVERSIONS (
                 software_versions_ch
             )
-
-        } else if (params.input !=null) { // --input
-
-            if (params.outdir == "${launchDir}/phx_output") {
-
-                //add in the samplesheet specific to each project dir
-                boolean_ch = collected_summaries_ch.map{meta, summary_line, full_project_id, busco_boolean -> [[project_id:meta.project_id], full_project_id, busco_boolean]}
-                                    .join(CREATE_INPUT_CHANNELS.out.samplesheet_meta_ch, by: [0])
-                                    .map{meta, full_project_id, busco_boolean, samplesheet -> [[project_id:full_project_id], busco_boolean, samplesheet]}
-
-                grouped_griphin_inputs_ch = griphin_inputs_ch.map { meta, file -> [meta.project_id, meta, file] }  // Restructure for grouping
-                    // group all items by project_id
-                    .groupTuple()
-                    // build per-sample bundles inside each project
-                    .map { String project_id, metas, files ->
-                            def sample_ids = metas.unique{ it.id }*.id as List<String>
-                            def per_sample = sample_ids.collect { sid ->
-                                def sfiles = files.findAll { file ->
-                                    def filename = file.getName()
-                                    // Match files that start with sid followed by delimiter (explicit matching)
-                                    filename.startsWith(sid + "_") || filename.startsWith(sid + ".") ||
-                                    (filename.startsWith("short_summary") && filename.contains("." + sid + "."))
-                                }
-                                [
-                                    meta : [ id: sid, filenames: sfiles.collect { it.getName() } ],
-                                    files: sfiles
-                                ]
-                            }
-                            def meta_list  = per_sample.collect { it.meta }
-                            def files_flat = per_sample.collectMany { it.files }
-                        // emit a tuple keyed by project for joining, plus the two payloads we need
-                        [ [project_id: project_id], meta_list, files_flat ]
-                    }
-
-                // Join griphin_inputs_ch with boolean_ch
-                combined_ch = grouped_griphin_inputs_ch.join(boolean_ch, by: [0])
-                    .map { project_key, meta_list, files_flat, busco_boolean, samplesheet ->
-                        // Order for the final call (we’ll unpack by index when invoking the module)
-                        [
-                            meta_list,              // 0 -> val(metas)
-                            files_flat,             // 1 -> path(griphin_files)
-                            project_key.project_id, // 2 -> path(outdir)
-                            samplesheet,            // 3 -> path(original_samplesheet)
-                            busco_boolean           // 4 -> val(entry)
-                        ]
-                    }
-
-                //create GRiPHin report
-                GRIPHIN_NO_PUBLISH (
-                    params.ardb,                                   // path(db)
-                    combined_ch.map { it[3] },                     // path(original_samplesheet)
-                    combined_ch.map { it[0] },                     // val(metas): list of [id:<sid>, filenames:[...]]
-                    combined_ch.map { it[1] },                     // path(griphin_files): flattened file list
-                    combined_ch.map { it[2] },                     // path(outdir): full_project_id
-                    workflow.manifest.version,                     // val(phx_version)
-                    params.coverage,                               // val(coverage)
-                    combined_ch.map { it[4] },                     // val(entry): busco_boolean
-                    false,                                         // val(shigapass_detected)
-                    true,                                          // val(centar_detected)
-                    params.bldb,                                   // path(bldb)
-                    true,                                          // val(filter_var)
-                    true,                                          // val(dont_publish)
-                    [],                                            // path(blind_list)
-                    "",                                            // val(old_phx_version)
-                    ""                                             // val(inferred_mode)
-
-                )
-                ch_versions = ch_versions.mix(GRIPHIN_NO_PUBLISH.out.versions)
-
-                // If the output directory is not the default, we need to update the path in the channel
-                griphin_reports_ch = GRIPHIN_NO_PUBLISH.out.griphin_report.collect().ifEmpty([[],[]]).flatten().collate(2)
-                                    .map{path_txt, griphin_file -> add_meta(path_txt, griphin_file)}
-
-                // join old and new griphins for combining
-                griphins_ch = CREATE_INPUT_CHANNELS.out.griphin_excel_ch
-                    .map{meta, griphin_excel_ch -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_excel_ch]}.unique()
-                    .join(griphin_reports_ch.map{                            meta, griphin_file   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], griphin_file]}, by: [0])
-                    .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{        meta, directory_ch   -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", "")], directory_ch]}.unique(), by: [0])
-                    .map{meta, old_excel, new_excel, directory -> [[project_id:meta.project_id.toString().split('/')[-1].replace("]", ""), full_project_id:directory], old_excel, new_excel]}
-
-                // combine griphin files, the new one just created and the old one that was found in the project dir. 
-                UPDATE_GRIPHIN (
-                    griphins_ch.map{ meta, old_excel, new_excel -> [ old_excel, new_excel ] }, 
-                    griphins_ch.map{ meta, old_excel, new_excel -> meta.full_project_id },
-                    //griphins_ch.map{ meta, excel, report, directory, samplesheet -> samplesheet },
-                    [],
-                    params.coverage,
-                    params.bldb,
-                    true,
-                    griphins_ch.map{ meta, old_excel, new_excel -> meta.project_id }
-                )
-                ch_versions = ch_versions.mix(UPDATE_GRIPHIN.out.versions)
-
-                griphin_tsv_report = UPDATE_GRIPHIN.out.griphin_tsv_report
-                griphin_report = UPDATE_GRIPHIN.out.griphin_report
-
-                software_versions_ch = griphins_ch.map{meta, old_excel, new_excel -> [[project_id:meta.project_id, full_project_id:meta.full_project_id]]}
-                                .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
-
-                META_CUSTOM_DUMPSOFTWAREVERSIONS (
-                    software_versions_ch
-                )
-
-            } else {
-
-                outdir_full_path = Channel.fromPath(params.outdir, type: 'dir') // get the full path to the outdir, by not using "relative: true"
-                //was busco run on any samples
-                busco_boolean = summaries_ch.map{meta, summary_lines, full_project_id, busco_boolean -> busco_boolean}.collect().map{ busco_booleans -> busco_booleans.any{ it == true }}
-
-                grouped_griphin_inputs_ch = griphin_inputs_ch.groupTuple()
-                    .map { meta, files ->
-                        [
-                            meta: [ id: "${meta.id}", filenames: files.collect { it.getName() } ],
-                            files: files 
-                        ] }
-
-                //create GRiPHin report
-                GRIPHIN_PUBLISH (
-                    params.ardb,
-                    CREATE_INPUT_CHANNELS.out.valid_samplesheet,
-                    grouped_griphin_inputs_ch.map { it.meta }.collect(),
-                    grouped_griphin_inputs_ch.map { it.files }.collect(),
-                    outdir_full_path,
-                    workflow.manifest.version,
-                    params.coverage,
-                    busco_boolean,
-                    false, true, params.bldb, true, false, [], "", "" //Add empty string to show there is no old_version_info, and a second to show run type is not inferred (for updater only)
-                )
-                ch_versions = ch_versions.mix(GRIPHIN_PUBLISH.out.versions)
-
-                griphin_tsv_report = GRIPHIN_PUBLISH.out.griphin_tsv_report
-                griphin_report = GRIPHIN_PUBLISH.out.griphin_report
-
-                software_versions_ch = outdir_full_path.toList().map{dir -> [[project_id:dir.toString().split('/')[-1].replace("]", ""), full_project_id:dir]]}.unique()
-                                .combine(ch_versions.unique().collectFile(name: 'collated_versions.yml'))
-
-                META_CUSTOM_DUMPSOFTWAREVERSIONS (
-                    software_versions_ch
-                )
-            }
         }
-
 
     emit:
         //output for phylophoenix

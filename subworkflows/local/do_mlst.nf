@@ -30,11 +30,16 @@ workflow DO_MLST {
                 .map{ meta, fasta, f, tax -> [meta, fasta, tax] }
         } else {
             mlst_ch = trimmed_assembly.map{ meta, fasta -> [[id:meta.id, project_id:meta.project_id], fasta] }
-                .join(scaffold_count_check.map{ meta, outcome ->
-                    def content = file(outcome.toString()).text
-                    def passed = !content.contains("FAILED")
-                    [[id:meta.id, project_id:meta.project_id], [outcome, passed]]
-                }, by: [[0][0],[0][1]])
+                .join(scaffold_count_check.map{ meta, fairy_outcome ->
+                        // 1. If it's a list of files, pull out only the scaffolds summary file
+                        def target_file = fairy_outcome instanceof List ? fairy_outcome.find { it.name.endsWith('_scaffolds_summary.txt') } : fairy_outcome
+                        
+                        // 2. Read the content of the isolated target file safely
+                        def content = file(target_file.toString()).text
+                        def passed = !content.contains("FAILED")
+                        
+                        [[id:meta.id, project_id:meta.project_id], [target_file, passed]]
+                    }, by: [[0][0],[0][1]])
                 .filter{ meta, fasta, data -> data[1] == true }
                 .map{ meta, fasta, data -> [meta, fasta] }
                 .join(taxonomy.map{ meta, tax -> [[id:meta.id, project_id:meta.project_id], tax] }, by: [[0][0],[0][1]])
