@@ -421,8 +421,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
 ** MLST updates:**  
   - Corrected Providencia stuartii samples to also run under the general Providencia scheme  
   - Fixed DO_MLST subworkflow to handle previously failed samples, related to UPDATE_PHOENIX subworkflow  
-  - Added another case to the taxa check section where scoring causing incorrect auto scheme. Citrobacter freundii was found to be identified as Salmonella (Issue #142)
-  X- Also in issue #142, it showed that some MLST schemes were improperly being displayed in secondary MLST info instead of primary. This has been corrected  
+  - Added another case to the taxa check section where scoring causing incorrect auto scheme. Citrobacter freundii was found to be identified as Salmonella (Issue #142)  
+  - Also in issue #142, it showed that some MLST schemes were improperly being displayed in secondary MLST info instead of primary. This has been corrected  
 
 ** GRiPHiN Fixes:**  
   - Corrected an issue where Acinetobacter baumannii samples  that only contained a 'paralog' variant MLST type were being excluded (Issue #141)  
