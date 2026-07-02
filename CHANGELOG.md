@@ -416,7 +416,7 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Added fairy output retention when running UPDATE_PHOENIX  
 - Fixed an issue where UPDATE_PHOENIX would crash if there was no AR gamma file for a sample.
 - Adjusted how CENTAR,UPDATE_PHOENIX, and CREATE_INPUT_CHANNELS workflows handle input designations internally, input vs indir (No changes to command line options)
-- ANI now handles poor sample quality (minimum MASH distance threshold) better (Issue #143)
+- When an isolate had only poor matches when running ANI and none were above the threshold (minimum of 5 kmer match), the sort_and_prep python file would still create an output file, but it was incomplete causing a crash. Now, if nothing crosses the threshold, no output file is created and is handled as expected downstream. (Issue #143)  
 - Added fix for when BUSCO silently failed, it caused GENERATE_PIPELINE_STATS_WF to be skipped and not produce a synopsis or summaryline files
 
 ** MLST updates:**  
