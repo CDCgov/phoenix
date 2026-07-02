@@ -416,7 +416,8 @@ Below are the list of changes to phx since is initial release. As fixes can take
 - Added fairy output retention when running UPDATE_PHOENIX  
 - Fixed an issue where UPDATE_PHOENIX would crash if there was no AR gamma file for a sample.
 - Adjusted how CENTAR,UPDATE_PHOENIX, and CREATE_INPUT_CHANNELS workflows handle input designations internally, input vs indir (No changes to command line options)
-- ANI now handles poor sample quality (minimum MASH distance threshold) better (Issue #143)  
+- ANI now handles poor sample quality (minimum MASH distance threshold) better (Issue #143)
+- Added fix for when BUSCO silently failed, it caused GENERATE_PIPELINE_STATS_WF to be skipped and not produce a synopsis or summaryline files
 
 ** MLST updates:**  
   - Corrected Providencia stuartii samples to also run under the general Providencia scheme  
