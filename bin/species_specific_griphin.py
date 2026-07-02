@@ -163,7 +163,13 @@ def create_shiga_df(directory1, sample_name, shiga_df, taxa, directory2):
             #    if marker in shiga_df['ShigaPass_Organism']:
             #        shiga_df['ShigaPass_Organism'] = sp           
             # Define the mapping of short strings to longer strings
-            mapping_dict = { r'^SB\w*': 'Shigella boydii', r'^SD\w*': 'Shigella dysenteriae', r'^SS\w*': 'Shigella sonnei', r'^SF\w*': 'Shigella flexneri' }
+            mapping_dict = { 
+                r'^SB[\w-]*$': 'Shigella boydii', 
+                r'^SD[\w-]*$': 'Shigella dysenteriae', 
+                r'^SS[\w-]*$': 'Shigella sonnei', 
+                r'^SF[\w-]*$': 'Shigella flexneri' 
+            }
+            
             # Apply the mapping using map()
             shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict, regex=True)
         except FileNotFoundError: 
@@ -206,8 +212,15 @@ def fill_taxa_id(row):
         species = row['Kraken_ID_WtAssembly_%'].split(" ")[2]
         return genus + " " + species
     elif row['Taxa_Source'] == 'kraken2_trimmed':
-        genus = row['Kraken_ID_Raw_Reads_%'].split(" ")[0]
-        species = row['Kraken_ID_Raw_Reads_%'].split(" ")[2]
+        # 1. Prioritize Trimmed Reads
+        if 'Kraken_ID_Trimmed_Reads_%' in row and row['Kraken_ID_Trimmed_Reads_%']:
+            target_column = row['Kraken_ID_Trimmed_Reads_%']
+            
+        # 2. Fall back to Raw Reads if Trimmed isn't there
+        elif 'Kraken_ID_Raw_Reads_%' in row and row['Kraken_ID_Raw_Reads_%']:
+            target_column = row['Kraken_ID_Raw_Reads_%']
+        genus = target_column.split(" ")[0]
+        species = target_column.split(" ")[2]
         return genus + " " + species
     elif row['Taxa_Source'] == 'ShigaPass':
         return row['ShigaPass_Organism']

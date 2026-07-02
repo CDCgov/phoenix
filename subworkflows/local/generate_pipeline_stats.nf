@@ -176,7 +176,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
                 .join(gamma_ar.map{                   meta, gamma_ar               -> [[id:meta.id, project_id:meta.project_id],gamma_ar]},               by: [0])\
                 .join(gamma_pf.map{                   meta, gamma_pf               -> [[id:meta.id, project_id:meta.project_id],gamma_pf]},               by: [0])\
                 .join(quast_report.map{               meta, quast_report           -> [[id:meta.id, project_id:meta.project_id],quast_report]},           by: [0])\
-                .join(busco.map{                      meta, busco                  -> [[id:meta.id, project_id:meta.project_id],busco]},                  by: [0])\
+                .join(busco.map{                      meta, busco -> [[id:meta.id, project_id:meta.project_id],busco]}, by: [0], remainder: true).map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }\
                 .join(asmbld_report.map{              meta, asmbld_report          -> [[id:meta.id, project_id:meta.project_id],asmbld_report]},          by: [0])\
                 .join(asmbld_krona_html.map{          meta, asmbld_krona_html      -> [[id:meta.id, project_id:meta.project_id],asmbld_krona_html]},      by: [0])\
                 .join(asmbld_k2_bh_summary.map{       meta, asmbld_k2_bh_summary   -> [[id:meta.id, project_id:meta.project_id],asmbld_k2_bh_summary]},   by: [0])\
@@ -204,7 +204,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
                 .join(gamma_ar.map{                   meta, gamma_ar               -> [[id:meta.id],gamma_ar]},               by: [0])\
                 .join(gamma_pf.map{                   meta, gamma_pf               -> [[id:meta.id],gamma_pf]},               by: [0])\
                 .join(quast_report.map{               meta, quast_report           -> [[id:meta.id],quast_report]},           by: [0])\
-                .join(busco.map{                      meta, busco                  -> [[id:meta.id],busco]},                  by: [0])\
+                .join(busco.map{                      meta, busco -> [[id:meta.id],busco]}, by: [0], remainder: true).map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }\
                 .join(asmbld_report.map{              meta, asmbld_report          -> [[id:meta.id],asmbld_report]},          by: [0])\
                 .join(asmbld_krona_html.map{          meta, asmbld_krona_html      -> [[id:meta.id],asmbld_krona_html]},      by: [0])\
                 .join(asmbld_k2_bh_summary.map{       meta, asmbld_k2_bh_summary   -> [[id:meta.id],asmbld_k2_bh_summary]},   by: [0])\

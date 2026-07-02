@@ -30,7 +30,7 @@ process CHECK_SHIGAPASS_TAXA {
         # Extract species from s: line
         fastani_species=\$(grep "^s:" "${tax_file}" | cut -f2)
         # Get second line from summary (split by semicolon)
-        shigapass_species=\$(echo "${shigapass_file}" | sed -n '2p' | cut -d';' -f10)
+        shigapass_species=\$(sed -n '2p' ${shigapass_file} | cut -d';' -f8)
         # this should catch cases of 
         if [[ "\$shigapass_species" != *"\$fastani_species"* ]]; then
             echo "Shigapass species: \$shigapass_species and FastANI species: \$fastani_species do NOT match. Updating taxa file."
@@ -52,7 +52,7 @@ process CHECK_SHIGAPASS_TAXA {
         # Extract genera from s: line
         fastani_genera=\$(grep "^G:" "${tax_file}" | cut -f2)
         # Get second line from summary (split by semicolon)
-        shigapass_org=\$(echo "${shigapass_file}" | sed -n '2p' | cut -d';' -f10)
+        shigapass_org=\$(sed -n '2p' ${shigapass_file} | cut -d';' -f8)
         echo "Escherichia found, and Shigapass taxa: \$shigapass_org and FastANI genera: \$fastani_genera do not match. Updating taxa file."
         ${ica}check_taxa.py --format_ani_file ${fastani_file} --shigapass_file ${shigapass_file} --ani_file ${ani_file} --format_ani_output \${new_name} --tax_file ${tax_file}
 

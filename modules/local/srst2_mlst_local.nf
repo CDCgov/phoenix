@@ -89,11 +89,11 @@ process SRST2_MLST {
 			trailer_list=""
 			if [[ "\${no_match}" = "True" ]]; then
 				tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-				echo "${prefix}	-	-	-	-	-	-" >> "${prefix}_srst2.mlst"
+#				echo "${prefix}	-	-	-	-	-	-" >> "${prefix}_srst2.mlst"
 			elif [[ "\${lines_in_result_file}" -eq 1 ]]; then
 				echo "Not enough was found to even make a guess"
 #				echo "${prefix}	No match found for \${mlst_db}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
-				echo "${prefix}	-	-	-	-	-	-" >> "${prefix}_srst2.mlst"
+				echo "${prefix}	\${mlst_db}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
 			else
 				raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
 				# Account for the cases where multi-databases require extra genes ID's during processing, but remove here.

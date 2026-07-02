@@ -455,7 +455,7 @@ workflow UPDATE_PHOENIX {
             // Create channel input
             ch_input = file(samplesheet_path)
             params.indir = null // Set indir to null to avoid confusion later in the workflow since we have the samplesheet path now
-            ch_input_indir = null // Set input directory to null since we have the samplesheet path now
+//            ch_input_indir = null // Set input directory to null since we have the samplesheet path now
             params.input = samplesheet_path // Set input to the samplesheet path for consistency in the workflow
         } else {
             exit 1, 'For --mode UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!'
@@ -463,7 +463,7 @@ workflow UPDATE_PHOENIX {
     }
 
     main:
-        UPDATE_PHOENIX_WF ( ch_input, ch_input_indir, ch_versions )
+        UPDATE_PHOENIX_WF ( ch_input, ch_versions )
 
     emit:
         mlst             = UPDATE_PHOENIX_WF.out.mlst
@@ -572,27 +572,25 @@ workflow CENTAR {
                     exit 1, "Expected samplesheet not found: ${samplesheet_path}\nMake sure Directory_samplesheet.csv exists inside --indir."
                 }
 
+                if (params.outdir == "${launchDir}/phx_output" ) {
+
+                    params.outdir = params.indir
+                    println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${params.indir}.${reset}")
+
+                } else {
+                    // Allow outdir to be relative
+                    params.outdir = Channel.fromPath(params.outdir, relative: true)
+                }
+
                 // Pass samplesheet as ch_input
                 ch_input = file(samplesheet_path)
                 params.indir = null // Set indir to null to avoid confusion later in the workflow since we have the samplesheet path now
-                ch_input_indir = null // Set input directory to null since we have the samplesheet path now
+//                ch_input_indir = null // Set input directory to null since we have the samplesheet path now
                 params.input = samplesheet_path // Set input to the samplesheet path for consistency in the
 
             } else {
                 exit 1, 'You passed a file with --indir and a directory is required. Or use --input'
             }
-
-            // Handle outdir logic
-            if (params.outdir == "${launchDir}/phx_output" ) {
-
-                outdir = params.indir
-                println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${outdir}.${reset}")
-
-            } else {
-                // Allow outdir to be relative
-                outdir = Channel.fromPath(params.outdir, relative: true)
-            }
-
         } else {
             // neither input nor indir provided
             exit 1, 'For --mode CENTAR: You need EITHER an input samplesheet or a directory!'
@@ -610,7 +608,7 @@ workflow CENTAR {
     }
 
     main:
-        RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
+        RUN_CENTAR ( ch_input, ch_versions, params.outdir )
 
     emit:
         // output for phylophoenix

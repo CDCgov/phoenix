@@ -40,12 +40,6 @@ process GRIPHIN {
     def old_software_arg = (old_phx_version && old_phx_version != "" && old_phx_version != "null") ? 
     "--old_software_version ${old_phx_version}" : ""
 
-    // Debug output
-    def debug_info = """
-        echo "DEBUG: old_phx_version = '${old_phx_version}'" >&2
-        echo "DEBUG: old_software_arg = '${old_software_arg}'" >&2
-    """
-
     def blind_names  = blind_list ? "--blind_list ${blind_list}" : ""
     def phoenix_mode = phx_mode ? "" : "--phoenix"
     def scaffolds = (params.mode_upper == "SCAFFOLDS" || params.mode_upper == "CDC_SCAFFOLDS" || inferred_mode == "SCAFFOLD_INFERRED") ? "--scaffolds" : "" 
@@ -54,7 +48,7 @@ process GRIPHIN {
     def updater = (params.mode_upper == "UPDATE_PHOENIX") ? "--updater" : "" 
     //def samplesheet_command = (centar_detected && original_samplesheet) ? "--samplesheet ${original_samplesheet}" : ""
     def filter = filter_var ? "--filter_samples" : ""
-    def output_prefix = ((dont_publish == true) || (params.mode_upper == "CENTAR" && params.indir == null)) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
+    def output_prefix = ((dont_publish == true) || (params.mode_upper == "CENTAR" && params.outdir == "${workflow.launchDir}/phx_output") ||  (params.centar == true && params.outdir == "${workflow.launchDir}/phx_output")) ? "${outdir}_GRiPHin" : "${outdir}_GRiPHin_Summary" 
     def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def prefix = task.ext.prefix ?: "GRiPHin"
@@ -63,7 +57,6 @@ process GRIPHIN {
         metas.collect { "mv ${it.filenames.join(' ')} ${prefix}/${it.id}" }
     ].flatten().join(" && ")
     """
-    ${debug_info}
     ${stage_files}
 
     # Get full path to outdir for parent folder and data location columns in griphin

@@ -410,3 +410,27 @@ Below are the list of changes to phx since is initial release. As fixes can take
    - Fixed bug that caused NA to disappear from Stdev column, which would then skip the warning that there were <10 references for ratio and gc calculations.  
    - Fixed bug that cut off text after sp. in Kraken2 output.  
    - Fixed bug causing some BIG-5 genes to not be highlighted correctly (example blaOXA-23).  
+ 
+## [v2.3.2](https://github.com/CDCgov/phoenix/releases/tag/v2.3.2) (07/02/2026)  
+
+**Fixed Bugs:**  
+- Fixed an issue where the UPDATE_PHOENIX workflow crashed when previously failed samples were in the samplesheet (Gitlab Issue # 138).  
+- Fixed an issue where UPDATE_PHOENIX would crash if there was no AR gamma file for a sample.  
+- Added fix for when BUSCO silently failed, it caused GENERATE_PIPELINE_STATS_WF to be skipped and not produce a synopsis or summaryline files.  
+- When an isolate had only poor matches when running ANI and none were above the threshold (minimum of 5 kmer match), sort_and_prep.py would create an incomplete output file, causing a crash. Now, if nothing crosses the threshold, no output file is created and is handled as expected downstream. (Issue # 143)  
+- MLST updates:  
+   - Corrected *Providencia stuartii* samples to also run under the general *Providencia* scheme.  
+   - Fixed DO_MLST subworkflow to handle previously failed samples, related to UPDATE_PHOENIX subworkflow.  
+   - Added another case to the taxa check section where scoring causing incorrect auto scheme. *Citrobacter freundii* was found to be identified as *Salmonella* (Gitlab Issue # 142).  
+   - Also in Gitlab issue # 142, it showed that some MLST schemes were improperly being displayed in secondary MLST info instead of primary. This has been corrected.  
+- GRiPHiN Fixes:  
+   - Corrected an issue where Acinetobacter baumannii samples that only contained a 'paralog' variant MLST type were being excluded (Gitlab Issue # 141).  
+   - Fixed an issue where some AR genes were being accidently highlighted as BIG-5 when they were not actually included in that designation (Gitlab Issue # 140).  
+   - Fixed an issue when running UPDATE_PHOENIX without an outdir that the griphin file would retain empty columns in the AR/HV/PF sections.  
+   - Fixed an issue where srst2 hits werent coming in for UPDATE_PHOENIX.  
+   - Corrected labeling check of older griphin version regarding kraken2 columns.  
+   - Fixed an issue with extra text being pulled through when Shigapass taxonomy is used (Gitlab Issue # 139).  
+
+**Implemented Enhancements:**  
+- Added fairy output retention when running UPDATE_PHOENIX.   
+- Adjusted how CENTAR, UPDATE_PHOENIX, and CREATE_INPUT_CHANNELS workflows handle input designations internally, input vs indir (No changes to command line options this is just for code cleanup).  

@@ -15,12 +15,12 @@ Converted to Python: (05/06/2025)
 
 Created by Nick Vlachos (nvx4@cdc.gov)
 """
-
 import argparse
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Optional, List, Dict, Tuple
 
 __version__ = "1.0"
 
@@ -62,7 +62,7 @@ def run_blat(blat_bin: str, input_file: Path, db: Path, psl_out: Path) -> None:
         sys.exit(result.returncode)
 
 
-def classify_subtype(sub_type: str) -> str | None:
+def classify_subtype(sub_type: str) -> Optional[str]:
     """
     Return 'Toxin-A', 'Toxin-B', or None based on the sub_type string.
     Mirrors the original bash logic including sordellii group handling.
@@ -81,7 +81,7 @@ def classify_subtype(sub_type: str) -> str | None:
     return None
 
 
-def parse_psl(psl_path: Path, sample_name: str) -> tuple[list[dict], dict]:
+def parse_psl(psl_path: Path, sample_name: str) -> Tuple[List[Dict], Dict[str, str]]:
     """
     Parse the blat PSL output. Only records where matches == total_length are kept.
 
@@ -156,7 +156,7 @@ def lookup_toxinotype(a_sub: str, b_sub: str, tox_def_path: Path) -> str:
     tmp_a = a_sub if a_sub else "-"
     tmp_b = b_sub if b_sub else "-"
 
-    with tox_def_path.open() as fh:
+    with tox_def_path.open(encoding="utf-8") as fh:
         for line in fh:
             line = line.rstrip("\n")
             if not line:
@@ -177,7 +177,7 @@ def lookup_toxinotype(a_sub: str, b_sub: str, tox_def_path: Path) -> str:
 def write_output(
     sample_name: str,
     db_name: str,
-    hits: list[dict],
+    hits: List[Dict],
     a_found: bool,
     b_found: bool,
     toxinotype: str,
@@ -214,8 +214,11 @@ def write_output(
         fh.write(f"Toxinotype:\t{toxinotype}\n")
 
     # Cleanup temporaries
-    tmx_path.unlink(missing_ok=True)
-    tsx_path.unlink(missing_ok=True)  # mirrors removal of .tmp in original; .tsx kept as intermediate only
+    if tmx_path.exists():
+        tmx_path.unlink()
+
+    if tsx_path.exists():
+        tsx_path.unlink()
 
 
 def main() -> None:
@@ -259,7 +262,7 @@ def main() -> None:
     write_output(sample_name, db_name, hits, a_found, b_found, toxinotype)
 
     global_end_time = datetime.now().strftime("%m-%d-%Y @ %Hh_%Mm_%Ss")
-    print(f"All isolates completed — {global_end_time}")
+    print(f"All isolates completed - {global_end_time}")
 
 
 if __name__ == "__main__":

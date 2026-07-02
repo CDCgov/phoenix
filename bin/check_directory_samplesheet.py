@@ -123,7 +123,12 @@ def check_samplesheet(file_in, file_out, updater, sheet_by_dir):
             #files.append(sample_path + "/assembly/" + sample_name + ".filtered.scaffolds.fa.gz")
             #files.append(sample_path + "/annotation/" + sample_name + ".faa")
             #files.append(sample_path + "/annotation/" + sample_name + ".gff")
-            files.append(sample_path + "/" + sample_name + "_summaryline.tsv")
+            if Path(sample_path + "/" + sample_name + "_summaryline.tsv").exists():
+                files.append(sample_path + "/" + sample_name + "_summaryline.tsv")
+            elif Path(sample_path + "/" + sample_name + "_summaryline_failure.tsv").exists():
+                files.append(sample_path + "/" + sample_name + "_summaryline_failure.tsv")
+            else:
+                print("WARNING: No summaryline file found for sample {} in directory {}. This may indicate that the sample failed processing.".format(sample_name, sample_path))
             files.append(sample_path + "/" + sample_name + ".synopsis")
             if updater == False: # when updater is run we don't need the files we still want the old samples in the samplesheet
                 print("updater is set to false, so we are checking the files")
