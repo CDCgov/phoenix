@@ -45,7 +45,7 @@ include { CREATE_SAMPLESHEET    } from '../modules/local/create_samplesheet'
 include { FASTQC                } from '../modules/local/fastqc'
 include { RAWSTATS              } from '../modules/local/long_read/seqkit'
 include { LRGE                  } from '../modules/local/long_read/estimation'
-
+include { PLSDB_ASSET_CHECK     } from '../modules/local/long_read/plsdb_asset_check'
 
 /*
 ========================================================================================
@@ -54,7 +54,7 @@ include { LRGE                  } from '../modules/local/long_read/estimation'
 */
 
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-
+include { PLASMID_CHARACTERIZATION                    } from '../subworkflows/local/plasmid_characterization'
 /*
 ========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
@@ -104,6 +104,16 @@ workflow PHOENIX_HYBRID_WF {
             INPUT_CHECK.out.reads, false // true says busco is being run in this workflow
         )
         ch_versions = ch_versions.mix(CORRUPTION_CHECK.out.versions)
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Handling plsdb database for plasmid characterization subworkflow
+    - check if plsdb exists; if not, download and makeblastdb
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+    PLSDB_ASSET_CHECK (
+        params.plsdb_dir
+    )
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -206,13 +216,34 @@ workflow PHOENIX_HYBRID_WF {
         UNICYCLER.out.gfa
     )
     ch_versions = ch_versions.mix(BANDAGE.out.versions)
-
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Plasmid characterization subworkflow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+    PLASMID_CHARACTERIZATION (
+        POLYPOLISH.out.assembly_fasta, \
+        // use unziped fasta from ploypolish module
+        //SCAFFOLD_COUNT_CHECK.out.outcome, \
+        params.plsdb_dir, \
+        params.conf, \
+        params.viz, \
+        params.plsdbfasta, \
+        params.vfdb
+    )
+    ch_versions = ch_versions.mix(PLASMID_CHARACTERIZATION.out.versions)    
+  
     emit:
         // emits should either be a scaffolds or samplesheet, see comments in main nf.
         scaffolds         = POLYPOLISH.out.assembly.collect()
         valid_samplesheet = INPUT_CHECK.out.valid_samplesheet
         nanostat          = NANOQ.out.nano_stats
         versions          = ch_versions
+        // emits for plasmid characterization outputs
+        // plasmidID        = PLASMID_CHARACTERIZATION.out.blast_out
+        // plasmidANI       = PLASMID_CHARACTERIZATION.out.ani_out
+        // plasmidVF        = PLASMID_CHARACTERIZATION.out.plasmid_vf_out
+
 }
 
 /*

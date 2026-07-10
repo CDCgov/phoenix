@@ -2,14 +2,15 @@ process POLYPOLISH {
     tag "${meta}"
     label 'process_high'
     container 'quay.io/staphb/polypolish'
-    errorStrategy 'ignore'
+    //errorStrategy 'ignore'
     
 
     input:
     tuple val(meta), path (fasta), file(sam)
 
     output:
-    tuple val(meta), path("${meta.id}_polished_consensus.fasta.gz"), emit: assembly
+    tuple val(meta), path("${meta.id}_polished_consensus.fasta.gz"), emit: assembly  // fasta.gz for emits in hybrid.nf and modules.config
+    tuple val(meta), path("${meta.id}_polished_consensus.fasta"), emit: assembly_fasta  // fasta for input of plasmid_characterization subworkflow 
     path "versions.yml",                                             emit: versions
 
     script:
@@ -19,7 +20,7 @@ process POLYPOLISH {
     #header.sh ${meta.id}_polished_consensus.fasta
 
     #gzip file for down stream process
-    gzip --force ${meta.id}_polished_consensus.fasta
+    gzip --force -k ${meta.id}_polished_consensus.fasta
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -9,7 +9,8 @@ process MEDAKA {
     tuple val(meta), path(fasta), path(fastq)
 
     output:
-    tuple val(meta), path("${meta.id}_medaka_consensus.fasta.gz"), emit: fasta_fin
+    tuple val(meta), path("${meta.id}_medaka_consensus.fasta"), emit: fasta //for plasmid_characterization subworkflow
+    tuple val(meta), path("${meta.id}_medaka_consensus.fasta.gz"), emit: fasta_gz  // for SCAFFOLDS_EXTERNAL workflow in main.nf
     path ("versions.yml"),                                         emit: versions
 
     script:
@@ -18,7 +19,7 @@ process MEDAKA {
 
     cp ${meta.id}/consensus.fasta ${meta.id}_medaka_consensus.fasta
 
-    gzip ${meta.id}_medaka_consensus.fasta
+    gzip ${meta.id}_medaka_consensus.fasta -c > ${meta.id}_medaka_consensus.fasta.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

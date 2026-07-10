@@ -39,10 +39,10 @@ include { CIRCLATOR             } from '../modules/local/long_read/circlator'
 include { BANDAGE               } from '../modules/local/long_read/bandage'
 include { CREATE_SAMPLESHEET    } from '../modules/local/create_samplesheet'
 include { LRGE                  } from '../modules/local/long_read/estimation'
+include { PLSDB_ASSET_CHECK     } from '../modules/local/long_read/plsdb_asset_check'
 
 
-
-include { FASTQC            } from '../modules/local/fastqc'
+include { FASTQC                } from '../modules/local/fastqc'
 
 
 /*
@@ -52,7 +52,7 @@ include { FASTQC            } from '../modules/local/fastqc'
 */
 
 include { INPUT_CHECK                    } from '../subworkflows/local/input_check'
-
+include { PLASMID_CHARACTERIZATION                      } from '../subworkflows/local/plasmid_characterization'
 /*
 ========================================================================================
     IMPORT NF-CORE MODULES/SUBWORKFLOWS
@@ -97,6 +97,16 @@ workflow PHOENIX_LR_WF {
         )
         ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
     
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Handling plsdb database for plasmid characterization subworkflow
+    - check if plsdb exists; if not, download and makeblastdb
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+    PLSDB_ASSET_CHECK (
+        params.plsdb_dir
+    )
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Read Subsampling, Preprocessing and QC
@@ -151,14 +161,35 @@ workflow PHOENIX_LR_WF {
     )
     ch_versions = ch_versions.mix(MEDAKA.out.versions)
 
-
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Plasmid characterization subworkflow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+    PLASMID_CHARACTERIZATION (
+        MEDAKA.out.fasta, \
+        //SCAFFOLD_COUNT_CHECK.out.outcome, \
+        params.plsdb_dir, \
+        params.conf, \
+        params.viz, \
+        params.plsdbfasta, \
+        params.vfdb
+    )
+    ch_versions = ch_versions.mix(PLASMID_CHARACTERIZATION.out.versions)    
+ 
     emit:
         // emits should either be a scaffolds or samplesheet, see comments in main nf.
-        scaffolds         = MEDAKA.out.fasta_fin.collect()
+        scaffolds         = MEDAKA.out.fasta_gz.collect()
         valid_samplesheet = INPUT_CHECK.out.valid_samplesheet
         nanostat          = NANOQ.out.nano_stats
         versions          = ch_versions
+        // emits for plasmid characterization outputs
+        // plasmidID        = PLASMID_CHARACTERIZATION.out.blast_out
+        // plasmidANI       = PLASMID_CHARACTERIZATION.out.ani_out
+        // plasmidVF        = PLASMID_CHARACTERIZATION.out.plasmid_vf_out
+
 }
+
 
 /*
 ========================================================================================
