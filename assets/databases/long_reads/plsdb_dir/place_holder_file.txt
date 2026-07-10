@@ -1,0 +1,1 @@
+This file acts as a place holder in remote repo in case plsb_dir folder is empty before downloaded plsdb database.
