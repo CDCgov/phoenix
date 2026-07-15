@@ -172,7 +172,8 @@ workflow PHOENIX_LR_WF {
         params.plsdb_dir, \
         params.conf, \
         params.viz, \
-        params.plsdbfasta, \
+        //params.plsdbfasta, \
+        PLSDB_ASSET_CHECK.out.plsdb, \
         params.vfdb
     )
     ch_versions = ch_versions.mix(PLASMID_CHARACTERIZATION.out.versions)    
