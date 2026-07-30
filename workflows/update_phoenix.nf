@@ -414,9 +414,6 @@ workflow UPDATE_PHOENIX_WF {
                 def pipeline_info = inputs.size() > 2 ? inputs[2] : null
                 def readme        = inputs.size() > 3 ? inputs[3] : []
                 def gamma_ar      = inputs.size() > 4 ? inputs[4] : []
-
-                // Safely log now that unpacking didn't crash the engine
-                log.info "STEP4 gamma_ar: ${meta?.id} meta=${meta} gamma_ar=${gamma_ar}"
                 
                 [meta, dir, pipeline_info, readme ?: [], gamma_ar ?: []]
             }

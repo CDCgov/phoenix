@@ -401,13 +401,29 @@ workflow PHOENIX_EXTERNAL {
         )
         ch_versions = ch_versions.mix(CHECK_SHIGAPASS_TAXA.out.versions)
 
+        // Robust merge: use ShigaPass's corrected taxonomy per-sample if it ran,
+        // otherwise fall back to DETERMINE_TAXA_ID's original call. Unlike .concat(),
+        // this works correctly even when CHECK_SHIGAPASS_TAXA never runs for ANY
+        // sample (e.g. a batch with zero E. coli/Shigella isolates), since the join
+        // with remainder:true guarantees every sample in DETERMINE_TAXA_ID's output
+        // gets a value regardless of whether the ShigaPass side ever emits anything.
+        merged_taxonomy_ch = DETERMINE_TAXA_ID.out.taxonomy
+            .map { meta, taxonomy -> [meta.id, meta, taxonomy] }
+            .join(
+                CHECK_SHIGAPASS_TAXA.out.tax_file.map { meta, taxonomy -> [meta.id, taxonomy] },
+                remainder: true, by: 0
+            )
+            .map { id, meta, base_taxonomy, shiga_taxonomy ->
+                [meta, shiga_taxonomy ?: base_taxonomy]
+            }
+
         ////////////////////////////////////// PHOENIX //////////////////////////////////////
         // Perform MLST steps on isolates (with srst2 on internal samples)
         DO_MLST (
             BBMAP_REFORMAT.out.filtered_scaffolds, \
             SCAFFOLD_COUNT_CHECK.out.outcome, \
             FASTP_TRIMD.out.reads, \
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },\
+            merged_taxonomy_ch,\
             ASSET_CHECK.out.mlst_db, \
             false, \
             "original" // this is opposed to the "update" option.
@@ -441,7 +457,7 @@ workflow PHOENIX_EXTERNAL {
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+            merged_taxonomy_ch
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
@@ -458,7 +474,7 @@ workflow PHOENIX_EXTERNAL {
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         // Combining determined taxa with the assembly stats based on meta.id
-        assembly_ratios_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+        assembly_ratios_ch = merged_taxonomy_ch
                                 .map{                          meta, taxonomy   -> [[id:meta.id], taxonomy]}
                                 .join(QUAST.out.report_tsv.map{meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
@@ -475,6 +491,29 @@ workflow PHOENIX_EXTERNAL {
         // Synthesize run_type channel in the format the subworkflow expects: [meta, rt_map]
         run_type_ch = KRAKEN2_WTASMBLD.out.report
             .map { meta, report -> [ meta, [base: params.mode_upper] ] }
+
+        // GET_RAW_STATS.out.combined_raw_stats.view            { it -> log.info "DeBuG GRS-CRSTS: $it" }
+        // GET_TRIMD_STATS.out.fastp_total_qc.view              { it -> log.info "DeBuG GTS-FTTQC: $it" }
+        // KRAKEN2_TRIMD.out.report.view                        { it -> log.info "DeBuG K2T-REPRT: $it" }
+        // KRAKEN2_TRIMD.out.krona_html.view                    { it -> log.info "DeBuG K2T-KRONA: $it" }
+        // KRAKEN2_TRIMD.out.k2_bh_summary.view                 { it -> log.info "DeBuG K2T-SUMRY: $it" }
+        // RENAME_FASTA_HEADERS.out.renamed_scaffolds.view      { it -> log.info "DeBuG RFH-RSCAF: $it" }
+        // BBMAP_REFORMAT.out.filtered_scaffolds.view           { it -> log.info "DeBuG BBR-FSCAF: $it" }
+        // DO_MLST.out.checked_MLSTs.view                       { it -> log.info "DeBuG DML-CMLST: $it" }
+        // GAMMA_HV.out.gamma.view                              { it -> log.info "DeBuG GHV-GAMMA: $it" }
+        // GAMMA_AR.out.gamma.view                              { it -> log.info "DeBuG GAR-GAMMA: $it" }
+        // GAMMA_PF.out.gamma.view                              { it -> log.info "DeBuG GPF-GAMMA: $it" }
+        // QUAST.out.report_tsv.view                            { it -> log.info "DeBuG QST-REPRT: $it" }
+        // KRAKEN2_WTASMBLD.out.report.view                     { it -> log.info "DeBuG K2W-REPRT: $it" }
+        // KRAKEN2_WTASMBLD.out.krona_html.view                 { it -> log.info "DeBuG K2W-KRONA: $it" }
+        // KRAKEN2_WTASMBLD.out.k2_bh_summary.view              { it -> log.info "DeBuG K2W-SUMRY: $it" }
+        // merged_taxonomy_ch.view                              { it -> log.info "DeBuG MTX-MERGE: $it" }
+        // CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }.view { it -> log.info "DeBuG CST-CTAXA: $it" }
+        // CALCULATE_ASSEMBLY_RATIO.out.ratio.view              { it -> log.info "DeBuG CAR-RATIO: $it" }
+        // AMRFINDERPLUS_RUN.out.mutation_report.view           { it -> log.info "DeBuG AMR-MUTRP: $it" }
+        // CALCULATE_ASSEMBLY_RATIO.out.gc_content.view         { it -> log.info "DeBuG CAR-GCCON: $it" }
+        // run_type_ch.view                                     { it -> log.info "DeBuG RUN-TYPES: $it" }
+
 
         GENERATE_PIPELINE_STATS_WF (
             GET_RAW_STATS.out.combined_raw_stats, \
@@ -497,7 +536,7 @@ workflow PHOENIX_EXTERNAL {
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
-            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }, \
+            merged_taxonomy_ch, \
             CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
@@ -505,6 +544,8 @@ workflow PHOENIX_EXTERNAL {
             run_type_ch
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
+
+        // GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.view   { it -> log.info "DeBuG GPS-PLSTS: $it" }
 
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
         line_summary_ch = GET_TRIMD_STATS.out.fastp_total_qc.map{   meta, fastp_total_qc         -> [[id:meta.id], fastp_total_qc]}
@@ -515,7 +556,7 @@ workflow PHOENIX_EXTERNAL {
             .join(QUAST.out.report_tsv.map{                         meta, report_tsv             -> [[id:meta.id], report_tsv]},             by: [0])
             .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{           meta, ratio                  -> [[id:meta.id], ratio]},                  by: [0])
             .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{meta, pipeline_stats         -> [[id:meta.id], pipeline_stats]},         by: [0])
-            .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+            .join(merged_taxonomy_ch
                                 .map{                               meta, taxonomy               -> [[id:meta.id], taxonomy]},               by: [0])
             .join(KRAKEN2_TRIMD.out.k2_bh_summary.map{              meta, k2_trimd_bh_summary    -> [[id:meta.id], k2_trimd_bh_summary]},    by: [0])
             .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{           meta, k2_wtasmbld_bh_summary -> [[id:meta.id], k2_wtasmbld_bh_summary]}, by: [0])
@@ -524,14 +565,22 @@ workflow PHOENIX_EXTERNAL {
                                 .map{                               meta, ani_best_hit           -> [[id:meta.id], ani_best_hit]},           by: [0])
 
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
-        shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
-                    .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
-                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: [], []]}  // If shigapass_file is null, use empty list, and add an empty list for the line summary to maintain the structure
+//        shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
+//                    .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
+//                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: [], []]}  // If shigapass_file is null, use empty list, and add an empty list for the line summary to maintain the structure
 
-        // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
-        line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0])
+        // FIX: single remainder-join at the end, keyed on plain meta.id (a String, not a Map),
+        // against the already-fully-built line_summary_ch. This is the only join in the chain
+        // allowed to have missing keys, and remainder:true means unmatched samples get
+        // shigapass_file = null, which we coalesce to [].
+        // Because this line_summary_ch already has every real sample folded in from the
+        // mandatory joins above, an entirely-empty SHIGAPASS.out.summary channel simply
+        // contributes nothing and cannot zero out the whole chain.
+        line_summary_ch = line_summary_ch
+            .map{ meta, a,b,c,d,e,f,g,h,i,j,k,l,m -> [meta.id, meta, a,b,c,d,e,f,g,h,i,j,k,l,m] }
+            .join(SHIGAPASS.out.summary.map{ meta, summary -> [meta.id, summary] }, remainder: true, by: 0)
+            .map{ id, meta, a,b,c,d,e,f,g,h,i,j,k,l,m, shigapass_file -> [meta, a,b,c,d,e,f,g,h,i,j,k,l,m, shigapass_file ?: []] }
 
-        // Generate summary per sample that passed SPAdes
         CREATE_SUMMARY_LINE (
             line_summary_ch, false, workflow.manifest.version
         )
@@ -575,7 +624,7 @@ workflow PHOENIX_EXTERNAL {
         // Now we need to check if --centar was passed, In this case it is centar entry and therefore would be true
         centar_var = centar_boolean.map{ it -> check_params_var(it, centar_param)}
         //pull in species specific files - use function to get taxa name, collect all taxa and one by one count the number of e. coli or shigella. then collect and get the sum to compare to 0
-        shigapass_var = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+        shigapass_var = merged_taxonomy_ch
                             .map{it -> get_only_taxa(it)}.collect().flatten().count{ it -> it.contains("Escherichia") || it.contains("Shigella")}.collect().sum().map{ it -> it[0] > 0 }
 
         fairy_files_ch = SCAFFOLD_COUNT_CHECK.out.outcome.concat(SPADES_WF.out.fairy_outcome).concat(SPADES_WF.out.spades_outcome)
@@ -593,7 +642,7 @@ workflow PHOENIX_EXTERNAL {
                 fairy_files_ch,
                 DO_MLST.out.checked_MLSTs,
                 SPADES_WF.out.taxonomy,
-                CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] },
+                merged_taxonomy_ch,
                 CALCULATE_ASSEMBLY_RATIO.out.ratio,
                 CALCULATE_ASSEMBLY_RATIO.out.gc_content,
                 GAMMA_AR.out.gamma,

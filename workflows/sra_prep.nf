@@ -105,7 +105,7 @@ workflow SRA_PREP {
 
 // Adding if/else for running on ICA
 if (params.ica==false) {
-    // do nothing, not running ICA and no erros occurred
+    // do nothing, not running ICA and no errors occurred
 } else if (params.ica==true) {
     workflow.onError { 
         // copy intermediate files + directories

@@ -5,12 +5,21 @@
 include { GENERATE_PIPELINE_STATS } from '../../modules/local/generate_pipeline_stats'
 
 // Groovy funtion to make [ meta.id, [] ] - just an empty channel
-def create_empty_ch(input_for_meta) { // We need meta.id associated with the empty list which is why .ifempty([]) won't work
-    def meta_id
-    meta_id = input_for_meta[0]
-    def output_array
-    output_array = [ meta_id, [] ]
-    return output_array
+// def create_empty_ch(input_for_meta) { // We need meta.id associated with the empty list which is why .ifempty([]) won't work
+//     def meta_id
+//     meta_id = input_for_meta[0]
+//     def output_array
+//     output_array = [ meta_id, [] ]
+//     return output_array
+// }
+
+def create_empty_ch(input_for_meta) {
+    def meta = input_for_meta[0]
+    return [ [id: meta.id, project_id: meta.project_id ?: null], [] ]
+}
+
+def meta_key(meta) {
+    return [id: meta.id, project_id: meta.project_id ?: null]
 }
 
 workflow GENERATE_PIPELINE_STATS_WF {
@@ -60,6 +69,9 @@ workflow GENERATE_PIPELINE_STATS_WF {
         if (asmbld_k2_bh_summary == null) asmbld_k2_bh_summary = Channel.empty()
         if (fullgene_results == null)     fullgene_results     = Channel.empty()
 
+        def PHOENIX_EQUIVALENT_MODES     = ["PHOENIX", "SRA"]
+        def CDC_PHOENIX_EQUIVALENT_MODES = ["CDC_PHOENIX", "CDC_SRA"]
+
         def add_padding = { ch, id_ch ->
             ch.mix(
                 wtasmbld_report
@@ -76,14 +88,14 @@ workflow GENERATE_PIPELINE_STATS_WF {
         // Collect sample IDs that need fullgene/SRST2 padding (everything except CDC_PHOENIX)
         no_fullgene_ids = wtasmbld_report_with_rt
             .filter { meta, report, rt ->
-                rt.base == "PHOENIX" || rt.base == "SCAFFOLDS" || rt.base == "CDC_SCAFFOLDS"
+                rt.base in PHOENIX_EQUIVALENT_MODES || rt.base == "SCAFFOLDS" || rt.base == "CDC_SCAFFOLDS"
             }
             .map { meta, report, rt -> tuple(meta.id, true) }
 
         // Collect sample IDs that need asmbld/busco padding (PHOENIX and SCAFFOLDS only)
         no_asmbld_kraken_ids = wtasmbld_report_with_rt
             .filter { meta, report, rt ->
-                rt.base == "PHOENIX" || rt.base == "SCAFFOLDS"
+                rt.base in PHOENIX_EQUIVALENT_MODES || rt.base == "SCAFFOLDS"
             }
             .map { meta, report, rt -> tuple(meta.id, true) }
 
@@ -125,7 +137,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
             trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
-        if (params.mode_upper == "PHOENIX" ) {
+        if (params.mode_upper in PHOENIX_EQUIVALENT_MODES) {
             busco            = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_report    = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_krona_html    = wtasmbld_report.map{ it -> create_empty_ch(it) }
@@ -163,60 +175,60 @@ workflow GENERATE_PIPELINE_STATS_WF {
 
         if (params.mode_upper == "UPDATE_PHOENIX") {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
-            pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id, project_id:meta.project_id],fastp_raw_qc]}\
-                .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id, project_id:meta.project_id],fastp_total_qc]},         by: [0])\
-                .join(fullgene_results.map{           meta, fullgene_results       -> [[id:meta.id, project_id:meta.project_id],fullgene_results]},       by: [0])\
-                .join(trimd_report.map{               meta, report                 -> [[id:meta.id, project_id:meta.project_id],report]},                 by: [0])\
-                .join(trimd_krona_html.map{           meta, trimd_krona_html       -> [[id:meta.id, project_id:meta.project_id],trimd_krona_html]},       by: [0])\
-                .join(trimd_k2_bh_summary.map{        meta, trimd_k2_bh_summary    -> [[id:meta.id, project_id:meta.project_id],trimd_k2_bh_summary]},    by: [0])\
-                .join(renamed_fastas.map{             meta, renamed_fastas         -> [[id:meta.id, project_id:meta.project_id],renamed_fastas]},         by: [0])\
-                .join(filtered_fastas.map{            meta, filtered_fastas        -> [[id:meta.id, project_id:meta.project_id],filtered_fastas]},        by: [0])\
-                .join(mlst.map{                       meta, mlst                   -> [[id:meta.id, project_id:meta.project_id],mlst]},                   by: [0])\
-                .join(gamma_hv.map{                   meta, gamma_hv               -> [[id:meta.id, project_id:meta.project_id],gamma_hv]},               by: [0])\
-                .join(gamma_ar.map{                   meta, gamma_ar               -> [[id:meta.id, project_id:meta.project_id],gamma_ar]},               by: [0])\
-                .join(gamma_pf.map{                   meta, gamma_pf               -> [[id:meta.id, project_id:meta.project_id],gamma_pf]},               by: [0])\
-                .join(quast_report.map{               meta, quast_report           -> [[id:meta.id, project_id:meta.project_id],quast_report]},           by: [0])\
-                .join(busco.map{                      meta, busco -> [[id:meta.id, project_id:meta.project_id],busco]}, by: [0], remainder: true).map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }\
-                .join(asmbld_report.map{              meta, asmbld_report          -> [[id:meta.id, project_id:meta.project_id],asmbld_report]},          by: [0])\
-                .join(asmbld_krona_html.map{          meta, asmbld_krona_html      -> [[id:meta.id, project_id:meta.project_id],asmbld_krona_html]},      by: [0])\
-                .join(asmbld_k2_bh_summary.map{       meta, asmbld_k2_bh_summary   -> [[id:meta.id, project_id:meta.project_id],asmbld_k2_bh_summary]},   by: [0])\
-                .join(wtasmbld_krona_html.map{        meta, wtasmbld_krona_html    -> [[id:meta.id, project_id:meta.project_id],wtasmbld_krona_html]},    by: [0])\
-                .join(wtasmbld_report.map{            meta, wtasmbld_report        -> [[id:meta.id, project_id:meta.project_id],wtasmbld_report]},        by: [0])\
-                .join(wtasmbld_k2_bh_summary.map{     meta, wtasmbld_k2_bh_summary -> [[id:meta.id, project_id:meta.project_id],wtasmbld_k2_bh_summary]}, by: [0])\
-                .join(taxa_id.map{                    meta, taxa_id                -> [[id:meta.id, project_id:meta.project_id],taxa_id]},                by: [0])\
-                .join(format_ani.map{                 meta, format_ani             -> [[id:meta.id, project_id:meta.project_id],format_ani]},             by: [0])\
-                .join(assembly_ratio.map{             meta, assembly_ratio         -> [[id:meta.id, project_id:meta.project_id],assembly_ratio]},         by: [0])\
-                .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [[id:meta.id, project_id:meta.project_id],amr_point_mutations]},    by: [0])\
-                .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id, project_id:meta.project_id],gc_content]},             by: [0])\
-                .join(wtasmbld_report_with_rt.map{    meta, report, rt             -> [[id:meta.id, project_id:meta.project_id], rt.base] },              by: [0])
+            pipeline_stats_ch = fastp_raw_qc.map{     meta, fastp_raw_qc           -> [meta_key(meta),fastp_raw_qc]}\
+                .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [meta_key(meta),fastp_total_qc]},         by: [0])\
+                .join(fullgene_results.map{           meta, fullgene_results       -> [meta_key(meta),fullgene_results]},       by: [0])\
+                .join(trimd_report.map{               meta, report                 -> [meta_key(meta),report]},                 by: [0])\
+                .join(trimd_krona_html.map{           meta, trimd_krona_html       -> [meta_key(meta),trimd_krona_html]},       by: [0])\
+                .join(trimd_k2_bh_summary.map{        meta, trimd_k2_bh_summary    -> [meta_key(meta),trimd_k2_bh_summary]},    by: [0])\
+                .join(renamed_fastas.map{             meta, renamed_fastas         -> [meta_key(meta),renamed_fastas]},         by: [0])\
+                .join(filtered_fastas.map{            meta, filtered_fastas        -> [meta_key(meta),filtered_fastas]},        by: [0])\
+                .join(mlst.map{                       meta, mlst                   -> [meta_key(meta),mlst]},                   by: [0])\
+                .join(gamma_hv.map{                   meta, gamma_hv               -> [meta_key(meta),gamma_hv]},               by: [0])\
+                .join(gamma_ar.map{                   meta, gamma_ar               -> [meta_key(meta),gamma_ar]},               by: [0])\
+                .join(gamma_pf.map{                   meta, gamma_pf               -> [meta_key(meta),gamma_pf]},               by: [0])\
+                .join(quast_report.map{               meta, quast_report           -> [meta_key(meta),quast_report]},           by: [0])\
+                .join(busco.map{                      meta, busco                  -> [meta_key(meta),busco]}, by: [0], remainder: true).map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }\
+                .join(asmbld_report.map{              meta, asmbld_report          -> [meta_key(meta),asmbld_report]},          by: [0])\
+                .join(asmbld_krona_html.map{          meta, asmbld_krona_html      -> [meta_key(meta),asmbld_krona_html]},      by: [0])\
+                .join(asmbld_k2_bh_summary.map{       meta, asmbld_k2_bh_summary   -> [meta_key(meta),asmbld_k2_bh_summary]},   by: [0])\
+                .join(wtasmbld_krona_html.map{        meta, wtasmbld_krona_html    -> [meta_key(meta),wtasmbld_krona_html]},    by: [0])\
+                .join(wtasmbld_report.map{            meta, wtasmbld_report        -> [meta_key(meta),wtasmbld_report]},        by: [0])\
+                .join(wtasmbld_k2_bh_summary.map{     meta, wtasmbld_k2_bh_summary -> [meta_key(meta),wtasmbld_k2_bh_summary]}, by: [0])\
+                .join(taxa_id.map{                    meta, taxa_id                -> [meta_key(meta),taxa_id]},                by: [0])\
+                .join(format_ani.map{                 meta, format_ani             -> [meta_key(meta),format_ani]},             by: [0])\
+                .join(assembly_ratio.map{             meta, assembly_ratio         -> [meta_key(meta),assembly_ratio]},         by: [0])\
+                .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [meta_key(meta),amr_point_mutations]},    by: [0])\
+                .join(gc_content.map{                 meta, gc_content             -> [meta_key(meta),gc_content]},             by: [0])\
+                .join(wtasmbld_report_with_rt.map{    meta, report, rt             -> [meta_key(meta), rt.base] },              by: [0])
         } else {
             // Combining output based on id:meta.id to create pipeline stats file by sample -- is this verbose, ugly and annoying. yes, if anyone has a slicker way to do this we welcome the input. 
-            pipeline_stats_ch = fastp_raw_qc.map{ meta, fastp_raw_qc           -> [[id:meta.id],fastp_raw_qc]}\
-                .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [[id:meta.id],fastp_total_qc]},         by: [0])\
-                .join(fullgene_results.map{           meta, fullgene_results       -> [[id:meta.id],fullgene_results]},       by: [0])\
-                .join(trimd_report.map{               meta, report                 -> [[id:meta.id],report]},                 by: [0])\
-                .join(trimd_krona_html.map{           meta, trimd_krona_html       -> [[id:meta.id],trimd_krona_html]},       by: [0])\
-                .join(trimd_k2_bh_summary.map{        meta, trimd_k2_bh_summary    -> [[id:meta.id],trimd_k2_bh_summary]},    by: [0])\
-                .join(renamed_fastas.map{             meta, renamed_fastas         -> [[id:meta.id],renamed_fastas]},         by: [0])\
-                .join(filtered_fastas.map{            meta, filtered_fastas        -> [[id:meta.id],filtered_fastas]},        by: [0])\
-                .join(mlst.map{                       meta, mlst                   -> [[id:meta.id],mlst]},                   by: [0])\
-                .join(gamma_hv.map{                   meta, gamma_hv               -> [[id:meta.id],gamma_hv]},               by: [0])\
-                .join(gamma_ar.map{                   meta, gamma_ar               -> [[id:meta.id],gamma_ar]},               by: [0])\
-                .join(gamma_pf.map{                   meta, gamma_pf               -> [[id:meta.id],gamma_pf]},               by: [0])\
-                .join(quast_report.map{               meta, quast_report           -> [[id:meta.id],quast_report]},           by: [0])\
-                .join(busco.map{                      meta, busco -> [[id:meta.id],busco]}, by: [0], remainder: true).map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }\
-                .join(asmbld_report.map{              meta, asmbld_report          -> [[id:meta.id],asmbld_report]},          by: [0])\
-                .join(asmbld_krona_html.map{          meta, asmbld_krona_html      -> [[id:meta.id],asmbld_krona_html]},      by: [0])\
-                .join(asmbld_k2_bh_summary.map{       meta, asmbld_k2_bh_summary   -> [[id:meta.id],asmbld_k2_bh_summary]},   by: [0])\
-                .join(wtasmbld_krona_html.map{        meta, wtasmbld_krona_html    -> [[id:meta.id],wtasmbld_krona_html]},    by: [0])\
-                .join(wtasmbld_report.map{            meta, wtasmbld_report        -> [[id:meta.id],wtasmbld_report]},        by: [0])\
-                .join(wtasmbld_k2_bh_summary.map{     meta, wtasmbld_k2_bh_summary -> [[id:meta.id],wtasmbld_k2_bh_summary]}, by: [0])\
-                .join(taxa_id.map{                    meta, taxa_id                -> [[id:meta.id],taxa_id]},                by: [0])\
-                .join(format_ani.map{                 meta, format_ani             -> [[id:meta.id],format_ani]},             by: [0])\
-                .join(assembly_ratio.map{             meta, assembly_ratio         -> [[id:meta.id],assembly_ratio]},         by: [0])\
-                .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [[id:meta.id],amr_point_mutations]},    by: [0])\
-                .join(gc_content.map{                 meta, gc_content             -> [[id:meta.id],gc_content]},             by: [0])\
-                .join(wtasmbld_report_with_rt.map{    meta, report, rt             -> [[id:meta.id], rt.base] },              by: [0])
+            pipeline_stats_ch = fastp_raw_qc.map{     meta, fastp_raw_qc           -> [meta_key(meta),fastp_raw_qc]}\
+                .join(fastp_total_qc.map{             meta, fastp_total_qc         -> [meta_key(meta), fastp_total_qc]}, by: [0])\
+                .join(fullgene_results.map{           meta, fullgene_results       -> [meta_key(meta),fullgene_results]},       by: [0])\
+                .join(trimd_report.map{               meta, report                 -> [meta_key(meta),report]},                 by: [0])\
+                .join(trimd_krona_html.map{           meta, trimd_krona_html       -> [meta_key(meta),trimd_krona_html]},       by: [0])\
+                .join(trimd_k2_bh_summary.map{        meta, trimd_k2_bh_summary    -> [meta_key(meta),trimd_k2_bh_summary]},    by: [0])\
+                .join(renamed_fastas.map{             meta, renamed_fastas         -> [meta_key(meta),renamed_fastas]},         by: [0])\
+                .join(filtered_fastas.map{            meta, filtered_fastas        -> [meta_key(meta),filtered_fastas]},        by: [0])\
+                .join(mlst.map{                       meta, mlst                   -> [meta_key(meta),mlst]},                   by: [0])\
+                .join(gamma_hv.map{                   meta, gamma_hv               -> [meta_key(meta),gamma_hv]},               by: [0])\
+                .join(gamma_ar.map{                   meta, gamma_ar               -> [meta_key(meta),gamma_ar]},               by: [0])\
+                .join(gamma_pf.map{                   meta, gamma_pf               -> [meta_key(meta),gamma_pf]},               by: [0])\
+                .join(quast_report.map{               meta, quast_report           -> [meta_key(meta),quast_report]},           by: [0])\
+                .join(busco.map{                      meta, busco -> [meta_key(meta),busco]}, by: [0], remainder: true).map{ it -> it[-1] == null ? it[0..-2] + [[]] : it }\
+                .join(asmbld_report.map{              meta, asmbld_report          -> [meta_key(meta),asmbld_report]},          by: [0])\
+                .join(asmbld_krona_html.map{          meta, asmbld_krona_html      -> [meta_key(meta),asmbld_krona_html]},      by: [0])\
+                .join(asmbld_k2_bh_summary.map{       meta, asmbld_k2_bh_summary   -> [meta_key(meta),asmbld_k2_bh_summary]},   by: [0])\
+                .join(wtasmbld_krona_html.map{        meta, wtasmbld_krona_html    -> [meta_key(meta),wtasmbld_krona_html]},    by: [0])\
+                .join(wtasmbld_report.map{            meta, wtasmbld_report        -> [meta_key(meta),wtasmbld_report]},        by: [0])\
+                .join(wtasmbld_k2_bh_summary.map{     meta, wtasmbld_k2_bh_summary -> [meta_key(meta),wtasmbld_k2_bh_summary]}, by: [0])\
+                .join(taxa_id.map{                    meta, taxa_id                -> [meta_key(meta),taxa_id]},                by: [0])\
+                .join(format_ani.map{                 meta, format_ani             -> [meta_key(meta),format_ani]},             by: [0])\
+                .join(assembly_ratio.map{             meta, assembly_ratio         -> [meta_key(meta),assembly_ratio]},         by: [0])\
+                .join(amr_point_mutations.map{        meta, amr_point_mutations    -> [meta_key(meta),amr_point_mutations]},    by: [0])\
+                .join(gc_content.map{                 meta, gc_content             -> [meta_key(meta),gc_content]},             by: [0])\
+                .join(wtasmbld_report_with_rt.map{    meta, report, rt             -> [meta_key(meta), rt.base] },              by: [0])
         }
 
         GENERATE_PIPELINE_STATS (
