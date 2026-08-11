@@ -544,6 +544,47 @@ workflow PHOENIX_EXTERNAL {
             run_type_ch
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
+        
+
+
+        GET_TRIMD_STATS.out.fastp_total_qc.map{ meta, fastp_total_qc -> [[id:meta.id], fastp_total_qc]}.view{ "fastp_total_qc: $it" }
+       //fastp_total_qc: [[id:SRR15503286], /scicomp/scratch/qpk9/ce/01be121704652dfa788141efda9f8e/SRR15503286_trimmed_read_counts.txt]
+
+        DO_MLST.out.checked_MLSTs.map{ meta, checked_MLSTs -> [[id:meta.id], checked_MLSTs]}.view{ "checked_MLSTs: $it" }
+        //checked_MLSTs: [[id:SRR15503286], /scicomp/scratch/qpk9/a1/d5c404d5dac241b4d93df9f19771d4/SRR15503286_combined.tsv]
+
+        GAMMA_HV.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma]}.view{ "gamma_hv: $it" }
+        //gamma_hv: [[id:SRR15167040], /scicomp/scratch/qpk9/78/660349d8e43a3615ef99a753412726/SRR15167040_HyperVirulence_20260507.gamma]
+
+        GAMMA_AR.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma]}.view{ "gamma_ar: $it" }
+        //gamma_ar: [[id:SRR15167040], /scicomp/scratch/qpk9/e8/31af28a52aaaa0b2d88289a90c0c71/SRR15167040_ResGANNCBI_20260430_srst2.gamma]
+
+        GAMMA_PF.out.gamma.map{ meta, gamma -> [[id:meta.id], gamma]}.view{ "gamma_pf: $it" }
+        //gamma_pf: [[id:SRR15167040], /scicomp/scratch/qpk9/8b/951c8575a4fc4918434450b26400e3/SRR15167040_PF-Replicons_20260430.gamma]
+
+        QUAST.out.report_tsv.map{ meta, report_tsv -> [[id:meta.id], report_tsv]}.view{ "report_tsv: $it" }
+        //report_tsv: [[id:SRR15167040], /scicomp/scratch/qpk9/b5/ffbbb66fa37abb9192abb365c2a60f/SRR15167040_summary.tsv]
+
+        CALCULATE_ASSEMBLY_RATIO.out.ratio.map{ meta, ratio -> [[id:meta.id], ratio]}.view{ "ratio: $it" }
+        //ratio: [[id:SRR15503286], /scicomp/scratch/qpk9/b0/3efec7a5d4c767a39c927af763c848/SRR15503286_Assembly_ratio_20260508.txt]
+
+        GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ meta, pipeline_stats -> [[id:meta.id], pipeline_stats]}.view{ "pipeline_stats: $it" }
+        //pipeline_stats: [[id:SRR15503286], /scicomp/scratch/qpk9/e1/9913481f5bdf0a6e53733a1f54a207/SRR15503286.synopsis]
+
+        KRAKEN2_TRIMD.out.k2_bh_summary.map{ meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}.view{ "trimd k2_bh_summary: $it" }
+        //trimd k2_bh_summary: [[id:SRR15167040], /scicomp/scratch/qpk9/48/0b381e7696c6b232a0fb5ce4c06446/SRR15167040.kraken2_trimd.top_kraken_hit.txt]
+
+        KRAKEN2_WTASMBLD.out.k2_bh_summary.map{ meta, k2_bh_summary -> [[id:meta.id], k2_bh_summary]}.view{ "wtasmbld k2_bh_summary: $it" }
+        //wtasmbld k2_bh_summary: [[id:SRR15167040], /scicomp/scratch/qpk9/ab/8e6d8b48adf6adaff8777e8aaf098a/SRR15167040.kraken2_wtasmbld.top_kraken_hit.txt]
+
+        AMRFINDERPLUS_RUN.out.report.map{ meta, report -> [[id:meta.id], report]}.view{ "amrfinderplus report: $it" }
+        //amrfinderplus report: [[id:SRR15503286], /scicomp/scratch/qpk9/77/5ae3c30775af9f8ef9a6f73ba442ae/SRR15503286_all_genes_20260324.tsv]
+
+        CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }.map{meta, taxonomy -> [[id:meta.id], taxonomy]}.view{ "taxonomy: $it" }
+        //taxonomy: [[id:SRR15503286], /scicomp/scratch/qpk9/cb/f9960dffdb8fec448c3a2044efd75d/SRR15503286.tax]
+
+        CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }.map{meta, ani_best_hit -> [[id:meta.id], ani_best_hit]}.view{ "ani_best_hit: $it" }
+        //ani_best_hit: [[id:SRR15503286], /scicomp/scratch/qpk9/62/053c75bb9e32f3567d9ced2ff33669/SRR15503286_REFSEQ_20260521.fastANI.txt]
 
         // GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.view   { it -> log.info "DeBuG GPS-PLSTS: $it" }
 
@@ -564,11 +605,16 @@ workflow PHOENIX_EXTERNAL {
             .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
                                 .map{                               meta, ani_best_hit           -> [[id:meta.id], ani_best_hit]},           by: [0])
 
+        line_summary_ch.view { "first line_summary_ch: $it" }
+        /*first line_summary_ch: [[id:SRR15503286], SRR15503286_trimmed_read_counts.txt, SRR15503286_combined.tsv,SRR15503286_HyperVirulence_20260507.gamma, SRR15503286_ResGANNCBI_20260430_srst2.gamma, SRR15503286_PF-Replicons_20260430.gamma ,SRR15503286_summary.tsv, 
+        SRR15503286_Assembly_ratio_20260508.txt, SRR15503286.synopsis, SRR15503286.tax, SRR15503286.kraken2_trimd.top_kraken_hit.txt, SRR15503286.kraken2_wtasmbld.top_kraken_hit.txt, SRR15503286_all_genes_20260324.tsv, SRR15503286_REFSEQ_20260521.fastANI.txt]*/
+
         // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
 //        shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
 //                    .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
 //                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: [], []]}  // If shigapass_file is null, use empty list, and add an empty list for the line summary to maintain the structure
 
+<<<<<<< HEAD
         // FIX: single remainder-join at the end, keyed on plain meta.id (a String, not a Map),
         // against the already-fully-built line_summary_ch. This is the only join in the chain
         // allowed to have missing keys, and remainder:true means unmatched samples get
@@ -581,6 +627,20 @@ workflow PHOENIX_EXTERNAL {
             .join(SHIGAPASS.out.summary.map{ meta, summary -> [meta.id, summary] }, remainder: true, by: 0)
             .map{ id, meta, a,b,c,d,e,f,g,h,i,j,k,l,m, shigapass_file -> [meta, a,b,c,d,e,f,g,h,i,j,k,l,m, shigapass_file ?: []] }
 
+=======
+        shigapass_combined_ch.view { "shigapass_combined_ch: $it" }
+        //shigapass_combined_ch: [[id:SRR15503286], [], []]
+        //shigapass_combined_ch: [[id:WA0651166-WAPHL-M5130-211210], /scicomp/scratch/qpk9/09/f8c58f445dc2501ec24db893c69baf/WA0651166-WAPHL-M5130-211210_ShigaPass_summary.csv, []]
+
+        // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
+        line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0])
+
+        line_summary_ch.view { "second line_summary_ch: $it" }
+        /*second line_summary_ch: [[id:SRR15503286], SRR15503286_trimmed_read_counts.txt, SRR15503286_combined.tsv, SRR15503286_HyperVirulence_20260507.gamma, SRR15503286_ResGANNCBI_20260430_srst2.gamma, SRR15503286_PF-Replicons_20260430.gamma, SRR15503286_summary.tsv, 
+        SRR15503286_Assembly_ratio_20260508.txt, SRR15503286.synopsis, SRR15503286.tax, SRR15503286.kraken2_trimd.top_kraken_hit.txt, SRR15503286.kraken2_wtasmbld.top_kraken_hit.txt, SRR15503286_all_genes_20260324.tsv, SRR15503286_REFSEQ_20260521.fastANI.txt, [], []]*/
+
+        // Generate summary per sample that passed SPAdes
+>>>>>>> 6b006600 (correcting badge count see readme.md)
         CREATE_SUMMARY_LINE (
             line_summary_ch, false, workflow.manifest.version
         )

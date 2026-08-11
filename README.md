@@ -18,7 +18,24 @@ PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality
 
 <!--- ![GitHub Clones](https://img.shields.io/github/downloads/cdcgov/phoenix/total.svg?style=social&logo=github&label=Clones-)  --->
 
-[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%2044332-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)   
+<!--## Clone counter rollback — Aug 10, 2026
+
+**What happened:** On Feb 11, a one-time backfill adjustment (`+271`) meant to correct for a period of workflow failures (Jan 27–Feb 9) was added directly into the daily clone-count formula instead of being applied once. From Feb 12 onward, every successful run of the workflow added a phantom +271 clones on top of real traffic.
+
+**Confirmed via git history:**
+- Badge value right after the bug went live (commit `a9eb5e8`, Feb 12): **11,715**
+- Badge value today (before correction): **44,062**
+- Commits matching "Update clone and download counts" between Feb 12–Aug 10: **161**
+- Diffing consecutive badge values across that window shows a flat, near-perfect
+  **+270 per commit** pattern (271 bug − 1 legit self-clone), confirming the bug
+  dominated the badge's growth over this period.
+
+**Why we can't reconstruct an exact number:** GitHub's traffic API only retains 14 days of history. Real daily clone counts before Jul 27 are gone and can't be recovered, so no fully precise correction is possible for the full Feb–Aug window.
+**Correction approach:** Using the last 14 days of real traffic (Jul 27–Aug 9, total 382 clones, ~27/day average) as a representative estimate of real traffic across the full 161-day buggy window:
+This is a **documented estimate**, not an exact reconstruction — treated as acceptable since this is a decorative badge, not an audited metric.
+**Fix applied:** Removed the hardcoded `+271` from the workflow's clone-count calculation so the bug can't continue compounding going forward. -->
+
+[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%2016136-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)   
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
