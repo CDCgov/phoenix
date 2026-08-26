@@ -35,7 +35,7 @@ PHoeNIx was built and is maintained by the CDC's [Division of Healthcare Quality
 This is a **documented estimate**, not an exact reconstruction — treated as acceptable since this is a decorative badge, not an audited metric.
 **Fix applied:** Removed the hardcoded `+271` from the workflow's clone-count calculation so the bug can't continue compounding going forward. -->
 
-[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%2019916-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)   
+[![Custom Badge](https://img.shields.io/badge/GitHub-%F0%9F%94%A5%F0%9F%90%A6%F0%9F%94%A5%20GitHub%20Clones%3A%2020186-blue?logo=GitHub&style=for-the-badge&logoColor=black&label=%20&labelColor=white&color=blue&style=flat-square)](https://github.com/)   
 
 For full documentation on the pipeline see the [Wiki](https://github.com/cdcent/phoenix/wiki), but quick start instructions are provided below if you are feeling brave. 
 
