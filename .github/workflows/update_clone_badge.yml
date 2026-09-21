@@ -3,11 +3,11 @@ name: Update Clone Badge
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs at midnight every day
+  workflow_dispatch:  # allows manual triggering from the Actions tab
 
 jobs:
   update-badge:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # Run only on v2.3.0-dev branch
 
     steps:
       - name: Checkout repository
@@ -20,22 +20,29 @@ jobs:
         
         id: get_clone_count
         run: |
-          # Fetch clone count from GitHub API for today
-          CLONE_COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
-              "https://api.github.com/repos/CDCgov/phoenix/traffic/clones" | jq -r --arg target_day "$(date -d yesterday +%Y-%m-%d)" '.clones[] | select(.timestamp | startswith($target_day))' | jq -r '.count')
-          ADJUSTED_COUNT=$((CLONE_COUNT + 271 - 1))
-          # 239 is for Jan 27th - Feb9th when the action was failing.
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GH_ACTION }}" \
+              "https://api.github.com/repos/CDCgov/phoenix/traffic/clones")
+          echo "API response: $RESPONSE"
+          CLONE_COUNT=$(echo "$RESPONSE" | jq -r --arg target_day "$(date -d yesterday +%Y-%m-%d)" '.clones[] | select(.timestamp | startswith($target_day))' | jq -r '.count')
+          echo "Raw CLONE_COUNT: '$CLONE_COUNT'"
+          ADJUSTED_COUNT=$((${CLONE_COUNT:-0} - 1))
+          # Adjust for negative clone counts so its never -1
+          if [ "$ADJUSTED_COUNT" -lt 0 ]; then
+            ADJUSTED_COUNT=0
+          fi
           echo "CLONE_COUNT=$ADJUSTED_COUNT" >> $GITHUB_ENV
 
       - name: Extract previous clone count from README
         id: extract_previous_count
         run: |
-          # Extract previous clone count from README.md
           PREVIOUS_COUNT=$(grep -oP '(?<=Clones%3A%20)\d+' README.md)
+          if [ -z "$PREVIOUS_COUNT" ]; then
+            echo "ERROR: could not extract previous clone count from README" >&2
+            exit 1
+          fi
           echo "PREVIOUS_COUNT=$PREVIOUS_COUNT" >> $GITHUB_ENV
 
       - name: Calculate new total clone count
-        if: ${{ env.PREVIOUS_COUNT != env.NEW_TOTAL }}
         id: calculate_new_total
         run: |
           # Calculate new total clone count by adding today's count to previous count
