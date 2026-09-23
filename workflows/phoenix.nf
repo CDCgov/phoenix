@@ -627,20 +627,6 @@ workflow PHOENIX_EXTERNAL {
             .join(SHIGAPASS.out.summary.map{ meta, summary -> [meta.id, summary] }, remainder: true, by: 0)
             .map{ id, meta, a,b,c,d,e,f,g,h,i,j,k,l,m, shigapass_file -> [meta, a,b,c,d,e,f,g,h,i,j,k,l,m, shigapass_file ?: []] }
 
-=======
-        shigapass_combined_ch.view { "shigapass_combined_ch: $it" }
-        //shigapass_combined_ch: [[id:SRR15503286], [], []]
-        //shigapass_combined_ch: [[id:WA0651166-WAPHL-M5130-211210], /scicomp/scratch/qpk9/09/f8c58f445dc2501ec24db893c69baf/WA0651166-WAPHL-M5130-211210_ShigaPass_summary.csv, []]
-
-        // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
-        line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0])
-
-        line_summary_ch.view { "second line_summary_ch: $it" }
-        /*second line_summary_ch: [[id:SRR15503286], SRR15503286_trimmed_read_counts.txt, SRR15503286_combined.tsv, SRR15503286_HyperVirulence_20260507.gamma, SRR15503286_ResGANNCBI_20260430_srst2.gamma, SRR15503286_PF-Replicons_20260430.gamma, SRR15503286_summary.tsv, 
-        SRR15503286_Assembly_ratio_20260508.txt, SRR15503286.synopsis, SRR15503286.tax, SRR15503286.kraken2_trimd.top_kraken_hit.txt, SRR15503286.kraken2_wtasmbld.top_kraken_hit.txt, SRR15503286_all_genes_20260324.tsv, SRR15503286_REFSEQ_20260521.fastANI.txt, [], []]*/
-
-        // Generate summary per sample that passed SPAdes
->>>>>>> 6b006600 (correcting badge count see readme.md)
         CREATE_SUMMARY_LINE (
             line_summary_ch, false, workflow.manifest.version
         )
