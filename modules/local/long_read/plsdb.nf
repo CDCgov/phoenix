@@ -14,13 +14,11 @@ process PLSDB {
     tuple val(meta), path("${meta.id}_plasmidID.tsv"), emit: plasmidID
     tuple val(meta), path("${meta.id}_contigs/*"), emit: contigs
     path ("versions.yml"), emit: versions
-    
-    script:
 
+    script:
     def container_version = "v0.1.0"//Update this version number when the script is updated
     def container = task.container.toString() - "quay.io/aharring83/plsdb:"
     def plsdb_version = "20240521.v2" //Update this version number when the database is updated
-
     """
     plasmid.py -i $fasta -db $plsdb_dir/plsdb_2024_05_31_v2 -c $conf -o ${meta.id}_plasmidID.tsv
     mv contigs ${meta.id}_contigs
@@ -40,9 +38,7 @@ process PLSDB {
         plsdb_container: ${container}
         plsdb_container_version: ${container_version}
         plsdb_version: ${plsdb_version}
-        
     END_VERSIONS
-
     """
 
 }

@@ -1,31 +1,39 @@
 process NANOQ {
     tag "${meta.id}"
     label 'process_medium'
-    container 'quay.io/biocontainers/nanoq:0.10.0--h031d066_2'
-    //sha256:e3f7fc6e04ed0b2ae8753264c9898d981f798ada6a41689bf788e40824816ae4
-    errorStrategy 'ignore'
+    container 'quay.io/biocontainers/nanoq@sha256:86e6f65c7a0c8e626511c7608de484c0bcfa418f3bd39af12250fe61c02b0fdb'
 
     input:
-    tuple val(meta), path(rawstats), path(subfastq)
-    val length
-    val qscore
+    tuple val(meta), path(subfastq), path(fairy_outcome)
+    val(length)
+    val(qscore)
 
     output:
-    tuple val(meta), path("*_trim.fastq.gz"),   emit: fastq
-    tuple val(meta), path("*_nanoq_stats.csv"), emit: nano_stats
-    tuple val(meta), path("*_nanoq.log"),       emit: nano_log
-    path ("versions.yml"),                      emit: versions
+    tuple val(meta), path("*_trim.fastq.gz"),                        emit: fastq
+    tuple val(meta), path("*_LR_trimmed_read_counts.txt"),           emit: trimmed_stats
+    tuple val(meta), path('*_trimstats_summary.txt'), optional:true, emit: outcome
+    tuple val(meta), path('*_summary_old_4.txt'),                    emit: outcome_to_edit
+    path ("versions.yml"),                                           emit: versions
+
     script:
+    def container = task.container.toString() - "quay.io/biocontainers/nanoq@"
     """
-    nanoq -i $subfastq -l $length -q $qscore -r trim.txt -s -H -o ${meta.id}_trim.fastq.gz >> ${meta.id}_nanoq.log 
-    echo -e "raw_reads trim_reads bases n50 longest shortest mean_length median_length mean_quality median_quality\n\$(awk 'NR==2 {print \$4}' $rawstats) \$(awk 'NR==2 {print}' trim.txt)" > ${meta.id}_stats_mqc.txt
-    # convert to stats for reporting in griphin later to csv
-    sed 's/ /,/g' ${meta.id}_stats_mqc.txt > ${meta.id}_nanoq_stats.csv
+    nanoq --input $subfastq --min-len $length --min-qual $qscore --report ${meta.id}_LR_trimmed_read_counts.txt --stats --header --output-type g -o ${meta.id}_trim.fastq.gz
+
+    #check if reads remaining after trimming, if not then report failure
+    if [[ \$(awk 'NR==2{print \$1}' ${meta.id}_LR_trimmed_read_counts.txt) -eq 0 ]]; then
+        echo "FAILED: There are 0 reads in ${meta.id} after trimming!" >> ${meta.id}_summary_old_3.txt
+        cp ${meta.id}_summary_old_3.txt ${meta.id}_summary_old_4.txt
+        cp ${meta.id}_summary_old_3.txt ${meta.id}_trimstats_summary.txt
+    else
+        echo "PASSED: There are reads in ${meta.id} after trimming!" >> ${meta.id}_summary_old_3.txt
+        cp ${meta.id}_summary_old_3.txt ${meta.id}_summary_old_4.txt
+    fi
+
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         nanoq: \$(nanoq --version | sed -e "s/nanoq //g")
-
+        nanoq_container: ${container}
     END_VERSIONS
     """
-
 }

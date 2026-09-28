@@ -1,31 +1,17 @@
 process PLSDB_ASSET_CHECK {
     label 'process_low'
-    // base_v2.2.0 - MUST manually change below (line 22)!!!
-    //container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
     container 'ncbi/blast@sha256:81f118d2e4f7e11494d27fdbb99c9430423105afff50c4ae158db41d58a3fc57'  //ncbi/blast:2.17.0
 
     input:
-    // path(zipped_sketch)
-    // path(mlst_db_path)
-    // path(kraken_db)
-    // path(clia_db_zipped)
-    //path(zipped_plsdb)
     path(plsdb_dir)
 
     output:
-    // path('*.msh'),                          emit: mash_sketch
-    path("versions.yml"),                   emit: versions
-    // path('db'),                             emit: mlst_db
-    // path('*_folder'),                       emit: kraken_db
-    // path('amrfinderdb_v*'), optional: true, emit: clia_db
-    path("${plsdb_dir}/plsdb_2024_05_31_v2.fasta"),                           emit: plsdb
+    path("${plsdb_dir}/plsdb_2024_05_31_v2.fasta"), emit: plsdb
+    path("versions.yml"),                           emit: versions
 
-    // when:
-    // task.ext.when == null || task.ext.when 
 
     script:
     // def kraken_db_path = kraken_db ? "${kraken_db}" : "false" //checking if its null or an empty list
-    // def container_version = "base_v2.2.0"
     // def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     // def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
     // def unzip_clia_db = params.mode_upper == "CLIA" ? "tar --use-compress-program='pigz -vdf' -xf ${clia_db_zipped}" : "" 

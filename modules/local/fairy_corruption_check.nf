@@ -1,13 +1,14 @@
 process CORRUPTION_CHECK {
     tag "${meta.id}"
     label 'process_medium'
-    // base_v2.1.0 - MUST manually change below (line 28)!!!
+    // base_v2.2.0 - MUST manually change below (line 29)!!!
     stageInMode 'copy'
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    container 'quay.io/jvhagey/phoenix@sha256:ba44273acc600b36348b96e76f71fbbdb9557bb12ce9b8b37787c3ef2b7d622f'
 
     input:
     tuple val(meta), path(reads)
     val(busco_val)
+    val(phx_version)
 
     output:
     tuple val(meta), path('*_corruption_summary.txt'), optional:true, emit: outcome
@@ -18,24 +19,22 @@ process CORRUPTION_CHECK {
 
     script:
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "bash ${params.bin_dir}" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
     def num1 = "${reads[0]}".minus(".fastq.gz")
     def num2 = "${reads[1]}".minus(".fastq.gz")
     def busco_parameter = busco_val ? "-b" : ""
-    def container_version = "base_v2.1.0"
+    def container_version = "base_v2.2.0"
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
+    // Only run the reverse-read check when this isn't long-read data
+    def reverse_check = (params.mode_upper == "PHOENIX_LR" || params.mode_upper == "PHOENIX_HYBRID") ? "" : "${ica}fairy_proc.py -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} -v ${phx_version}"
     """
     #set +e
     #check for file integrity and log errors
     #if there is a corruption problem the script will create a *_summaryline.tsv and *.synopsis file for the sample.
-    ${ica}fairy_proc.sh -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} 
-    ${ica}fairy_proc.sh -f ${reads[1]} -p ${prefix} -r reverse ${busco_parameter} 
-
-    script_version=\$(${ica}fairy_proc.sh -V)
+    ${ica}fairy_proc.py -f ${reads[0]} -p ${prefix} -r forward ${busco_parameter} -v ${phx_version}
+    ${reverse_check}
 
     #making a copy of the summary file to pass to READ_COUNT_CHECKS to handle file names being the same
     cp ${prefix}_corruption_summary.txt ${prefix}_summary_old.txt
@@ -49,7 +48,7 @@ process CORRUPTION_CHECK {
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
-        \${script_version}
+        \$(${ica}fairy_proc.py -V)
     END_VERSIONS
     """
 }

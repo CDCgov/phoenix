@@ -1,15 +1,13 @@
-process SCAFFOLDS_SAMPLESHEET_CHECK {
-    tag "$samplesheet"
-    label 'process_low'
-    stageInMode 'copy'
-    container params.phoenix_base_container
+process FILE_RENAME {
+    label 'process_single'
+    container parmas.phoenix_base_container
 
     input:
-    path samplesheet
+    path(griphins)
 
     output:
-    path '*.valid.csv' , emit: csv
-    path "versions.yml", emit: versions
+    path('*_GRiPHin.*'),  emit: renamed_griphins
+    path("versions.yml"), emit: versions
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
@@ -18,16 +16,12 @@ process SCAFFOLDS_SAMPLESHEET_CHECK {
     def container_version = params.phoenix_container_version
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}check_assembly_samplesheet.py \\
-    $samplesheet \\
-    samplesheet.valid.csv
+    ${ica}file_rename.py
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        python: \$(python --version | sed 's/Python //g')
-        check_assembly_samplesheet.py: \$(${ica}check_assembly_samplesheet.py --version )
-        phoenix_base_container_tag: ${container_version}
-        phoenix_base_container: ${container} 
+        phoenix_base_container: ${container}
+        \$(${ica}file_rename.py --version)
     END_VERSIONS
     """
 }

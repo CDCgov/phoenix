@@ -10,14 +10,14 @@ process SRST2_MLST {
     output:
     //tuple val(meta), path("*_mlst_*_results.txt")                , optional:true, emit: mlst_results
     tuple val(meta), path("*_srst2.mlst")                        , optional:true, emit: mlst_results
-    tuple val(meta), path("*_srst2_temp.mlst")                   , optional:true, emit: mlst_results_temp
+    tuple val(meta), path("*_srst2_temp.mlst")                     , optional:true, emit: mlst_results_temp
     tuple val(meta), path("*.pileup")                            , optional:true, emit: pileup
     tuple val(meta), path("*.sorted.bam")                        , optional:true, emit: sorted_bam
-    tuple val(meta), path("*_srst2_status.txt")                  , optional:true, emit: empty_checker
-    path "versions.yml"                                          ,                emit: versions
+    tuple val(meta), path("*_srst2_status.txt")                    , optional:true, emit: empty_checker
+    path "versions.yml"                                            ,                emit: versions
 
     when:
-    (task.ext.when == null || task.ext.when) //&& "${status[0]}" == "False"
+    (task.ext.when == null || task.ext.when)
 
     script:
     // set up terra variables
@@ -39,6 +39,7 @@ process SRST2_MLST {
     def prefix = task.ext.prefix ?: "${meta.id}"
     def read_s = meta.single_end ? "--input_se ${fastqs}" : "--input_pe ${fastqs[0]} ${fastqs[1]}"
     def container = task.container.toString() - "quay.io/jvhagey/srst2@"
+    
     """
     #adding python path for running srst2 on terra
     $terra
@@ -79,7 +80,7 @@ process SRST2_MLST {
                 echo "No srst2 result file exists"
             fi
 
-            header="Sample	database	ST	mismatches	uncertainty	depth	maxMAF	locus_1	locus_2	locus_3	locus_4	locus_5	locus_6	locus_7	locus_8	locus_9	locus_10"
+            header="Sample    database    ST    mismatches    uncertainty    depth    maxMAF    locus_1    locus_2    locus_3    locus_4    locus_5    locus_6    locus_7    locus_8    locus_9    locus_10"
             if [[ "\${scheme_count}" -eq 1 ]]; then
                 echo "\${header}" > ${prefix}_srst2.mlst
             fi
@@ -88,16 +89,25 @@ process SRST2_MLST {
             trailer_list=""
             if [[ "\${no_match}" = "True" ]]; then
                 tax_with_no_scheme=\$(echo "\${line}" | cut -d'(' -f2 | cut -d')' -f1)
-                echo "${prefix}	No match found for \${tax_with_no_scheme}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
+#                echo "${prefix}    -    -    -    -    -    -" >> "${prefix}_srst2.mlst"
             elif [[ "\${lines_in_result_file}" -eq 1 ]]; then
                 echo "Not enough was found to even make a guess"
-                echo "${prefix}	No match found for \${mlst_db}	-	-	-	-	-" >> "${prefix}_srst2.mlst"
+#                echo "${prefix}    No match found for \${mlst_db}    -    -    -    -    -" >> "${prefix}_srst2.mlst"
+                echo "${prefix}    \${mlst_db}    -    -    -    -    -" >> "${prefix}_srst2.mlst"
             else
                 raw_header="\$(head -n1 \${scheme_count}_${prefix}*.txt)"
+                # Account for the cases where multi-databases require extra genes ID's during processing, but remove here.
+                # Current known list is only populated by Abaumannii
+                to_remove_prefixes=('Pas_' 'Ox_')
+                trimmed_header="\${raw_header}"
+                for prefix in \${to_remove_prefixes[@]}; do
+                    trimmed_header="\${trimmed_header//\${prefix}/}"
+                    echo "\${prefix}, \${trimmed_header}"
+                done
                 raw_trailer="\$(tail -n1 \${scheme_count}_${prefix}*.txt)"
-                formatted_trailer="${prefix}	\${mlst_db}"
+                formatted_trailer="${prefix}    \${mlst_db}"
                 IFS=\$'\t' read -r -a trailer_list <<< "\$raw_trailer"
-                IFS=\$'\t' read -r -a header_list <<< "\$raw_header"
+                IFS=\$'\t' read -r -a header_list <<< "\$trimmed_header"
                 header_length="\${#header_list[@]}"
                 ST_index=1
                 mismatch_index=\$(( header_length - 4 ))
@@ -117,17 +127,17 @@ process SRST2_MLST {
                 # 0     1   2   3           4           5     6       7       8       9       10      11      12        13    14      15      16
 
                 echo "\${#header_list[@]} --- \${header_list[@]} --- \${#trailer_list[@]} --- \${trailer_list[@]}"
-                formatted_trailer="\${formatted_trailer}	\${trailer_list[\${ST_index}]}"
-                formatted_trailer="\${formatted_trailer}	\${trailer_list[\${mismatch_index}]}"
-                formatted_trailer="\${formatted_trailer}	\${trailer_list[\${uncertainty_index}]}"
-                formatted_trailer="\${formatted_trailer}	\${trailer_list[\${depth_index}]}"
-                formatted_trailer="\${formatted_trailer}	\${trailer_list[\${maxMAF_index}]}"
+                formatted_trailer="\${formatted_trailer}    \${trailer_list[\${ST_index}]}"
+                formatted_trailer="\${formatted_trailer}    \${trailer_list[\${mismatch_index}]}"
+                formatted_trailer="\${formatted_trailer}    \${trailer_list[\${uncertainty_index}]}"
+                formatted_trailer="\${formatted_trailer}    \${trailer_list[\${depth_index}]}"
+                formatted_trailer="\${formatted_trailer}    \${trailer_list[\${maxMAF_index}]}"
 
                 #for index in {\$genes_start_index..\$genes_end_index}
                 for (( index=\${genes_start_index} ; index <= \${genes_end_index} ; index++ ));
                 do
                     echo "\${index} -- \${header_list[\${index}]} -- \${trailer_list[\${index}]}"
-                    formatted_trailer="\${formatted_trailer}	\${header_list[\${index}]}(\${trailer_list[\${index}]})"
+                    formatted_trailer="\${formatted_trailer}    \${header_list[\${index}]}(\${trailer_list[\${index}]})"
                 done
                 echo "\${formatted_trailer}" >> ${prefix}_srst2.mlst
             fi
@@ -154,3 +164,4 @@ process SRST2_MLST {
     $terra_exit
     """
 }
+    

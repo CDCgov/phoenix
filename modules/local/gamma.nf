@@ -5,7 +5,7 @@ process GAMMA {
     container 'staphb/gamma@sha256:60d8ac58e016349a856fb7b443dd422ba69bae3f40e0dad83460d25ecf71101e'
 
     input:
-    tuple val(meta), path(fasta), val(fairy_outcome)
+    tuple val(meta), path(fasta)
     path(db)
 
     output:
@@ -14,10 +14,6 @@ process GAMMA {
     tuple val(meta), path("*.gff")  , optional:true , emit: gff
     tuple val(meta), path("*.fasta"), optional:true , emit: fasta
     path "versions.yml"                             , emit: versions
-
-    when:
-    //if there are scaffolds left after filtering
-    "${fairy_outcome[4]}" == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."
 
     script:
     def args = task.ext.args ?: ''

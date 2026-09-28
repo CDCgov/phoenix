@@ -1,12 +1,10 @@
 process GET_TAXA_FOR_AMRFINDER {
     tag "$meta.id"
     label 'process_single'
-    // base_v2.1.0 - MUST manually change below (line 21)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    container params.phoenix_base_container
 
     input:
     tuple val(meta), path(taxa_file)
-    val(clia_entry)
 
     output:
     tuple val(meta), path("*_AMRFinder_Organism.csv"),               emit: amrfinder_taxa
@@ -15,22 +13,21 @@ process GET_TAXA_FOR_AMRFINDER {
 
     script: // This script is bundled with the pipeline, in cdcgov/phoenix/bin/
     // Adding if/else for if running on ICA it is a requirement to state where the script is, however, this causes CLI users to not run the pipeline from any directory.
-    if (params.ica==false) { ica = "" } 
-    else if (params.ica==true) { ica = "python ${params.bin_dir}" }
-    else { error "Please set params.ica to either \"true\" if running on ICA or \"false\" for all other methods." }
+    def ica = params.ica ? "python ${params.bin_dir}" : ""
     // define variables
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def container_version = "base_v2.1.0"
-    def clia = clia_entry ? "--clia" : "" //add if you are running the clia version to get the taxa for abritamr
+    def container_version = params.phoenix_container_version
+    def abritamr_val = (params.mode_upper == "CLIA" || params.run_abritamr == true) ? "--abritamr_taxa" : "" //add if you are running the clia version to get the taxa for abritamr
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     """
-    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix} ${clia}
+    ${ica}get_taxa_for_amrfinder.py -t $taxa_file -o ${prefix} ${abritamr_val}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
         phoenix_base_container_tag: ${container_version}
         phoenix_base_container: ${container}
+        \$(${ica}get_taxa_for_amrfinder.py -V)
     END_VERSIONS
     """
 }

@@ -1,46 +1,56 @@
 process ASSET_CHECK {
     label 'process_low'
-    // base_v2.1.0 - MUST manually change below (line 21)!!!
-    container 'quay.io/jvhagey/phoenix@sha256:f0304fe170ee359efd2073dcdb4666dddb96ea0b79441b1d2cb1ddc794de4943'
+    // base_v2.2.0 - MUST manually change below (line 22)!!!
+    container params.phoenix_base_container
 
     input:
     path(zipped_sketch)
     path(mlst_db_path)
     path(kraken_db)
+    path(clia_db_zipped)
 
     output:
-    path('*.msh'),        emit: mash_sketch
-    path("versions.yml"), emit: versions
-    path('db'),           emit: mlst_db
-    path('*_folder'),     emit: kraken_db
+    path('*.msh'),                          emit: mash_sketch
+    path("versions.yml"),                   emit: versions
+    path('db'),                             emit: mlst_db
+    path('*_folder'),                       emit: kraken_db
+    path('amrfinderdb_v*'), optional: true, emit: clia_db
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def kraken_db_path = kraken_db ? "${kraken_db}" : "false" //checking if its null or an empty list
-    def container_version = "base_v2.1.0"
+    def container_version = params.phoenix_container_version
     def container = task.container.toString() - "quay.io/jvhagey/phoenix@"
     def unzipped_sketch = "${zipped_sketch}".minus(".bz2")
-   // def kraken_db_path = (!kraken_db || kraken_db.size() == 0) ? "false" : "${kraken_db}" //checking if its null or an empty list
+    def unzip_clia_db = params.mode_upper == "CLIA" ? "tar --use-compress-program='pigz -vdf' -xf ${clia_db_zipped}" : "" 
+    // Allow for multitude of zipped sources and remove the last extension, nevermind not needed for xz
+    // def kraken_db_path = (!kraken_db || kraken_db.size() == 0) ? "false" : "${kraken_db}" //checking if its null or an empty list
     """
+    ${unzip_clia_db}
+
     if [[ ${zipped_sketch} = *.gz ]]
     then
+        echo "Unzipping gz file ${zipped_sketch}"
         pigz -vdf ${zipped_sketch}
         #for bz2 files
         #pigz -dc -L ${zipped_sketch} > ${unzipped_sketch}
+    elif [[ ${zipped_sketch} = *.xz ]]
+    then 
+        echo "Unzipping xz file ${zipped_sketch}"
+        xz -kfd --no-warn ${zipped_sketch}
     else
         :
     fi
-
     if [[ ${mlst_db_path} = *.tar.gz ]]
     then
+        echo "Decompressing tar file ${mlst_db_path}"
         tar --use-compress-program="pigz -vdf" -xf ${mlst_db_path}
     else
         :
     fi
-
-    if [[ ${kraken_db_path} != "false" ]]
+    if [[ ${kraken_db_path} != false ]]
     then
         if [[ ${kraken_db_path} = *.tar.gz ]]
         then
@@ -60,7 +70,6 @@ process ASSET_CHECK {
         #just make an empty folder to keep things moving
         mkdir empty_folder
     fi
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         phoenix_base_container_tag: ${container_version}

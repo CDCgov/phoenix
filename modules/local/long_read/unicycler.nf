@@ -1,9 +1,7 @@
 process UNICYCLER {
     tag "${meta.id}"
     label 'process_high'
-    container 'staphb/unicycler:0.5.0'
-    //sha256:f1e556959e2b6df92d66726ed9743bb17fccd1a6a2bf4961dcc399512b03512d
-    errorStrategy 'ignore'
+    container 'staphb/unicycler@sha256:f611ddb4361f1151847de9d7e9b61ad23a5d197a1ec74c6237dc4b6107107a53'
 
     input:
     tuple val(meta), path(fastq)
@@ -15,6 +13,7 @@ process UNICYCLER {
 
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def container = task.container.toString() - "staphb/unicycler@"
     """
     unicycler -l $fastq -o ${meta.id} -t $task.cpus --mode conservative
 
@@ -22,6 +21,7 @@ process UNICYCLER {
     "${task.process}":
         #unicycler: \$(echo \$(unicycler --version 2>&1) | sed 's/^.*Unicycler v//; s/ .*\$//')
         unicycler: \$( unicycler --version | cut -f 2 -d ' ' )
+        unicycler_container: ${container}
     END_VERSIONS
     """
 }

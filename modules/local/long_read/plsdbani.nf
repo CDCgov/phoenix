@@ -31,7 +31,7 @@ process PLSDBANI {
     #ani.sh
     awk 'BEGIN {OFS=","; print "query,reference, ANI%,total,aligned"} {print \$1, \$2, \$3, \$4,\$5}' *.txt > ${meta.id}_plasmidANI.csv
     viz.py $plasmidID contig/ accession/ Viz $viz
-     
+
     #mkdir ${meta.id}
     #mv contig ${meta.id}/
     #mv accession ${meta.id}/
