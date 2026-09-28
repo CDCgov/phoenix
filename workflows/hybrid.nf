@@ -43,7 +43,7 @@ include { POLYPOLISH            } from '../modules/local/long_read/polypolish'
 include { BANDAGE               } from '../modules/local/long_read/bandage'
 include { CREATE_SAMPLESHEET    } from '../modules/local/create_samplesheet'
 include { FASTQC                } from '../modules/local/fastqc'
-include { RAWSTATS              } from '../modules/local/long_read/seqkit'
+include { SEQKIT_RAWSTATS       } from '../modules/local/long_read/seqkit'
 include { LRGE                  } from '../modules/local/long_read/estimation'
 include { PLSDB_ASSET_CHECK     } from '../modules/local/long_read/plsdb_asset_check'
 
@@ -101,7 +101,7 @@ workflow PHOENIX_HYBRID_WF {
 
         //fairy compressed file corruption check & generate read stats
         CORRUPTION_CHECK (
-            INPUT_CHECK.out.reads, false // true says busco is being run in this workflow
+            INPUT_CHECK.out.reads, false, workflow.manifest.version // true says busco is being run in this workflow
         )
         ch_versions = ch_versions.mix(CORRUPTION_CHECK.out.versions)
 
@@ -149,19 +149,19 @@ workflow PHOENIX_HYBRID_WF {
         ch_versions = ch_versions.mix(FASTP_LR.out.versions)
 
         // Long read subsampling and QC
-        RAWSTATS(INPUT_CHECK.out.long_read)
-        //ch_versions = ch_versions.mix(RAWSTATS.out.versions.first())
+        SEQKIT_RAWSTATS(INPUT_CHECK.out.long_read)
+        //ch_versions = ch_versions.mix(SEQKIT_RAWSTATS.out.versions.first())
     
-        LRGE(RAWSTATS.out.fastq_lr)
+        LRGE(SEQKIT_RAWSTATS.out.fastq_lr)
         //ch_versions = ch_versions.mix(LRGE.out.versions)
 
-        sub_ch = RAWSTATS.out.fastq_lr.map{    meta, fastq_lr       -> [meta, fastq_lr]}\
+        sub_ch = SEQKIT_RAWSTATS.out.fastq_lr.map{    meta, fastq_lr       -> [meta, fastq_lr]}\
         .join(LRGE.out.estimation.map{                   meta, estimation            -> [meta, estimation]}, by: [0])
         
         RASUSA (sub_ch,params.depth)
         //ch_versions = ch_versions.mix(RASUSA.out.versions)
 
-        stat_ch = RAWSTATS.out.rawstats.map{    meta, rawstats       -> [meta, rawstats]}\
+        stat_ch = SEQKIT_RAWSTATS.out.rawstats.map{    meta, rawstats       -> [meta, rawstats]}\
         .join(RASUSA.out.subfastq.map{                   meta, subfastq            -> [meta, subfastq]}, by: [0])
         
         NANOQ (stat_ch,params.length,params.qscore)

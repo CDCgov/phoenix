@@ -2,30 +2,31 @@
 // Check input samplesheet and get read channels
 //
 
-include { SAMPLESHEET_CHECK    } from '../../modules/local/samplesheet_check'
+include { SAMPLESHEET_CHECK } from '../../modules/local/samplesheet_check'
+include { SAMPLESHEET_CHECK as SAMPLESHEET_CHECK_2 } from '../../modules/local/samplesheet_check'
 
 workflow INPUT_CHECK {
     take:
-        samplesheet // file: /path/to/samplesheet.csv
-        entry_point // if LR we need to return a single fastq, if Illumina we need to return two fastq files
+    samplesheet // file: /path/to/samplesheet.csv
+    update_griphin
 
     main:
-        if (entry_point == "Illumina") {
-            SAMPLESHEET_CHECK ( samplesheet, true, false, false, false, false )
-                .csv
-                .splitCsv ( header:true, sep:',' )
+        if (update_griphin == false && params.mode_upper != "PHOENIX_LR" && params.mode_upper != "PHOENIX_HYBRID") {
+           reads = SAMPLESHEET_CHECK ( samplesheet, true, false, false, false, [] ) // last [] used for --pipeline update_phoenix to get meta.full_project_id - to make sure things are published to the right dir in --input
+                .csv.splitCsv ( header:true, sep:',' )
                 .map { create_fastq_channels(it) }
-                .set { reads }
-                long_read = [] //just an empty channel to keep it runnin
-        } else if (entry_point == "Nanopore") {
-            SAMPLESHEET_CHECK ( samplesheet, false, false, false, true, false )
+            griphins = Channel.empty()
+            long_read = [] //just an empty channel to keep it runnin
+        } else if (params.mode_upper == "PHOENIX_LR") {
+            SAMPLESHEET_CHECK ( samplesheet, false, false, false, false, [] )
                 .csv
                 .splitCsv ( header:true, sep:',' )
                 .map { create_LR_fastq_channel(it) }
                 .set { reads }
+                griphins = Channel.empty()
                 long_read = [] //just an empty channel to keep it runnin
-        } else if (entry_point == "hybrid") {
-            SAMPLESHEET_CHECK ( samplesheet, false, false, false, false, true )
+        } else if (params.mode_upper == "PHOENIX_HYBRID") {
+            SAMPLESHEET_CHECK ( samplesheet, false, false, false, false, [] )
                 .csv
                 .splitCsv ( header:true, sep:',' )
                 .map { create_hybrid_fastq_channel(it) }
@@ -34,16 +35,34 @@ workflow INPUT_CHECK {
             // Split `all_reads` into two separate channels
             reads = all_reads.map { meta, reads -> [ [id:meta.id, single_end: false], reads[0..1] ] } // Take only fastq_1 and fastq_2, need single_end to be false for fastp
             long_read = all_reads.map { meta, reads -> [ meta, reads[2] ] } // Take only long_read
-
-        } else{
-            exit 1, "ERROR: entry_point variable needs to be set to Nanopore or Illumina\n"
+            griphins = Channel.empty()
+        } else {
+            griphins = SAMPLESHEET_CHECK ( samplesheet, false, false, false, true, [] ).csv.splitCsv(header:false, sep:',')
+                .map{ row ->
+                    if (!file(row[0]).exists()) { 
+                        exit 1, "ERROR: Please check input samplesheet -> ${row[0]} does not exist!\n"
+                    } else { return row }}.collect()
+                .map{ rows ->
+                    if (rows.size() < 2) {
+                        exit 1, "ERROR: Need at least 2 rows in the griphin samplesheet, but found ${rows.size()}.\n"
+                    } else { return rows }}
+            reads = Channel.empty()
         }
 
     emit:
-        reads                                              // channel: [ val(meta), [ reads ] ]
-        long_read                                          // channel: [ val(meta), [ reads ] ]
+        griphins          = griphins
+        reads             = reads                          // channel: [ val(meta), [ reads ] ]
+        long_read         = long_read                      // channel: [ val(meta), [ long_read ] ]
         valid_samplesheet = SAMPLESHEET_CHECK.out.csv
         versions          = SAMPLESHEET_CHECK.out.versions // channel: [ versions.yml ]
+}
+
+def check_griphins_exist(List row) {
+    // Check if the file path exists
+    if (!file(row[0]).exists()) { 
+        exit 1, "ERROR: Please check input samplesheet -> ${row[0]} does not exist!\n"
+    }
+    return fileList
 }
 
 // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]

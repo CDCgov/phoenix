@@ -43,6 +43,8 @@ include { FASTANI                        } from '../modules/local/fastani'
 include { DETERMINE_TOP_MASH_HITS        } from '../modules/local/determine_top_mash_hits'
 include { FORMAT_ANI                     } from '../modules/local/format_ANI_best_hit'
 include { DETERMINE_TAXA_ID              } from '../modules/local/determine_taxa_id'
+include { SHIGAPASS                      } from '../modules/local/shigapass'
+include { CHECK_SHIGAPASS_TAXA           } from '../modules/local/check_shigapass_taxa'
 include { PROKKA                         } from '../modules/local/prokka'
 include { GET_TAXA_FOR_AMRFINDER         } from '../modules/local/get_taxa_for_amrfinder'
 include { AMRFINDERPLUS_RUN              } from '../modules/local/run_amrfinder'
@@ -63,6 +65,7 @@ include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local
 include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'
 include { DO_MLST                                  } from '../subworkflows/local/do_mlst'
+include { CENTAR_SUBWORKFLOW                       } from '../subworkflows/local/centar_steps'
 
 /*
 ========================================================================================
@@ -114,6 +117,54 @@ def create_empty_ch(input_for_meta) { // We need meta.id associated with the emp
     return output_array
 }
 
+def get_taxa(input_ch){ 
+        println(input_ch)
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        //return ["$genus $species", input_ch[0], input_ch[1]]
+        return ["$genus", input_ch[0], input_ch[1]]
+}
+
+def get_only_taxa(input_ch){ 
+        def genus = ""
+        def species = ""
+        input_ch[1].eachLine { line ->
+            if (line.startsWith("G:")) {
+                genus = line.split(":")[1].trim().split('\t')[1]
+            } else if (line.startsWith("s:")) {
+                species = line.split(":")[1].trim().split('\t')[1]
+            }
+        }
+        //return [ "$genus $species" ]
+        return [ "$genus" ]
+}
+
+def check_params_var(species_bol, species_param) {
+    // species_bol -> was the species in question in the dataset?
+    // species_param - >did the user pass the argument to run the species specific modules?
+    if (species_bol == true && species_param == true){
+        return true
+    } else if (species_bol == true && species_param == false) {
+        return false
+    } else {
+        return false
+    }
+}
+
+def add_project_id(old_meta, input_ch, outdir_path){
+    def meta = [:] // create meta array
+    meta.id = old_meta.id
+    meta.project_id = outdir_path
+    return [meta, input_ch]
+}
+
 /*
 ========================================================================================
     RUN MAIN WORKFLOW
@@ -125,8 +176,11 @@ workflow SCAFFOLDS_EXTERNAL {
         ch_input               // PHOENIX_LR_WF.out.valid_samplesheet
         ch_input_indir         // null
         ch_versions
-        input_scaffolds_ch    // PHOENIX_LR_WF.out.scaffolds.flatten().collate(2)
-        nanostat              // PHOENIX_LR_WF.out.nanostat
+        input_scaffolds_ch     // PHOENIX_LR_WF.out.scaffolds.flatten().collate(2)
+        raw_stats              // PHOENIX_LR_WF.out.raw_stats
+        trimmed_stats          // PHOENIX_LR_WF.out.trimmed_stats
+        centar_param
+        fairy_outcome_to_edit
         long_read_var
 
     main:
@@ -150,7 +204,7 @@ workflow SCAFFOLDS_EXTERNAL {
 
         //unzip any zipped databases
         ASSET_CHECK (
-            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path
+            params.zipped_sketch, params.custom_mlstdb, kraken2_db_path, params.clia_amrfinder_db
         )
         ch_versions = ch_versions.mix(ASSET_CHECK.out.versions)
 
@@ -160,57 +214,81 @@ workflow SCAFFOLDS_EXTERNAL {
         )
         ch_versions = ch_versions.mix(RENAME_FASTA_HEADERS.out.versions)
 
-        // Removing scaffolds <500bp
-        BBMAP_REFORMAT (
-            RENAME_FASTA_HEADERS.out.renamed_scaffolds
-        )
-        ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
-
         // Combine bbmap log with the fairy outcome file
-        scaffold_check_ch = BBMAP_REFORMAT.out.log.map{ it -> add_empty_chs(it, 6)}
+        def final_scaffolds_ch
+        def fairy_outcome_ch
+        if (params.mode_upper == "PHOENIX_LR" || params.mode_upper == "PHOENIX_HYBRID") {
+            // We don't need to filter assembly at this point for long-read data, but we still need to check that there are scaffolds in the file
 
-        // Checking that there are still scaffolds left after filtering
-        SCAFFOLD_COUNT_CHECK (
-            scaffold_check_ch, false, params.coverage, params.nodes, params.names
-        )
-        ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
+            //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+            renamed_scaffolds_ch = RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{meta, renamed_scaffolds -> [[id:meta.id, single_end:true], renamed_scaffolds]}
+                // The merging here is slightly different than with CDC_PHOENIX as the scaffolds outcome is meta.id meta.single_end for the scaffolds entry and only meta.id for CDC_PHOENIX
+                .join(fairy_outcome_to_edit.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])
+                .filter { meta, renamed_scaffolds, fairy_outcome -> fairy_outcome.every { it.startsWith("PASSED:") } } //if the files are not corrupt then get the read stats
+                .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds] }
 
-        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
-        filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{    meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
-        // The merging here is slightly different than with CDC_PHOENIX as the scaffolds outcome is meta.id meta.single_end for the scaffolds entry and only meta.id for CDC_PHOENIX
-        .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome      -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            // rename to make consistent with the other branch of the if statement so less logic statements are needed downstream
+            final_scaffolds_ch = renamed_scaffolds_ch
+            fairy_outcome_ch = fairy_outcome_to_edit
+        } else {
+            // Removing scaffolds <500bp
+            BBMAP_REFORMAT (
+                RENAME_FASTA_HEADERS.out.renamed_scaffolds
+            )
+            ch_versions = ch_versions.mix(BBMAP_REFORMAT.out.versions)
+
+            // Combine bbmap log with the fairy outcome file
+            scaffold_check_ch = BBMAP_REFORMAT.out.log.map{ it -> add_empty_chs(it, 6)}
+
+            // Checking that there are still scaffolds left after filtering
+            SCAFFOLD_COUNT_CHECK (
+                scaffold_check_ch, false, params.coverage, params.nodes, params.names
+            )
+            ch_versions = ch_versions.mix(SCAFFOLD_COUNT_CHECK.out.versions)
+
+            //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+            filtered_scaffolds_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, filtered_scaffolds -> [[id:meta.id], filtered_scaffolds]}
+                // The merging here is slightly different than with CDC_PHOENIX as the scaffolds outcome is meta.id meta.single_end for the scaffolds entry and only meta.id for CDC_PHOENIX
+                .join(SCAFFOLD_COUNT_CHECK.out.outcome.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+                .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering." || fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id}."}
+                .map{ meta, filtered_scaffolds, fairy_outcome -> return [[id:meta.id, single_end:true], filtered_scaffolds] }
+
+            // rename to make consistent with the other branch of the if statement so less logic statements are needed downstream
+            final_scaffolds_ch = filtered_scaffolds_ch
+            fairy_outcome_ch = SCAFFOLD_COUNT_CHECK.out.outcome
+        }
 
         // Running gamma to identify hypervirulence genes in scaffolds
         GAMMA_HV (
-            filtered_scaffolds_ch, params.hvgamdb
+            final_scaffolds_ch, params.hvgamdb
         )
         ch_versions = ch_versions.mix(GAMMA_HV.out.versions)
 
         // Running gamma to identify AR genes in scaffolds
         GAMMA_AR (
-            filtered_scaffolds_ch, params.ardb
+            final_scaffolds_ch, params.ardb
         )
         ch_versions = ch_versions.mix(GAMMA_AR.out.versions)
 
         GAMMA_PF (
-            filtered_scaffolds_ch, params.gamdbpf
+            final_scaffolds_ch, params.gamdbpf
         )
         ch_versions = ch_versions.mix(GAMMA_PF.out.versions)
 
         // Getting Assembly Stats
         QUAST (
-            filtered_scaffolds_ch
+            final_scaffolds_ch
         )
         ch_versions = ch_versions.mix(QUAST.out.versions)
 
         // Creating krona plots and best hit files for weighted assembly
         KRAKEN2_WTASMBLD (
-            BBMAP_REFORMAT.out.filtered_scaffolds, SCAFFOLD_COUNT_CHECK.out.outcome, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
+            final_scaffolds_ch, fairy_outcome_ch, "wtasmbld", [], QUAST.out.report_tsv, ASSET_CHECK.out.kraken_db
         )
         ch_versions = ch_versions.mix(KRAKEN2_WTASMBLD.out.versions)
 
-        // combine filtered scaffolds and mash_sketch so mash_sketch goes with each filtered_scaffolds file
-        mash_dist_ch = filtered_scaffolds_ch.combine(ASSET_CHECK.out.mash_sketch)
+        // combine final scaffolds and mash_sketch so mash_sketch goes with each final_scaffolds file
+        mash_dist_ch = final_scaffolds_ch.combine(ASSET_CHECK.out.mash_sketch)
 
         // Running Mash distance to get top 20 matches for fastANI to speed things up
         MASH_DIST (
@@ -218,8 +296,8 @@ workflow SCAFFOLDS_EXTERNAL {
         )
         ch_versions = ch_versions.mix(MASH_DIST.out.versions)
 
-        // Combining mash dist with filtered scaffolds and the outcome of the scaffolds count check based on meta.id
-        top_mash_hits_ch = MASH_DIST.out.dist.join(filtered_scaffolds_ch, by: [0])
+        // Combining mash dist with final scaffolds and the outcome of the scaffolds count check based on meta.id
+        top_mash_hits_ch = MASH_DIST.out.dist.join(final_scaffolds_ch, by: [0])
 
         // Generate file with list of paths of top taxa for fastANI
         DETERMINE_TOP_MASH_HITS (
@@ -228,9 +306,9 @@ workflow SCAFFOLDS_EXTERNAL {
         ch_versions = ch_versions.mix(DETERMINE_TOP_MASH_HITS.out.versions)
 
         // Combining filtered scaffolds with the top taxa list based on meta.id
-        top_taxa_list_ch = BBMAP_REFORMAT.out.filtered_scaffolds.map{meta, reads           -> [[id:meta.id], reads]}\
-        .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{         meta, top_taxa_list   -> [[id:meta.id], top_taxa_list ]}, by: [0])\
-        .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{         meta, reference_dir   -> [[id:meta.id], reference_dir ]}, by: [0])
+        top_taxa_list_ch = final_scaffolds_ch.map{           meta, renamed_scaffolds_ch -> [[id:meta.id], renamed_scaffolds_ch]}\
+            .join(DETERMINE_TOP_MASH_HITS.out.top_taxa_list.map{meta, top_taxa_list        -> [[id:meta.id], top_taxa_list ]}, by: [0])\
+            .join(DETERMINE_TOP_MASH_HITS.out.reference_dir.map{meta, reference_dir        -> [[id:meta.id], reference_dir ]}, by: [0])
 
         // Getting species ID
         FASTANI (
@@ -254,39 +332,85 @@ workflow SCAFFOLDS_EXTERNAL {
         )
         ch_versions = ch_versions.mix(DETERMINE_TAXA_ID.out.versions)
 
+        ////////////////////////////////////// SHIGAPASS //////////////////////////////////////
+        // For isolates that are E. coli or Shigella we will double check the FastANI Taxa ID and correct if necessary
+        scaffolds_and_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it.contains("Escherichia") || it.contains("Shigella")}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
+            .join(final_scaffolds_ch.map{                                                     meta, final_scaffolds -> [[id:meta.id], final_scaffolds]}, by: [0])
+            .join(fairy_outcome_ch.splitCsv(strip:true, by:5).map{                            meta, fairy_outcome   -> [[id:meta.id], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])
+            .filter { meta, taxonomy, final_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering."}
+            .map{ meta, taxonomy, final_scaffolds, fairy_outcome -> return [meta, taxonomy, final_scaffolds ] }
+
+        // Get ID from ShigaPass
+        SHIGAPASS (
+            scaffolds_and_taxa_ch, params.shigapass_database
+        )
+        ch_versions = ch_versions.mix(SHIGAPASS.out.versions)
+
+        //combing scaffolds with scaffold check information to ensure processes that need scaffolds only run when there are scaffolds in the file
+        checking_taxa_ch = FORMAT_ANI.out.ani_best_hit_to_check.map{meta, ani_best_hit_to_check -> [[id:meta.id], ani_best_hit_to_check]}
+            .join(FASTANI.out.ani.map{                              meta, ani                   -> [[id:meta.id], ani ]},     by: 0)
+            .join(SHIGAPASS.out.summary.map{                        meta, summary               -> [[id:meta.id], summary ]}, by: 0)
+            .join(DETERMINE_TAXA_ID.out.taxonomy.map{               meta, taxonomy              -> [[id:meta.id], taxonomy]}, by: 0)
+
+        ////////////////////////////////////// PHOENIX //////////////////////////////////////
+        // check shigapass and correct fastani taxa if its wrong
+        CHECK_SHIGAPASS_TAXA (
+            checking_taxa_ch
+        )
+        ch_versions = ch_versions.mix(CHECK_SHIGAPASS_TAXA.out.versions)
+
         // Perform MLST steps on isolates (with srst2 on internal samples)
         DO_MLST (
-            BBMAP_REFORMAT.out.filtered_scaffolds, \
-            SCAFFOLD_COUNT_CHECK.out.outcome, \
+            final_scaffolds_ch, \
+            fairy_outcome_ch, \
             [], \
-            DETERMINE_TAXA_ID.out.taxonomy, \
+            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{meta, file-> [meta.id] }, \
             ASSET_CHECK.out.mlst_db, \
             false, \
             "original" // this is opposed to the "update" option.
         )
         ch_versions = ch_versions.mix(DO_MLST.out.versions)
 
+        ////////////////////////////////////// CENTAR ////////////////////////////////////// -- waiting for completed validation for release in v2.3.0
+        // Run centar if necessary
+
+        //First, check if any isolates are Clostridioides difficile and filter those to go through the channel
+        determine_taxa_ch = DETERMINE_TAXA_ID.out.taxonomy.map{it -> get_taxa(it)}.filter{it, meta, taxonomy -> it == "Clostridioides"}.map{get_taxa_output, meta, taxonomy -> [[id:meta.id], taxonomy ]}
+
+        if (centar_param == true) { // don't run regardless of what the isolates if --centar isn't passed
+            // centar subworkflow requires project_ID as part of the meta
+            CENTAR_SUBWORKFLOW (
+                DO_MLST.out.checked_MLSTs.combine(outdir_path).map{meta, mlst, outdir -> add_project_id(meta, mlst, outdir)},
+                fairy_outcome_ch.combine(outdir_path).map{meta, fairy, outdir -> add_project_id(meta, fairy, outdir)},
+                final_scaffolds_ch.combine(outdir_path).map{meta, scaffolds, outdir -> add_project_id(meta, scaffolds, outdir)},
+                ASSET_CHECK.out.mlst_db,
+                determine_taxa_ch.combine(outdir_path).map{meta, taxa, outdir -> add_project_id(meta, taxa, outdir)}
+            )
+            ch_versions = ch_versions.mix(CENTAR_SUBWORKFLOW.out.versions)
+        }
+
+        ////////////////////////////////////// PHOENIX //////////////////////////////////////
         // get gff and protein files for amrfinder+
         PROKKA (
-            filtered_scaffolds_ch, [], []
+            final_scaffolds_ch, [], []
         )
         ch_versions = ch_versions.mix(PROKKA.out.versions)
 
-        /*/ Fetch AMRFinder Database
-        AMRFINDERPLUS_UPDATE( )
-        ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)*/
+        // Fetch AMRFinder Database
+        //AMRFINDERPLUS_UPDATE( )
+        //ch_versions = ch_versions.mix(AMRFINDERPLUS_UPDATE.out.versions)/
 
         // Create file that has the organism name to pass to AMRFinder
         GET_TAXA_FOR_AMRFINDER (
-            DETERMINE_TAXA_ID.out.taxonomy, false
+            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
         )
         ch_versions = ch_versions.mix(GET_TAXA_FOR_AMRFINDER.out.versions)
 
         // Combining taxa and scaffolds to run amrfinder and get the point mutations.
-        amr_channel = BBMAP_REFORMAT.out.filtered_scaffolds.map{                 meta, reads          -> [[id:meta.id], reads]}\
-        .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
-        .join(PROKKA.out.faa.map{                                                meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
-        .join(PROKKA.out.gff.map{                                                meta, gff            -> [[id:meta.id], gff ]},            by: [0])
+        amr_channel = final_scaffolds_ch.map{                                        meta, scaffolds      -> [[id:meta.id], scaffolds]}\
+            .join(GET_TAXA_FOR_AMRFINDER.out.amrfinder_taxa.splitCsv(strip:true).map{meta, amrfinder_taxa -> [[id:meta.id], amrfinder_taxa ]}, by: [0])\
+            .join(PROKKA.out.faa.map{                                                meta, faa            -> [[id:meta.id], faa ]},            by: [0])\
+            .join(PROKKA.out.gff.map{                                                meta, gff            -> [[id:meta.id], gff ]},            by: [0])
 
         // Run AMRFinder
         AMRFINDERPLUS_RUN (
@@ -295,58 +419,28 @@ workflow SCAFFOLDS_EXTERNAL {
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         // Combining determined taxa with the assembly stats based on meta.id
-        assembly_ratios_ch = DETERMINE_TAXA_ID.out.taxonomy.map{meta, taxonomy   -> [[id:meta.id], taxonomy]}\
-        .join(QUAST.out.report_tsv.map{                         meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
+        assembly_ratios_ch = CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+                                .map{                          meta, taxonomy   -> [[id:meta.id], taxonomy]}
+                                .join(QUAST.out.report_tsv.map{meta, report_tsv -> [[id:meta.id], report_tsv]}, by: [0])
 
         // Calculating the assembly ratio and gather GC% stats
         CALCULATE_ASSEMBLY_RATIO (
             assembly_ratios_ch, params.ncbi_assembly_stats
         )
         ch_versions = ch_versions.mix(CALCULATE_ASSEMBLY_RATIO.out.versions)
-        //Making channel to match meta with proper channels for griphin
-        
-        /*
-      
-        pipeline_ch = nanostat.map{meta, nano_stats   -> [[id:meta.id], nano_stats]}\
-        .join(empty1_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
-        .join(empty2_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
-        .join(empty3_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
-        .join(empty4_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
-        .join(empty5_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
-        .join(empty6_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
-        .join(RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{                         meta, renamed_scaffolds-> [[id:meta.id], renamed_scaffolds]}, by: [0])
-        .join(BBMAP_REFORMAT.out.filtered_scaffolds.map     {                         meta, filtered_scaffolds-> [[id:meta.id], filtered_scaffolds]}, by: [0])
-        .join(DO_MLST.out.checked_MLSTs.map{                         meta, checked_MLSTs-> [[id:meta.id], checked_MLSTs]}, by: [0])
-        .join(GAMMA_HV.out.gamma.map{                         meta, gamma-> [[id:meta.id], gamma]}, by: [0])
-        .join(GAMMA_AR.out.gamma.map{                         meta, gamma-> [[id:meta.id], gamma]}, by: [0])
-        .join(GAMMA_PF.out.gamma.map{                         meta, gamma-> [[id:meta.id], gamma]}, by: [0])
-        .join(QUAST.out.report_tsv.map{                         meta, report_tsv-> [[id:meta.id], report_tsv]}, by: [0])
-        .join(busco.out.batch_summary.map{it -> create_empty_ch(it)}, by: [0])
-        .join(KRAKEN2_ASMBLD.out.report.map{it -> create_empty_ch(it)}, by: [0])
-        .join(KRAKEN2_ASMBLD.out.krona_html.map{it -> create_empty_ch(it)}, by: [0])
-        .join(KRAKEN2_ASMBLD.out.k2_bh_summary.map{it -> create_empty_ch(it)}, by: [0])
-        .join(KRAKEN2_WTASMBLD.out.report.map{                         meta, report-> [[id:meta.id], report]}, by: [0])
-        .join(KRAKEN2_WTASMBLD.out.krona_html.map{                         meta, krona_html-> [[id:meta.id], krona_html]}, by: [0])
-        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{                         meta, k2_bh_summary-> [[id:meta.id], k2_bh_summary]}, by: [0])
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{                         meta, taxonomy-> [[id:meta.id], taxonomy]}, by: [0])
-        .join(FORMAT_ANI.out.ani_best_hit.map{                         meta, ani_best_hit-> [[id:meta.id], ani_best_hit]}, by: [0])
-        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{                         meta, ratio-> [[id:meta.id], ratio]}, by: [0])
-        .join(AMRFINDERPLUS_RUN.out.mutation_report.map{                         meta, mutation_report-> [[id:meta.id], mutation_report]}, by: [0])
-        .join(CALCULATE_ASSEMBLY_RATIO.out.gc_content.map{                         meta, gc_content-> [[id:meta.id], gc_content]}, by: [0])
-        */
 
- 
+        /*/ Synthesize run_type channel in the format the subworkflow expects: [meta, rt_map]
+        run_type_ch = KRAKEN2_WTASMBLD.out.report.map { meta, report -> [ meta, [base: params.mode_upper] ] }
+
         GENERATE_PIPELINE_STATS_WF (
-            
-            nanostat, // only used with long-read entries
-            [], \
-            [], \
+            raw_stats, // only used with long-read entries
+            trimmed_stats, \
             [], \
             [], \
             [], \
             [], \
             RENAME_FASTA_HEADERS.out.renamed_scaffolds, \
-            BBMAP_REFORMAT.out.filtered_scaffolds, \
+            final_scaffolds_ch, \
             DO_MLST.out.checked_MLSTs, \
             GAMMA_HV.out.gamma, \
             GAMMA_AR.out.gamma, \
@@ -356,36 +450,42 @@ workflow SCAFFOLDS_EXTERNAL {
             KRAKEN2_WTASMBLD.out.report, \
             KRAKEN2_WTASMBLD.out.krona_html, \
             KRAKEN2_WTASMBLD.out.k2_bh_summary, \
-            DETERMINE_TAXA_ID.out.taxonomy, \
-            FORMAT_ANI.out.ani_best_hit, \
+            CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }, \
+            CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }, \
             CALCULATE_ASSEMBLY_RATIO.out.ratio, \
             AMRFINDERPLUS_RUN.out.mutation_report, \
             CALCULATE_ASSEMBLY_RATIO.out.gc_content, \
-            false
-            
+            run_type_ch
         )
         ch_versions = ch_versions.mix(GENERATE_PIPELINE_STATS_WF.out.versions)
 
-        // Creating empty channel that has the form [ meta.id, [] ] that can be passed as a blank below
-        empty_ch = RENAME_FASTA_HEADERS.out.renamed_scaffolds.map{ it -> create_empty_ch(it) }
-
         // Combining output based on meta.id to create summary by sample -- is this verbose, ugly and annoying? yes, if anyone has a slicker way to do this we welcome the input.
-        line_summary_ch = empty_ch.map{                          meta, list  -> [[id:meta.id], list]}\
-        .join(DO_MLST.out.checked_MLSTs.map{                     meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]},   by: [0])\
-        .join(GAMMA_HV.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        .join(GAMMA_AR.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        .join(GAMMA_PF.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])\
-        .join(QUAST.out.report_tsv.map{                          meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])\
-        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{            meta, ratio           -> [[id:meta.id], ratio]},           by: [0])\
-        .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])\
-        .join(DETERMINE_TAXA_ID.out.taxonomy.map{                meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])\
-        .join(empty_ch.map{                                      meta, list            -> [[id:meta.id], list]},            by: [0])\
-        .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])\
-        .join(FORMAT_ANI.out.ani_best_hit.map{                   meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
+        line_summary_ch = DO_MLST.out.checked_MLSTs.map{         meta, checked_MLSTs   -> [[id:meta.id], checked_MLSTs]}
+        .join(GAMMA_HV.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])
+        .join(GAMMA_AR.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])
+        .join(GAMMA_PF.out.gamma.map{                            meta, gamma           -> [[id:meta.id], gamma]},           by: [0])
+        .join(QUAST.out.report_tsv.map{                          meta, report_tsv      -> [[id:meta.id], report_tsv]},      by: [0])
+        .join(CALCULATE_ASSEMBLY_RATIO.out.ratio.map{            meta, ratio           -> [[id:meta.id], ratio]},           by: [0])
+        .join(GENERATE_PIPELINE_STATS_WF.out.pipeline_stats.map{ meta, pipeline_stats  -> [[id:meta.id], pipeline_stats]},  by: [0])
+        .join(CHECK_SHIGAPASS_TAXA.out.tax_file.concat(DETERMINE_TAXA_ID.out.taxonomy).unique{ meta, file-> [meta.id] }
+                            .map{                                meta, taxonomy        -> [[id:meta.id], taxonomy]},        by: [0])
+        .join(KRAKEN2_WTASMBLD.out.k2_bh_summary.map{            meta, k2_bh_summary   -> [[id:meta.id], k2_bh_summary]},   by: [0])
+        .join(AMRFINDERPLUS_RUN.out.report.map{                  meta, report          -> [[id:meta.id], report]},          by: [0])
+        .join(CHECK_SHIGAPASS_TAXA.out.ani_best_hit.concat(FORMAT_ANI.out.ani_best_hit).unique{ meta, file-> [meta.id] }
+                                .map{                            meta, ani_best_hit    -> [[id:meta.id], ani_best_hit]},    by: [0])
+        .map{meta, checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, k2_bh_summary, amrfinder_report, ani_best_hit -> [meta, [], checked_MLSTs, gamma_hv, gamma_ar, gamma_pf, report_tsv, ratio, pipeline_stats, taxonomy, [], k2_bh_summary, amrfinder_report, ani_best_hit] }
+
+        // Create a combined channel that contains all IDs from both line_summary_ch and SHIGAPASS.out.summary and handle the case where SHIGAPASS.out.summary might be empty
+        shigapass_combined_ch = filtered_scaffolds_ch.map{ meta, scaffolds -> [[id:meta.id], meta.id] }  // Transform to [[meta.id], meta.id] for joining
+                    .join(SHIGAPASS.out.summary, by: 0, remainder: true)  // Join on first element (meta.id)
+                    .map{ id, original_id, shigapass_file -> [id, shigapass_file ?: [], []]}  // If shigapass_file is null, use empty list, and add an empty list for the line summary to maintain the structure
+
+        // Combine actual SHIGAPASS entries with backup empty entries and join with the original line_summary_ch
+        line_summary_ch = line_summary_ch.join(shigapass_combined_ch, by: [0]) 
 
         // Generate summary per sample
         CREATE_SUMMARY_LINE (
-            line_summary_ch
+            line_summary_ch, false, true, workflow.manifest.version
         )
         ch_versions = ch_versions.mix(CREATE_SUMMARY_LINE.out.versions)
 
@@ -434,14 +534,14 @@ workflow SCAFFOLDS_EXTERNAL {
             ch_multiqc_files.collect()
         )
         multiqc_report = MULTIQC.out.report.toList()
-        ch_versions    = ch_versions.mix(MULTIQC.out.versions)
+        ch_versions    = ch_versions.mix(MULTIQC.out.versions)*/
 
     emit:
-        scaffolds        = BBMAP_REFORMAT.out.filtered_scaffolds
-        mlst             = DO_MLST.out.checked_MLSTs
-        amrfinder_output = AMRFINDERPLUS_RUN.out.report
-        gamma_ar         = GAMMA_AR.out.gamma
-        phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
+        scaffolds        = final_scaffolds_ch
+        //mlst             = DO_MLST.out.checked_MLSTs
+        //amrfinder_output = AMRFINDERPLUS_RUN.out.report
+        //gamma_ar         = GAMMA_AR.out.gamma
+        //phx_summary      = GATHER_SUMMARY_LINES.out.summary_report
 }
 
 /*

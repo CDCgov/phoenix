@@ -30,13 +30,18 @@ workflow KRAKEN2_WF {
     main:
     ch_versions     = Channel.empty() // Used to collect the software versions
     // Add in krakendb into the fasta channel so each fasta has a krakendb to go with it. If you don't do this then only one sample goes through pipeline
+
     if (type=="trimd") {
         // add in fairy to confirm reads are uncorrupted and correct
         fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [meta, [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])\
-        .combine(kraken2_db_path)
+            .filter { meta, reads, fairy_outcome -> fairy_outcome[3] == "PASSED: There are reads in ${meta.id} R1/R2 after trimming." || fairy_outcome[3] == "PASSED: There are reads in ${meta.id} after trimming!"}
+            .map{ meta, reads, fairy_outcome -> return [meta, reads ] }.combine(kraken2_db_path)
+
     } else if(type=="asmbld" || type=="wtasmbld") {
-        fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0,0])\
-            .combine(kraken2_db_path)
+        // add in fairy to confirm scaffolds are uncorrupted and correct
+        fasta_ch = fasta.join(fairy_check.splitCsv(strip:true, by:5).map{meta, fairy_outcome -> [[id:meta.id, single_end:true], [fairy_outcome[0][0], fairy_outcome[1][0], fairy_outcome[2][0], fairy_outcome[3][0], fairy_outcome[4][0]]]}, by: [0])\
+            .filter { meta, filtered_scaffolds, fairy_outcome -> fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id} after filtering." || fairy_outcome[4] == "End_of_File" || fairy_outcome[4] == "PASSED: More than 0 scaffolds in ${meta.id}."}
+            .map{ meta, filtered_scaffolds, fairy_outcome -> return [meta, filtered_scaffolds ] }.combine(kraken2_db_path)
     }
 
     if(type =="trimd") {

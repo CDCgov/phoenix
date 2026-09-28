@@ -12,8 +12,6 @@ nextflow.enable.dsl = 2
 
 // ANSI escape code for orange (bright yellow)
 def orange = '\033[38;5;208m'
-def red = '\033[1;31m'  // Bright red
-def green = '\033[1;32m'  // Bright green
 def reset = '\033[0m'
 
 /*
@@ -25,12 +23,7 @@ def reset = '\033[0m'
 WorkflowMain.initialise(workflow, params, log)
 
 //Check coverage is above its threshold
-if (params.coverage.toInteger() < 30) { exit 1, 'The minimum coverage allowed for QA/QC purposes is 30 and is the default. Please choose a value >=30.' }
-// Check for incorrect --output parameter
-params.output = "" /// Initialise param so no warning is printed
-if (params.output) { exit 1, "ERROR: Unknown parameter '--output'. Did you mean '--outdir'?" }
-//comment out in v2.3.0 to run --centar
-//if (params.centar == true) { exit 1, "Sorry, --centar available yet as it's validation isn't complete. It will be released with a newer version of phx in the future." }
+if (params.coverage < 30) { exit 1, 'The minimum coverage allowed for QA/QC purposes is 30 and is the default. Please choose a value >=30.' }
 
 /*
 ========================================================================================
@@ -49,27 +42,12 @@ include { RUN_CENTAR                  } from './workflows/centar'
 include { COMBINE_GRIPHINS_WF         } from './workflows/combine_griphins'
 include { PHOENIX_LR_WF               } from './workflows/nanopore'
 include { PHOENIX_HYBRID_WF           } from './workflows/hybrid'
-
-// At the top of your main workflow, before anything else
-if (!params.containsKey('mode') || !params.mode) {
-    error """
-    =========================================
-    ERROR: --mode is required but was not provided.
-    
-    Usage: nextflow run main.nf --mode PHOENIX -profile <docker,singularity, etc> --input samplesheet.csv --kraken2db /path/to/kraken2db
-    
-    Valid modes: PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, CDC_PHOENIX, UPDATE_PHOENIX, SRA, CDC_SRA, COMBINE_GRIPHINS, PHOENIX_HYBRID, PHOENIX_LR
-    =========================================
-    """
-}
-
 //
 // WORKFLOW: Run main cdcgov/phoenix analysis pipeline
 //
 workflow PHOENIX {
     //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db] //removed , params.fasta to stop issue w/connecting to aws and igenomes not used
@@ -78,13 +56,11 @@ workflow PHOENIX {
     // Check mandatory parameters
 
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode PHOENIX: Input samplesheet not specified!' }
-    if (params.input_sra != null ) { exit 1, 'For --mode PHOENIX: Input samplesheet not specified! --input_sra is for --mode SRA, did you mean to run that mode?' }
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX: Input samplesheet not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        PHOENIX_EXTERNAL ( ch_input, ch_versions, true, params.centar )
-
+        PHOENIX_EXTERNAL ( ch_input, ch_versions, true )
     emit:
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
         trimmed_reads    = PHOENIX_EXTERNAL.out.trimmed_reads
@@ -106,8 +82,7 @@ workflow PHOENIX {
 //
 workflow CDC_PHOENIX {
     //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db]
@@ -116,12 +91,11 @@ workflow CDC_PHOENIX {
     // Check mandatory parameters
 
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode CDC_PHOENIX: Input samplesheet not specified!' }
-    if (params.input_sra != null ) { exit 1, 'For --mode CDC_PHOENIX: Input samplesheet not specified! --input_sra is for --mode CDC_SRA, did you mean to run that mode?' }
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry CDC_PHOENIX: Input samplesheet not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
-        PHOENIX_EXQC ( ch_input, ch_versions, true, params.centar )
+        PHOENIX_EXQC ( ch_input, ch_versions, true )
 
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
@@ -150,16 +124,14 @@ workflow CDC_PHOENIX {
 //
 workflow SRA {
     //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db ]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
     // Checking that --create_ncbi_sheet wasn't passed
-    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for --mode SRA.' }
-    if (params.input != null) { exit 1, '--input is for --mode PHOENIX, did you mean to run that mode? Use --input_sra for --mode SRA' }
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry SRA.' }
 
     // Check mandatory parameters
     //input on command line
@@ -169,25 +141,22 @@ workflow SRA {
         //Check that SRR numbers are passed not SRX
         if (ch_input) {
             // Read the contents of the file
-            def sraNumbers = ch_input.readLines().findAll { it.trim() }
+            def sraNumbers = ch_input.text.readLines()
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
-                if (!sraNumber.startsWith("SRR") & !sraNumber.startsWith("ERR")) {
-                    exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for --mode SRA, but found: $sraNumber"
+                if (!sraNumber.startsWith("SRR")) {
+                    exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for -entry SRA, but found: $sraNumber"
                 }
             }
         }
-    } else { exit 1, 'For --mode SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
+    } else { exit 1, 'For -entry SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
 
     main:
         // pull data and create samplesheet for it.
-        def cleaned_sra_file = file("${workflow.workDir}/cleaned_sra_list.txt")
-        cleaned_sra_file.text = file(params.input_sra).readLines().findAll { it.trim() }.join('\n')
-        //SRA_PREP ( ch_input )
-        SRA_PREP ( cleaned_sra_file )
+        SRA_PREP ( ch_input )
         // pass samplesheet to PHOENIX
-        PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false, params.centar )
+        PHOENIX_EXTERNAL ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false )
 
     emit:
         scaffolds        = PHOENIX_EXTERNAL.out.scaffolds
@@ -207,16 +176,14 @@ workflow SRA {
 //
 workflow CDC_SRA {
     //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Validate input parameters
     // Check input path parameters to see if they exist
     def checkPathParamList = [ params.input_sra, params.multiqc_config, params.kraken2db]
     for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
     // Checking that --create_ncbi_sheet wasn't passed
-    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for --mode CDC_SRA.' }
-    if (params.input != null) { exit 1, '--input is for --mode CDC_PHOENIX, did you mean to run that mode? Use --input_sra for --mode CDC_SRA' }
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CDC_SRA.' }
 
     // Check mandatory parameters
     //input on command line
@@ -226,24 +193,22 @@ workflow CDC_SRA {
         //Check that SRR numbers are passed not SRX
         if (ch_input) {
             // Read the contents of the file
-            def sraNumbers = ch_input.readLines().findAll { it.trim() }
+            def sraNumbers = ch_input.text.readLines()
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
-                if (!sraNumber.startsWith("SRR") & !sraNumber.startsWith("ERR")) {
-                    exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for --mode CDC_SRA, but found: $sraNumber"
+                if (!sraNumber.startsWith("SRR")) {
+                    exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for -entry CDC_SRA, but found: $sraNumber"
                 }
             }
         }
-    } else { exit 1, 'For --mode CDC_SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
+    } else { exit 1, 'For -entry CDC_SRA: Input samplesheet not specified! Make sure to use --input_sra NOT --input' }
 
     main:
-        def cleaned_sra_file = file("${workflow.workDir}/cleaned_sra_list.txt")
-        cleaned_sra_file.text = file(params.input_sra).readLines().findAll { it.trim() }.join('\n')
-        //SRA_PREP ( ch_input )
-        SRA_PREP ( cleaned_sra_file )
+        // pull data and create samplesheet for it.
+        SRA_PREP ( ch_input )
         // pass samplesheet to PHOENIX
-        PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false, params.centar )
+        PHOENIX_EXQC ( SRA_PREP.out.samplesheet, SRA_PREP.out.versions, false )
 
     emit:
         scaffolds        = PHOENIX_EXQC.out.scaffolds
@@ -269,16 +234,15 @@ workflow CDC_SRA {
 //
 workflow SCAFFOLDS {
     //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Checking that --create_ncbi_sheet wasn't passed
-    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for --mode SCAFFOLDS.' }
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry SCAFFOLDS.' }
 
     // Validate input parameters
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For --mode SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
+            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -293,17 +257,20 @@ workflow SCAFFOLDS {
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true)
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For --mode SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
         }
     }
+    
+    ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
         SCAFFOLDS_EXTERNAL ( 
             ch_input, 
             ch_input_indir, 
-            [], [], Channel.empty(), Channel.empty(),
-            params.centar,
-            false
+            ch_versions,
+            null,  // scaffolds channel -- only use when passing scaffolds in a channel directly
+            [],    // empty when no long_read nanostats file
+            false  // for --long_read in griphin
         )
 
     emit:
@@ -319,10 +286,9 @@ workflow SCAFFOLDS {
 //
 workflow CDC_SCAFFOLDS {
     //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Checking that --create_ncbi_sheet wasn't passed
-    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for --mode CDC_SCAFFOLDS.' }
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CDC_SCAFFOLDS.' }
 
     // Validate input parameters
     // Check input path parameters to see if they exist
@@ -330,7 +296,7 @@ workflow CDC_SCAFFOLDS {
         // allow input to be relative
         //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For --mode CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
+            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -345,16 +311,21 @@ workflow CDC_SCAFFOLDS {
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true)
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For --mode CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
+            exit 1, 'For -entry CDC_SCAFFOLDS: You need EITHER an input samplesheet or a directory!' 
         }
     }
+
+    ch_versions = Channel.empty() // Used to collect the software versions
 
     main:
         SCAFFOLDS_EXQC ( 
             ch_input, 
             ch_input_indir, 
-            params.centar 
-        )
+            ch_versions, 
+            null,  // scaffolds channel -- only use when passing scaffolds in a channel directly
+            [],    // empty when no long_read nanostats file
+            false  // for --long_read in griphin
+    )
 
     emit:
         scaffolds        = SCAFFOLDS_EXQC.out.scaffolds
@@ -364,101 +335,14 @@ workflow CDC_SCAFFOLDS {
         phx_summary      = SCAFFOLDS_EXQC.out.phx_summary
 }
 
-/*
-========================================================================================
-    RUN PHX LONG_READ WORKFLOWS
-========================================================================================
-*/
-
 //
-// WORKFLOW: Entry point for long read analysis
+// WORKFLOW: Entry point for CLIA analysis
 //
-workflow PHOENIX_HYBRID {
-
-    //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode PHOENIX_HYBRID: Input samplesheet not specified!' }
-    //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
-    main:
-
-        //Run QC and assembly
-        PHOENIX_HYBRID_WF (
-            ch_input
-        ) 
-
-        // pass assembly to the scaffolds entry
-        SCAFFOLDS_EXTERNAL ( 
-            PHOENIX_HYBRID_WF.out.valid_samplesheet,
-            null, 
-            PHOENIX_HYBRID_WF.out.versions,
-            PHOENIX_HYBRID_WF.out.scaffolds.flatten().collate(2),
-            PHOENIX_HYBRID_WF.out.raw_stats,
-            PHOENIX_HYBRID_WF.out.trimmed_stats,
-            params.centar,
-            true // for --long_read in griphin
-        )
-
-    emit:
-        scaffolds        = PHOENIX_HYBRID_WF.out.scaffolds
-        mlst             = SCAFFOLDS_EXTERNAL.out.mlst
-        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
-        gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
-        //phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
-
-}
-
-//
-// WORKFLOW: long read analysis mode
-//
-workflow PHOENIX_LR {
-
-    //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode PHOENIX_LR: Input samplesheet not specified!' }
-    //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
-    main:
-
-        //Run QC and assembly
-        PHOENIX_LR_WF (
-            ch_input 
-        ) 
-
-        // pass assembly to the scaffolds entry
-        SCAFFOLDS_EXTERNAL ( 
-            PHOENIX_LR_WF.out.valid_samplesheet,
-            null, 
-            PHOENIX_LR_WF.out.versions,
-            PHOENIX_LR_WF.out.scaffolds.flatten().collate(2),
-            PHOENIX_LR_WF.out.raw_stats,
-            PHOENIX_LR_WF.out.trimmed_stats,
-            params.centar,
-            PHOENIX_LR_WF.out.fairy_outcome_to_edit,
-            true // for --long_read in griphin
-        )
-
-    emit:
-        scaffolds        = PHOENIX_LR_WF.out.scaffolds
-        //mlst             = SCAFFOLDS_EXTERNAL.out.mlst
-        //amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
-        //gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
-        //phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
-
-}
-
-/*
-========================================================================================
-    RUN PHX CLIA analysis
-========================================================================================
-*/
-
 workflow CLIA {
     //Check path of kraken2db
-    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified! Use --kraken2db to tell PHoeNIx where to find the database.' }
-
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
     // Checking that --create_ncbi_sheet wasn't passed
-    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for --mode CLIA.' }
+    if (params.create_ncbi_sheet) { exit 1, '--create_ncbi_sheet is not a valid argument for -entry CLIA.' }
 
     //Check that SRR numbers are passed no SRX
     if (params.create_ncbi_sheet) {
@@ -481,13 +365,98 @@ workflow CLIA {
 
     // Check mandatory parameters
     //input on command line
-    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For --mode CLIA: Input samplesheet not specified!' }
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry CLIA: Input samplesheet not specified!' }
     ch_versions = Channel.empty() // Used to collect the software versions
+
+    // Check that a busco_db_path is passed
     // ; means do nothing as that is correct
-    if (params.busco_db_path != null) { ; } else { exit 1, 'For --mode CLIA, BUSCO online mode is not allowed, please pass a path to --busco_db_path!' }
+    if (params.busco_db_path != null) { ; } else { exit 1, 'For -entry CLIA, BUSCO offline mode is not allowed, please pass a path to --busco_db_path!' }
 
     main:
         CLIA_INTERNAL ( ch_input, ch_versions )
+
+    /*emit:
+        scaffolds        = CLIA_INTERNAL.out.scaffolds
+        trimmed_reads    = CLIA_INTERNAL.out.trimmed_reads
+        amrfinder_report = CLIA_INTERNAL.out.amrfinder_report
+        summary_report   = CLIA_INTERNAL.out.summary_report*/
+}
+
+/*
+========================================================================================
+    RUN PHX LONG_READ WORKFLOWS
+========================================================================================
+*/
+
+//
+// WORKFLOW: Entry point for long read analysis
+//
+workflow PHOENIX_HYBRID {
+
+    //input on command line
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX_HYBRID: Input samplesheet not specified!' }
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+
+    main:
+
+        //Run QC and assembly
+        PHOENIX_HYBRID_WF (
+             ch_input
+        ) 
+
+        // pass assembly to the scaffolds entry
+        SCAFFOLDS_EXTERNAL ( 
+            PHOENIX_HYBRID_WF.out.valid_samplesheet,
+            null, 
+            PHOENIX_HYBRID_WF.out.versions,
+            PHOENIX_HYBRID_WF.out.scaffolds.flatten().collate(2),
+            PHOENIX_HYBRID_WF.out.nanostat,
+            true // for --long_read in griphin
+        )
+
+    emit:
+        scaffolds        = PHOENIX_HYBRID_WF.out.scaffolds
+        mlst             = SCAFFOLDS_EXTERNAL.out.mlst
+        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
+        gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
+        //phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
+
+}
+
+//
+// WORKFLOW: Entry point for long read analysis
+//
+workflow PHOENIX_LR {
+
+    //input on command line
+    if (params.input) { ch_input = file(params.input) } else { exit 1, 'For -entry PHOENIX_LR: Input samplesheet not specified!' }
+    //Check path of kraken2db
+    if (params.kraken2db == null) { exit 1, 'Input path to kraken2db not specified!' }
+
+    main:
+
+        //Run QC and assembly
+        PHOENIX_LR_WF (
+             ch_input 
+        ) 
+
+        // pass assembly to the scaffolds entry
+        SCAFFOLDS_EXTERNAL ( 
+            PHOENIX_LR_WF.out.valid_samplesheet,
+            null, 
+            PHOENIX_LR_WF.out.versions,
+            PHOENIX_LR_WF.out.scaffolds.flatten().collate(2),
+            PHOENIX_LR_WF.out.nanostat,
+            true // for --long_read in griphin
+        )
+
+    emit:
+        scaffolds        = PHOENIX_LR_WF.out.scaffolds
+        mlst             = SCAFFOLDS_EXTERNAL.out.mlst
+        amrfinder_output = SCAFFOLDS_EXTERNAL.out.amrfinder_output
+        gamma_ar         = SCAFFOLDS_EXTERNAL.out.gamma_ar
+        //phx_summary      = SCAFFOLDS_EXTERNAL.out.phx_summary
 
 }
 
@@ -516,53 +485,27 @@ workflow UPDATE_PHOENIX {
     if (params.input != null ) {  // if a samplesheet is passed
         //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For --mode UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory! Just pick one.' 
+            exit 1, 'For -entry UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory! Just pick one.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
-            def checkPathParamList = [ params.input, params.multiqc_config ]
+            def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = null //keep input directory null if not passed
             // get full path for input and make channel
             if (params.input) { ch_input = file(params.input) }
         }
     } else {
-/*        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
+        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
             ch_input = null //keep samplesheet input null if not passed
-            def checkPathParamList = [ params.indir, params.multiqc_config ]
+            def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
             ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
         } else { // if no samplesheet is passed and no input directory is given
-            exit 1, 'For --mode UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!' 
-        }
-    }*/
-        if (params.indir != null ) {
-
-            def checkPathParamList = [ params.indir, params.multiqc_config ]
-            for (param in checkPathParamList) {
-                if (param) { file(param, checkIfExists: true) }
-            }
-
-            //ch_input_indir = Channel.fromPath(params.indir, relative: true, type: 'dir')
-
-            // Build expected samplesheet path
-            def samplesheet_path = "${params.indir}/Directory_samplesheet.csv"
-
-            // Check it exists with a helpful error
-            if ( !file(samplesheet_path).exists() ) {
-                exit 1, "Expected samplesheet not found: ${samplesheet_path}\nMake sure Directory_samplesheet.csv exists inside --indir."
-            }
-
-            // Create channel input
-            ch_input = file(samplesheet_path)
-            params.indir = null // Set indir to null to avoid confusion later in the workflow since we have the samplesheet path now
-//            ch_input_indir = null // Set input directory to null since we have the samplesheet path now
-            params.input = samplesheet_path // Set input to the samplesheet path for consistency in the workflow
-        } else {
-            exit 1, 'For --mode UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!'
+            exit 1, 'For -entry UPDATE_CDC_PHOENIX: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
     main:
-        UPDATE_PHOENIX_WF ( ch_input, ch_versions )
+        UPDATE_PHOENIX_WF ( ch_input, ch_input_indir, ch_versions )
 
     emit:
         mlst             = UPDATE_PHOENIX_WF.out.mlst
@@ -584,7 +527,7 @@ workflow COMBINE_GRIPHINS {
     if (params.input != null ) {  // if a samplesheet is passed
         //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
         if (params.indir != null ) { //if samplesheet is passed and an input directory exit
-            exit 1, 'For --mode COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
+            exit 1, 'For -entry COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
         } else { // if only samplesheet is passed check to make sure input is an actual file
             def checkPathParamList = [ params.input, params.multiqc_config ]
             for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
@@ -599,164 +542,101 @@ workflow COMBINE_GRIPHINS {
             }
         }
     } else {
-        exit 1, 'For --mode COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
+        exit 1, 'For -entry COMBINE_GRIPHINS: --indir is not a valid parameter, please pass a samplesheet and with --input.' 
     }
 
     //no griphins to start - they should be in the input samplesheet
-    //input_griphins_ch = null
+    input_griphins_ch = null
     //input_griphins_tsv_ch = null
 
     main:
-        COMBINE_GRIPHINS_WF ( ch_input, ch_versions )
+        COMBINE_GRIPHINS_WF ( input_griphins_ch, ch_input, outdir, ch_versions )
 
 }
 
 /*
 ========================================================================================
-    RUN Species specific WORKFLOWS - waiting for completed validation to be released with v2.3.0
+    RUN Species specific WORKFLOWS
 ========================================================================================
 */
 
 //
-// WORKFLOW: mode for running C. diff specific pipeline as standalone
+// WORKFLOW: Entry point for running C. diff specific pipeline as standalone
 //
 workflow CENTAR {
-
     // Check mandatory parameters
     ch_versions = Channel.empty() // Used to collect the software versions
-
     // Check input path parameters to see if they exist
     if (params.input != null ) {  // if a samplesheet is passed
-
-        if (params.indir != null ) { // if both provided → error
-            exit 1, 'For --mode RUN_CENTAR: You need EITHER an input samplesheet or a directory! Just pick one.'
-
-        } else { // only samplesheet provided
-
-            def checkPathParamList = [ params.input, params.multiqc_config ]
-            for (param in checkPathParamList) {
-                if (param) { file(param, checkIfExists: true) }
-            }
-
-            ch_input_indir = null // keep input directory null if not passed
-
+        //input_samplesheet_path = Channel.fromPath(params.input, relative: true)
+        if (params.indir != null ) { //if samplesheet is passed and an input directory exit
+            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory! Just pick one.' 
+        } else { // if only samplesheet is passed check to make sure input is an actual file
+            def checkPathParamList = [ params.input, params.multiqc_config, params.kraken2db ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            ch_input_indir = null //keep input directory null if not passed
             // get full path for input and make channel
-            if (params.input) {
-                ch_input = file(params.input)
-            }
-
+            if (params.input) { ch_input = file(params.input) }
             // Allow outdir to be relative
             outdir = Channel.fromPath(params.outdir, relative: true)
         }
-
     } else {
-
-        if (params.indir != null ) { // directory mode
-
-            def checkPathParamList = [ params.indir, params.multiqc_config ]
-            for (param in checkPathParamList) {
-                if (param) { file(param, checkIfExists: true) }
-            }
-
-            // Make sure indir is actually a directory
-            if (new File(params.indir).isDirectory()) {
-
-                //ch_input_indir = Channel.fromPath(params.indir, relative: true)
-
-                // Build expected samplesheet path
-                def samplesheet_path = "${params.indir}/Directory_samplesheet.csv"
-
-                // Check it exists with clear error
-                if ( !file(samplesheet_path).exists() ) {
-                    exit 1, "Expected samplesheet not found: ${samplesheet_path}\nMake sure Directory_samplesheet.csv exists inside --indir."
-                }
-
-                if (params.outdir == "${launchDir}/phx_output" ) {
-
-                    params.outdir = params.indir
-                    println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${params.indir}.${reset}")
-
-                } else {
-                    // Allow outdir to be relative
-                    params.outdir = Channel.fromPath(params.outdir, relative: true)
-                }
-
-                // Pass samplesheet as ch_input
-                ch_input = file(samplesheet_path)
-                params.indir = null // Set indir to null to avoid confusion later in the workflow since we have the samplesheet path now
-//                ch_input_indir = null // Set input directory to null since we have the samplesheet path now
-                params.input = samplesheet_path // Set input to the samplesheet path for consistency in the
-
+        if (params.indir != null ) { // if no samplesheet is passed, but an input directory is given
+            ch_input = null //keep samplesheet input null if not passed
+            def checkPathParamList = [ params.indir, params.multiqc_config, params.kraken2db ]
+            for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
+            //make sure a directory is passed 
+            if (new File(params.indir).isDirectory()){
+                ch_input_indir = Channel.fromPath(params.indir, relative: true)
             } else {
                 exit 1, 'You passed a file with --indir and a directory is required. Or use --input'
             }
-        } else {
-            // neither input nor indir provided
-            exit 1, 'For --mode CENTAR: You need EITHER an input samplesheet or a directory!'
+            if (params.outdir == "${launchDir}/phx_output" ) { 
+                outdir = params.indir
+                println("${orange}Warning: No outdir was passed, so CENTAR files will be saved to the indir ${outdir}.${reset}")
+            } else {
+                // Allow outdir to be relative
+                outdir = Channel.fromPath(params.outdir, relative: true)
+            }
+        } else { // if no samplesheet is passed and no input directory is given
+            exit 1, 'For -entry RUN_CENTAR: You need EITHER an input samplesheet or a directory!' 
         }
     }
 
-    // make sure outdir and griphin_out aren't passed at the same time
-    if (params.griphin_out != "${launchDir}" && params.outdir != "${launchDir}/phx_output"){
-        exit 1, "When using --outdir with CENTAR you can't use --griphin_out as --outdir directs all CENTAR and GRiPHin summary files to outdir. Please rerun with only one of these parameters."
-    }
-
+    if (params.combine_griphins == true){
+        //make sure outdir was passed
+        if (params.outdir == "${launchDir}/phx_output"){ exit 1, 'If --combine_griphins is passed you need to also pass --outdir.' } 
+        // Makes no sense to use combine_griphins with indir - as you only have one project
+        if (params.indir != null){ exit 1, "Only pass --combine_griphins when using --input with samples from different projects (i.e. folders).\n You don't need to combine griphins when there is only one project in the input." } 
+    } 
     // check if the wgmlst_container was passed
-    if (params.wgmlst_container == null) {
-        println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}")
-    }
+    if (params.wgmlst_container == null) { println("${orange}Warning: No path was passed for --wgmlst_container so ribotyping will not be reported.${reset}") }
 
     main:
-        RUN_CENTAR ( ch_input, ch_versions, params.outdir )
+        RUN_CENTAR ( ch_input, ch_input_indir, ch_versions, outdir )
+
+        if (params.combine_griphins == true) {
+
+            // make null input because we already have griphin files.
+            combine_input = null
+
+            COMBINE_GRIPHINS_WF ( 
+                RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [griphin]},
+                //RUN_CENTAR.out.griphins_tsv,
+                combine_input,
+                RUN_CENTAR.out.griphins_excel.map{meta_file, griphin -> [meta_file.splitText().first().toString().trim()]},
+                RUN_CENTAR.out.ch_versions
+            )
+        }
 
     emit:
-        // output for phylophoenix
-        griphins_excel = RUN_CENTAR.out.griphins_excel
+        //output for phylophoenix
+        griphins_tsv     = RUN_CENTAR.out.griphins_tsv
+        griphins_excel   = RUN_CENTAR.out.griphins_excel
+        dir_samplesheet  = RUN_CENTAR.out.dir_samplesheet
 }
 
-/*
-========================================================================================
-    Setting up profiles
-========================================================================================
-*/
-
-//
-// WORKFLOW: Execute a single named workflow for the pipeline
-//
-workflow {
-    println("${green}Running PHoeNIx pipeline in ${params.mode_upper} mode${reset}")
-    if(params.mode_upper == "PHOENIX") {
-        PHOENIX()
-    } else if(params.mode_upper == "CDC_PHOENIX") {
-        CDC_PHOENIX()
-    } else if(params.mode_upper == "SRA") {
-        SRA()
-    } else if(params.mode_upper == "CDC_SRA") {
-        CDC_SRA()
-    } else if(params.mode_upper == "SCAFFOLDS") {
-        SCAFFOLDS()
-    } else if(params.mode_upper == "CDC_SCAFFOLDS") {
-        CDC_SCAFFOLDS()
-    } else if(params.mode_upper == "PHOENIX_LR") {
-        PHOENIX_LR()
-    } else if(params.mode_upper == "PHOENIX_HYBRID") {
-        PHOENIX_HYBRID()
-    } else if(params.mode_upper == "UPDATE_PHOENIX") {
-        UPDATE_PHOENIX()
-    } else if(params.mode_upper == "CLIA") {
-        CLIA()
-        println("${red}WARNING: While this pipeline is undergoing CLIA validation at CDC, other users MUST conduct their own validation of this workflow and obtain explicit approval from THEIR CLIA director before considering it CLIA certified. Using this pipeline and reporting it's results to the patient, their care provider, or placed in the patient's medical record without proper validation may violate regulatory requirements.${reset}")
-    } else if(params.mode_upper == "COMBINE_GRIPHINS") {
-        COMBINE_GRIPHINS()
-    } else if(params.mode_upper == "CENTAR") {
-        CENTAR()
-        // comment out to run CENTAR 
-        //exit 1, "Sorry, --mode CENTAR hasn't completed its validation yet and will be released in another version of PHoeNIx!"
-    } else {
-        exit 1, 'Please select a pipeline to run either: PHOENIX, CDC_PHOENIX, SCAFFOLDS, CDC_SCAFFOLDS, SRA, CDC_SRA, UPDATE_PHOENIX, PHOENIX_LR, PHOENIX_HYBRID and COMBINE_GRIPHINS'
-    }
-}
-
+ 
 /*
 ========================================================================================
     THE END
