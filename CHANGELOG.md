@@ -434,3 +434,9 @@ Below are the list of changes to phx since is initial release. As fixes can take
 **Implemented Enhancements:**  
 - Added fairy output retention when running UPDATE_PHOENIX.   
 - Adjusted how CENTAR, UPDATE_PHOENIX, and CREATE_INPUT_CHANNELS workflows handle input designations internally, input vs indir (No changes to command line options this is just for code cleanup).  
+
+## [v2.4.0](https://github.com/CDCgov/phoenix/releases/tag/v2.4.0) (2026?)  
+
+**Implemented Enhancements:**  
+- ShigaPass effects on Taxonomy are better captured in GRiPHiN by utilizing only the .tax file. Underlying logic for determining what goes into the tax file when a sample is ecoli/shigella has been unified and simplified in check_taxa.py.  
+- In cases where there are multiple srst2 mlst schemes to run, the pipeline now runs though in parallel and combines them afterward improving runtime.  
