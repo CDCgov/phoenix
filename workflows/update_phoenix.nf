@@ -56,7 +56,7 @@ include { SRST2_AR                             } from '../modules/local/srst2_ar
 
 include { CREATE_INPUT_CHANNELS          } from '../subworkflows/local/create_input_channels'
 include { GENERATE_PIPELINE_STATS_WF     } from '../subworkflows/local/generate_pipeline_stats'
-include { DO_MLST                        } from '../subworkflows/local/do_mlst'
+include { DO_MLST                        } from '../subworkflows/local/do_mlst_parallel'
 
 /*
 ========================================================================================
@@ -164,8 +164,8 @@ workflow UPDATE_PHOENIX_WF {
         )
         ch_versions = ch_versions.mix(CREATE_INPUT_CHANNELS.out.versions)
 
-        CREATE_INPUT_CHANNELS.out.update_pipeline_info_isolate
-            .collect()
+//        CREATE_INPUT_CHANNELS.out.update_pipeline_info_isolate
+//            .collect()
 
         //unzip any zipped databases
         ASSET_CHECK (
@@ -228,7 +228,7 @@ workflow UPDATE_PHOENIX_WF {
                 println "${orange}=======================================================${reset}"
                 return "printed"
             }
-            .view{ "" }
+//            .view{ "" }
 
         ///// RUN SHIGAPASS IF IT WASN'T BEFORE AND IS CORRECT TAXA /////
 
@@ -249,9 +249,10 @@ workflow UPDATE_PHOENIX_WF {
                     }, by: [[0][0],[0][1]])
                     .filter{ meta, taxonomy, filtered_scaffolds, fairy_data -> 
                         fairy_data[1] == true // Keep only entries where passed is true (no FAILED found)
-                    }.map{   meta, taxonomy, filtered_scaffolds, fairy_data -> [meta, taxonomy, filtered_scaffolds] }.combine(existing_shigapass_ids.map{ [it] })
-                    .filter{ meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> existing_shigapass_ids == 'none' || !existing_shigapass_ids.contains(meta.id)}
-                    .map{    meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> [meta, taxonomy, filtered_scaffolds ] }// Add the filter to exclude isolates that already have shigapass files
+                    }.map{   meta, taxonomy, filtered_scaffolds, fairy_data -> [meta, taxonomy, filtered_scaffolds] }//.combine(existing_shigapass_ids.map{ [it] })
+                    // Remove the filter to exclude isolates that already have shigapass files, as we want to run shigapass on all Escherichia and Shigella samples regardless of existing files
+//                    .filter{ meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> existing_shigapass_ids == 'none' || !existing_shigapass_ids.contains(meta.id)}
+//                    .map{    meta, taxonomy, filtered_scaffolds, existing_shigapass_ids -> [meta, taxonomy, filtered_scaffolds ] }// Add the filter to exclude isolates that already have shigapass files
 
         // Get ID from ShigaPass
         SHIGAPASS (
@@ -381,40 +382,27 @@ workflow UPDATE_PHOENIX_WF {
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         // Debug GAMMA_AR output before join
-        GAMMA_AR.out.gamma
-            .map{ meta, gamma -> 
-                def key = [id:meta.id, project_id:meta.project_id]
-                [key, gamma]
-            }
+//        GAMMA_AR.out.gamma
+//            .map{ meta, gamma -> 
+//                def key = [id:meta.id, project_id:meta.project_id]
+//                [key, gamma]
+//            }
 
         files_to_update_ch = scaffolds_for_update_ch
             .map { meta, scaffolds -> [[id:meta.id, project_id:meta.project_id], meta] }
-            .join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate.map{ meta, file -> [[id:meta.id, project_id:meta.project_id], file] }, by: [[0][0],[0][1]])
-            .map { key, meta, pipeline_info -> 
-                [meta, pipeline_info] 
-            }
             .join(CREATE_INPUT_CHANNELS.out.directory_ch.map{ meta, dir -> [[id:meta.id, project_id:meta.project_id], file(dir)] }, by: [[0][0],[0][1]])
-            .map{ meta, a, b -> 
-                def pipeline_info = [a, b].find { it.toString().endsWith('.yml') }
-                def dir = [a, b].find { !it.toString().endsWith('.yml') }
-                [meta, dir, pipeline_info]
-            }
+            .map { tup -> [tup[0], tup[2]] }   // drop duplicated meta at position 1, keep [key, dir]
+            .join(CREATE_INPUT_CHANNELS.out.pipeline_info_isolate.map{ meta, file -> [[id:meta.id, project_id:meta.project_id], file] }, by: [[0][0],[0][1]])
             .join(CREATE_INPUT_CHANNELS.out.readme.map{ meta, readme -> [[id:meta.id, project_id:meta.project_id], readme]}, by: [[0][0],[0][1]], remainder: true)
             .filter { it -> it.size() == 4 }
-            .map{ meta, dir, pipeline_info, readme -> 
-                [meta, dir, pipeline_info, readme ?: []] 
-            }
+            .map{ meta, dir, pipeline_info, readme -> [meta, dir, pipeline_info, readme ?: []] }
             .join(CREATE_INPUT_CHANNELS.out.gamma_ar.map{ meta, gamma_ar -> [[id:meta.id, project_id:meta.project_id], gamma_ar]}, by: [[0][0],[0][1]], remainder: true)
             .map{ inputs ->
-                // Grab the key/meta safely as the first element
                 def meta = inputs[0]
-                
-                // Check if the remainder join failed to find gamma_ar data (giving us a shorter array)
                 def dir           = inputs.size() > 1 ? inputs[1] : null
                 def pipeline_info = inputs.size() > 2 ? inputs[2] : null
                 def readme        = inputs.size() > 3 ? inputs[3] : []
                 def gamma_ar      = inputs.size() > 4 ? inputs[4] : []
-                
                 [meta, dir, pipeline_info, readme ?: [], gamma_ar ?: []]
             }
             .join(GAMMA_AR.out.gamma.map{ meta, gamma -> 
@@ -600,18 +588,6 @@ workflow UPDATE_PHOENIX_WF {
                  report, ani_best_hit, version]
             }
 
-/*        line_summary_ch.view { it ->
-            def meta = it[0]
-            return """
-            ====================================================
-            SURVIVOR FOUND: ${meta.id}
-            Total elements in tuple: ${it.size()}
-            Last element check: ${it[-1]}
-            ====================================================
-            """.stripIndent()
-        }
-        line_summary_ch.ifEmpty { "!!! LOG ALERT: No samples survived the line_step joins !!!" }.view()
-*/
         // First, check if SHIGAPASS.out.summary is empty and create appropriate channel
         shigapass_ch = SHIGAPASS.out.summary.mix(CREATE_INPUT_CHANNELS.out.shigapass)
 
@@ -965,58 +941,22 @@ workflow UPDATE_PHOENIX_WF {
                         def pid = meta.project_id.toString().split('/')[-1].replace("]", "").trim()
                         return [ pid, busco, path ] 
                     }
-/*
-                // 1) Show exact keys for every project-level channel
-                ch_per_project
-                    .map { pid, meta_list, clean_files -> "|${pid}|" }
-                    .view { "PER_PROJECT KEY: ${it}" }
-
-                ch_busco_per_project
-                    .map { pid, busco, path -> "|${pid}|" }
-                    .view { "BUSCO KEY: ${it}" }
-
-                ch_old_versions_per_project
-                    .map { pid, old_version -> "|${pid}|" }
-                    .view { "OLD_VERSION KEY: ${it}" }
-
-                ch_inferred_mode_per_project
-                    .map { pid, mode -> "|${pid}|" }
-                    .view { "MODE KEY: ${it}" }
-
-                // 2) Check whether any project-level channel has duplicate rows per project
-                ch_busco_per_project
-                    .groupTuple(by: 0)
-                    .view { pid, buscos, paths ->
-                        "BUSCO ROWS FOR ${pid}: count=${buscos.size()} buscos=${buscos}"
-                    }
-
-                ch_old_versions_per_project
-                    .groupTuple(by: 0)
-                    .view { pid, versions ->
-                        "OLD_VERSION ROWS FOR ${pid}: count=${versions.size()} versions=${versions}"
-                    }
-
-                ch_per_project
-                    .view { pid, meta_list, clean_files ->
-                        "PER_PROJECT FULL ${pid}: meta_count=${meta_list.size()} file_count=${clean_files.size()} files=${clean_files*.name}"
-                    }
-*/
                 // 3) Split joins into separate steps so you can see exactly where it stops
-                j1 = ch_per_project
-                    .join(ch_busco_per_project, by: 0)
-                
-                j2 = j1
-                    .join(ch_old_versions_per_project, by: 0)
-                
-                j3 = j2
-                    .join(ch_inferred_mode_per_project, by: 0)
-                
-                ch_combined = j3
-                    .map { row ->
-                        assert row.size() == 7 : "Unexpected ch_combined shape: ${row}"
-                        def (pid, meta_list, files, busco, path, old_version, inferred_mode) = row
-                        [meta_list, files, path, busco, old_version, inferred_mode]
-                    }
+//                j1 = ch_per_project
+//                    .join(ch_busco_per_project, by: 0)
+//                
+//                j2 = j1
+//                    .join(ch_old_versions_per_project, by: 0)
+//                
+//                j3 = j2
+//                    .join(ch_inferred_mode_per_project, by: 0)
+//                
+//                ch_combined = j3
+//                    .map { row ->
+//                        assert row.size() == 7 : "Unexpected ch_combined shape: ${row}"
+//                        def (pid, meta_list, files, busco, path, old_version, inferred_mode) = row
+//                        [meta_list, files, path, busco, old_version, inferred_mode]
+//                    }
                 
                 // 4) Name the GRIPHIN inputs explicitly and print them before the call
                 ch_valid_samplesheet = CREATE_INPUT_CHANNELS.out.valid_samplesheet

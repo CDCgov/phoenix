@@ -9,6 +9,7 @@ process CHECK_SHIGAPASS_TAXA {
 
     output:
     tuple val(meta), path('edited/*.fastANI.txt'),              emit: ani_best_hit
+    tuple val(meta), path('edited/*.ani.txt'),                  emit: ani_raw
     tuple val(meta), path("edited/${meta.id}.tax"),             emit: tax_file
     tuple val(meta), path("${meta.id}_updater_log.tax"),        emit: edited_tax_file
     path("versions.yml"),                                       emit: versions
@@ -22,51 +23,30 @@ process CHECK_SHIGAPASS_TAXA {
     # when running --mode UPDATE_PHOENIX input will have same name as the output so we will create a directory to store the output
     mkdir -p edited
 
-    #get string to rename file --> Remove "to_check_" from the filename
+    # In regular Phoenix mode, fastani_file is FORMAT_ANI's "to_check_" copy, and stripping
+    # that prefix yields the name of a genuine, separate sibling file that already exists
+    # on disk -- check_taxa.py writes corrections there, leaving fastani_file untouched.
+    #
+    # In UPDATE_PHOENIX mode, FORMAT_ANI never runs, so there is no "to_check_" prefix to
+    # strip and no sibling file waiting to receive corrections -- new_name would otherwise
+    # resolve to the SAME path as fastani_file, causing check_taxa.py to overwrite the only
+    # existing copy in place. To keep this module correct in both modes without needing to
+    # detect which one is active, corrections are always written to an explicitly distinct
+    # temp filename instead of relying on new_name being different from fastani_file.
     new_name=\$(echo "${fastani_file}" | sed 's/to_check_//')
+    python_output="corrected_\${new_name}"
 
-    # Check if the shigella species in the shigapass file matches the species in the fastani file
-    if grep -q "Shigella" "${tax_file}"; then
-        # Extract species from s: line
-        fastani_species=\$(grep "^s:" "${tax_file}" | cut -f2)
-        # Get second line from summary (split by semicolon)
-        shigapass_species=\$(sed -n '2p' ${shigapass_file} | cut -d';' -f8)
-        # this should catch cases of 
-        if [[ "\$shigapass_species" != *"\$fastani_species"* ]]; then
-            echo "Shigapass species: \$shigapass_species and FastANI species: \$fastani_species do NOT match. Updating taxa file."
-            ${ica}check_taxa.py --format_ani_file ${fastani_file} --shigapass_file ${shigapass_file} --ani_file ${ani_file} --format_ani_output \${new_name} --tax_file ${tax_file}
+    ${ica}check_taxa.py --format_ani_file ${fastani_file} --shigapass_file ${shigapass_file} --ani_file ${ani_file} --format_ani_output \${python_output} --tax_file ${tax_file}
 
-            #After updating files move output to folder for publishing
-            mv \${new_name} edited/\${new_name}
-            mv ${meta.id}.tax edited/${meta.id}.tax
-            cp edited/${meta.id}.tax ${meta.id}_updater_log.tax # renaming so there isn't a file name conflict when we create the updater log
-        else 
-            echo "Shigella found, and Shigapass species: \$shigapass_species and FastANI species: \$fastani_species match."
-            #No changes to taxa files needed just move to output to folder for publishing
-            mv ${fastani_file} edited/\${new_name}
-            mv ${meta.id}.tax edited/${meta.id}.tax 
-            cp edited/${meta.id}.tax ${meta.id}_updater_log.tax # renaming so there isn't a file name conflict when we create the updater log
-        fi
-    # If fastani said Escherichia AND shigapass did not say "Not Shigella/EIEC" or EIEC we need to update the taxa file --> not sure this would ever happen
-    elif grep -q "Escherichia" "${tax_file}" && ! grep -q "EIEC" "${shigapass_file}"; then
-        # Extract genera from s: line
-        fastani_genera=\$(grep "^G:" "${tax_file}" | cut -f2)
-        # Get second line from summary (split by semicolon)
-        shigapass_org=\$(sed -n '2p' ${shigapass_file} | cut -d';' -f8)
-        echo "Escherichia found, and Shigapass taxa: \$shigapass_org and FastANI genera: \$fastani_genera do not match. Updating taxa file."
-        ${ica}check_taxa.py --format_ani_file ${fastani_file} --shigapass_file ${shigapass_file} --ani_file ${ani_file} --format_ani_output \${new_name} --tax_file ${tax_file}
-
-        # Move output to folder for publishing
-        mv \${new_name} edited/\${new_name}
-        mv ${meta.id}.tax edited/${meta.id}.tax
-        cp edited/${meta.id}.tax ${meta.id}_updater_log.tax # renaming so there isn't a file name conflict when we create the updater log
-    else
-        echo "Escherichia or Shigella were not found, PHoeNIx filters are broken please open a github ticket https://github.com/CDCgov/phoenix/issues."
-        # Should actually not ever get here since we filter so only Escherichia and Shigella enter SHIGAPASS module, but just in case
-        mv ${fastani_file} edited/\${new_name}
-        mv ${meta.id}.tax edited/${meta.id}.tax
-        cp edited/${meta.id}.tax ${meta.id}_updater_log.tax # renaming so there isn't a file name conflict when we create the updater log
-    fi
+    # check_taxa.py still computes and writes corrected values to \${python_output} (used to
+    # derive the percent-identity provenance recorded in the .tax file), but we intentionally
+    # publish the ORIGINAL fastani_file and the ORIGINAL, untouched ani_file here -- the .tax
+    # file is the authoritative final call and records where it came from; the ANI-derived
+    # files are left as a historical record of what the raw comparison actually showed.
+    cp ${fastani_file} edited/\${new_name}
+    cp ${ani_file} edited/
+    cp ${meta.id}.tax edited/${meta.id}.tax
+    cp edited/${meta.id}.tax ${meta.id}_updater_log.tax # renaming so there isn't a file name conflict when we create the updater log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

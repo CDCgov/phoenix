@@ -140,71 +140,126 @@ def create_centar_combined_df(directory1, sample_name, directory2):
     return centar_df
 
 ######################################## ShigaPass functions ##############################################
-def create_shiga_df(directory1, sample_name, shiga_df, taxa, directory2):
-    '''If Shigapass was run get info to add to the dataframe.'''
-    # if there is a trailing / remove it
-    directory1   = directory1.rstrip('/')
+
+# def create_shiga_df(directory1, sample_name, shiga_df, taxa, directory2):
+#     '''If Shigapass was run get info to add to the dataframe. This preserves ShigaPass's
+#     raw call as-read (ShigaPass_Organism) for easy auditing/spot-checking, independent of
+#     whatever check_taxa.py ultimately decided the final corrected taxa should be.'''
+#     directory1 = directory1.rstrip('/')
+#     if "Escherichia" in taxa or "Shigella" in taxa:
+#         shiga_summary = try_paths( directory1 + "/" + sample_name + "_ShigaPass_summary.csv", directory2 + "/" + sample_name + "/ANI/" + sample_name + "_ShigaPass_summary.csv" )
+#         row_data = { "WGS_ID": sample_name, "ShigaPass_Organism": ""}
+#         try:
+#             with open(shiga_summary) as shiga_file:
+#                 for line in shiga_file.readlines()[1:]:
+#                     if line.split(";")[9] == 'Not Shigella/EIEC\n':
+#                         row_data["ShigaPass_Organism"] = "Not Shigella/EIEC"
+#                     else:
+#                         row_data["ShigaPass_Organism"] = line.split(";")[7]
+#                     shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
+#             mapping_dict = {
+#                 r'^SB[\w-]*$': 'Shigella boydii',
+#                 r'^SD[\w-]*$': 'Shigella dysenteriae',
+#                 r'^SS[\w-]*$': 'Shigella sonnei',
+#                 r'^SF[\w-]*$': 'Shigella flexneri'
+#             }
+#             shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict, regex=True)
+#         except FileNotFoundError:
+#             print("Warning: ShigaPass file for " + sample_name + " not found")
+#             new_row = pd.DataFrame({"WGS_ID": [sample_name], "ShigaPass_Organism": [""]})
+#             shiga_df = pd.concat([shiga_df, new_row], ignore_index=True)
+#     else:
+#         new_row = pd.DataFrame({"WGS_ID": [sample_name], "ShigaPass_Organism": [""]})
+#         shiga_df = pd.concat([shiga_df, new_row], ignore_index=True)
+#     return shiga_df
+
+def create_shiga_df(directory1, sample_name, shiga_df, taxa, tax_file, directory2):
+    directory1 = directory1.rstrip('/')
     if "Escherichia" in taxa or "Shigella" in taxa:
-        # create file names
         shiga_summary = try_paths( directory1 + "/" + sample_name + "_ShigaPass_summary.csv", directory2 + "/" + sample_name + "/ANI/" + sample_name + "_ShigaPass_summary.csv" )
-        # Create a dictionary to store row information
         row_data = { "WGS_ID": sample_name, "ShigaPass_Organism": ""}
         try:
             with open(shiga_summary) as shiga_file:
-                for line in shiga_file.readlines()[1:]:  # Skip the first line
-                    if line.split(";")[9] == 'Not Shigella/EIEC\n':
+                for line in shiga_file.readlines()[1:]:
+                    fields = line.strip().split(";")
+                    if any("Not Shigella/EIEC" in f for f in fields):
                         row_data["ShigaPass_Organism"] = "Not Shigella/EIEC"
                     else:
-                        row_data["ShigaPass_Organism"] = line.split(";")[7]
-                    # Convert the row data into a DataFrame and concatenate with the main DataFrame
+                        row_data["ShigaPass_Organism"] = fields[7] if len(fields) > 7 else ""
                     shiga_df = pd.concat([shiga_df, pd.DataFrame([row_data])], ignore_index=True)
-                        # Define the mapping of short strings to longer strings
-            #for marker, sp in [("SS", "Shigella sonnei"), ("SF", "Shigella flexneri"), ("SB", "Shigella boydii"), ("SD", "Shigella dysenteriae")]:
-            #    if marker in shiga_df['ShigaPass_Organism']:
-            #        shiga_df['ShigaPass_Organism'] = sp           
-            # Define the mapping of short strings to longer strings
-            mapping_dict = { 
-                r'^SB[\w-]*$': 'Shigella boydii', 
-                r'^SD[\w-]*$': 'Shigella dysenteriae', 
-                r'^SS[\w-]*$': 'Shigella sonnei', 
-                r'^SF[\w-]*$': 'Shigella flexneri' 
+            mapping_dict = {
+                r'^SB[\w-]*$': 'Shigella boydii',
+                r'^SD[\w-]*$': 'Shigella dysenteriae',
+                r'^SS[\w-]*$': 'Shigella sonnei',
+                r'^SF[\w-]*$': 'Shigella flexneri'
             }
-            
-            # Apply the mapping using map()
             shiga_df['ShigaPass_Organism'] = shiga_df['ShigaPass_Organism'].replace(mapping_dict, regex=True)
-        except FileNotFoundError: 
-            print("Warning: ShigaPass file for " + sample_name + " not found")
-            # Add a row to the DataFrame with the WGS_ID column set to sample_name
+
+            # Append ShigaPass-computed %ID;%Coverage from the tax file header, if present
+            id_cov = None
+            try:
+                with open(tax_file, "r") as tf:
+                    first_line = tf.readline()
+                if first_line.startswith("ShigaPass\t"):
+                    parts = first_line.split("\t")
+                    if len(parts) > 1 and ";" in parts[1]:
+                        id_cov = parts[1]
+            except FileNotFoundError:
+                pass
+            if id_cov:
+                mask = shiga_df["WGS_ID"] == sample_name
+                shiga_df.loc[mask, "ShigaPass_Organism"] = shiga_df.loc[mask, "ShigaPass_Organism"] + ";" + id_cov
+
+        except FileNotFoundError:
             new_row = pd.DataFrame({"WGS_ID": [sample_name], "ShigaPass_Organism": [""]})
             shiga_df = pd.concat([shiga_df, new_row], ignore_index=True)
     else:
-        # Add a row to the DataFrame with the WGS_ID column set to sample_name
         new_row = pd.DataFrame({"WGS_ID": [sample_name], "ShigaPass_Organism": [""]})
         shiga_df = pd.concat([shiga_df, new_row], ignore_index=True)
     return shiga_df
 
-def double_check_taxa_id(shiga_df, phx_df):
-    # Merge the DataFrames on 'WGS_ID'
+
+def get_corrected_taxa_from_tax_file(tax_file):
+    '''Reads the already-corrected G:/s: genus and species directly from the .tax file,
+    which check_taxa.py has already reconciled against ShigaPass/ANI. Used to populate
+    Final_Taxa_ID for ShigaPass-adjudicated samples, separately from the raw
+    ShigaPass_Organism audit column (which intentionally preserves ShigaPass's literal
+    output, including negative results like "Not Shigella/EIEC", for spot-checking).'''
+    genus = None
+    species = None
+    try:
+        with open(tax_file, "r") as f:
+            for line in f:
+                if line.startswith("G:"):
+                    genus = line.split("\t")[1].strip()
+                elif line.startswith("s:"):
+                    species = line.split("\t")[1].strip()
+    except FileNotFoundError:
+        return ""
+    if genus and species:
+        return f"{genus} {species}"
+    return genus or ""
+
+
+def double_check_taxa_id(shiga_df, phx_df, tax_files_by_sample):
+    '''tax_files_by_sample: dict mapping WGS_ID -> tax_file path, so Final_Taxa_ID can be
+    populated from the corrected tax file rather than ShigaPass_Organism's raw value.'''
     merged_df = pd.merge(phx_df, shiga_df, on='WGS_ID', how='left')
-    # Identify the position of the insertion point
     insert_position = merged_df.columns.get_loc("FastANI_Organism")
-    # Reorder the columns: place the new columns at the desired position
     columns = list(merged_df.columns)
-    # Reorder columns to insert the new columns between 'Column_A' and 'Column_B'
     new_columns = ['ShigaPass_Organism']
-    # Reorder columns: place the new columns between 'Column_A' and 'Column_B'
     columns_reordered = (
-        columns[:insert_position] +  # Columns before the insertion point
-        new_columns +                # New columns to be inserted
-        [col for col in columns if col not in new_columns and col not in columns[:insert_position]]) # Remaining columns
-    # Reorder the merged DataFrame columns
+        columns[:insert_position] +
+        new_columns +
+        [col for col in columns if col not in new_columns and col not in columns[:insert_position]])
     merged_df = merged_df[columns_reordered]
-    # Apply the custom function to fill the Taxa_ID column
-    merged_df['Final_Taxa_ID'] = merged_df.apply(fill_taxa_id, axis=1)
+    merged_df['Final_Taxa_ID'] = merged_df.apply(
+        lambda row: fill_taxa_id(row, tax_files_by_sample.get(row['WGS_ID'], "")), axis=1
+    )
     return merged_df
 
-# Define the custom function to update the Taxa_ID based on conditions
-def fill_taxa_id(row):
+
+def fill_taxa_id(row, tax_file=None):
     if row['Taxa_Source'] == 'ANI_REFSEQ':
         return row['FastANI_Organism']
     elif row['Taxa_Source'] == 'kraken2_wtasmbld':
@@ -212,20 +267,24 @@ def fill_taxa_id(row):
         species = row['Kraken_ID_WtAssembly_%'].split(" ")[2]
         return genus + " " + species
     elif row['Taxa_Source'] == 'kraken2_trimmed':
-        # 1. Prioritize Trimmed Reads
         if 'Kraken_ID_Trimmed_Reads_%' in row and row['Kraken_ID_Trimmed_Reads_%']:
             target_column = row['Kraken_ID_Trimmed_Reads_%']
-            
-        # 2. Fall back to Raw Reads if Trimmed isn't there
         elif 'Kraken_ID_Raw_Reads_%' in row and row['Kraken_ID_Raw_Reads_%']:
             target_column = row['Kraken_ID_Raw_Reads_%']
         genus = target_column.split(" ")[0]
         species = target_column.split(" ")[2]
         return genus + " " + species
-    elif row['Taxa_Source'] == 'ShigaPass':
-        return row['ShigaPass_Organism']
+    elif row['Taxa_Source'].startswith('ShigaPass'):
+        # Final_Taxa_ID comes from the corrected tax file, NOT the raw ShigaPass_Organism
+        # column -- that column intentionally preserves ShigaPass's literal output
+        # (including "Not Shigella/EIEC") for auditing, which isn't a displayable organism name.
+        if tax_file:
+            corrected = get_corrected_taxa_from_tax_file(tax_file)
+            if corrected:
+                return corrected
+        return row['ShigaPass_Organism']  # fallback if tax_file unavailable
     else:
-        return 'Unknown'  # Default case if no condition matches
+        return 'Unknown'
 
 #def main():
 #    directory = "/scicomp/groups/OID/NCEZID/DHQP/CEMB/Jill_DIR/PHX_v2/v2.2.0-dev/centar/cdc_centar_newer"

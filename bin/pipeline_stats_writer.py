@@ -157,6 +157,8 @@ class Synopsis:
     def __init__(self, path: Path):
         self._fh   = path.open("w")
         self.status = "SUCCESS"
+        self.critical_fail = False        # NEW: drives Auto Pass/FAIL only
+        self.critical_reasons = []        # NEW: replaces the qc_fail string
 
     def write(self, label: str, result: str, detail: str) -> None:
         self._fh.write(f"{label:<30}: {result:<8} : {detail}\n")
@@ -169,6 +171,18 @@ class Synopsis:
         self.write(label, result, detail)
         if escalate and result in ("FAILED", "WARNING", "ALERT"):
             self.update_status(result)
+    
+    def record_critical(self, label: str, result: str, detail: str,
+                         reason: str | None = None) -> None:
+        """
+        Same as record(), but ALSO explicitly marks this as a criterion
+        that gates the Auto Pass/FAIL line — never inferred from FAILED/
+        WARNING/ALERT alone, only ever set by an explicit call site.
+        """
+        self.record(label, result, detail)
+        if reason:
+            self.critical_fail = True
+            self.critical_reasons.append(reason)
 
     def close(self) -> None:
         self._fh.close()
@@ -615,7 +629,8 @@ def check_assembly_ratio(syn: Synopsis, args,   dec_genus: str, dec_species: str
         syn.record("ASSEMBLY_RATIO(SD)", "ALERT", f"Low References for STDev - {assembly_ratio}x({st_dev_str}-SD) against {assembly_id}")
     elif st_dev > 2.58:
         syn.record("ASSEMBLY_RATIO(SD)", "FAILED", f"St. dev. too large - {assembly_ratio}x({st_dev}-SD) against {assembly_id}")
-        qc_fail = f"STDev_above_2.58({st_dev})-"
+        syn.critical_fail = True
+        syn.critical_reasons.append(f"STDev_above_2.58({st_dev})")
     else:
         syn.record("ASSEMBLY_RATIO(SD)", "SUCCESS", f"{assembly_ratio}x({st_dev}-SD) against {assembly_id}", escalate=False)
 
@@ -636,8 +651,8 @@ def check_coverage(syn: Synopsis, args, bps_post_all: int, assembly_length: int,
         syn.record("COVERAGE", "ALERT", f"{avg_cov}x coverage (Target:40x, Cutoff:{reads_min}x)")
     else:
         syn.record("COVERAGE", "FAILED", f"{avg_cov}x coverage (Min:30x)")
-        return f"coverage_below_30({avg_cov})-"
-
+        syn.critical_fail = True
+        syn.critical_reasons.append(f"coverage_below_30({avg_cov})")
     return ""
 
 
@@ -783,14 +798,10 @@ def main() -> None:
     assembly_length, _ = check_quast(syn, args)
 
     if assembly_length < 1_000_000 and assembly_length > 0:
-        qc_fail += f"smaller_than_1000000_bps({assembly_length})-"
+        syn.critical_fail = True
+        syn.critical_reasons.append(f"smaller_than_1000000_bps({assembly_length})")
 
     dec_genus, dec_species = check_taxa(syn, args)
-
-    if args.assembly_ratio_file:
-        qc_fail += check_assembly_ratio(syn, args, dec_genus, dec_species)
-
-    qc_fail += check_coverage(syn, args, bps_post_all, assembly_length, reads_min)
 
     if args.cdc_phoenix_mode:
         check_busco(syn, args)
@@ -821,11 +832,12 @@ def main() -> None:
         db_tag = "_".join(Path(args.gamma_hv).stem.split("_")[-3:-1])
         check_gamma(syn, "HYPERVIRULENCE", args.gamma_hv,  "hypervirulence", args.sample_name, db_tag)
 
-    if qc_fail:
-        syn.record("Auto Pass/FAIL", "FAIL", qc_fail.rstrip("-"))
+    if syn.critical_fail:
+        syn.record("Auto Pass/FAIL", "FAIL", "-".join(syn.critical_reasons))
+        syn.status = "FAILED"   # It should BUT if the isolate had passed up until the end, the auto PASS/FAIL will force an overall status fail if any of the critical checks failed
     else:
-        syn.write("Auto Pass/FAIL", "PASS","Minimum Requirements met for coverage(30x)/ratio_stdev(<2.58)""/min_length(>1000000) to pass auto QC filtering")
-
+        syn.write("Auto Pass/FAIL", "PASS", "...")
+    
     syn._fh.write(
         f"---------- {args.sample_name} completed as {syn.status} ----------\n"
         "WARNINGS: out of line with what is expected and MAY cause problems downstream.\n"

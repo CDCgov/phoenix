@@ -64,7 +64,7 @@ include { CREATE_SCAFFOLDS_INPUT_CHANNEL           } from '../subworkflows/local
 include { GENERATE_PIPELINE_STATS_WF               } from '../subworkflows/local/generate_pipeline_stats'
 include { KRAKEN2_WF as KRAKEN2_ASMBLD             } from '../subworkflows/local/kraken2krona'
 include { KRAKEN2_WF as KRAKEN2_WTASMBLD           } from '../subworkflows/local/kraken2krona'
-include { DO_MLST                                  } from '../subworkflows/local/do_mlst'
+include { DO_MLST                                  } from '../subworkflows/local/do_mlst_parallel'
 include { CENTAR_SUBWORKFLOW                       } from '../subworkflows/local/centar_steps'
 
 /*

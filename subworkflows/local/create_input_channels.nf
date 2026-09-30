@@ -93,7 +93,7 @@ workflow CREATE_INPUT_CHANNELS {
             .concat(
                 CREATE_FAIRY_FILE.out.created_fairy_file
             )
-            .unique { meta, files -> meta.id }
+            .unique { meta, files -> [meta.id, meta.project_id] }
 
         //combine reads to get into one channel
         combined_reads_ch = COLLECT_SAMPLE_FILES.out.read1.join(COLLECT_SAMPLE_FILES.out.read2, by: [0]).map{ meta, read1, read2 -> [meta, [read1, read2]]}
@@ -132,13 +132,13 @@ workflow CREATE_INPUT_CHANNELS {
 
             // Find samples with scaffolds but NO gamma_ar file - these always need updating
             missing_gamma_ar_ch = filtered_scaffolds_ch
-                .map{ meta, scaffolds -> [meta.id, meta] }
+                .map{ meta, scaffolds -> [[id:meta.id, project_id:meta.project_id], meta] }
                 .join(
-                    gamma_ar_with_flag.flags.map{ meta, flag -> [meta.id, flag] },
+                    gamma_ar_with_flag.flags.map{ meta, flag -> [[id:meta.id, project_id:meta.project_id], flag] },
                     remainder: true
                 )
-                .filter{ id, meta, flag -> flag == null }
-                .map{ id, meta, flag -> [meta, true] }
+                .filter{ key, meta, flag -> flag == null }
+                .map{ key, meta, flag -> [meta, true] }
 
             sample_needs_update_ch = gamma_ar_with_flag.flags
                 .mix(missing_gamma_ar_ch)
