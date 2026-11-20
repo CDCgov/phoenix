@@ -162,15 +162,15 @@ workflow SRA {
     //input on command line
     if (params.input_sra) {
         //create channel input
-        ch_input = file(params.input_sra)
+        def sra_input_file = file(params.input_sra)
         //Check that SRR numbers are passed not SRX
-        if (ch_input) {
+        if (sra_input_file) {
             // Read the contents of the file
-            def sraNumbers = ch_input.readLines().findAll { it.trim() }
+            def sraNumbers = sra_input_file.readLines().findAll { it.trim() }
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
-                if (!sraNumber.startsWith("SRR") & !sraNumber.startsWith("ERR")) {
+                if (!sraNumber.startsWith("SRR") && !sraNumber.startsWith("ERR")) {
                     exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for --mode SRA, but found: $sraNumber"
                 }
             }
@@ -219,15 +219,15 @@ workflow CDC_SRA {
     //input on command line
     if (params.input_sra) {
         //create channel input
-        ch_input = file(params.input_sra)
+        def sra_input_file = file(params.input_sra)
         //Check that SRR numbers are passed not SRX
-        if (ch_input) {
+        if (sra_input_file) {
             // Read the contents of the file
-            def sraNumbers = ch_input.readLines().findAll { it.trim() }
+            def sraNumbers = sra_input_file.readLines().findAll { it.trim() }
             // Check each line in the file
             for (sraNumber in sraNumbers) {
                 // Check if it starts with "SRR"
-                if (!sraNumber.startsWith("SRR") & !sraNumber.startsWith("ERR")) {
+                if (!sraNumber.startsWith("SRR") && !sraNumber.startsWith("ERR")) {
                     exit 1, "Invalid value in ${params.input_sra}. Only SRR numbers are allowed for --mode CDC_SRA, but found: $sraNumber"
                 }
             }
