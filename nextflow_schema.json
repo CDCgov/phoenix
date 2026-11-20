@@ -109,6 +109,13 @@
                     "default": "${launchDir}/phx_output",
                     "fa_icon": "fas fa-folder-open"
                 },
+                "assembler": {
+                    "type": "string",
+                    "description": "Genome assembly workflow to use. SPAdes is the default; Shovill uses SPAdes as its assembly backend.",
+                    "default": "spades",
+                    "enum": ["spades", "shovill"],
+                    "fa_icon": "fas fa-dna"
+                },
                 "coverage": {
                     "type": "integer",
                     "description": "If you want to increase the coverage cut off >30x use --coverage (ex. --coverage 40)",
