@@ -54,17 +54,19 @@ def spades_rename(input_file, name, reverse, output):
 		SeqIO.write(sequences, output, "fasta")
 
 def shovill_rename(input_file, name, output):
-	"""
-	Typical shovill output: >contig00001 len=1423313 cov=21.0 corr=0 origname=NODE_1_length_1423313_cov_21.008026_pilon sw=shovill-spades/1.1.0 date=20230327
-	Convert to: >1921706_1_length_600507 (Name_contig#_length_length#)
-	"""
-	sequences = []
-	for record in SeqIO.parse(input_file,"fasta"):
-		record.id = re.search('origname=(.*) sw=', record.description).group(1)
-		record.id = record.id.split("_cov")[0].replace("NODE",name)
-		record.description = ""
-		sequences.append(record)
-	SeqIO.write(sequences, output, "fasta")
+    """
+    Supports both default Shovill headers and custom --namefmt headers.
+    Example:
+    >sample_00001 len=430263 cov=50.8 ...
+    becomes:
+    >TEST_1_length_430263
+    """
+    sequences = []
+    for index, record in enumerate(SeqIO.parse(input_file, "fasta"), start=1):
+        record.id = (f"{name}_{index}_length_{len(record.seq)}")
+        record.description = ""
+        sequences.append(record)
+    SeqIO.write(sequences, output, "fasta")
 
 def skesa_rename(input_file, name, output):
 	"""
@@ -132,7 +134,10 @@ def unknown_rename(input_file, output, name):
 
 def detect_assemblier(input_file, name):
 	for record in SeqIO.parse(input_file,"fasta"):
-		if record.id.startswith("contig00001"):
+		if (
+			record.id.startswith("contig00001")
+			or re.search(r"\bsw=shovill-", record.description)
+		):
 			assembler = "shovill"
 		elif record.id.startswith("NODE_1"):
 			assembler = "spades"
