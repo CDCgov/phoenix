@@ -125,7 +125,7 @@ workflow GENERATE_PIPELINE_STATS_WF {
             trimd_k2_bh_summary = wtasmbld_report.map{ it -> create_empty_ch(it) }
         }
 
-        if (params.mode_upper == "PHOENIX" ) {
+        if (params.mode_upper in ["PHOENIX", "SRA"]) {
             busco            = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_report    = wtasmbld_report.map{ it -> create_empty_ch(it) }
             asmbld_krona_html    = wtasmbld_report.map{ it -> create_empty_ch(it) }
